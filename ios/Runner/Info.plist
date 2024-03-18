@@ -47,7 +47,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>project1</string>
+				<string>com.example.project1</string>
 			</array>
 		</dict>
 	</array>
