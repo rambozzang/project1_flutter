@@ -1,0 +1,173 @@
+import 'dart:developer';
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
+import 'package:get/get_state_manager/src/simple/get_controllers.dart';
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
+import 'package:project1/config/url_config.dart';
+import 'package:project1/repo/api/firebase_api.dart';
+import 'package:uuid/uuid.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as Kakao;
+
+// 카카오 개발문서
+// https://developers.kakao.com/docs/latest/ko/kakaologin/flutter
+// https://velog.io/@qazws78941/FlutterKakao-login-api%EB%A5%BC-%EC%9D%B4%EC%9A%A9%ED%95%9C-%EB%A1%9C%EA%B7%B8%EC%9D%B8
+// https://velog.io/@sumong/Flutter%EC%97%90%EC%84%9C-%EC%B9%B4%EC%B9%B4%EC%98%A4-%EB%A1%9C%EA%B7%B8%EC%9D%B8-%EA%B5%AC%ED%98%84%ED%95%98%EA%B8%B0
+class KakaoApi {
+  // 사용자의 추가 동의가 필요한 사용자 정보 동의항목 확인
+  List<String> scopes = ['account_email', "birthday", "birthyear", "phone_number", "profile", "account_ci"];
+
+  Future<void> signInWithKakaoApp() async {
+    // 카카오톡 실행 가능 여부
+    if (await isKakaoTalkInstalled()) {
+      log("카카오톡가 있는 경우 프로세스 1");
+      try {
+        // 카카오톡에 연결된 카카오계정 및 인증 정보를 사용
+        OAuthToken? token = await UserApi.instance.loginWithKakaoTalk(serviceTerms: scopes);
+        log('카카오톡으로 로그인 성공1 : _token :  $token ');
+        loginProc(token.toString());
+        await TokenManagerProvider.instance.manager.setToken(token);
+      } catch (error) {
+        log('카카오톡으로 로그인1 실패 $error');
+        // 사용자가 카카오톡 설치 후 디바이스 권한 요청 화면에서 로그인을 취소한 경우,
+        // 의도적인 로그인 취소로 보고 카카오계정으로 로그인 시도 없이 로그인 취소로 처리 (예: 뒤로 가기)
+        if (error is PlatformException && error.code == 'CANCELED') {
+          return;
+        }
+        try {
+          // 사용자가 카카오계정 정보를 직접 입력하지 않아도 간편하게 로그인 가능
+          OAuthToken? token = await UserApi.instance.loginWithKakaoAccount(serviceTerms: scopes);
+          loginProc(token.toString());
+          log('카카오계정으로 로그인2 성공 : _token :  $token ');
+        } catch (error) {
+          log('카카오계정으로 로그인2 실패 $error');
+        }
+      }
+    } else {
+      log("카카오톡가 없는 경우 프로세스 3");
+      try {
+        // 사용자가 카카오계정 정보를 직접 입력하지 않아도 간편하게 로그인 가능
+        OAuthToken? token = await UserApi.instance.loginWithKakaoAccount(serviceTerms: scopes);
+        log('카카오계정으로 로그인3 성공 : _token :  $token ');
+
+        loginProc(token.toString());
+      } catch (error) {
+        log('카카오계정으로 로그인3 실패 $error');
+      }
+    }
+  }
+
+  void loginProc(String token) async {
+    Kakao.User user;
+    try {
+      user = await UserApi.instance.me();
+      log('사용자 정보 요청 성공'
+          '\token: ${token}'
+          '\n회원번호: ${user.id}'
+          '\n닉네임: ${user.kakaoAccount?.profile?.nickname}'
+          '\n닉네임: ${user.kakaoAccount?.profile?.profileImageUrl}'
+          '\n닉네임: ${user.kakaoAccount?.profile?.thumbnailImageUrl}'
+          '\n이메일: ${user.kakaoAccount?.email}');
+    } catch (error) {
+      print('사용자 정보 요청 실패 $error');
+      return;
+    }
+
+    // 사용자의 추가 동의가 필요한 사용자 정보 동의항목 확인
+    List<String> scopes = [];
+
+    if (user.kakaoAccount?.emailNeedsAgreement == true) {
+      scopes.add('account_email');
+    }
+    if (user.kakaoAccount?.birthdayNeedsAgreement == true) {
+      scopes.add("birthday");
+    }
+    if (user.kakaoAccount?.birthyearNeedsAgreement == true) {
+      scopes.add("birthyear");
+    }
+    if (user.kakaoAccount?.ciNeedsAgreement == true) {
+      scopes.add("account_ci");
+    }
+    if (user.kakaoAccount?.phoneNumberNeedsAgreement == true) {
+      scopes.add("phone_number");
+    }
+    if (user.kakaoAccount?.profileNeedsAgreement == true) {
+      scopes.add("profile");
+    }
+    if (user.kakaoAccount?.ageRangeNeedsAgreement == true) {
+      scopes.add("age_range");
+    }
+
+    if (scopes.length > 0) {
+      print('사용자에게 추가 동의 받아야 하는 항목이 있습니다');
+
+      // OpenID Connect 사용 시
+      // scope 목록에 "openid" 문자열을 추가하고 요청해야 함
+      // 해당 문자열을 포함하지 않은 경우, ID 토큰이 재발급되지 않음
+      // scopes.add("openid")
+
+      // scope 목록을 전달하여 추가 항목 동의 받기 요청
+      // 지정된 동의항목에 대한 동의 화면을 거쳐 다시 카카오 로그인 수행
+      OAuthToken token;
+      try {
+        token = await UserApi.instance.loginWithNewScopes(scopes);
+
+        print('현재 사용자가 동의한 동의항목: ${token.scopes}');
+      } catch (error) {
+        print('추가 동의 요청 실패 $error');
+        return;
+      }
+
+      // 사용자 정보 재요청
+      try {
+        Kakao.User user = await UserApi.instance.me();
+        print('사용자 정보 요청 성공'
+            '\n회원번호: ${user.id}'
+            '\n닉네임: ${user.kakaoAccount?.profile?.nickname}'
+            '\n이메일: ${user.kakaoAccount?.email}');
+      } catch (error) {
+        print('사용자 정보 요청 실패 $error');
+      }
+    }
+
+    // log('loginProc : _token :  $token');
+    // Kakao.User user = await UserApi.instance.me();
+    // log(user.toString());
+
+    // print('사용자 정보 요청 성공'
+    //     '\n회원번호: ${user.id}'
+    //     '\n닉네임: ${user.kakaoAccount?.profile?.nickname}'
+    //     '\n이메일: ${user.kakaoAccount?.email}');
+
+    // final token = await FirebaseApi().createCustomToken({
+    //   'uid': user!.id.toString(),
+    //   'displayName': user!.kakaoAccount!.profile!.nickname,
+    //   'email': user!.kakaoAccount!.email!,
+    //   'photoURL': user!.kakaoAccount!.profile!.profileImageUrl!,
+    // });
+
+    // ---------------------------------------------------------
+    // 2. firebase 회원가입,로그인 처리
+    // ---------------------------------------------------------
+    // await FirebaseAuth.instance.signInWithCredential(token.data).then((UserCredential value) {
+    //   log('displayName : ${value.user!.displayName}');
+    //   log('email : ${value.user!.email}');
+    //   log('photoURL : ${value.user!.photoURL}');
+    //   log('uid : ${value.user!.uid}');
+    //   log('phoneNumber : ${value.user!.phoneNumber}');
+    //   log('accessToken : ${value.credential!.accessToken}');
+    //   log('token : ${value.credential!.token}');
+    // }).onError((error, stackTrace) {
+    //   log('error : $error');
+    // });
+  }
+
+  void logout() async {
+    try {
+      await UserApi.instance.logout();
+      print('로그아웃 성공, SDK에서 토큰 삭제');
+    } catch (error) {
+      print('로그아웃 실패, SDK에서 토큰 삭제 $error');
+    }
+  }
+}
