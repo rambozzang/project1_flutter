@@ -4,19 +4,49 @@ import 'package:project1/config/url_config.dart';
 import 'package:project1/repo/api/auth_dio.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/cust/data/create_data.dart';
+import 'package:project1/repo/cust/data/google_join_data.dart';
+import 'package:project1/repo/cust/data/kakao_join_data.dart';
+import 'package:project1/repo/cust/data/naver_join_data.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:dio/dio.dart';
 
 class CustRepo {
   final dio = authDio();
-  // 회원가입
-  Future<ResData> createCust(CreateData data) async {
+  // KAKAO 회원가입
+  Future<ResData> createKakaoCust(KakaoJoinData data) async {
     try {
-      var url = 'http://localhost:7010/api/auth/joinbytoken';
+      var url = 'http://localhost:7010/api/auth/kakaojoin';
       // var url = '${UrlConfig.baseURL}/auth/joinbytoken';
-
+      log(data.toString());
       Response response = await dio.post(url, data: data.toJson());
+      return dioResponse(response);
+    } on DioException catch (e) {
+      return dioException(e);
+    } finally {}
+  }
 
+  // Naver 회원가입
+  Future<ResData> createNaverCust(NaverJoinData data) async {
+    try {
+      var url = 'http://localhost:7010/api/auth/naverjoin';
+      // var url = '${UrlConfig.baseURL}/auth/naverjoin';
+
+      log(data.toString());
+      Response response = await dio.post(url, data: data.toJson());
+      return dioResponse(response);
+    } on DioException catch (e) {
+      return dioException(e);
+    } finally {}
+  }
+
+  // Google 회원가입
+  Future<ResData> createGoogleCust(GoogleJoinData data) async {
+    try {
+      var url = 'http://localhost:7010/api/auth/googlejoin';
+      // var url = '${UrlConfig.baseURL}/auth/naverjoin';
+
+      log(data.toString());
+      Response response = await dio.post(url, data: data.toJson());
       return dioResponse(response);
     } on DioException catch (e) {
       return dioException(e);

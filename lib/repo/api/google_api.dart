@@ -1,8 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/repo/cust/cust_repo.dart';
+import 'package:project1/repo/cust/data/google_join_data.dart';
 
 import 'package:project1/utils/log_utils.dart';
+import 'package:project1/utils/utils.dart';
 
 class GoogleApi {
   void signInWithGoogle() async {
@@ -12,7 +16,8 @@ class GoogleApi {
     // ---------------------------------------------------------
     final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
     log('googleUser : $googleUser');
-    final GoogleSignInAuthentication googleAuth = await googleUser!.authentication;
+    final GoogleSignInAuthentication googleAuth =
+        await googleUser!.authentication;
     final OAuthCredential credential = GoogleAuthProvider.credential(
       accessToken: googleAuth.accessToken,
       idToken: googleAuth.idToken,
@@ -20,7 +25,10 @@ class GoogleApi {
     // ---------------------------------------------------------
     // 2. firebase 회원가입,로그인 처리
     // ---------------------------------------------------------
-    await FirebaseAuth.instance.signInWithCredential(credential).then((UserCredential value) {
+    GoogleJoinData googleJoinData = GoogleJoinData();
+    await FirebaseAuth.instance
+        .signInWithCredential(credential)
+        .then((UserCredential value) {
       log('displayName : ${value.user!.displayName}');
       log('email : ${value.user!.email}');
       log('photoURL : ${value.user!.photoURL}');
@@ -28,9 +36,25 @@ class GoogleApi {
       log('phoneNumber : ${value.user!.phoneNumber}');
       log('accessToken : ${value.credential!.accessToken}');
       log('token : ${value.credential!.token}');
+
+      googleJoinData.displayName = value.user!.displayName;
+      googleJoinData.email = value.user!.email;
+      googleJoinData.phoneNumber = value.user!.phoneNumber;
+      googleJoinData.photoURL = value.user!.photoURL;
+      googleJoinData.uid = value.user!.uid;
     }).onError((error, stackTrace) {
       log('error : $error');
     });
+
+    CustRepo repo = CustRepo();
+
+    ResData res = await repo.createGoogleCust(googleJoinData);
+    if (res.code != "00") {
+      Utils.alert(res.msg.toString());
+      return;
+    }
+
+    Utils.alert("회원가입 성공 :  ${res.data}");
   }
 
   void loginProc(UserCredential data) async {
