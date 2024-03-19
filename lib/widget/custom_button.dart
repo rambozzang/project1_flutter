@@ -81,9 +81,9 @@ class CustomButton extends StatelessWidget {
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
                 colors: [
-                  Color.fromARGB(255, 167, 66, 59),
-                  Color.fromARGB(255, 137, 47, 41),
-                  Color.fromARGB(255, 120, 65, 15),
+                  Color.fromARGB(255, 38, 162, 40),
+                  Color.fromARGB(255, 34, 112, 26),
+                  Color.fromARGB(255, 13, 104, 43),
                 ],
               ),
             ),
