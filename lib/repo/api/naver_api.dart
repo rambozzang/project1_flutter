@@ -4,14 +4,44 @@
 import 'dart:convert';
 
 import 'package:flutter_naver_login/flutter_naver_login.dart';
+import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/repo/cust/cust_repo.dart';
+import 'package:project1/repo/cust/data/naver_join_data.dart';
 
 import 'package:project1/utils/log_utils.dart';
+import 'package:project1/utils/utils.dart';
 
 //  연결 주소 : https://developers.naver.com/docs/login/api/api.md
 class NaverApi {
   Future<void> signInWithNaver() async {
-    NaverLoginResult res = await FlutterNaverLogin.logIn();
-    log('Naver Login Result : $res');
+    NaverLoginResult result = await FlutterNaverLogin.logIn();
+    log('Naver Login Result : $result');
+
+    CustRepo repo = CustRepo();
+    NaverJoinData naverJoinData = NaverJoinData();
+    naverJoinData.stauts = result.status.toString();
+    NaverAccount naverAccount = NaverAccount();
+    naverAccount.nickname = result.account.nickname;
+    naverAccount.id = result.account.id.toString();
+    naverAccount.name = result.account.name;
+    naverAccount.email = result.account.email;
+    naverAccount.gender = result.account.gender;
+    naverAccount.age = result.account.age;
+    naverAccount.birthday = result.account.birthday;
+    naverAccount.birthyear = result.account.birthyear;
+    naverAccount.profileImage = result.account.profileImage;
+    naverAccount.mobile = result.account.mobile;
+
+    naverJoinData.account = naverAccount;
+
+    ResData res = await repo.createNaverCust(naverJoinData);
+    if (res.code != "00") {
+      Utils.alert(res.msg.toString());
+      return;
+    }
+
+    Utils.alert("회원가입 성공 :  ${res.data}");
+    return;
   }
 
   Future<void> buttonTokenPressed() async {

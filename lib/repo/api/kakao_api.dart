@@ -1,19 +1,10 @@
-import 'dart:developer';
-
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
-import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
-import 'package:project1/config/url_config.dart';
-import 'package:project1/repo/api/firebase_api.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
-import 'package:project1/repo/cust/data/create_data.dart';
-import 'package:project1/repo/cust/data/create_res_data.dart';
-import 'package:project1/repo/cust/data/kakao_res_data.dart';
+import 'package:project1/repo/cust/data/kakao_join_data.dart' as Join;
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:uuid/uuid.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as Kakao;
 
 // 카카오 개발문서
@@ -22,7 +13,14 @@ import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as Kakao;
 // https://velog.io/@sumong/Flutter%EC%97%90%EC%84%9C-%EC%B9%B4%EC%B9%B4%EC%98%A4-%EB%A1%9C%EA%B7%B8%EC%9D%B8-%EA%B5%AC%ED%98%84%ED%95%98%EA%B8%B0
 class KakaoApi {
   // 사용자의 추가 동의가 필요한 사용자 정보 동의항목 확인
-  List<String> scopes = ['account_email', "birthday", "birthyear", "phone_number", "profile", "account_ci"];
+  List<String> scopes = [
+    'account_email',
+    "birthday",
+    "birthyear",
+    "phone_number",
+    "profile",
+    "account_ci"
+  ];
 
   Future<void> signInWithKakaoApp() async {
     // 카카오톡 실행 가능 여부
@@ -30,7 +28,8 @@ class KakaoApi {
       log("카카오톡가 있는 경우 프로세스 1");
       try {
         // 카카오톡에 연결된 카카오계정 및 인증 정보를 사용
-        OAuthToken? token = await UserApi.instance.loginWithKakaoTalk(serviceTerms: scopes);
+        OAuthToken? token =
+            await UserApi.instance.loginWithKakaoTalk(serviceTerms: scopes);
         log('카카오톡으로 로그인 성공1 : _token :  $token ');
         loginProc(token.toString());
         await TokenManagerProvider.instance.manager.setToken(token);
@@ -43,7 +42,8 @@ class KakaoApi {
         }
         try {
           // 사용자가 카카오계정 정보를 직접 입력하지 않아도 간편하게 로그인 가능
-          OAuthToken? token = await UserApi.instance.loginWithKakaoAccount(serviceTerms: scopes);
+          OAuthToken? token = await UserApi.instance
+              .loginWithKakaoAccount(serviceTerms: scopes);
           loginProc(token.toString());
           log('카카오계정으로 로그인2 성공 : _token :  $token ');
         } catch (error) {
@@ -54,7 +54,8 @@ class KakaoApi {
       log("카카오톡가 없는 경우 프로세스 3");
       try {
         // 사용자가 카카오계정 정보를 직접 입력하지 않아도 간편하게 로그인 가능
-        OAuthToken? token = await UserApi.instance.loginWithKakaoAccount(serviceTerms: scopes);
+        OAuthToken? token =
+            await UserApi.instance.loginWithKakaoAccount(serviceTerms: scopes);
         log('카카오계정으로 로그인3 성공 : _token :  $token ');
 
         loginProc(token.accessToken.toString());
@@ -66,45 +67,50 @@ class KakaoApi {
 
   void loginProc(String token) async {
     try {
+      Kakao.User user;
+
+      user = await UserApi.instance.me();
+      log('사용자 정보 요청 성공'
+          '\nUser: ${user.toString()}');
+
       CustRepo repo = CustRepo();
-      CreateData _data = CreateData();
-      _data.authProvider = 'KAKAO';
-      _data.accessToken = token;
-      ResData res = await repo.createCust(_data);
+
+      Join.KakaoJoinData kakaoJoinData = Join.KakaoJoinData();
+      kakaoJoinData.id = user.id;
+
+      Join.KakaoAccount kakaoAccount = Join.KakaoAccount();
+      kakaoAccount.ageRange = user.kakaoAccount?.ageRange.toString();
+      kakaoAccount.birthday = user.kakaoAccount?.birthday;
+      kakaoAccount.birthdayType = user.kakaoAccount?.birthdayType.toString();
+      kakaoAccount.ci = user.kakaoAccount?.ci;
+      kakaoAccount.email = user.kakaoAccount?.email;
+      kakaoAccount.gender = user.kakaoAccount?.gender.toString();
+      kakaoAccount.name = user.kakaoAccount?.name;
+      kakaoAccount.phoneNumber = user.kakaoAccount?.phoneNumber;
+
+      Join.Profile profile = Join.Profile();
+      profile.nickname = user.kakaoAccount?.profile?.nickname;
+      profile.profileImageUrl = user.kakaoAccount?.profile?.profileImageUrl;
+      profile.thumbnailImageUrl = user.kakaoAccount?.profile?.thumbnailImageUrl;
+
+      kakaoAccount.profile = profile;
+      kakaoJoinData.kakaoAccount = kakaoAccount;
+
+      ResData res = await repo.createKakaoCust(kakaoJoinData);
       if (res.code != "00") {
         Utils.alert(res.msg.toString());
         return;
       }
-      CreateResData createResData = CreateResData.fromMap(res.data);
-      log(createResData.toString());
-      log(createResData.kakaoUserInfo.toString());
-      log(createResData.accessToken.toString());
-      //KakaoResData kakaoResData = KakaoResData.fromJson(res.data.toString());
-      // 회원가입 성공
 
-      Utils.alert("회원가입 성공 :  ${createResData.kakaoUserInfo!.kakaoAccount!.profile!.nickname!}");
+      Utils.alert("회원가입 성공 :  ${res.data}");
       return;
     } catch (e) {
       log(e.toString());
       Utils.alert(e.toString());
       return;
     }
-/*
-    Kakao.User user;
-    // try {
-    user = await UserApi.instance.me();
-    //   log('사용자 정보 요청 성공'
-    //       '\token: ${token}'
-    //       '\n회원번호: ${user.id}'
-    //       '\n닉네임: ${user.kakaoAccount?.profile?.nickname}'
-    //       '\n닉네임: ${user.kakaoAccount?.profile?.profileImageUrl}'
-    //       '\n닉네임: ${user.kakaoAccount?.profile?.thumbnailImageUrl}'
-    //       '\n이메일: ${user.kakaoAccount?.email}');
-    // } catch (error) {
-    //   print('사용자 정보 요청 실패 $error');
-    //   return;
-    // }
 
+/*
     // 사용자의 추가 동의가 필요한 사용자 정보 동의항목 확인
     List<String> scopes = [];
 
