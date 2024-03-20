@@ -1,5 +1,9 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/utils/utils.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -11,16 +15,14 @@ class AuthPage extends StatefulWidget {
 class _AuthPageState extends State<AuthPage> {
   @override
   Widget build(BuildContext context) {
+    // log(AuthCntr.to.custId.value);
+
     return Scaffold(
       body: Center(
         child: SizedBox(
-          height: 45,
-          width: 45,
-          child: Icon(
-            Icons.ac_unit,
-            size: 45,
-            color: Colors.blue,
-          ),
+          height: 65,
+          width: 65,
+          child: Utils.progressbar(),
         ),
       ),
     );

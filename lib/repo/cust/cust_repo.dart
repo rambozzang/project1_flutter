@@ -60,10 +60,17 @@ class CustRepo {
     // Delete customer
   }
   // 회원정보 조회
-  Future<void> getCust() async {
-    // Get customer
+  Future<ResData> getCust(String custId) async {
     try {
-      // AuthDio.run().get(path);
-    } catch (e) {}
+      //var url = 'http://localhost:7010/api/auth/googlejoin';
+      var url = '${UrlConfig.baseURL}/auth/googlejoin';
+
+      //  log(data.toString());
+      Response response = await dio.post(url);
+
+      return dioResponse(response);
+    } on DioException catch (e) {
+      return dioException(e);
+    } finally {}
   }
 }

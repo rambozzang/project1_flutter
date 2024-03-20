@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
-import 'package:project1/app/root/root_cntr.dart';
+import 'package:project1/app/root/cntr/root_cntr.dart';
 import 'package:project1/utils/utils.dart';
 
 class ColorPage extends StatelessWidget {
@@ -31,7 +31,8 @@ class ColorPage extends StatelessWidget {
       children: [
         InkWell(
           onTap: () {
-            Clipboard.setData(ClipboardData(text: colorName)).then((_) => Utils.alert("클립보드에 복사되었습니다."));
+            Clipboard.setData(ClipboardData(text: colorName))
+                .then((_) => Utils.alert("클립보드에 복사되었습니다."));
           },
           child: Ink(
             child: Container(

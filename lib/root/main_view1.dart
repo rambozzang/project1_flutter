@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:project1/app/root/root_cntr.dart';
+import 'package:project1/app/root/cntr/root_cntr.dart';
 import 'package:project1/widget/custom_tabbarview.dart';
 
 class MainView1 extends StatefulWidget {
@@ -11,7 +11,8 @@ class MainView1 extends StatefulWidget {
   State<MainView1> createState() => _MainView1State();
 }
 
-class _MainView1State extends State<MainView1> with SingleTickerProviderStateMixin {
+class _MainView1State extends State<MainView1>
+    with SingleTickerProviderStateMixin {
   var alignment = Alignment.centerRight;
   List<String> tabNames = ["테스트", "색상", "TextStyle", "버튼", "Badge", "메세지"];
   // 탭 바디 부분
@@ -26,7 +27,10 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
 
   @override
   void initState() {
-    RootCntr.to.tabController = TabController(vsync: this, length: tabNames.length, animationDuration: const Duration(milliseconds: 130));
+    RootCntr.to.tabController = TabController(
+        vsync: this,
+        length: tabNames.length,
+        animationDuration: const Duration(milliseconds: 130));
 
     super.initState();
   }
@@ -38,19 +42,26 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
     // 설정하기 위해 AnnotatedRegion을 사용함
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-          statusBarColor: Colors.white, statusBarBrightness: Brightness.light, statusBarIconBrightness: Brightness.dark),
+          statusBarColor: Colors.white,
+          statusBarBrightness: Brightness.light,
+          statusBarIconBrightness: Brightness.dark),
       child: Material(
         color: Colors.white,
         // child: bodyWidget(),
         child: NotificationListener<UserScrollNotification>(
           onNotification: (notification) {
             if (notification.depth >= 2) {
-              if (notification.direction == ScrollDirection.forward && RootCntr.to.hideButtonController1.offset != 0) {
-                RootCntr.to.hideButtonController1.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.ease);
+              if (notification.direction == ScrollDirection.forward &&
+                  RootCntr.to.hideButtonController1.offset != 0) {
+                RootCntr.to.hideButtonController1.animateTo(0,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.ease);
               } else if (notification.depth >= 2 &&
                   notification.direction == ScrollDirection.reverse &&
                   RootCntr.to.hideButtonController1.offset != 105) {
-                RootCntr.to.hideButtonController1.animateTo(105, duration: const Duration(milliseconds: 300), curve: Curves.ease);
+                RootCntr.to.hideButtonController1.animateTo(105,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.ease);
               }
             }
             return false;
@@ -107,8 +118,10 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
                 ),
                 // 변경사항
                 SliverOverlapAbsorber(
-                  handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-                  sliver: SliverPersistentHeader(pinned: true, delegate: TabBarDelegate(tabNames)),
+                  handle:
+                      NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+                  sliver: SliverPersistentHeader(
+                      pinned: true, delegate: TabBarDelegate(tabNames)),
                 ),
               ];
             },
@@ -148,13 +161,15 @@ class TabBarDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 0.0),
       width: double.infinity,
       color: Colors.white,
       child: TabBar(
-        labelPadding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 0.0),
+        labelPadding:
+            const EdgeInsets.symmetric(horizontal: 2.0, vertical: 0.0),
         tabAlignment: TabAlignment.start,
         labelColor: Colors.black,
         labelStyle: const TextStyle(
@@ -177,7 +192,9 @@ class TabBarDelegate extends SliverPersistentHeaderDelegate {
         ),
         controller: RootCntr.to.tabController,
         isScrollable: true,
-        tabs: [...List.generate(tabNames.length, (i) => getTabButton(tabNames[i]))],
+        tabs: [
+          ...List.generate(tabNames.length, (i) => getTabButton(tabNames[i]))
+        ],
       ),
     );
   }
@@ -188,7 +205,11 @@ class TabBarDelegate extends SliverPersistentHeaderDelegate {
       padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
       child: Tab(
         height: 45,
-        child: Text(title, style: TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold)),
+        child: Text(title,
+            style: TextStyle(
+                fontSize: 14,
+                color: Colors.black,
+                fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -206,7 +227,8 @@ class CategoryBreadcrumbs extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
       color: Colors.white,
       height: 48,

@@ -31,23 +31,27 @@ void backgroundHandler(NotificationResponse details) {
 void showFcmNoti(RemoteMessage message) {
   RemoteNotification? notification = message.notification;
   // AndroidNotification? android = message.notification?.android;
-  const AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
-      'high_importance_channel', 'high_importance_notification',
-      priority: Priority.max,
-      importance: Importance.max,
-      channelDescription: "KOS Importance notification",
-      icon: '@mipmap/ic_launcher',
-      showWhen: false);
+  const AndroidNotificationDetails androidNotificationDetails =
+      AndroidNotificationDetails(
+          'high_importance_channel', 'high_importance_notification',
+          priority: Priority.max,
+          importance: Importance.max,
+          channelDescription: "KOS Importance notification",
+          icon: '@mipmap/ic_launcher',
+          showWhen: false);
 
   if (notification != null && !kIsWeb) {
     // var seq = message.data["seq"];
-    Lo.g("### main_page  showFlutterNotification :  notification.hashCode : ${notification.hashCode}");
+    Lo.g(
+        "### main_page  showFlutterNotification :  notification.hashCode : ${notification.hashCode}");
     // 웹이 아니면서 안드로이드이고, 알림이 있는경우
     FlutterLocalNotificationsPlugin().show(
       notification.hashCode,
       notification.title,
       notification.body,
-      const NotificationDetails(android: androidNotificationDetails, iOS: DarwinNotificationDetails(badgeNumber: 1)),
+      const NotificationDetails(
+          android: androidNotificationDetails,
+          iOS: DarwinNotificationDetails(badgeNumber: 1)),
     );
   }
 }
@@ -55,19 +59,24 @@ void showFcmNoti(RemoteMessage message) {
 void initializeFCM() async {
   final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
   await flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-      ?.createNotificationChannel(
-          const AndroidNotificationChannel('high_importance_channel', 'high_importance_notification', importance: Importance.max));
+      .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(const AndroidNotificationChannel(
+          'high_importance_channel', 'high_importance_notification',
+          importance: Importance.max));
 
   await flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+      .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>()
       ?.requestNotificationsPermission();
 
-  final DarwinInitializationSettings initializationSettingsDarwin = DarwinInitializationSettings(
+  final DarwinInitializationSettings initializationSettingsDarwin =
+      DarwinInitializationSettings(
     requestAlertPermission: false,
     requestBadgePermission: false,
     requestSoundPermission: false,
-    onDidReceiveLocalNotification: (int id, String? title, String? body, String? payload) async {
+    onDidReceiveLocalNotification:
+        (int id, String? title, String? body, String? payload) async {
       // didReceiveLocalNotificationStream.add(
       //   ReceivedNotification(
       //     id: id,
@@ -94,7 +103,8 @@ void initializeFCM() async {
   );
   if (Platform.isIOS) {
     // iOS foreground notification 권한
-    await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+    await FirebaseMessaging.instance
+        .setForegroundNotificationPresentationOptions(
       alert: true,
       badge: true,
       sound: true,
@@ -152,10 +162,10 @@ void initializeFCM() async {
   // debugPrint("firebaseToken : $firebaseToken");
 }
 
-Future<void> initGet() async {
-  Get.put(() => LifeCycleGetx());
-  Get.put(() => AuthCntr());
-}
+// Future<void> initGet() async {
+//   Get.put(() => LifeCycleGetx());
+//   Get.put(() => AuthCntr());
+// }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -180,26 +190,36 @@ void main() async {
   // 안드로이드  : Network : CERTIFICATE_VERIFY_FAILED 오류 수정
   HttpOverrides.global = MyHttpOverrides();
 
-//  await initGet();
-
-  runApp(
-    GetMaterialApp(
-      title: "Application",
-      debugShowCheckedModeBanner: false,
-      builder: BotToastInit(),
-      theme: AppTheme.theme,
-      initialRoute: AppPages.INITIAL,
-      getPages: AppPages.routes,
-    ),
-  );
+  runApp(const TigerBk());
 }
-
-//   r 27, g 46, b 75
 
 // 안드로이드  : Network CERTIFICATE_VERIFY_FAILED 오류 수정
 class MyHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
-    return super.createHttpClient(context)..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+    return super.createHttpClient(context)
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+  }
+}
+
+class TigerBk extends StatelessWidget {
+  const TigerBk({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return GetMaterialApp(
+      title: "Application",
+      useInheritedMediaQuery: true,
+      debugShowCheckedModeBanner: false,
+      builder: BotToastInit(),
+      theme: AppTheme.theme,
+      initialRoute: AppPages.INITIAL,
+      initialBinding: BindingsBuilder(() {
+        Get.put(LifeCycleGetx());
+        Get.put(AuthCntr());
+      }),
+      getPages: AppPages.routes,
+    );
   }
 }
