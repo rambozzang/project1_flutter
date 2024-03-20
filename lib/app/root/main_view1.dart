@@ -1,8 +1,10 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
-import 'package:project1/app/root/root_cntr.dart';
+import 'package:project1/app/root/cntr/root_cntr.dart';
 import 'package:project1/app/test/color_page.dart';
 import 'package:project1/app/test/test_link_page.dart';
 import 'package:project1/widget/custom_tabbarview.dart';
@@ -14,7 +16,8 @@ class MainView1 extends StatefulWidget {
   State<MainView1> createState() => _MainView1State();
 }
 
-class _MainView1State extends State<MainView1> with SingleTickerProviderStateMixin {
+class _MainView1State extends State<MainView1>
+    with SingleTickerProviderStateMixin {
   var alignment = Alignment.centerRight;
 
   List<String> tabNames = ["테스트", "색상", "TextStyle", "버튼", "Badge"];
@@ -23,14 +26,23 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
   List<dynamic> tabBodys = [
     TestLinkPage(key: ValueKey(1)),
     const ColorPage(key: ValueKey(2)),
-    const Center(child: Text("asdfasdfasdf", style: TextStyle(fontSize: 30, color: Colors.black))),
-    const Center(child: Text("통합 게시판", style: TextStyle(fontSize: 30, color: Colors.black))),
-    const Center(child: Text("채팅 화면", style: TextStyle(fontSize: 30, color: Colors.black))),
+    const Center(
+        child: Text("asdfasdfasdf",
+            style: TextStyle(fontSize: 30, color: Colors.black))),
+    const Center(
+        child: Text("통합 게시판",
+            style: TextStyle(fontSize: 30, color: Colors.black))),
+    const Center(
+        child:
+            Text("채팅 화면", style: TextStyle(fontSize: 30, color: Colors.black))),
   ];
 
   @override
   void initState() {
-    RootCntr.to.tabController = TabController(vsync: this, length: tabNames.length, animationDuration: const Duration(milliseconds: 130));
+    RootCntr.to.tabController = TabController(
+        vsync: this,
+        length: tabNames.length,
+        animationDuration: const Duration(milliseconds: 130));
 
     super.initState();
   }
@@ -42,19 +54,26 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
     // 설정하기 위해 AnnotatedRegion을 사용함
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-          statusBarColor: Colors.white, statusBarBrightness: Brightness.light, statusBarIconBrightness: Brightness.dark),
+          statusBarColor: Colors.white,
+          statusBarBrightness: Brightness.light,
+          statusBarIconBrightness: Brightness.dark),
       child: Material(
         color: Colors.white,
         // child: bodyWidget(),
         child: NotificationListener<UserScrollNotification>(
           onNotification: (notification) {
             if (notification.depth >= 2) {
-              if (notification.direction == ScrollDirection.forward && RootCntr.to.hideButtonController1.offset != 0) {
-                RootCntr.to.hideButtonController1.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.ease);
+              if (notification.direction == ScrollDirection.forward &&
+                  RootCntr.to.hideButtonController1.offset != 0) {
+                RootCntr.to.hideButtonController1.animateTo(0,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.ease);
               } else if (notification.depth >= 2 &&
                   notification.direction == ScrollDirection.reverse &&
                   RootCntr.to.hideButtonController1.offset != 105) {
-                RootCntr.to.hideButtonController1.animateTo(105, duration: const Duration(milliseconds: 300), curve: Curves.ease);
+                RootCntr.to.hideButtonController1.animateTo(105,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.ease);
               }
             }
             return false;
@@ -89,16 +108,16 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
                   centerTitle: false,
                   backgroundColor: Colors.white,
                   title: const Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.start,
+                    // crossAxisAlignment: CrossAxisAlignment.start,
+                    // mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       // SvgPicture.asset(
                       //   'assets/appicon.svg',
                       //   width: 30,
                       // ),
-                      SizedBox(
-                        width: 10,
-                      ),
+                      // SizedBox(
+                      //   width: 10,
+                      // ),
                       Text('Bk Investment',
                           style: TextStyle(
                               color: Colors.black,
@@ -111,8 +130,10 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
                 ),
                 // 변경사항
                 SliverOverlapAbsorber(
-                  handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-                  sliver: SliverPersistentHeader(pinned: true, delegate: TabBarDelegate(tabNames)),
+                  handle:
+                      NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+                  sliver: SliverPersistentHeader(
+                      pinned: true, delegate: TabBarDelegate(tabNames)),
                 ),
               ];
             },
@@ -152,13 +173,15 @@ class TabBarDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 0.0),
       width: double.infinity,
       color: Colors.white,
       child: TabBar(
-        labelPadding: const EdgeInsets.symmetric(horizontal: 1.5, vertical: 0.0),
+        labelPadding:
+            const EdgeInsets.symmetric(horizontal: 1.5, vertical: 0.0),
         tabAlignment: TabAlignment.start,
         labelColor: Colors.black,
         labelStyle: const TextStyle(
@@ -167,7 +190,8 @@ class TabBarDelegate extends SliverPersistentHeaderDelegate {
           fontWeight: FontWeight.bold,
         ),
         padding: const EdgeInsets.all(0.0),
-        // indicatorColor: Colors.transparent,
+        indicatorColor: Colors.transparent,
+        dividerColor: Colors.grey[300],
         unselectedLabelStyle: TextStyle(
           fontSize: 13,
           color: Colors.grey[100],
@@ -177,11 +201,13 @@ class TabBarDelegate extends SliverPersistentHeaderDelegate {
         indicatorSize: TabBarIndicatorSize.label,
         //indicatorColor: Colors.white,
         indicator: UnderlineTabIndicator(
-          borderSide: BorderSide(color: Colors.grey.shade600, width: 2.0),
+          borderSide: BorderSide(color: Colors.grey.shade600, width: 3.0),
         ),
         controller: RootCntr.to.tabController,
         isScrollable: true,
-        tabs: [...List.generate(tabNames.length, (i) => getTabButton(tabNames[i]))],
+        tabs: [
+          ...List.generate(tabNames.length, (i) => getTabButton(tabNames[i]))
+        ],
       ),
     );
   }
@@ -192,7 +218,11 @@ class TabBarDelegate extends SliverPersistentHeaderDelegate {
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
       child: Tab(
         height: 45,
-        child: Text(title, style: const TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold)),
+        child: Text(title,
+            style: const TextStyle(
+                fontSize: 14,
+                color: Colors.black,
+                fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -210,7 +240,8 @@ class CategoryBreadcrumbs extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
       color: Colors.white,
       height: 48,

@@ -3,7 +3,7 @@ import 'package:project1/app/%08join/join_page.dart';
 import 'package:project1/app/auth/auth_page.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/onboarding/onboarding_page.dart';
-import 'package:project1/app/root/root_cntr.dart';
+import 'package:project1/app/root/cntr/root_cntr.dart';
 import 'package:project1/app/root/root_page.dart';
 
 abstract class AppPages {
@@ -20,7 +20,7 @@ abstract class AppPages {
     GetPage(
       name: '/AuthPage',
       page: () => const AuthPage(),
-      binding: AuthBinding(),
+      // binding: AuthBinding(),
     ),
     GetPage(
       name: '/JoinPage',
@@ -31,7 +31,7 @@ abstract class AppPages {
       name: '/rootPage',
       page: () => const RootPage(),
       binding: RootCntrBinding(),
-      transition: Transition.downToUp,
+      //  transition: Transition.downToUp,
     )
   ];
 }

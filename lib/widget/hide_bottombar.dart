@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-import 'package:project1/app/root/root_cntr.dart';
+import 'package:project1/app/root/cntr/root_cntr.dart';
 
 class HideBottomBar extends StatefulWidget {
   final Widget children;

@@ -4,7 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/root/main_view1.dart';
-import 'package:project1/app/root/root_cntr.dart';
+import 'package:project1/app/root/cntr/root_cntr.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/fade_stack.dart';
 import 'package:project1/widget/hide_bottombar.dart';
@@ -91,7 +91,8 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
               },
               child: SafeArea(
                 child: Obx(() => FadeIndexedStack(
-                    index: RootCntr.to.rootPageIndex.value, // RootCntr.to.rootPageIndex.value,
+                    index: RootCntr.to.rootPageIndex
+                        .value, // RootCntr.to.rootPageIndex.value,
                     key: scaffoldKey,
                     children: mainlist)),
               ),
@@ -107,14 +108,16 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
           ],
         ),
         extendBodyBehindAppBar: true,
-        bottomNavigationBar: Obx(() => HideBottomBar(children: makeBottomItem())),
+        bottomNavigationBar:
+            Obx(() => HideBottomBar(children: makeBottomItem())),
       ),
     );
   }
 
   BottomNavigationBarItem bottomItem(IconData icondata, String label) {
     // 4번 클릭시 화면 호출
-    if (RootCntr.to.rootPageIndex.value == 1 || RootCntr.to.rootPageIndex.value == 2) {
+    if (RootCntr.to.rootPageIndex.value == 1 ||
+        RootCntr.to.rootPageIndex.value == 2) {
       //   WidgetsBinding.instance.addPostFrameCallback((_) => goPage(RootCntr.to.rootPageIndex.value));
       //   WidgetsBinding.instance.addPostFrameCallback((_) => goPage(RootCntr.to.rootPageIndex.value));
     }

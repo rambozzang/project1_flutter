@@ -4,7 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 
 import 'package:project1/app/root/main_view1.dart';
-import 'package:project1/app/root/root_cntr.dart';
+import 'package:project1/app/root/cntr/root_cntr.dart';
 
 class TestLinkPage extends StatefulWidget {
   TestLinkPage({Key? key}) : super(key: key);
@@ -43,7 +43,8 @@ class _TestLinkPageState extends State<TestLinkPage> {
                       const Gap(20),
                       GridView.builder(
                         shrinkWrap: true,
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2, // 1개의 행에 항목을 3개씩
                           childAspectRatio: 4.5 / 1, //item 의 가로 1, 세로 1 의 비율
                           mainAxisSpacing: 1, //수평 Padding
@@ -54,7 +55,9 @@ class _TestLinkPageState extends State<TestLinkPage> {
                           return Container(
                             // color: Colors.grey,
                             //   child: Text('f'),
-                            child: customButton(testMenuList[index]['name'].toString(), testMenuList[index]['link'].toString()),
+                            child: customButton(
+                                testMenuList[index]['name'].toString(),
+                                testMenuList[index]['link'].toString()),
                           );
                         },
                       ),
@@ -108,14 +111,16 @@ class _TestLinkPageState extends State<TestLinkPage> {
                   //   ),
                 ),
               ),
-              const SliverPersistentHeader(pinned: true, delegate: CategoryBreadcrumbs()),
+              const SliverPersistentHeader(
+                  pinned: true, delegate: CategoryBreadcrumbs()),
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                     (context, index) => Container(
                           height: 45,
                           // 보는 재미를 위해 인덱스에 아무 숫자나 곱한 뒤 255로
                           // 나눠 다른 색이 보이도록 함.
-                          color: Color.fromRGBO((index * 45) % 255, (index * 70) % 255, (index * 25), 1.0),
+                          color: Color.fromRGBO((index * 45) % 255,
+                              (index * 70) % 255, (index * 25), 1.0),
                         ),
                     childCount: 40),
               )
@@ -143,7 +148,11 @@ class _TestLinkPageState extends State<TestLinkPage> {
             )),
         onPressed: () {
           HapticFeedback.heavyImpact();
-          Get.toNamed(path, arguments: {'loanNo': '1234123333', 'wkCd': 'CUST', 'attcFilCd': '23452434'});
+          Get.toNamed(path, arguments: {
+            'loanNo': '1234123333',
+            'wkCd': 'CUST',
+            'attcFilCd': '23452434'
+          });
         },
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -152,7 +161,10 @@ class _TestLinkPageState extends State<TestLinkPage> {
             // const Gap(4),
             Text(
               '💥 $message1',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.normal, color: Colors.black),
+              style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.normal,
+                  color: Colors.black),
             ),
           ],
         ),
