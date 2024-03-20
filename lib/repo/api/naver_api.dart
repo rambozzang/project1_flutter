@@ -4,6 +4,7 @@
 import 'dart:convert';
 
 import 'package:flutter_naver_login/flutter_naver_login.dart';
+import 'package:get/get.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/naver_join_data.dart';
@@ -41,6 +42,7 @@ class NaverApi {
     }
 
     Utils.alert("회원가입 성공 :  ${res.data}");
+    Get.toNamed('/rootPage');
     return;
   }
 
