@@ -12,14 +12,17 @@ class _AuthPageState extends State<AuthPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: Center(
-            child: SizedBox(
-                height: 45,
-                width: 45,
-                child: Image.asset(
-                  "assets/loading-optimize.gif",
-                  height: 45,
-                  width: 45,
-                ))));
+      body: Center(
+        child: SizedBox(
+          height: 45,
+          width: 45,
+          child: Icon(
+            Icons.ac_unit,
+            size: 45,
+            color: Colors.blue,
+          ),
+        ),
+      ),
+    );
   }
 }

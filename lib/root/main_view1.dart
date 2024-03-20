@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-
 import 'package:project1/app/root/root_cntr.dart';
-import 'package:project1/app/test/color_page.dart';
-import 'package:project1/app/test/test_link_page.dart';
 import 'package:project1/widget/custom_tabbarview.dart';
 
 class MainView1 extends StatefulWidget {
@@ -16,16 +13,15 @@ class MainView1 extends StatefulWidget {
 
 class _MainView1State extends State<MainView1> with SingleTickerProviderStateMixin {
   var alignment = Alignment.centerRight;
-
-  List<String> tabNames = ["테스트", "색상", "TextStyle", "버튼", "Badge"];
-
-// 탭 바디 부분
+  List<String> tabNames = ["테스트", "색상", "TextStyle", "버튼", "Badge", "메세지"];
+  // 탭 바디 부분
   List<dynamic> tabBodys = [
-    TestLinkPage(key: ValueKey(1)),
-    const ColorPage(key: ValueKey(2)),
-    const Center(child: Text("asdfasdfasdf", style: TextStyle(fontSize: 30, color: Colors.black))),
-    const Center(child: Text("통합 게시판", style: TextStyle(fontSize: 30, color: Colors.black))),
-    const Center(child: Text("채팅 화면", style: TextStyle(fontSize: 30, color: Colors.black))),
+    const Text('테스트테스트테스트1'),
+    const Text('테스트테스트테스트2'),
+    const Text('테스트테스트테스트3'),
+    const Text('테스트테스트테스트4'),
+    const Text('테스트테스트테스트5'),
+    const Text('테스트테스트테스트6'),
   ];
 
   @override
@@ -88,7 +84,7 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
                   elevation: 0,
                   centerTitle: false,
                   backgroundColor: Colors.white,
-                  title: const Row(
+                  title: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
@@ -96,10 +92,10 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
                       //   'assets/appicon.svg',
                       //   width: 30,
                       // ),
-                      SizedBox(
+                      const SizedBox(
                         width: 10,
                       ),
-                      Text('Bk Investment',
+                      const Text('디자인 가이드',
                           style: TextStyle(
                               color: Colors.black,
                               fontWeight: FontWeight.w700,
@@ -158,26 +154,26 @@ class TabBarDelegate extends SliverPersistentHeaderDelegate {
       width: double.infinity,
       color: Colors.white,
       child: TabBar(
-        labelPadding: const EdgeInsets.symmetric(horizontal: 1.5, vertical: 0.0),
+        labelPadding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 0.0),
         tabAlignment: TabAlignment.start,
         labelColor: Colors.black,
         labelStyle: const TextStyle(
           fontFamily: "NotoSansKR",
-          fontSize: 14,
+          fontSize: 18,
           fontWeight: FontWeight.bold,
         ),
         padding: const EdgeInsets.all(0.0),
         // indicatorColor: Colors.transparent,
-        unselectedLabelStyle: TextStyle(
+        unselectedLabelStyle: const TextStyle(
           fontSize: 13,
-          color: Colors.grey[100],
+          color: Colors.grey,
           fontFamily: "NotoSansKR",
         ),
         unselectedLabelColor: Colors.white,
         indicatorSize: TabBarIndicatorSize.label,
-        //indicatorColor: Colors.white,
-        indicator: UnderlineTabIndicator(
-          borderSide: BorderSide(color: Colors.grey.shade600, width: 2.0),
+        // indicatorColor: Colors.white,
+        indicator: const UnderlineTabIndicator(
+          borderSide: BorderSide(color: Colors.grey, width: 2.0),
         ),
         controller: RootCntr.to.tabController,
         isScrollable: true,
@@ -189,10 +185,10 @@ class TabBarDelegate extends SliverPersistentHeaderDelegate {
   Widget getTabButton(String title) {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
       child: Tab(
         height: 45,
-        child: Text(title, style: const TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold)),
+        child: Text(title, style: TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -218,11 +214,11 @@ class CategoryBreadcrumbs extends SliverPersistentHeaderDelegate {
       padding: EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          const Text("전체", style: TextStyle(color: Colors.black)),
+          const Text("설정", style: TextStyle(color: Colors.black)),
           const SizedBox(width: 4),
           const Text(">", style: TextStyle(color: Colors.black)),
           const SizedBox(width: 4),
-          const Text("오늘의 뉴스", style: TextStyle(color: Colors.black)),
+          const Text("오늘의 날씨", style: TextStyle(color: Colors.black)),
           const Spacer(),
           TextButton(
             onPressed: () {},

@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:get/get.dart';
 
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -9,15 +10,14 @@ import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 
 class GoogleApi {
-  void signInWithGoogle() async {
+  Future<void> signInWithGoogle() async {
     // Future<UserCredential> signInWithGoogle() async {
     // ---------------------------------------------------------
     // 1. Google 로그인 진행
     // ---------------------------------------------------------
     final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
     log('googleUser : $googleUser');
-    final GoogleSignInAuthentication googleAuth =
-        await googleUser!.authentication;
+    final GoogleSignInAuthentication googleAuth = await googleUser!.authentication;
     final OAuthCredential credential = GoogleAuthProvider.credential(
       accessToken: googleAuth.accessToken,
       idToken: googleAuth.idToken,
@@ -26,9 +26,7 @@ class GoogleApi {
     // 2. firebase 회원가입,로그인 처리
     // ---------------------------------------------------------
     GoogleJoinData googleJoinData = GoogleJoinData();
-    await FirebaseAuth.instance
-        .signInWithCredential(credential)
-        .then((UserCredential value) {
+    await FirebaseAuth.instance.signInWithCredential(credential).then((UserCredential value) {
       log('displayName : ${value.user!.displayName}');
       log('email : ${value.user!.email}');
       log('photoURL : ${value.user!.photoURL}');
@@ -55,6 +53,7 @@ class GoogleApi {
     }
 
     Utils.alert("회원가입 성공 :  ${res.data}");
+    Get.toNamed('/rootPage');
   }
 
   void loginProc(UserCredential data) async {

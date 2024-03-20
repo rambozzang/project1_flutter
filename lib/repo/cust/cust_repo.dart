@@ -15,8 +15,7 @@ class CustRepo {
   // KAKAO 회원가입
   Future<ResData> createKakaoCust(KakaoJoinData data) async {
     try {
-      var url = 'http://localhost:7010/api/auth/kakaojoin';
-      // var url = '${UrlConfig.baseURL}/auth/joinbytoken';
+      var url = '${UrlConfig.baseURL}/auth/kakaojoin';
       log(data.toString());
       Response response = await dio.post(url, data: data.toJson());
       return dioResponse(response);
@@ -28,8 +27,7 @@ class CustRepo {
   // Naver 회원가입
   Future<ResData> createNaverCust(NaverJoinData data) async {
     try {
-      var url = 'http://localhost:7010/api/auth/naverjoin';
-      // var url = '${UrlConfig.baseURL}/auth/naverjoin';
+      var url = '${UrlConfig.baseURL}/auth/naverjoin';
 
       log(data.toString());
       Response response = await dio.post(url, data: data.toJson());
@@ -42,8 +40,8 @@ class CustRepo {
   // Google 회원가입
   Future<ResData> createGoogleCust(GoogleJoinData data) async {
     try {
-      var url = 'http://localhost:7010/api/auth/googlejoin';
-      // var url = '${UrlConfig.baseURL}/auth/naverjoin';
+      //var url = 'http://localhost:7010/api/auth/googlejoin';
+      var url = '${UrlConfig.baseURL}/auth/googlejoin';
 
       log(data.toString());
       Response response = await dio.post(url, data: data.toJson());
