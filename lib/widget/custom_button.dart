@@ -62,6 +62,14 @@ class CustomButton extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         decoration: ShapeDecoration(
           color: type != 'XL' ? (!isEnable ? Colors.white : null) : null,
+          shadows: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.5),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(0, 3), // changes position of shadow
+            ),
+          ],
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: type != 'XL' ? (!isEnable ? const BorderSide(width: 1, color: Colors.grey) : BorderSide.none) : BorderSide.none,

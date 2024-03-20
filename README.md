@@ -30,6 +30,8 @@ samples, guidance on mobile development, and a full API reference.
     #] flutterfire configure --project=project1-c07d1   
 
 ## google_sign_in 패키지 로그인 구현
+ - flutter 에서 구글 로그인 및 firebase 사용자 생성까지 가능하여 백엔드에서는 회원테이블에 생성만한다.
+   (네이버,카카오는 백엔드에서 firebase 및 회원정보 테이블 생성을 담당)
  - https://velog.io/@qazws78941/FlutterGoogle-Login-%EA%B5%AC%ED%98%84
  - https://github.com/flutter/packages/tree/main/packages/google_sign_in/google_sign_in
 
@@ -70,9 +72,13 @@ samples, guidance on mobile development, and a full API reference.
 ## kakao 패키지 로그인 구현
 https://devtalk.kakao.com/t/koe009-invalid-android-key-hash-or-ios-bundle-id-or-web-site-url/131520
 
-
 1.앱사용 등록
     https://developers.kakao.com/console/app/1049247/config/platform 
+
+2.앱 사용 등록시 조회 항목 재정의 필요 추후예정    
+
+## Naver 패키지 로그인 구현
+1.앱사용으로 별다른 셋팅없이 구현가능
 
 
 
