@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:project1/config/url_config.dart';
 import 'package:project1/repo/api/auth_dio.dart';
 import 'package:project1/repo/common/res_data.dart';
-import 'package:project1/repo/cust/data/create_data.dart';
 import 'package:project1/repo/cust/data/google_join_data.dart';
 import 'package:project1/repo/cust/data/kakao_join_data.dart';
 import 'package:project1/repo/cust/data/naver_join_data.dart';
@@ -60,13 +59,14 @@ class CustRepo {
     // Delete customer
   }
   // 회원정보 조회
-  Future<ResData> getCust(String custId) async {
+  Future<ResData> login(String custId, String fcmId) async {
     try {
-      //var url = 'http://localhost:7010/api/auth/googlejoin';
-      var url = '${UrlConfig.baseURL}/auth/googlejoin';
+      //var url = 'http://localhost:7010/api/auth/login';
+      var url = '${UrlConfig.baseURL}/auth/login';
 
       //  log(data.toString());
-      Response response = await dio.post(url);
+      Response response = await dio
+          .post(url, queryParameters: {'custId': custId, 'fcmId': fcmId});
 
       return dioResponse(response);
     } on DioException catch (e) {

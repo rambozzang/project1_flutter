@@ -33,7 +33,10 @@ mixin SecureStorage {
   }
 
   Future<(String?, String?)> getAllData() async {
-    return (await storage.read(key: "MEMB_NO"), await storage.read(key: "AUTH_METHOD"));
+    return (
+      await storage.read(key: "CUST_ID"),
+      await storage.read(key: "AUTH_METHOD")
+    );
   }
 
   Future<void> removeAll() async {

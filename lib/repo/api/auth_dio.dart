@@ -151,7 +151,11 @@ ResData dioException(DioException e) {
     try {
       message = ResData.fromMap(e.response!.data).msg!;
     } catch (e1) {
-      message = ResData.fromJson(e.response!.data).msg!;
+      try {
+        message = ResData.fromJson(e.response!.data).msg!;
+      } catch (e2) {
+        return ResData(code: "99", msg: message);
+      }
     }
   }
 
