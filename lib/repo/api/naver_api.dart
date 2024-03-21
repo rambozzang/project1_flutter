@@ -5,15 +5,17 @@ import 'dart:convert';
 
 import 'package:flutter_naver_login/flutter_naver_login.dart';
 import 'package:get/get.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/naver_join_data.dart';
+import 'package:project1/repo/secure_storge.dart';
 
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 
 //  연결 주소 : https://developers.naver.com/docs/login/api/api.md
-class NaverApi {
+class NaverApi with SecureStorage {
   Future<void> signInWithNaver() async {
     NaverLoginResult result = await FlutterNaverLogin.logIn();
     log('Naver Login Result : $result');
@@ -42,7 +44,9 @@ class NaverApi {
     }
 
     Utils.alert("회원가입 성공 :  ${res.data}");
+
     Get.toNamed('/rootPage');
+    AuthCntr.to.signUpProc(naverJoinData.account!.id.toString());
     return;
   }
 

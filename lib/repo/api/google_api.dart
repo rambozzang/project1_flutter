@@ -2,14 +2,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/google_join_data.dart';
+import 'package:project1/repo/secure_storge.dart';
 
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 
-class GoogleApi {
+class GoogleApi with SecureStorage {
   Future<void> signInWithGoogle() async {
     // Future<UserCredential> signInWithGoogle() async {
     // ---------------------------------------------------------
@@ -53,11 +55,7 @@ class GoogleApi {
     }
 
     Utils.alert("회원가입 성공 :  ${res.data}");
-    Get.toNamed('/rootPage');
-  }
-
-  void loginProc(UserCredential data) async {
-    log('loginProc : UserCredential :  $data ');
+    AuthCntr.to.signUpProc(googleJoinData.uid.toString());
   }
 
   void logout() async {

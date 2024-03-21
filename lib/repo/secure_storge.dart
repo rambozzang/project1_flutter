@@ -14,23 +14,21 @@ mixin SecureStorage {
   );
 
   // 사용자 ID 저장(수정)
-  Future<void> saveCustId(String membNo) async {
-    debugPrint("[Storage Action] : saveCustId('$membNo')");
-    await storage.write(key: "CUST_ID", value: membNo);
+  Future<void> saveCustId(String custId) async {
+    debugPrint("[Storage Action] : saveCustId('$custId')");
+    await storage.write(key: "CUST_ID", value: custId);
   }
 
   // 사용자 ID 조회
   Future<String?> getCustId() async {
-    String? membNo = await storage.read(key: "CUST_ID");
-    debugPrint("[Storage Action] : getCustId('$membNo')");
-    //테스트를위한 하드코딩
-    return '202309120001';
-    // return membNo;
+    String? custId = await storage.read(key: "CUST_ID");
+    debugPrint("[Storage Action] : getCustId('$custId')");
+    return custId;
   }
 
   // 사용자 ID 삭제
-  Future<void> removeCustId(String membNo) async {
-    debugPrint("[Storage Action] : removeCustId('$membNo')");
+  Future<void> removeCustId(String custId) async {
+    debugPrint("[Storage Action] : removeCustId('$custId')");
     await storage.delete(key: "CUST_ID");
   }
 
