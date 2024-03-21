@@ -18,7 +18,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return OnBoardingSlider(
       finishButtonText: '회원 가입',
       onFinish: () {
-        Get.toNamed('/LoginPage');
+        Get.toNamed('/JoinPage');
       },
       finishButtonTextStyle: const TextStyle(
         fontSize: 18,
@@ -29,7 +29,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         backgroundColor: const Color.fromARGB(255, 81, 139, 79),
         elevation: 8,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(35),
+          borderRadius: BorderRadius.circular(15),
         ),
       ),
       // skipTextButton: const Text(

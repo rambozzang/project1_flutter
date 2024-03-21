@@ -42,7 +42,7 @@ class AuthCntr extends GetxController with SecureStorage {
     Lo.g("custId : ${custId.value}");
 
     if (StringUtils.isEmpty(custId.value)) {
-      Get.offAndToNamed("/onBoarding");
+      Get.offAndToNamed("/OnboardingPage");
       return;
     }
     //fcmID 발급
@@ -58,5 +58,13 @@ class AuthCntr extends GetxController with SecureStorage {
     isLogged.value = true;
     Get.toNamed("/rootPage");
     return;
+  }
+
+  void login(String custId) {}
+
+  //회원가입시
+  void signUpProc(String custId) {
+    saveCustId(custId);
+    Get.offAndToNamed('/rootPage');
   }
 }

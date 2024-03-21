@@ -1,9 +1,11 @@
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/kakao_join_data.dart' as Join;
+import 'package:project1/repo/secure_storge.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as Kakao;
@@ -12,7 +14,7 @@ import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as Kakao;
 // https://developers.kakao.com/docs/latest/ko/kakaologin/flutter
 // https://velog.io/@qazws78941/FlutterKakao-login-api%EB%A5%BC-%EC%9D%B4%EC%9A%A9%ED%95%9C-%EB%A1%9C%EA%B7%B8%EC%9D%B8
 // https://velog.io/@sumong/Flutter%EC%97%90%EC%84%9C-%EC%B9%B4%EC%B9%B4%EC%98%A4-%EB%A1%9C%EA%B7%B8%EC%9D%B8-%EA%B5%AC%ED%98%84%ED%95%98%EA%B8%B0
-class KakaoApi {
+class KakaoApi with SecureStorage {
   // 사용자의 추가 동의가 필요한 사용자 정보 동의항목 확인
   List<String> scopes = ['account_email', "birthday", "birthyear", "phone_number", "profile", "account_ci"];
 
@@ -24,7 +26,7 @@ class KakaoApi {
         // 카카오톡에 연결된 카카오계정 및 인증 정보를 사용
         OAuthToken? token = await UserApi.instance.loginWithKakaoTalk(serviceTerms: scopes);
         log('카카오톡으로 로그인 성공1 : _token :  $token ');
-        loginProc(token.toString());
+        signUpProc(token.toString());
         await TokenManagerProvider.instance.manager.setToken(token);
       } catch (error) {
         log('카카오톡으로 로그인1 실패 $error');
@@ -36,7 +38,7 @@ class KakaoApi {
         try {
           // 사용자가 카카오계정 정보를 직접 입력하지 않아도 간편하게 로그인 가능
           OAuthToken? token = await UserApi.instance.loginWithKakaoAccount(serviceTerms: scopes);
-          loginProc(token.toString());
+          signUpProc(token.toString());
           log('카카오계정으로 로그인2 성공 : _token :  $token ');
         } catch (error) {
           log('카카오계정으로 로그인2 실패 $error');
@@ -49,14 +51,14 @@ class KakaoApi {
         OAuthToken? token = await UserApi.instance.loginWithKakaoAccount(serviceTerms: scopes);
         log('카카오계정으로 로그인3 성공 : _token :  $token ');
 
-        loginProc(token.accessToken.toString());
+        signUpProc(token.accessToken.toString());
       } catch (error) {
         log('카카오계정으로 로그인3 실패 $error');
       }
     }
   }
 
-  void loginProc(String token) async {
+  void signUpProc(String token) async {
     try {
       Kakao.User user;
 
@@ -94,7 +96,8 @@ class KakaoApi {
       }
 
       Utils.alert("회원가입 성공 :  ${res.data}");
-      Get.toNamed('/rootPage');
+
+      AuthCntr.to.signUpProc(kakaoJoinData.id.toString());
       return;
     } catch (e) {
       log(e.toString());
