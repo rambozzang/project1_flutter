@@ -94,6 +94,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
       onPointerMove: handleUserInteraction,
       onPointerUp: handleUserInteraction,
       child: Scaffold(
+        // backgroundColor: Colors.transparent,
         body: Stack(
           children: [
             Positioned.fill(
@@ -148,10 +149,10 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     );
   }
 
-  BottomNavigationBar makeBottomItem() {
+  Widget makeBottomItem() {
     return BottomNavigationBar(
       currentIndex: RootCntr.to.rootPageIndex.value,
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent,
       showSelectedLabels: true,
       showUnselectedLabels: true,
       iconSize: 22,

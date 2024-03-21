@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 
 import 'package:project1/app/root/cntr/root_cntr.dart';
 import 'package:project1/app/test/color_page.dart';
@@ -107,7 +108,7 @@ class _MainView1State extends State<MainView1>
                   elevation: 0,
                   centerTitle: false,
                   backgroundColor: Colors.white,
-                  title: const Row(
+                  title: Row(
                     // crossAxisAlignment: CrossAxisAlignment.start,
                     // mainAxisAlignment: MainAxisAlignment.start,
                     children: [
@@ -118,8 +119,9 @@ class _MainView1State extends State<MainView1>
                       // SizedBox(
                       //   width: 10,
                       // ),
-                      Text('Bk Investment',
-                          style: TextStyle(
+                      Text(
+                          'Nice Kos Investment ${AuthCntr.to.resLoginData.value.nickNm}',
+                          style: const TextStyle(
                               color: Colors.black,
                               fontWeight: FontWeight.w700,
                               fontFamily: "NotoSansKR",

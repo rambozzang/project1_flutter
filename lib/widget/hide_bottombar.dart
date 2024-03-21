@@ -23,6 +23,7 @@ class _HideBottomBarState extends State<HideBottomBar> {
       builder: (context, snapshot) {
         return AnimatedContainer(
           curve: Curves.ease,
+          color: Colors.transparent,
           duration: const Duration(milliseconds: 125),
           height: snapshot.data == true
               ? Platform.isAndroid
