@@ -61,12 +61,11 @@ class CustRepo {
   // 회원정보 조회
   Future<ResData> login(String custId, String fcmId) async {
     try {
-      //var url = 'http://localhost:7010/api/auth/login';
+      //var url = 'http://localhost:7010/api/auth/googlejoin';
       var url = '${UrlConfig.baseURL}/auth/login';
 
       //  log(data.toString());
-      Response response = await dio
-          .post(url, queryParameters: {'custId': custId, 'fcmId': fcmId});
+      Response response = await dio.post(url, data: {'custId': custId, 'fcmId': fcmId});
 
       return dioResponse(response);
     } on DioException catch (e) {
