@@ -9,6 +9,7 @@ class CustomButton extends StatelessWidget {
   final void Function()? onPressed;
   final double? widthValue;
   final double? heightValue;
+  final List<Color>? listColors;
 
   CustomButton(
       {super.key,
@@ -17,7 +18,8 @@ class CustomButton extends StatelessWidget {
       required this.type,
       required this.onPressed,
       this.widthValue,
-      this.heightValue});
+      this.heightValue,
+      this.listColors});
 
   Map<String, double> heightSize = {
     'XL': 56,
@@ -46,6 +48,12 @@ class CustomButton extends StatelessWidget {
     'T': 61,
   };
 
+  List<Color>? listDefColors = [
+    Color.fromARGB(255, 38, 162, 40),
+    Color.fromARGB(255, 34, 112, 26),
+    Color.fromARGB(255, 13, 104, 43),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
@@ -72,7 +80,11 @@ class CustomButton extends StatelessWidget {
           ],
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: type != 'XL' ? (!isEnable ? const BorderSide(width: 1, color: Colors.grey) : BorderSide.none) : BorderSide.none,
+            side: type != 'XL'
+                ? (!isEnable
+                    ? const BorderSide(width: 1, color: Colors.grey)
+                    : BorderSide.none)
+                : BorderSide.none,
           ),
         ),
         child: InkWell(
@@ -85,14 +97,10 @@ class CustomButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: Colors.transparent),
               // color: isEnable ? Colors.blue[700] : Colors.grey[300],
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
-                colors: [
-                  Color.fromARGB(255, 38, 162, 40),
-                  Color.fromARGB(255, 34, 112, 26),
-                  Color.fromARGB(255, 13, 104, 43),
-                ],
+                colors: listColors ?? listDefColors!,
               ),
             ),
             child: Center(

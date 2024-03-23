@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
-import 'package:project1/app/root/cntr/root_cntr.dart';
+import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/utils.dart';
 
 class ColorPage extends StatelessWidget {
