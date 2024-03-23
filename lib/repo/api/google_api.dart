@@ -17,9 +17,11 @@ class GoogleApi with SecureStorage {
     // ---------------------------------------------------------
     // 1. Google 로그인 진행
     // ---------------------------------------------------------
+    lo.g('UserCredential gogo');
     final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-    log('googleUser : $googleUser');
-    final GoogleSignInAuthentication googleAuth = await googleUser!.authentication;
+    lo.g('googleUser : $googleUser');
+    final GoogleSignInAuthentication googleAuth =
+        await googleUser!.authentication;
     final OAuthCredential credential = GoogleAuthProvider.credential(
       accessToken: googleAuth.accessToken,
       idToken: googleAuth.idToken,
@@ -28,7 +30,9 @@ class GoogleApi with SecureStorage {
     // 2. firebase 회원가입,로그인 처리
     // ---------------------------------------------------------
     GoogleJoinData googleJoinData = GoogleJoinData();
-    await FirebaseAuth.instance.signInWithCredential(credential).then((UserCredential value) {
+    await FirebaseAuth.instance
+        .signInWithCredential(credential)
+        .then((UserCredential value) {
       log('displayName : ${value.user!.displayName}');
       log('email : ${value.user!.email}');
       log('photoURL : ${value.user!.photoURL}');

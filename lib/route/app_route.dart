@@ -3,8 +3,8 @@ import 'package:project1/app/%08join/join_page.dart';
 import 'package:project1/app/auth/auth_page.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/onboarding/onboarding_page.dart';
-import 'package:project1/app/root/cntr/root_cntr.dart';
-import 'package:project1/app/root/root_page.dart';
+import 'package:project1/root/cntr/root_cntr.dart';
+import 'package:project1/root/root_page.dart';
 
 abstract class AppPages {
   AppPages._();

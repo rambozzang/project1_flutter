@@ -73,8 +73,9 @@ class AuthCntr extends GetxController with SecureStorage {
 
   //회원가입시
   void signUpProc(String custId) async {
-    await login(custId);
     await saveCustId(custId);
-    Get.offAndToNamed('/rootPage');
+    await login(custId);
+
+    // Get.offAndToNamed('/rootPage');
   }
 }

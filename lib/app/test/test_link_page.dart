@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 
-import 'package:project1/app/root/main_view1.dart';
-import 'package:project1/app/root/cntr/root_cntr.dart';
+import 'package:project1/root/cntr/root_cntr.dart';
+import 'package:project1/root/main_view1.dart';
 
 class TestLinkPage extends StatefulWidget {
   TestLinkPage({Key? key}) : super(key: key);

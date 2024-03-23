@@ -1,14 +1,22 @@
-// ignore: must_be_immutable
 import 'dart:async';
 
+import 'package:bot_toast/bot_toast.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
-import 'package:project1/app/root/main_view1.dart';
-import 'package:project1/app/root/cntr/root_cntr.dart';
+import 'package:project1/app/camera/list_tictok/list_page.dart';
+import 'package:project1/root/main_view1.dart';
+import 'package:project1/root/main_view2.dart';
+import 'package:project1/root/cntr/root_cntr.dart';
+import 'package:project1/root/main_view3.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/fade_stack.dart';
 import 'package:project1/widget/hide_bottombar.dart';
 
+// ignore: must_be_immutable
 class RootPage extends StatefulWidget {
   const RootPage({super.key});
 
@@ -28,7 +36,11 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   int timerMinute = 300;
   Timer rootTimer = Timer.periodic(const Duration(seconds: 1), (timer) {});
 
-  List<Widget> mainlist = [];
+  // bottom item list
+  late List<BottomNavigationBarItem> bottomItemList = [];
+  // body Widget List
+  late List<Widget> mainlist = [];
+
   @override
   void initState() {
     super.initState();
@@ -36,11 +48,20 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
 
     mainlist = [
       const MainView1(),
-      const Text('MainView2'),
-      const Text('MainView3'),
-      const Text('MainView4'),
-      const Text('MainView5'),
+      MainView2(),
+      const MainView3(),
+      const ListPage(),
+      const Center(child: Text("data5")),
     ];
+
+    bottomItemList = [
+      bottomItem(Icons.home, '홈'),
+      bottomItem(Icons.search, '검색'),
+      bottomItem(Icons.add, '추가'),
+      bottomItem(Icons.favorite, '즐겨찾기'),
+      bottomItem(Icons.person, '내정보'),
+    ];
+    // getData();
   }
 
   void initializeTimer() {
@@ -48,8 +69,8 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
 
     // rootTimer = Timer(Duration(seconds: timerSeconds), () { //테스트 코드
     rootTimer = Timer(Duration(minutes: timerMinute), () {
-      Utils.alert('30분동안 움직이 없어 로그아웃됩니다.');
-      // Get.offAllNamed('/CoLogOutPage');
+      // Utils.alert('30분동안 움직이 없어 로그아웃됩니다.');
+      Get.offAllNamed('/CoLogOutPage');
     });
   }
 
@@ -75,6 +96,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
       onPointerMove: handleUserInteraction,
       onPointerUp: handleUserInteraction,
       child: Scaffold(
+        // backgroundColor: Colors.transparent,
         body: Stack(
           children: [
             Positioned.fill(
@@ -97,14 +119,11 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
                     children: mainlist)),
               ),
             )),
-            // Center 이미지 영역
             ValueListenableBuilder(
                 valueListenable: isEventBox,
                 builder: (BuildContext context, bool value, Widget? child) {
                   return value ? centerEventContainer() : Container();
                 }),
-            //  MemoryUsageView(),
-            // 첫 로그인 시 생체인증 사용여부 팝업 추가
           ],
         ),
         extendBodyBehindAppBar: true,
@@ -116,8 +135,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
 
   BottomNavigationBarItem bottomItem(IconData icondata, String label) {
     // 4번 클릭시 화면 호출
-    if (RootCntr.to.rootPageIndex.value == 1 ||
-        RootCntr.to.rootPageIndex.value == 2) {
+    if (RootCntr.to.rootPageIndex.value == 2) {
       //   WidgetsBinding.instance.addPostFrameCallback((_) => goPage(RootCntr.to.rootPageIndex.value));
       //   WidgetsBinding.instance.addPostFrameCallback((_) => goPage(RootCntr.to.rootPageIndex.value));
     }
@@ -132,10 +150,10 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     );
   }
 
-  BottomNavigationBar makeBottomItem() {
+  Widget makeBottomItem() {
     return BottomNavigationBar(
       currentIndex: RootCntr.to.rootPageIndex.value,
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent,
       showSelectedLabels: true,
       showUnselectedLabels: true,
       iconSize: 22,
@@ -146,13 +164,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
       unselectedFontSize: 11,
       unselectedItemColor: Colors.black,
       unselectedIconTheme: const IconThemeData(size: 23),
-      items: [
-        bottomItem(Icons.home_outlined, '홈'),
-        bottomItem(Icons.search, '내사건'),
-        bottomItem(Icons.article_outlined, '사건수임'),
-        bottomItem(Icons.edit_document, '내정보'),
-        bottomItem(Icons.person_outlined, '테스트')
-      ],
+      items: bottomItemList,
     );
   }
 

@@ -16,7 +16,14 @@ import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as Kakao;
 // https://velog.io/@sumong/Flutter%EC%97%90%EC%84%9C-%EC%B9%B4%EC%B9%B4%EC%98%A4-%EB%A1%9C%EA%B7%B8%EC%9D%B8-%EA%B5%AC%ED%98%84%ED%95%98%EA%B8%B0
 class KakaoApi with SecureStorage {
   // 사용자의 추가 동의가 필요한 사용자 정보 동의항목 확인
-  List<String> scopes = ['account_email', "birthday", "birthyear", "phone_number", "profile", "account_ci"];
+  List<String> scopes = [
+    'account_email',
+    "birthday",
+    "birthyear",
+    "phone_number",
+    "profile",
+    "account_ci"
+  ];
 
   Future<void> signInWithKakaoApp() async {
     // 카카오톡 실행 가능 여부
@@ -24,7 +31,8 @@ class KakaoApi with SecureStorage {
       log("카카오톡가 있는 경우 프로세스 1");
       try {
         // 카카오톡에 연결된 카카오계정 및 인증 정보를 사용
-        OAuthToken? token = await UserApi.instance.loginWithKakaoTalk(serviceTerms: scopes);
+        OAuthToken? token =
+            await UserApi.instance.loginWithKakaoTalk(serviceTerms: scopes);
         log('카카오톡으로 로그인 성공1 : _token :  $token ');
         signUpProc(token.toString());
         await TokenManagerProvider.instance.manager.setToken(token);
@@ -37,7 +45,8 @@ class KakaoApi with SecureStorage {
         }
         try {
           // 사용자가 카카오계정 정보를 직접 입력하지 않아도 간편하게 로그인 가능
-          OAuthToken? token = await UserApi.instance.loginWithKakaoAccount(serviceTerms: scopes);
+          OAuthToken? token = await UserApi.instance
+              .loginWithKakaoAccount(serviceTerms: scopes);
           signUpProc(token.toString());
           log('카카오계정으로 로그인2 성공 : _token :  $token ');
         } catch (error) {
@@ -48,7 +57,8 @@ class KakaoApi with SecureStorage {
       log("카카오톡가 없는 경우 프로세스 3");
       try {
         // 사용자가 카카오계정 정보를 직접 입력하지 않아도 간편하게 로그인 가능
-        OAuthToken? token = await UserApi.instance.loginWithKakaoAccount(serviceTerms: scopes);
+        OAuthToken? token =
+            await UserApi.instance.loginWithKakaoAccount(serviceTerms: scopes);
         log('카카오계정으로 로그인3 성공 : _token :  $token ');
 
         signUpProc(token.accessToken.toString());
@@ -205,3 +215,15 @@ class KakaoApi with SecureStorage {
     }
   }
 }
+
+
+
+// 2
+// [log] [🔬]
+// [log] [🔬] DioException [bad response]: This exception was thrown because the response has a status code of 401 and RequestOptions.validateStatus was configured to throw for this status code.
+//       The status code of 401 has the following meaning: "Client error - the request contains bad syntax or cannot be fulfilled"
+//       Read more about status codes at https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
+//       In order to resolve this exception you typically have either to verify and fix your request code or you have to fix the server code.
+// [log] [🔬]  www-authenticate: Bearer realm="oauth", error="misconfigured", error_description="invalid android_key_hash or ios_bundle_id or web_site_url"
+// [log] [🔬] {"error":"misconfigured","error_description":"invalid android_key_hash or ios_bundle_id or web_site_url","error_code":"KOE009"}
+// [log] [🔬] https://kauth.kakao.com/oauth/authorize?client_id=257e56e034badf50ce13baaa28018e7d&redirect_uri=kakao257e56e034badf50ce13baaa28018e7d%3A%2F%2Foauth&response_type=code&service_terms=account_email%2Cbirthday%2Cbirthyear%2Cphone_number%2Cprofile%2Caccount_ci&code_challenge=3RrBKt1Oz6W8PrS7IzK4AVVS8dKc1M77e6ppqGXl4CI&code_challenge_method=S256&ka=sdk%2F1.9.1%2B2+sdk_type%2Fflutter+os%2Fandroid-34+lang%2Fko-KR+origin%2Fev7ZyJW3%2FpjhDZHSwXtNPlQkHeM%3D+device%2FSM-S926N+android_pkg%2Fcom.example.project1+app_ver%2F1.0.0
