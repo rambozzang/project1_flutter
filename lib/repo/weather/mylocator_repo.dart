@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
+import 'package:project1/config/vworld_api_config.dart';
 import 'package:project1/repo/api/auth_dio.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/utils/log_utils.dart';
@@ -20,12 +21,6 @@ class MyLocatorRepo {
     }
   }
 
-  // https://www.data.go.kr/data/15101106/openapi.do?recommendDataYn=Y
-  // 7C166CC8-B88A-3DD1-816A-FF86922C17AF
-  // 지번
-  // https://apis.vworld.kr/coord2jibun.do?x=126.961862449327&y=37.3952998720615&output=xml&epsg=epsg:4326&apiKey=[KEY]
-  // 도로
-  // https://apis.vworld.kr/coord2new.do?x=126.961862449327&y=37.3952998720615&output=xml&epsg=epsg:4326&apiKey=[KEY]
   Future<ResData> getLocationName(Position position) async {
     final dio = Dio(BaseOptions(
         headers: {
@@ -46,16 +41,16 @@ class MyLocatorRepo {
 
     try {
       log(position.toString());
-      var url = 'https://apis.vworld.kr/coord2jibun.do';
 
       Map<String, dynamic> mapData = {};
-      mapData['x'] = position.latitude.toString();
-      mapData['y'] = position.longitude.toString();
+      mapData['y'] = position.latitude.toString();
+      mapData['x'] = position.longitude.toString();
       mapData['output'] = 'json';
       mapData['epsg'] = 'epsg:4326';
-      mapData['apiKey'] = '7C166CC8-B88A-3DD1-816A-FF86922C17AF';
+      mapData['apiKey'] = VworldApiConfig.apiKey;
 
-      Response response = await dio.get(url, queryParameters: mapData);
+      Response response =
+          await dio.get(VworldApiConfig.apiUrl, queryParameters: mapData);
 
       log(response.toString());
       if (response.statusCode == 200) {
