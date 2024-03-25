@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:get/get.dart';
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -35,6 +36,7 @@ class AuthCntr extends GetxController with SecureStorage {
   @override
   void onInit() async {
     Lo.g("onInit 시작!! ");
+    print(await KakaoSdk.origin);
     super.onInit();
     loginCheck();
   }

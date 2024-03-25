@@ -2,8 +2,10 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:geolocator/geolocator.dart';
+// import 'package:marquee_widget/marquee_widget.dart';
 
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
@@ -21,6 +23,7 @@ import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom2_button.dart';
 import 'package:project1/widget/custom_button.dart';
+import 'package:text_scroll/text_scroll.dart';
 import 'package:video_player/video_player.dart';
 
 class ListPage extends StatefulWidget {
@@ -36,6 +39,11 @@ class _ListPageState extends State<ListPage> {
   final ValueNotifier<bool> isLoading = ValueNotifier<bool>(false);
   final PreloadPageController _controller = PreloadPageController();
 
+  final ValueNotifier<String> localName = ValueNotifier<String>('');
+
+  final ValueNotifier<CurrentWeather?> currentWeather =
+      ValueNotifier<CurrentWeather?>(null);
+
   @override
   void initState() {
     super.initState();
@@ -45,15 +53,12 @@ class _ListPageState extends State<ListPage> {
   }
 
   Future<void> permissionLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       return Utils.alert('Location services are disabled.');
     }
 
-    permission = await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission();
     lo.g(permission.toString());
 
     if (permission == LocationPermission.denied ||
@@ -68,6 +73,7 @@ class _ListPageState extends State<ListPage> {
         return Utils.alert('Location permissions are denied');
       }
     }
+
     getDate();
   }
 
@@ -81,6 +87,7 @@ class _ListPageState extends State<ListPage> {
       // 위치 좌표 가져오기
       MyLocatorRepo myLocatorRepo = MyLocatorRepo();
       Position? position = await myLocatorRepo.getCurrentLocation();
+      Utils.alert('좌표 가져오기 성공');
 
       // 좌료를 통해 날씨 정보 가져오기
       ResData resData = await repo.getWeather(position!);
@@ -90,7 +97,7 @@ class _ListPageState extends State<ListPage> {
         return;
       }
       Lo.g('getDate() resData : ${resData.data}');
-      CurrentWeather currentWeather = CurrentWeather.fromMap(resData.data);
+      currentWeather.value = CurrentWeather.fromMap(resData.data);
       Lo.g('weatherData : ${currentWeather.toString()}');
       Utils.alert('날씨 가져오기 성공');
 
@@ -100,7 +107,9 @@ class _ListPageState extends State<ListPage> {
         Utils.alert(resData2.msg.toString());
         return;
       }
-      Lo.g('동네이름() resData2 : ${resData2.data}');
+      Utils.alert('동네이름 가져오기 성공');
+      Lo.g('동네이름() resData2 : ${resData2.data['ADDR']}');
+      localName.value = resData2.data['ADDR'];
     } catch (e) {
       Lo.g('getDate() error : ' + e.toString());
     }
@@ -137,6 +146,11 @@ class _ListPageState extends State<ListPage> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
@@ -146,10 +160,6 @@ class _ListPageState extends State<ListPage> {
                 valueListenable: isLoading,
                 builder: (context, value, child) {
                   return value
-                      // ? PageView.builder(
-                      //     allowImplicitScrolling: true,
-                      //     controller: PageController(viewportFraction: 0.999),
-                      //     itemCount: urls.length,
                       ? PreloadPageView.builder(
                           controller: _controller,
                           preloadPagesCount: 4,
@@ -162,6 +172,8 @@ class _ListPageState extends State<ListPage> {
                           })
                       : Utils.progressbar();
                 }),
+            buildLocalName(),
+            buildTemp(),
             buildRecodeBtn()
           ],
         ),
@@ -169,6 +181,76 @@ class _ListPageState extends State<ListPage> {
     );
   }
 
+  // 현재 온도
+  Widget buildTemp() {
+    return ValueListenableBuilder<CurrentWeather?>(
+        valueListenable: currentWeather,
+        builder: (context, value, child) {
+          if (value == null) {
+            return const SizedBox();
+          }
+          return Positioned(
+            top: 40,
+            right: 10,
+            left: 10,
+            child: Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Image.network(
+                    'http://openweathermap.org/img/wn/${value.weather![0].icon}@2x.png',
+                    // 'http://openweathermap.org/img/w/${value.weather![0].icon}.png',
+                    scale: 1,
+                  ),
+                  TextScroll(
+                    '${value.weather![0].description.toString()}  ${value.main!.temp.toString()}°',
+                    mode: TextScrollMode.endless,
+                    numberOfReps: 200,
+                    fadedBorder: true,
+                    delayBefore: const Duration(milliseconds: 4000),
+                    pauseBetween: const Duration(milliseconds: 2000),
+                    velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
+                    style: const TextStyle(fontSize: 16, color: Colors.white),
+                    textAlign: TextAlign.right,
+                    selectable: true,
+                  ),
+                ],
+              ),
+            ),
+          );
+        });
+  }
+
+  // 동네 이름
+  Widget buildLocalName() {
+    return ValueListenableBuilder<String>(
+        valueListenable: localName,
+        builder: (context, value, child) {
+          return Positioned(
+            top: 30,
+            right: 10,
+            left: 10,
+            child: Center(
+              child: SizedBox(
+                  width: 200,
+                  child: TextScroll(
+                    value.toString(),
+                    mode: TextScrollMode.endless,
+                    numberOfReps: 200,
+                    fadedBorder: true,
+                    delayBefore: const Duration(milliseconds: 4000),
+                    pauseBetween: const Duration(milliseconds: 2000),
+                    velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
+                    style: const TextStyle(fontSize: 16, color: Colors.white),
+                    textAlign: TextAlign.right,
+                    selectable: true,
+                  )),
+            ),
+          );
+        });
+  }
+
+  // 촬영 하기
   Widget buildRecodeBtn() {
     return Positioned(
       top: 5,
