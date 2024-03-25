@@ -1,11 +1,57 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
+/*
+{
+  "base": "stations",
+  "clouds": {
+    "all": 75
+  },
+  "cod": 200,
+  "coord": {
+    "lat": 37.3323,
+    "lon": -122.0312
+  },
+  "dt": 1711350357,
+  "id": 5341145,
+  "main": {
+    "feels_like": 9.45,
+    "humidity": 85,
+    "pressure": 1013,
+    "temp": 9.45,
+    "temp_max": 11.83,
+    "temp_min": 7.21
+  },
+  "name": "Cupertino",
+  "sys": {
+    "country": "US",
+    "id": 2001717,
+    "sunrise": 1711375390,
+    "sunset": 1711419867,
+    "type": 2
+  },
+  "timezone": -25200,
+  "visibility": 10000,
+  "weather": [
+    {
+      "description": "broken clouds",
+      "icon": "04n",
+      "id": 803,
+      "main": "Clouds"
+    }
+  ],
+  "wind": {
+    "deg": 294,
+    "gust": 0.89,
+    "speed": 0.45
+  }
+}
+*/
 class WeatherData {
-  double? temp;
-  double? tempMax;
-  double? tempMin;
-  String? condition;
+  double? temp; // 현재 온드
+  double? tempMax; // 최저 온도
+  double? tempMin; // 최고 온도
+  String? condition; // 흐림 정도
   int? conditionId;
   int? humidity;
   WeatherData({

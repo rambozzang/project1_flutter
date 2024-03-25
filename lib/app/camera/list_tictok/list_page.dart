@@ -82,15 +82,13 @@ class _ListPageState extends State<ListPage> {
       Lo.g('getDate() resData : ' + resData.data.toString());
 
       // WeatherData weatherData = WeatherData.fromJson(resData.toString());
-      CurrentWeather currentWeather = CurrentWeather.fromJson(jsonEncode(resData.data.toString()));
+      CurrentWeather currentWeather = CurrentWeather.fromMap(resData.data);
 
       Lo.g('weatherData : ${currentWeather.toString()}');
       Utils.alert('날씨 가져오기 성공');
-      return;
     } catch (e) {
       Lo.g('getDate() error : ' + e.toString());
     }
-
     isLoading.value = true;
   }
 
