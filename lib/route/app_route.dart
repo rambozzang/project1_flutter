@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:project1/app/%08join/join_page.dart';
 import 'package:project1/app/auth/auth_page.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/camera/list_tictok/list_page.dart';
 import 'package:project1/app/onboarding/onboarding_page.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/root/root_page.dart';
@@ -31,6 +32,12 @@ abstract class AppPages {
       name: '/rootPage',
       page: () => const RootPage(),
       binding: RootCntrBinding(),
+      //  transition: Transition.downToUp,
+    ),
+    GetPage(
+      name: '/ListPage',
+      page: () => const ListPage(),
+
       //  transition: Transition.downToUp,
     )
   ];
