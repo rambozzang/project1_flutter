@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
+import 'package:geolocator/geolocator.dart';
 
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
@@ -9,6 +12,11 @@ import 'package:project1/app/camera/list_tictok/api_service.dart';
 import 'package:project1/app/camera/page/camera_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/camera/utils/permission_utils.dart';
+import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/repo/weather/data/current_weather.dart';
+import 'package:project1/repo/weather/data/weather_data.dart';
+import 'package:project1/repo/weather/open_weather_repo.dart';
+import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom2_button.dart';
 import 'package:project1/widget/custom_button.dart';
@@ -31,12 +39,58 @@ class _ListPageState extends State<ListPage> {
   void initState() {
     // TODO: implement initState
     super.initState();
+    permissionLocation();
+
+    // getDate();
+  }
+
+  void permissionLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return Utils.alert('Location services are disabled.');
+    }
+
+    permission = await Geolocator.checkPermission();
+    lo.g(permission.toString());
+
+    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+        await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+        return Utils.alert('Location permissions are denied');
+      }
+    }
     getDate();
   }
 
   getDate() async {
     isLoading.value = false;
     urls = await ApiService.getVideos();
+
+    try {
+      OpenWheatherRepo repo = OpenWheatherRepo();
+      ResData resData = await repo.getWeather();
+      if (resData.code != '00') {
+        Utils.alert(resData.msg.toString());
+        return;
+      }
+      Lo.g('getDate() resData : ' + resData.data.toString());
+
+      // WeatherData weatherData = WeatherData.fromJson(resData.toString());
+      CurrentWeather currentWeather = CurrentWeather.fromJson(jsonEncode(resData.data.toString()));
+
+      Lo.g('weatherData : ${currentWeather.toString()}');
+      Utils.alert('날씨 가져오기 성공');
+      return;
+    } catch (e) {
+      Lo.g('getDate() error : ' + e.toString());
+    }
+
     isLoading.value = true;
   }
 
