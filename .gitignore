@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/release
 pubspec.lock
 macos/Flutter/GeneratedPluginRegistrant.swift
+android/app/google-services.json
+android/app/google-services.old
+client_638945890094-2q5u2fvl7mvro889jn57g5vva44r6gob.apps.googleusercontent.com.plist
+lib/firebase_options.dart
+ios/Runner/GoogleService-Info.plist
