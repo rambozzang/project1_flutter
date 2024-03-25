@@ -52,6 +52,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
       const MainView3(),
       const ListPage(),
       const Center(child: Text("data5")),
+      const Center(child: Text("data5")),
     ];
 
     bottomItemList = [
@@ -113,8 +114,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
               },
               child: SafeArea(
                 child: Obx(() => FadeIndexedStack(
-                    index: RootCntr.to.rootPageIndex
-                        .value, // RootCntr.to.rootPageIndex.value,
+                    index: RootCntr.to.rootPageIndex.value, // RootCntr.to.rootPageIndex.value,
                     key: scaffoldKey,
                     children: mainlist)),
               ),
@@ -127,8 +127,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
           ],
         ),
         extendBodyBehindAppBar: true,
-        bottomNavigationBar:
-            Obx(() => HideBottomBar(children: makeBottomItem())),
+        bottomNavigationBar: Obx(() => HideBottomBar(children: makeBottomItem())),
       ),
     );
   }

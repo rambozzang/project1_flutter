@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:gap/gap.dart';
-import 'package:textfield_tags/textfield_tags.dart';
+
 import 'package:video_player/video_player.dart';
 
 class VideoPage extends StatefulWidget {
@@ -15,8 +15,6 @@ class VideoPage extends StatefulWidget {
 
 class _VideoPageState extends State<VideoPage> {
   late VideoPlayerController _videoController;
-
-  final _stringTagController = StringTagController();
 
   @override
   void initState() {
@@ -86,28 +84,26 @@ class _VideoPageState extends State<VideoPage> {
                   const Gap(20),
                   const Text('제목을 입력해주세요!'),
                   const TextField(
-                    decoration: InputDecoration(
-                        hintStyle: TextStyle(color: Colors.grey),
-                        hintText: "제목을 입력해주세요!"),
+                    decoration: InputDecoration(hintStyle: TextStyle(color: Colors.grey), hintText: "제목을 입력해주세요!"),
                   ),
                   const Gap(20),
                   const Text('Tag을 입력해주세요!'),
-                  TextFieldTags<String>(
-                      textfieldTagsController: _stringTagController,
-                      initialTags: ['python', 'java'],
-                      textSeparators: const [' ', ','],
-                      validator: (String tag) {
-                        if (tag == 'php') {
-                          return 'Php not allowed';
-                        }
-                        return null;
-                      },
-                      inputFieldBuilder: (context, inputFieldValues) {
-                        return TextField(
-                          controller: inputFieldValues.textEditingController,
-                          focusNode: inputFieldValues.focusNode,
-                        );
-                      }),
+                  // TextFieldTags<String>(
+                  //     textfieldTagsController: _stringTagController,
+                  //     initialTags: ['python', 'java'],
+                  //     textSeparators: const [' ', ','],
+                  //     validator: (String tag) {
+                  //       if (tag == 'php') {
+                  //         return 'Php not allowed';
+                  //       }
+                  //       return null;
+                  //     },
+                  //     inputFieldBuilder: (context, inputFieldValues) {
+                  //       return TextField(
+                  //         controller: inputFieldValues.textEditingController,
+                  //         focusNode: inputFieldValues.focusNode,
+                  //       );
+                  //     }),
                   const Gap(200),
                 ],
               ),

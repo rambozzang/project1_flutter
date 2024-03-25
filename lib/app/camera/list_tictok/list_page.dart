@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get/get.dart';
 
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
-import 'package:project1/app/camera/list_tictok/VidoeUrl.dart';
+import 'package:project1/app/camera/list_tictok/VideoUrl.dart';
 import 'package:project1/app/camera/list_tictok/api_service.dart';
 import 'package:project1/app/camera/page/camera_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/camera/utils/permission_utils.dart';
 import 'package:project1/utils/utils.dart';
+import 'package:project1/widget/custom2_button.dart';
 import 'package:project1/widget/custom_button.dart';
 import 'package:video_player/video_player.dart';
 
@@ -81,26 +83,25 @@ class _ListPageState extends State<ListPage> {
                       : Utils.progressbar();
                 }),
             Positioned(
-              top: 20,
+              top: 5,
               right: 10,
               child: SizedBox(
-                  width: 50,
-                  child: CustomButton(listColors: [
-                    const Color.fromARGB(255, 251, 250, 250),
-                    const Color.fromARGB(255, 226, 226, 226)
-                  ], text: '+', type: 'S', onPressed: () => goRecord())),
-            ),
-            const Positioned(
-                bottom: 20,
-                right: 20,
-                left: 20,
-                child: Row(children: [
-                  CircleAvatar(),
-                  Column(
-                    children: [Text('이문세'), Text('2024.03.03')],
+                  width: 30,
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.add,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    onPressed: () => goRecord(),
+                  )
+                  // child: CustomButton(
+                  //     listColors: [const Color.fromARGB(255, 251, 250, 250), const Color.fromARGB(255, 226, 226, 226)],
+                  //     text: '+',
+                  //     type: 'S',
+                  //     onPressed: () => goRecord()),
                   ),
-                  Text('adsfasdfasdfasdf'),
-                ]))
+            ),
           ],
         ),
       ),

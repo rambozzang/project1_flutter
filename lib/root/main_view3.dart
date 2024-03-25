@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gap/gap.dart';
+import 'package:get/get.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/camera/page/camera_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
@@ -53,10 +55,14 @@ class _MyHomePageState extends State<MainView3> {
         body: Center(
             child: Padding(
           padding: const EdgeInsets.all(12.0),
-          child: SizedBox(
-              width: 50,
-              child: CustomButton(
-                  text: '+', type: 'S', onPressed: () => goRecord())),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(width: 50, child: CustomButton(text: '+', type: 'S', onPressed: () => goRecord())),
+              const Gap(20),
+              SizedBox(width: 70, child: CustomButton(text: 'tictok', type: 'S', onPressed: () => Get.toNamed('/ListPage'))),
+            ],
+          ),
         )));
   }
 }
