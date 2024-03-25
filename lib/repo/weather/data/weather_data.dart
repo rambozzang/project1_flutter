@@ -1,14 +1,14 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
-class Weather {
+class WeatherData {
   double? temp;
   double? tempMax;
   double? tempMin;
   String? condition;
   int? conditionId;
   int? humidity;
-  Weather({
+  WeatherData({
     this.temp,
     this.tempMax,
     this.tempMin,
@@ -17,7 +17,7 @@ class Weather {
     this.humidity,
   });
 
-  Weather copyWith({
+  WeatherData copyWith({
     double? temp,
     double? tempMax,
     double? tempMin,
@@ -25,7 +25,7 @@ class Weather {
     int? conditionId,
     int? humidity,
   }) {
-    return Weather(
+    return WeatherData(
       temp: temp ?? this.temp,
       tempMax: tempMax ?? this.tempMax,
       tempMin: tempMin ?? this.tempMin,
@@ -46,8 +46,8 @@ class Weather {
     };
   }
 
-  factory Weather.fromMap(Map<String, dynamic> map) {
-    return Weather(
+  factory WeatherData.fromMap(Map<String, dynamic> map) {
+    return WeatherData(
       temp: map['temp'] != null ? map['temp'] as double : null,
       tempMax: map['tempMax'] != null ? map['tempMax'] as double : null,
       tempMin: map['tempMin'] != null ? map['tempMin'] as double : null,
@@ -59,15 +59,15 @@ class Weather {
 
   String toJson() => json.encode(toMap());
 
-  factory Weather.fromJson(String source) => Weather.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory WeatherData.fromJson(String source) => WeatherData.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   String toString() {
-    return 'Weather(temp: $temp, tempMax: $tempMax, tempMin: $tempMin, condition: $condition, conditionId: $conditionId, humidity: $humidity)';
+    return 'WeatherData(temp: $temp, tempMax: $tempMax, tempMin: $tempMin, condition: $condition, conditionId: $conditionId, humidity: $humidity)';
   }
 
   @override
-  bool operator ==(covariant Weather other) {
+  bool operator ==(covariant WeatherData other) {
     if (identical(this, other)) return true;
 
     return other.temp == temp &&
