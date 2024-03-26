@@ -50,7 +50,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
       const MainView1(),
       MainView2(),
       const MainView3(),
-      const ListPage(),
+      const Center(child: Text("data5")),
       const Center(child: Text("data5")),
       const Center(child: Text("data5")),
     ];

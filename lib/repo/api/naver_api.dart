@@ -45,7 +45,6 @@ class NaverApi with SecureStorage {
 
     Utils.alert("회원가입 성공 :  ${res.data}");
 
-    Get.toNamed('/rootPage');
     AuthCntr.to.signUpProc(naverJoinData.account!.id.toString());
     return;
   }

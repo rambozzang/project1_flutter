@@ -41,8 +41,7 @@ class _ListPageState extends State<ListPage> {
 
   final ValueNotifier<String> localName = ValueNotifier<String>('');
 
-  final ValueNotifier<CurrentWeather?> currentWeather =
-      ValueNotifier<CurrentWeather?>(null);
+  final ValueNotifier<CurrentWeather?> currentWeather = ValueNotifier<CurrentWeather?>(null);
 
   @override
   void initState() {
@@ -61,15 +60,12 @@ class _ListPageState extends State<ListPage> {
     LocationPermission permission = await Geolocator.checkPermission();
     lo.g(permission.toString());
 
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
+    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
         await Geolocator.requestPermission();
       }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
         return Utils.alert('Location permissions are denied');
       }
     }
@@ -110,24 +106,21 @@ class _ListPageState extends State<ListPage> {
       Utils.alert('동네이름 가져오기 성공');
       Lo.g('동네이름() resData2 : ${resData2.data['ADDR']}');
       localName.value = resData2.data['ADDR'];
+
+      // Google 동네이름 가져오기
+      // ResData resData3 = await myLocatorRepo.getPlaceAddress(position);
+      // if (resData2.code != '00') {
+      //   Utils.alert(resData3.msg.toString());
+      //   return;
+      // }
+      // Utils.alert('동네이름 가져오기 성공');
+      // Lo.g('동네이름() resData3 : ${resData3.data['results'][0]['address_components'][1]['long_name']}');
+      // localName.value = resData3.data['results'][0]['address_components'][1]['long_name'];
     } catch (e) {
       Lo.g('getDate() error : ' + e.toString());
     }
     isLoading.value = true;
   }
-
-  // https://www.data.go.kr/data/15101106/openapi.do?recommendDataYn=Y
-  // 7C166CC8-B88A-3DD1-816A-FF86922C17AF
-  // https://api.vworld.kr/req/address?service=address&request=getcoord&version=2.0&crs=epsg:4326&address=%ED%9A%A8%EB%A0%B9%EB%A1%9C72%EA%B8%B8%2060&refine=true&simple=false&format=xml&type=road&key=[KEY]
-
-  // Future<dynamic> getPlaceAddress({double lat = 0.0, double lng = 0.0}) async {
-  // final url =
-  //     'https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=$GOOGLE_API_KEY&language=ko';
-  // http.Response response = await http.get(Uri.parse(url));
-
-  //     return jsonDecode(response.body)['results'][0]['address_components'][1]
-  //         ['long_name'];
-  //   }
 
   void goRecord() {
     Navigator.of(context).push(
@@ -153,30 +146,30 @@ class _ListPageState extends State<ListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            ValueListenableBuilder<bool>(
-                valueListenable: isLoading,
-                builder: (context, value, child) {
-                  return value
-                      ? PreloadPageView.builder(
-                          controller: _controller,
-                          preloadPagesCount: 4,
-                          scrollDirection: Axis.vertical,
-                          itemCount: urls.length,
-                          itemBuilder: (context, i) {
-                            return VideoUrl(
-                              videoUrl: urls[i],
-                            );
-                          })
-                      : Utils.progressbar();
-                }),
-            buildLocalName(),
-            buildTemp(),
-            buildRecodeBtn()
-          ],
-        ),
+      extendBodyBehindAppBar: true,
+      resizeToAvoidBottomInset: true,
+      body: Stack(
+        children: [
+          ValueListenableBuilder<bool>(
+              valueListenable: isLoading,
+              builder: (context, value, child) {
+                return value
+                    ? PreloadPageView.builder(
+                        controller: _controller,
+                        preloadPagesCount: 4,
+                        scrollDirection: Axis.vertical,
+                        itemCount: urls.length,
+                        itemBuilder: (context, i) {
+                          return VideoUrl(
+                            videoUrl: urls[i],
+                          );
+                        })
+                    : Utils.progressbar();
+              }),
+          buildLocalName(),
+          buildTemp(),
+          buildRecodeBtn()
+        ],
       ),
     );
   }
@@ -190,29 +183,42 @@ class _ListPageState extends State<ListPage> {
             return const SizedBox();
           }
           return Positioned(
-            top: 40,
+            top: 75,
             right: 10,
             left: 10,
-            child: Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
+            child: Container(
+              // height: 120,
+              // color: Colors.red,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.network(
-                    'http://openweathermap.org/img/wn/${value.weather![0].icon}@2x.png',
-                    // 'http://openweathermap.org/img/w/${value.weather![0].icon}.png',
-                    scale: 1,
-                  ),
-                  TextScroll(
-                    '${value.weather![0].description.toString()}  ${value.main!.temp.toString()}°',
-                    mode: TextScrollMode.endless,
-                    numberOfReps: 200,
-                    fadedBorder: true,
-                    delayBefore: const Duration(milliseconds: 4000),
-                    pauseBetween: const Duration(milliseconds: 2000),
-                    velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
-                    style: const TextStyle(fontSize: 16, color: Colors.white),
-                    textAlign: TextAlign.right,
-                    selectable: true,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 60,
+                        height: 60,
+                        child: Image.network(
+                          'http://openweathermap.org/img/wn/${value.weather![0].icon}@2x.png',
+                          // 'http://openweathermap.org/img/w/${value.weather![0].icon}.png',
+                          scale: 1,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                      TextScroll(
+                        '${value.main!.temp.toString()}° · ${value.weather![0].description.toString()} / ${OpenWheatherRepo().weatherDescKo[value.weather![0].id]}',
+                        mode: TextScrollMode.endless,
+                        numberOfReps: 200,
+                        fadedBorder: true,
+                        delayBefore: const Duration(milliseconds: 4000),
+                        pauseBetween: const Duration(milliseconds: 2000),
+                        velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
+                        style: const TextStyle(fontSize: 14, color: Colors.white),
+                        textAlign: TextAlign.right,
+                        selectable: true,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -227,7 +233,7 @@ class _ListPageState extends State<ListPage> {
         valueListenable: localName,
         builder: (context, value, child) {
           return Positioned(
-            top: 30,
+            top: 55,
             right: 10,
             left: 10,
             child: Center(
@@ -253,7 +259,7 @@ class _ListPageState extends State<ListPage> {
   // 촬영 하기
   Widget buildRecodeBtn() {
     return Positioned(
-      top: 5,
+      top: 45,
       right: 10,
       child: SizedBox(
           width: 30,
