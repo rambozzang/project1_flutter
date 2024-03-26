@@ -128,14 +128,21 @@ class _VideoPageState extends State<VideoPage> {
 
   // 비디오 파일 압축
   Future<MediaInfo?> compressVideo() async {
-    MediaInfo? info = await VideoCompress.compressVideo(
-      widget.videoFile.path,
-      quality: VideoQuality.MediumQuality,
-      deleteOrigin: false,
-      includeAudio: true,
-    );
-    Lo.g('비디오 압축 결과 : ${info?.toJson()}');
-    return info;
+    try {
+      log(widget.videoFile.path);
+
+      MediaInfo? info = await VideoCompress.compressVideo(
+        widget.videoFile.path,
+        quality: VideoQuality.MediumQuality,
+        deleteOrigin: false,
+        includeAudio: true,
+      );
+      Lo.g('비디오 압축 결과 : ${info?.toJson()}');
+      return info;
+    } catch (e) {
+      Lo.g('비디오 압축 에러 : $e');
+      VideoCompress.cancelCompression();
+    }
   }
 
   // 비디오 파일 압축 삭제
