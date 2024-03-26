@@ -8,10 +8,15 @@ class CustomIndicatorOffstage extends StatefulWidget {
   final bool isLoading;
   final Color color;
   final double opacity;
-  const CustomIndicatorOffstage({super.key, required this.isLoading, required this.color, required this.opacity});
+  const CustomIndicatorOffstage(
+      {super.key,
+      required this.isLoading,
+      required this.color,
+      required this.opacity});
 
   @override
-  State<CustomIndicatorOffstage> createState() => _CustomIndicatorOffstageState();
+  State<CustomIndicatorOffstage> createState() =>
+      _CustomIndicatorOffstageState();
 }
 
 class _CustomIndicatorOffstageState extends State<CustomIndicatorOffstage> {
