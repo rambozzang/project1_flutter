@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloudinary_public/cloudinary_public.dart';
 
-final cloudinary = CloudinaryPublic('CLOUD_NAME', 'UPLOAD_PRESET', cache: false);
+final cloudinary = CloudinaryPublic('dfbxar2j5', 'ml_default', cache: false);
 
 /*
   clound name  :  dfbxar2j5

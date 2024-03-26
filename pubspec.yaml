@@ -45,13 +45,12 @@ dependencies:
   marquee_widget: ^1.2.0
   simple_chips_input: ^1.2.0
   flutter_cache_manager: ^3.3.1
-  cached_video_player_plus: ^2.0.0
+  
   geolocator: ^11.0.0
   flutter_svg: ^2.0.10+1
   text_scroll: ^0.2.0  
   cloudinary_public: ^0.23.1
   video_compress: ^3.1.2
- 
 
 
 dev_dependencies:

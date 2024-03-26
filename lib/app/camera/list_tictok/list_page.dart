@@ -41,7 +41,8 @@ class _ListPageState extends State<ListPage> {
 
   final ValueNotifier<String> localName = ValueNotifier<String>('');
 
-  final ValueNotifier<CurrentWeather?> currentWeather = ValueNotifier<CurrentWeather?>(null);
+  final ValueNotifier<CurrentWeather?> currentWeather =
+      ValueNotifier<CurrentWeather?>(null);
 
   @override
   void initState() {
@@ -60,12 +61,15 @@ class _ListPageState extends State<ListPage> {
     LocationPermission permission = await Geolocator.checkPermission();
     lo.g(permission.toString());
 
-    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
         await Geolocator.requestPermission();
       }
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
         return Utils.alert('Location permissions are denied');
       }
     }
@@ -83,7 +87,7 @@ class _ListPageState extends State<ListPage> {
       // 위치 좌표 가져오기
       MyLocatorRepo myLocatorRepo = MyLocatorRepo();
       Position? position = await myLocatorRepo.getCurrentLocation();
-      Utils.alert('좌표 가져오기 성공');
+      // Utils.alert('좌표 가져오기 성공');
 
       // 좌료를 통해 날씨 정보 가져오기
       ResData resData = await repo.getWeather(position!);
@@ -95,7 +99,7 @@ class _ListPageState extends State<ListPage> {
       Lo.g('getDate() resData : ${resData.data}');
       currentWeather.value = CurrentWeather.fromMap(resData.data);
       Lo.g('weatherData : ${currentWeather.toString()}');
-      Utils.alert('날씨 가져오기 성공');
+      //Utils.alert('날씨 가져오기 성공');
 
       // 좌료를 통해 동네이름 가져오기
       ResData resData2 = await myLocatorRepo.getLocationName(position);
@@ -103,7 +107,7 @@ class _ListPageState extends State<ListPage> {
         Utils.alert(resData2.msg.toString());
         return;
       }
-      Utils.alert('동네이름 가져오기 성공');
+      // Utils.alert('동네이름 가져오기 성공');
       Lo.g('동네이름() resData2 : ${resData2.data['ADDR']}');
       localName.value = resData2.data['ADDR'];
 
@@ -207,14 +211,17 @@ class _ListPageState extends State<ListPage> {
                         ),
                       ),
                       TextScroll(
-                        '${value.main!.temp.toString()}° · ${value.weather![0].description.toString()} / ${OpenWheatherRepo().weatherDescKo[value.weather![0].id]}',
+                        // ${value.weather![0].description.toString()} /
+                        '${value.main!.temp.toString()}° ·  ${OpenWheatherRepo().weatherDescKo[value.weather![0].id]}',
                         mode: TextScrollMode.endless,
                         numberOfReps: 200,
                         fadedBorder: true,
                         delayBefore: const Duration(milliseconds: 4000),
                         pauseBetween: const Duration(milliseconds: 2000),
-                        velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
-                        style: const TextStyle(fontSize: 14, color: Colors.white),
+                        velocity:
+                            const Velocity(pixelsPerSecond: Offset(100, 0)),
+                        style:
+                            const TextStyle(fontSize: 14, color: Colors.white),
                         textAlign: TextAlign.right,
                         selectable: true,
                       ),
