@@ -13,6 +13,7 @@ import 'package:project1/app/camera/enums/color_constant.dart';
 import 'package:project1/app/camera/page/video_player.dart';
 import 'package:project1/app/camera/page/widgets/animated_bar.dart';
 import 'package:project1/app/camera/utils/screenshot_utils.dart';
+import 'package:project1/utils/utils.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 // https://github.com/rajaniket/camera_bloc
@@ -42,10 +43,14 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
     // Clean up resources and reset the CameraBloc on page dispose
     cameraBloc.add(CameraReset());
     cameraBloc.close();
+
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
+  /*
+  Camera 패키지에서 제안한 카메라 생명주기 관리 코드
+  */
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // App state changed before we got the chance to initialize.
@@ -80,13 +85,14 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
           ),
         ),
         Positioned(
-            top: 30,
-            right: 10,
+            top: 35,
+            right: 15,
             child: IconButton(
               icon: const Icon(
                 Icons.close,
                 color: Colors.white,
-                weight: 200,
+                weight: 450,
+                size: 27,
               ),
               onPressed: () {
                 Navigator.of(context).pop();
@@ -98,24 +104,13 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
 
   void _cameraBlocListener(BuildContext context, CameraState state) {
     if (state is CameraRecordingSuccess) {
-      // Navigate to the VideoPage when video recording is successful
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => VideoPage(videoFile: state.file),
         ),
       );
     } else if (state is CameraReady && state.hasRecordingError) {
-      // Show a snackbar when there is a recording error (less than 2 seconds)
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Colors.black45,
-          duration: Duration(milliseconds: 1000),
-          content: Text(
-            '2초 이상 촬영해주세요!',
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
-      );
+      Utils.alert("2초 이상 촬영해주세요!");
     }
   }
 
@@ -162,21 +157,18 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 400),
                   switchInCurve: Curves.linear,
-                  transitionBuilder:
-                      (Widget child, Animation<double> animation) {
+                  transitionBuilder: (Widget child, Animation<double> animation) {
                     return FadeTransition(
                       opacity: animation,
                       alwaysIncludeSemantics: true,
                       child: child,
                     );
                   },
-                  child: state! is CameraReady
+                  child: state is CameraReady
                       ? Builder(builder: (context) {
                           var controller = cameraBloc.getController();
                           return Transform.scale(
-                            scale: 1 /
-                                (controller!.value.aspectRatio *
-                                    MediaQuery.of(context).size.aspectRatio),
+                            scale: 1 / (controller!.value.aspectRatio * MediaQuery.of(context).size.aspectRatio),
                             child: CameraPreview(controller),
                           );
                         })
@@ -190,8 +182,7 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                                 ),
                               ),
                               child: BackdropFilter(
-                                filter: ImageFilter.blur(
-                                    sigmaX: 15.0, sigmaY: 15.0),
+                                filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
                                 child: Container(),
                               ),
                             )
@@ -207,13 +198,9 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                     alignment: Alignment.center,
                     children: [
                       IgnorePointer(
-                        ignoring: state is! CameraReady ||
-                            state.decativateRecordButton,
+                        ignoring: state is! CameraReady || state.decativateRecordButton,
                         child: Opacity(
-                          opacity: state is! CameraReady ||
-                                  state.decativateRecordButton
-                              ? 0.4
-                              : 1,
+                          opacity: state is! CameraReady || state.decativateRecordButton ? 0.4 : 1,
                           child: animatedProgressButton(state),
                         ),
                       ),
@@ -227,10 +214,8 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                             child: IconButton(
                               onPressed: () async {
                                 try {
-                                  screenshotBytes = await takeCameraScreenshot(
-                                      key: screenshotKey);
-                                  if (context.mounted)
-                                    cameraBloc.add(CameraSwitch());
+                                  screenshotBytes = await takeCameraScreenshot(key: screenshotKey);
+                                  if (context.mounted) cameraBloc.add(CameraSwitch());
                                 } catch (e) {
                                   //screenshot error
                                 }
@@ -248,16 +233,13 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                         left: 0,
                         child: Visibility(
                           visible: !disableButtons,
-                          child: StatefulBuilder(
-                              builder: (context, localSetState) {
+                          child: StatefulBuilder(builder: (context, localSetState) {
                             return GestureDetector(
                               onTap: () {
                                 final List<int> time = [15, 30, 60, 90];
-                                int currentIndex = time
-                                    .indexOf(cameraBloc.recordDurationLimit);
+                                int currentIndex = time.indexOf(cameraBloc.recordDurationLimit);
                                 localSetState(() {
-                                  cameraBloc.setRecordDurationLimit =
-                                      time[(currentIndex + 1) % time.length];
+                                  cameraBloc.setRecordDurationLimit = time[(currentIndex + 1) % time.length];
                                 });
                               },
                               child: CircleAvatar(
@@ -332,8 +314,7 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                             width: isRecording ? 90 : 30,
                             child: RecordingProgressIndicator(
                               value: value,
-                              maxValue:
-                                  cameraBloc.recordDurationLimit.toDouble(),
+                              maxValue: cameraBloc.recordDurationLimit.toDouble(),
                             ),
                           ),
                         );
@@ -349,11 +330,8 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                     height: isRecording ? 25 : 64,
                     width: isRecording ? 25 : 64,
                     decoration: BoxDecoration(
-                      color: const Color.fromARGB(
-                          255, 255, 255, 255), //Color(0xffe80415),
-                      borderRadius: isRecording
-                          ? BorderRadius.circular(6)
-                          : BorderRadius.circular(100),
+                      color: const Color.fromARGB(255, 255, 255, 255), //Color(0xffe80415),
+                      borderRadius: isRecording ? BorderRadius.circular(6) : BorderRadius.circular(100),
                     ),
                   ),
                 ],
@@ -366,8 +344,7 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
   }
 
   Widget errorWidget(CameraState state) {
-    bool isPermissionError =
-        state is CameraError && state.error == CameraErrorType.permission;
+    bool isPermissionError = state is CameraError && state.error == CameraErrorType.permission;
     return Container(
       color: Colors.black,
       child: Padding(
@@ -376,9 +353,7 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              isPermissionError
-                  ? "Please grant access to your camera and microphone to proceed."
-                  : "Something went wrong",
+              isPermissionError ? "카메라와 마이크에 대한 액세스 권한을 부여해주세요." : "Something went wrong",
               style: const TextStyle(
                 color: Color(0xFF959393),
                 fontFamily: "Montserrat",
@@ -400,8 +375,7 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                     child: Container(
                       height: 35,
                       decoration: BoxDecoration(
-                        color: const Color.fromARGB(136, 76, 75, 75)
-                            .withOpacity(0.4),
+                        color: const Color.fromARGB(136, 76, 75, 75).withOpacity(0.4),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Center(

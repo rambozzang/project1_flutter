@@ -136,7 +136,7 @@ class _VideoUrlState extends State<VideoUrl> {
                           );
                         })),
                 Positioned(
-                  top: 5,
+                  top: 40,
                   left: 10,
                   child: IconButton(
                     onPressed: () {
@@ -157,7 +157,7 @@ class _VideoUrlState extends State<VideoUrl> {
                   ),
                 ),
                 Positioned(
-                  bottom: 15,
+                  bottom: 25,
                   right: 20,
                   left: 20,
                   child: Column(
@@ -229,7 +229,7 @@ class _VideoUrlState extends State<VideoUrl> {
                   ),
                 ),
                 Positioned(
-                  bottom: 10,
+                  bottom: 20,
                   right: 10,
                   child: Column(
                     children: [

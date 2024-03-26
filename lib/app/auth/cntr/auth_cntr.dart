@@ -67,17 +67,14 @@ class AuthCntr extends GetxController with SecureStorage {
       isLogged.value = false;
       return;
     }
-    Utils.alert("로그인 성공!");
+
     resLoginData.value = LoginRes.fromMap(res.data);
     isLogged.value = true;
     Get.toNamed("/rootPage");
   }
 
   //회원가입시
-  void signUpProc(String custId) async {
-    await saveCustId(custId);
-    await login(custId);
-
-    // Get.offAndToNamed('/rootPage');
+  Future<void> signUpProc(String custId) async {
+    await saveCustId(custId).then((value) => login(custId));
   }
 }
