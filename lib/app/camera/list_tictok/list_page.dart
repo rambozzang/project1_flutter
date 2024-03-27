@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
@@ -42,7 +43,8 @@ class _ListPageState extends State<ListPage> {
 
   final ValueNotifier<String> localName = ValueNotifier<String>('');
 
-  final ValueNotifier<CurrentWeather?> currentWeather = ValueNotifier<CurrentWeather?>(null);
+  final ValueNotifier<CurrentWeather?> currentWeather =
+      ValueNotifier<CurrentWeather?>(null);
 
   @override
   void initState() {
@@ -61,12 +63,15 @@ class _ListPageState extends State<ListPage> {
     LocationPermission permission = await Geolocator.checkPermission();
     lo.g(permission.toString());
 
-    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
         await Geolocator.requestPermission();
       }
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
         return Utils.alert('Location permissions are denied');
       }
     }
@@ -199,69 +204,77 @@ class _ListPageState extends State<ListPage> {
                     children: [
                       const Text(
                         '현재',
-                        style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold),
                       ),
                       Row(
+                        //  crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             '${value.main!.temp?.toStringAsFixed(1)}°',
-                            style: const TextStyle(fontSize: 25, color: Colors.white, fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.right,
+                            style: const TextStyle(
+                                fontSize: 25,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold),
                           ),
-                          SizedBox(
-                            width: 60,
-                            height: 60,
-                            child: Image.network(
+                          Image.network(
+                              width: 50,
+                              height: 50,
                               'http://openweathermap.org/img/wn/${value.weather![0].icon}@2x.png',
-                              // 'http://openweathermap.org/img/w/${value.weather![0].icon}.png',
+                              //'http://openweathermap.org/img/w/${value.weather![0].icon}.png',
                               scale: 1,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
+                              fit: BoxFit.fill,
+                              alignment: Alignment.topCenter),
                         ],
                       ),
                       Text(
-                        '체감온도 ${value.main!.feels_like.toString()}°',
-                        style: const TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.bold),
+                        '체감온도 ${value.main!.feels_like?.toStringAsFixed(1)}°',
+                        style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
                   SizedBox(
                     width: Get.width * 0.5,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          ' ${value.weather![0].description.toString()}',
-                          style: const TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          ' ${OpenWheatherRepo().weatherDescKo[value.weather![0].id]}',
-                          style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          '습도:  ${value.main!.humidity.toString()}%',
-                          style: const TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          '풍속:  ${value.wind!.speed.toString()}km/h',
-                          style: const TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
+                    // child: Column(
+                    //   crossAxisAlignment: CrossAxisAlignment.end,
+                    //   children: [
+                    //     Text(
+                    //       ' ${value.weather![0].description.toString()}',
+                    //       style: const TextStyle(
+                    //           fontSize: 15,
+                    //           color: Colors.white,
+                    //           fontWeight: FontWeight.bold),
+                    //     ),
+                    //     Text(
+                    //       ' ${OpenWheatherRepo().weatherDescKo[value.weather![0].id]}',
+                    //       style: const TextStyle(
+                    //           fontSize: 16,
+                    //           color: Colors.white,
+                    //           fontWeight: FontWeight.bold),
+                    //     ),
+                    //     Text(
+                    //       '습도:  ${value.main!.humidity.toString()}%',
+                    //       style: const TextStyle(
+                    //           fontSize: 15,
+                    //           color: Colors.white,
+                    //           fontWeight: FontWeight.bold),
+                    //     ),
+                    //     Text(
+                    //       '풍속:  ${value.wind!.speed.toString()}km/h',
+                    //       style: const TextStyle(
+                    //           fontSize: 15,
+                    //           color: Colors.white,
+                    //           fontWeight: FontWeight.bold),
+                    //     ),
+                    //   ],
+                    // ),
                   ),
-                  // TextScroll(
-                  //   // ${value.weather![0].description.toString()} /
-                  //   '${value.main!.temp.toString()}° ·  ${OpenWheatherRepo().weatherDescKo[value.weather![0].id]}',
-                  //   mode: TextScrollMode.endless,
-                  //   numberOfReps: 200,
-                  //   fadedBorder: true,
-                  //   delayBefore: const Duration(milliseconds: 4000),
-                  //   pauseBetween: const Duration(milliseconds: 2000),
-                  //   velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
-                  //   style: const TextStyle(fontSize: 14, color: Colors.white),
-                  //   textAlign: TextAlign.right,
-                  //   selectable: true,
-                  // ),
                 ],
               ),
             ),

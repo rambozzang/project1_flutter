@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -35,7 +36,8 @@ class _VideoPageState extends State<VideoPage> {
   late Subscription _subscription;
   late MediaInfo? pickedFile;
 
-  final ValueNotifier<CurrentWeather?> currentWeather = ValueNotifier<CurrentWeather?>(null);
+  final ValueNotifier<CurrentWeather?> currentWeather =
+      ValueNotifier<CurrentWeather?>(null);
 
   final ValueNotifier<String?> localName = ValueNotifier<String?>(null);
   final ValueNotifier<TotalData?> totalData = ValueNotifier<TotalData?>(null);
@@ -56,6 +58,7 @@ class _VideoPageState extends State<VideoPage> {
     _subscription = VideoCompress.compressProgress$.subscribe((progress) {
       log('VideoCompress progress: $progress');
     });
+
     compressVideo();
 
     // _videoController.addListener(() {
@@ -217,6 +220,7 @@ class _VideoPageState extends State<VideoPage> {
         includeAudio: true,
       );
       Lo.g('비디오 압축 결과 : ${pickedFile?.toJson()}');
+
       // return pickedFile;
     } catch (e) {
       Lo.g('비디오 압축 에러 : $e');
@@ -247,7 +251,11 @@ class _VideoPageState extends State<VideoPage> {
       //   resizeToAvoidBottomInset: false,
       //resizeToAvoidBottomInset: false,
       appBar: AppBar(
-          backgroundColor: Colors.white, centerTitle: false, forceMaterialTransparency: false, elevation: 0, scrolledUnderElevation: 0),
+          backgroundColor: Colors.white,
+          centerTitle: false,
+          forceMaterialTransparency: false,
+          elevation: 0,
+          scrolledUnderElevation: 0),
       body: Expanded(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -272,14 +280,19 @@ class _VideoPageState extends State<VideoPage> {
                                 Navigator.push<_PlayerVideoAndPopPage>(
                                   context,
                                   MaterialPageRoute<_PlayerVideoAndPopPage>(
-                                    builder: (BuildContext context) => _PlayerVideoAndPopPage(),
+                                    builder: (BuildContext context) =>
+                                        _PlayerVideoAndPopPage(),
                                   ),
                                 );
                               },
                               child: VideoPlayer(_videoController)),
                         ),
                       ),
-                      const Positioned(right: 5, bottom: 5, child: Icon(Icons.zoom_in, size: 30, color: Colors.white))
+                      const Positioned(
+                          right: 5,
+                          bottom: 5,
+                          child: Icon(Icons.zoom_in,
+                              size: 30, color: Colors.white))
                     ],
                   ),
                 ),
@@ -290,7 +303,8 @@ class _VideoPageState extends State<VideoPage> {
                     //     style: const TextStyle(fontSize: 14, color: Colors.black)),
                     Row(
                       children: [
-                        const Icon(Icons.location_on, color: Colors.red, size: 20),
+                        const Icon(Icons.location_on,
+                            color: Colors.red, size: 20),
                         ValueListenableBuilder<String?>(
                             valueListenable: localName,
                             builder: (context, value, child) {
@@ -303,7 +317,8 @@ class _VideoPageState extends State<VideoPage> {
                                 onTap: () => getCurrentLocation(),
                                 child: Text(
                                   value.toString(),
-                                  style: const TextStyle(fontSize: 14, color: Colors.black),
+                                  style: const TextStyle(
+                                      fontSize: 14, color: Colors.black),
                                 ),
                               );
                             }),
@@ -332,7 +347,9 @@ class _VideoPageState extends State<VideoPage> {
                                 children: [
                                   Text(
                                     '  ${value.main!.temp!.toStringAsFixed(1)}°',
-                                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                                    style: TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold),
                                   ),
                                   SizedBox(
                                     width: 50,
@@ -347,10 +364,13 @@ class _VideoPageState extends State<VideoPage> {
                                   ),
                                   const Text(
                                     ' · ',
-                                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                    style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold),
                                   ),
                                   //  Text(value.weather![0].description.toString()),
-                                  Text(OpenWheatherRepo().weatherDescKo[value.weather![0].id]),
+                                  Text(OpenWheatherRepo()
+                                      .weatherDescKo[value.weather![0].id]),
                                 ],
                               ),
                             );
@@ -362,8 +382,12 @@ class _VideoPageState extends State<VideoPage> {
                 ),
                 const Gap(10),
                 HashTagTextField(
-                  basicStyle: const TextStyle(fontSize: 15, color: Colors.black, decorationThickness: 0),
-                  decoratedStyle: const TextStyle(fontSize: 15, color: Colors.blue),
+                  basicStyle: const TextStyle(
+                      fontSize: 15,
+                      color: Colors.black,
+                      decorationThickness: 0),
+                  decoratedStyle:
+                      const TextStyle(fontSize: 15, color: Colors.blue),
                   keyboardType: TextInputType.multiline,
                   maxLines: 3,
                   decoration: InputDecoration(
@@ -371,7 +395,9 @@ class _VideoPageState extends State<VideoPage> {
                     //   hintStyle: TextStyle(fontSize: 15, color: Colors.grey),
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(5),
-                        borderSide: const BorderSide(color: Color.fromARGB(255, 59, 104, 81), width: 1.0)),
+                        borderSide: const BorderSide(
+                            color: Color.fromARGB(255, 59, 104, 81),
+                            width: 1.0)),
                   ),
 
                   /// Called when detection (word starts with #, or # and @) is being typed
@@ -388,7 +414,8 @@ class _VideoPageState extends State<VideoPage> {
                 const Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Text('# Tag 사용 가능.', style: TextStyle(fontSize: 14, color: Colors.black87)),
+                    Text('# Tag 사용 가능.',
+                        style: TextStyle(fontSize: 14, color: Colors.black87)),
                   ],
                 ),
                 const Gap(200),
@@ -399,9 +426,11 @@ class _VideoPageState extends State<VideoPage> {
       ),
 
       bottomNavigationBar: Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: Container(
-            padding: const EdgeInsets.only(left: 16, right: 16, top: 5, bottom: 8),
+            padding:
+                const EdgeInsets.only(left: 16, right: 16, top: 5, bottom: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -443,7 +472,8 @@ class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage> {
   void initState() {
     super.initState();
 
-    _videoPlayerController = VideoPlayerController.asset('assets/Butterfly-209.mp4');
+    _videoPlayerController =
+        VideoPlayerController.asset('assets/Butterfly-209.mp4');
     _videoPlayerController.addListener(() {
       if (startedPlaying && !_videoPlayerController.value.isPlaying) {
         Navigator.pop(context);
