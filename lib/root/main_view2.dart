@@ -1,213 +1,65 @@
 import 'package:flutter/material.dart';
-import 'package:story_view/controller/story_controller.dart';
-import 'package:story_view/story_view.dart';
+import 'package:hashtagable_v3/hashtagable.dart';
 
-class MainView2 extends StatelessWidget {
-  final StoryController controller = StoryController();
+class MainView2 extends StatefulWidget {
+  final String title;
+
+  const MainView2({Key? key, required this.title}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Delicious Ghanaian Meals"),
-      ),
-      body: Container(
-        margin: EdgeInsets.all(
-          8,
-        ),
-        child: ListView(
-          children: <Widget>[
-            Container(
-              height: 300,
-              child: StoryView(
-                controller: controller,
-                storyItems: [
-                  StoryItem.text(
-                    title:
-                        "Hello world!\nHave a look at some great Ghanaian delicacies. I'm sorry if your mouth waters. \n\nTap!",
-                    backgroundColor: Colors.orange,
-                    roundedTop: true,
-                  ),
-                  // StoryItem.inlineImage(
-                  //   NetworkImage(
-                  //       "https://image.ibb.co/gCZFbx/Banku-and-tilapia.jpg"),
-                  //   caption: Text(
-                  //     "Banku & Tilapia. The food to keep you charged whole day.\n#1 Local food.",
-                  //     style: TextStyle(
-                  //       color: Colors.white,
-                  //       backgroundColor: Colors.black54,
-                  //       fontSize: 17,
-                  //     ),
-                  //   ),
-                  // ),
-                  StoryItem.inlineImage(
-                    url:
-                        "https://image.ibb.co/cU4WGx/Omotuo-Groundnut-Soup-braperucci-com-1.jpg",
-                    controller: controller,
-                    caption: Text(
-                      "Omotuo & Nkatekwan; You will love this meal if taken as supper.",
-                      style: TextStyle(
-                        color: Colors.white,
-                        backgroundColor: Colors.black54,
-                        fontSize: 17,
-                      ),
-                    ),
-                  ),
-                  StoryItem.inlineImage(
-                    url:
-                        "https://media.giphy.com/media/5GoVLqeAOo6PK/giphy.gif",
-                    controller: controller,
-                    caption: Text(
-                      "Hektas, sektas and skatad",
-                      style: TextStyle(
-                        color: Colors.white,
-                        backgroundColor: Colors.black54,
-                        fontSize: 17,
-                      ),
-                    ),
-                  )
-                ],
-                onStoryShow: (storyItem, index) {
-                  print("Showing a story");
-                },
-                onComplete: () {
-                  print("Completed a cycle");
-                },
-                progressPosition: ProgressPosition.bottom,
-                repeat: false,
-                inline: true,
-              ),
-            ),
-            Material(
-              child: InkWell(
-                onTap: () {
-                  Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => MoreStories()));
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius:
-                          BorderRadius.vertical(bottom: Radius.circular(8))),
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Icon(
-                        Icons.arrow_forward,
-                        color: Colors.white,
-                      ),
-                      SizedBox(
-                        width: 16,
-                      ),
-                      Text(
-                        "View more stories",
-                        style: TextStyle(fontSize: 16, color: Colors.white),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  _MyHomePageState createState() => _MyHomePageState();
 }
 
-class MoreStories extends StatefulWidget {
-  @override
-  _MoreStoriesState createState() => _MoreStoriesState();
-}
-
-class _MoreStoriesState extends State<MoreStories> {
-  final storyController = StoryController();
-
-  @override
-  void dispose() {
-    storyController.dispose();
-    super.dispose();
-  }
-
+class _MyHomePageState extends State<MainView2> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("More"),
-      ),
-      body: StoryView(
-        storyItems: [
-          StoryItem.text(
-            title: "I guess you'd love to see more of our food. That's great.",
-            backgroundColor: Colors.blue,
-          ),
-          StoryItem.text(
-            title: "Nice!\n\nTap to continue.",
-            backgroundColor: Colors.red,
-            textStyle: TextStyle(
-              fontFamily: 'Dancing',
-              fontSize: 40,
-            ),
-          ),
-          StoryItem.pageImage(
-            url:
-                "https://image.ibb.co/cU4WGx/Omotuo-Groundnut-Soup-braperucci-com-1.jpg",
-            caption: Text(
-              "Still sampling",
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.white,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            controller: storyController,
-          ),
-          StoryItem.pageImage(
-              url: "https://media.giphy.com/media/5GoVLqeAOo6PK/giphy.gif",
-              caption: Text(
-                "Working with gifs",
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Colors.white,
+    return MaterialApp(
+      home: Scaffold(
+        body: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Center(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                /// Tagged text only to be shown
+                HashTagText(
+                  text: "#Welcome to #hashtagable\n This is #ReadOnlyText",
+                  basicStyle: const TextStyle(fontSize: 22, color: Colors.black),
+                  decoratedStyle: const TextStyle(fontSize: 22, color: Colors.red),
+                  textAlign: TextAlign.center,
+                  onTap: (text) {
+                    print(text);
+                  },
                 ),
-                textAlign: TextAlign.center,
-              ),
-              controller: storyController),
-          StoryItem.pageImage(
-            url: "https://media.giphy.com/media/XcA8krYsrEAYXKf4UQ/giphy.gif",
-            caption: Text(
-              "Hello, from the other side",
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.white,
-              ),
-              textAlign: TextAlign.center,
+                HashTagTextField(
+                  basicStyle: const TextStyle(fontSize: 15, color: Colors.black, decorationThickness: 0),
+                  decoratedStyle: const TextStyle(fontSize: 15, color: Colors.blue),
+                  keyboardType: TextInputType.multiline,
+                  maxLines: 5,
+
+                  decoration: InputDecoration(
+                    //   hintText: "Type something here...",
+                    //   hintStyle: TextStyle(fontSize: 15, color: Colors.grey),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  ),
+
+                  /// Called when detection (word starts with #, or # and @) is being typed
+                  onDetectionTyped: (text) {
+                    print(text);
+                  },
+
+                  /// Called when detection is fully typed
+                  onDetectionFinished: () {
+                    print("detection finished");
+                  },
+                ),
+              ],
             ),
-            controller: storyController,
           ),
-          StoryItem.pageImage(
-            url: "https://media.giphy.com/media/XcA8krYsrEAYXKf4UQ/giphy.gif",
-            caption: Text(
-              "Hello, from the other side2",
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.white,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            controller: storyController,
-          ),
-        ],
-        onStoryShow: (storyItem, index) {
-          print("Showing a story");
-        },
-        onComplete: () {
-          print("Completed a cycle");
-        },
-        progressPosition: ProgressPosition.top,
-        repeat: false,
-        controller: storyController,
+        ),
       ),
     );
   }

@@ -17,8 +17,7 @@ class MainView1 extends StatefulWidget {
   State<MainView1> createState() => _MainView1State();
 }
 
-class _MainView1State extends State<MainView1>
-    with SingleTickerProviderStateMixin {
+class _MainView1State extends State<MainView1> with SingleTickerProviderStateMixin {
   var alignment = Alignment.centerRight;
 
   List<String> tabNames = ["테스트", "색상", "TextStyle", "버튼", "Badge"];
@@ -27,23 +26,14 @@ class _MainView1State extends State<MainView1>
   List<dynamic> tabBodys = [
     TestLinkPage(key: ValueKey(1)),
     const ColorPage(key: ValueKey(2)),
-    const Center(
-        child: Text("asdfasdfasdf",
-            style: TextStyle(fontSize: 30, color: Colors.black))),
-    const Center(
-        child: Text("통합 게시판",
-            style: TextStyle(fontSize: 30, color: Colors.black))),
-    const Center(
-        child:
-            Text("채팅 화면", style: TextStyle(fontSize: 30, color: Colors.black))),
+    const Center(child: Text("asdfasdfasdf", style: TextStyle(fontSize: 30, color: Colors.black))),
+    const Center(child: Text("통합 게시판", style: TextStyle(fontSize: 30, color: Colors.black))),
+    const Center(child: Text("채팅 화면", style: TextStyle(fontSize: 30, color: Colors.black))),
   ];
 
   @override
   void initState() {
-    RootCntr.to.tabController = TabController(
-        vsync: this,
-        length: tabNames.length,
-        animationDuration: const Duration(milliseconds: 130));
+    RootCntr.to.tabController = TabController(vsync: this, length: tabNames.length, animationDuration: const Duration(milliseconds: 130));
 
     super.initState();
   }
@@ -55,26 +45,19 @@ class _MainView1State extends State<MainView1>
     // 설정하기 위해 AnnotatedRegion을 사용함
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-          statusBarColor: Colors.white,
-          statusBarBrightness: Brightness.light,
-          statusBarIconBrightness: Brightness.dark),
+          statusBarColor: Colors.white, statusBarBrightness: Brightness.light, statusBarIconBrightness: Brightness.dark),
       child: Material(
         color: Colors.white,
         // child: bodyWidget(),
         child: NotificationListener<UserScrollNotification>(
           onNotification: (notification) {
             if (notification.depth >= 2) {
-              if (notification.direction == ScrollDirection.forward &&
-                  RootCntr.to.hideButtonController1.offset != 0) {
-                RootCntr.to.hideButtonController1.animateTo(0,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.ease);
+              if (notification.direction == ScrollDirection.forward && RootCntr.to.hideButtonController1.offset != 0) {
+                RootCntr.to.hideButtonController1.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.ease);
               } else if (notification.depth >= 2 &&
                   notification.direction == ScrollDirection.reverse &&
                   RootCntr.to.hideButtonController1.offset != 105) {
-                RootCntr.to.hideButtonController1.animateTo(105,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.ease);
+                RootCntr.to.hideButtonController1.animateTo(105, duration: const Duration(milliseconds: 300), curve: Curves.ease);
               }
             }
             return false;
@@ -119,8 +102,7 @@ class _MainView1State extends State<MainView1>
                       // SizedBox(
                       //   width: 10,
                       // ),
-                      Text(
-                          'Nice Kos Investment ${AuthCntr.to.resLoginData.value.nickNm}',
+                      Text('Nice Kos ${AuthCntr.to.resLoginData.value.nickNm}',
                           style: const TextStyle(
                               color: Colors.black,
                               fontWeight: FontWeight.w700,
@@ -132,10 +114,8 @@ class _MainView1State extends State<MainView1>
                 ),
                 // 변경사항
                 SliverOverlapAbsorber(
-                  handle:
-                      NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-                  sliver: SliverPersistentHeader(
-                      pinned: true, delegate: TabBarDelegate(tabNames)),
+                  handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+                  sliver: SliverPersistentHeader(pinned: true, delegate: TabBarDelegate(tabNames)),
                 ),
               ];
             },
@@ -175,15 +155,13 @@ class TabBarDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 0.0),
       width: double.infinity,
       color: Colors.white,
       child: TabBar(
-        labelPadding:
-            const EdgeInsets.symmetric(horizontal: 1.5, vertical: 0.0),
+        labelPadding: const EdgeInsets.symmetric(horizontal: 1.5, vertical: 0.0),
         tabAlignment: TabAlignment.start,
         labelColor: Colors.black,
         labelStyle: const TextStyle(
@@ -207,9 +185,7 @@ class TabBarDelegate extends SliverPersistentHeaderDelegate {
         ),
         controller: RootCntr.to.tabController,
         isScrollable: true,
-        tabs: [
-          ...List.generate(tabNames.length, (i) => getTabButton(tabNames[i]))
-        ],
+        tabs: [...List.generate(tabNames.length, (i) => getTabButton(tabNames[i]))],
       ),
     );
   }
@@ -220,11 +196,7 @@ class TabBarDelegate extends SliverPersistentHeaderDelegate {
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
       child: Tab(
         height: 45,
-        child: Text(title,
-            style: const TextStyle(
-                fontSize: 14,
-                color: Colors.black,
-                fontWeight: FontWeight.bold)),
+        child: Text(title, style: const TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -242,8 +214,7 @@ class CategoryBreadcrumbs extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
       color: Colors.white,
       height: 48,
