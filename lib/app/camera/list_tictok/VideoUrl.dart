@@ -47,8 +47,7 @@ class _VideoUrlState extends State<VideoUrl> {
     //   Uri.parse(widget.videoUrl),
     //   invalidateCacheIfOlderThan: const Duration(days: 69),)
 
-    final file = await DefaultCacheManager()
-        .getSingleFile(widget.videoUrl, key: widget.videoUrl);
+    final file = await DefaultCacheManager().getSingleFile(widget.videoUrl, key: widget.videoUrl);
     _controller = VideoPlayerController.file(file)
       ..initialize().then((_) {
         if (mounted) {
@@ -67,9 +66,7 @@ class _VideoUrlState extends State<VideoUrl> {
 
       // aspectRatio = _controller.value.aspectRatio;
       position = _controller.value.position;
-      progress.value = (position.inSeconds / max * 100).isNaN
-          ? 0
-          : position.inSeconds / max * 100;
+      progress.value = (position.inSeconds / max * 100).isNaN ? 0 : position.inSeconds / max * 100;
     });
   }
 
@@ -144,14 +141,10 @@ class _VideoUrlState extends State<VideoUrl> {
                               child: value
                                   ? IconButton(
                                       onPressed: () => _controller.pause(),
-                                      icon: Icon(Icons.play_arrow_outlined,
-                                          color: Colors.white.withOpacity(0.5),
-                                          size: 40))
+                                      icon: Icon(Icons.play_arrow_outlined, color: Colors.white.withOpacity(0.5), size: 40))
                                   : IconButton(
                                       onPressed: () => _controller.play(),
-                                      icon: Icon(Icons.pause,
-                                          color: Colors.white.withOpacity(0.5),
-                                          size: 40)),
+                                      icon: Icon(Icons.pause, color: Colors.white.withOpacity(0.5), size: 40)),
                             ),
                           );
                         })),
@@ -171,10 +164,8 @@ class _VideoUrlState extends State<VideoUrl> {
                         valueListenable: soundOff,
                         builder: (context, value, child) {
                           return value
-                              ? const Icon(Icons.volume_off_outlined,
-                                  color: Colors.white)
-                              : const Icon(Icons.volume_up_outlined,
-                                  color: Colors.white);
+                              ? const Icon(Icons.volume_off_outlined, color: Colors.white)
+                              : const Icon(Icons.volume_up_outlined, color: Colors.white);
                         }),
                   ),
                 ),
@@ -194,12 +185,10 @@ class _VideoUrlState extends State<VideoUrl> {
                             decoration: BoxDecoration(
                               color: const Color(0xff7c94b6),
                               image: DecorationImage(
-                                image: NetworkImage(AuthCntr
-                                    .to.resLoginData.value.profilePath!),
+                                image: NetworkImage(AuthCntr.to.resLoginData.value.profilePath!),
                                 fit: BoxFit.cover,
                               ),
-                              borderRadius:
-                                  const BorderRadius.all(Radius.circular(50.0)),
+                              borderRadius: const BorderRadius.all(Radius.circular(50.0)),
                               border: Border.all(
                                 color: Colors.green,
                                 width: 2.0,
@@ -212,31 +201,18 @@ class _VideoUrlState extends State<VideoUrl> {
                             children: [
                               Text(
                                 '이문세',
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold),
+                                style: TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
                               ),
                               Text(
                                 '2024.03.03 · 서울시 서대문구',
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600),
+                                style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600),
                               )
                             ],
                           ),
-                          const SizedBox(
-                              width: 35,
-                              height: 35,
-                              child: VerticalDivider(
-                                  thickness: 1, color: Colors.white)),
+                          const SizedBox(width: 35, height: 35, child: VerticalDivider(thickness: 1, color: Colors.white)),
                           const Text(
                             '흐림',
-                            style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600),
+                            style: TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
                           ),
                         ],
                       ),
@@ -254,14 +230,10 @@ class _VideoUrlState extends State<VideoUrl> {
                             children: [
                               Text(
                                 'This project is a starting point for a Dart package',
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600),
+                                style: TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
                               ),
                               Gap(10),
-                              Icon(Icons.music_note,
-                                  color: Colors.red, size: 15),
+                              Icon(Icons.music_note, color: Colors.red, size: 15),
                             ],
                           ),
                         ),
@@ -275,29 +247,21 @@ class _VideoUrlState extends State<VideoUrl> {
                   child: Column(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.favorite_border,
-                            color: Colors.white),
+                        icon: const Icon(Icons.favorite_border, color: Colors.white),
                         onPressed: () {},
                       ),
                       const Text(
                         '1.2M',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600),
+                        style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
                       ),
                       const Gap(10),
                       IconButton(
-                        icon: const Icon(Icons.message_outlined,
-                            color: Colors.white),
+                        icon: const Icon(Icons.message_outlined, color: Colors.white),
                         onPressed: () {},
                       ),
                       const Text(
                         '1.2M',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600),
+                        style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
                       ),
                       const Gap(10),
                       IconButton(
@@ -316,8 +280,7 @@ class _VideoUrlState extends State<VideoUrl> {
                   right: 10,
                   top: _controller.value.size.height / 2,
                   child: ConstrainedBox(
-                    constraints:
-                        const BoxConstraints.tightFor(width: 65, height: 40),
+                    constraints: const BoxConstraints.tightFor(width: 65, height: 40),
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white.withOpacity(0.15),
@@ -332,8 +295,7 @@ class _VideoUrlState extends State<VideoUrl> {
                       },
                       child: const Text(
                         'Join',
-                        style: TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -347,26 +309,19 @@ class _VideoUrlState extends State<VideoUrl> {
                       builder: (context, value, child) {
                         return Stack(
                           children: [
-                            Container(
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 4),
-                                height: 4,
-                                color: Colors.grey,
-                                width: MediaQuery.of(context).size.width),
+                            Container(height: 2, color: Colors.grey, width: MediaQuery.of(context).size.width),
                             AnimatedContainer(
-                              duration: const Duration(milliseconds: 1000),
-                              margin: const EdgeInsets.symmetric(horizontal: 4),
-                              height: 4,
-                              width: (MediaQuery.of(context).size.width) *
-                                  (value / 100),
+                              duration: Duration(milliseconds: value == 0.0 ? 250 : 1000),
+                              height: 2,
+                              width: (MediaQuery.of(context).size.width) * (value / 100),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(4),
                                 // color: const Color.fromRGBO(215, 215, 215, 1),
-                                //    color: const Color.fromRGBO(215, 215, 215, 1),
-                                // color: Color.fromARGB(255, 110, 186, 111),
-                                color: const Color.fromARGB(255, 38, 162, 40),
+                                // color: const Color.fromRGBO(215, 215, 215, 1),
+                                color: const Color.fromARGB(255, 110, 186, 111),
+                                // color: const Color.fromARGB(255, 38, 162, 40),
                                 // color: Color.fromARGB(255, 34, 112, 26),
-                                //color: Color.fromARGB(255, 13, 104, 43),
+                                // color: Color.fromARGB(255, 13, 104, 43),
                               ),
                             ),
                           ],

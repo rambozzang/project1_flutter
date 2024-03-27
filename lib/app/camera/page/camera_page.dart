@@ -85,8 +85,8 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
           ),
         ),
         Positioned(
-            top: 35,
-            right: 15,
+            top: 30,
+            right: 14,
             child: IconButton(
               icon: const Icon(
                 Icons.close,

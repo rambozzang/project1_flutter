@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:gap/gap.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
+import 'package:hashtagable_v3/hashtagable.dart';
 import 'package:project1/app/camera/page/video_indicator.dart';
 import 'package:project1/app/cloudinary/cloudinary_page.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -34,17 +35,16 @@ class _VideoPageState extends State<VideoPage> {
   late Subscription _subscription;
   late MediaInfo? pickedFile;
 
-  final ValueNotifier<CurrentWeather?> currentWeather =
-      ValueNotifier<CurrentWeather?>(null);
+  final ValueNotifier<CurrentWeather?> currentWeather = ValueNotifier<CurrentWeather?>(null);
 
-  final ValueNotifier<String> localName = ValueNotifier<String>('');
+  final ValueNotifier<String?> localName = ValueNotifier<String?>(null);
   final ValueNotifier<TotalData?> totalData = ValueNotifier<TotalData?>(null);
 
   final ValueNotifier<bool> isUploading = ValueNotifier<bool>(false);
   final ValueNotifier<double> uploadingPercentage = ValueNotifier<double>(0.0);
 
   final ValueNotifier<double> progress = ValueNotifier<double>(0.0);
-  Duration position = Duration.zero;
+  late Position? position;
 
   @override
   void initState() {
@@ -76,14 +76,13 @@ class _VideoPageState extends State<VideoPage> {
 
   Future<void> getDate() async {
     try {
-      OpenWheatherRepo repo = OpenWheatherRepo();
-
       // 위치 좌표 가져오기
       MyLocatorRepo myLocatorRepo = MyLocatorRepo();
-      Position? position = await myLocatorRepo.getCurrentLocation();
+      position = await myLocatorRepo.getCurrentLocation();
       //Utils.alert('좌표 가져오기 성공');
 
       // 좌료를 통해 날씨 정보 가져오기
+      OpenWheatherRepo repo = OpenWheatherRepo();
       ResData resData = await repo.getWeather(position!);
 
       if (resData.code != '00') {
@@ -92,14 +91,12 @@ class _VideoPageState extends State<VideoPage> {
       }
       Lo.g('getDate() resData : ${resData.data}');
       currentWeather.value = CurrentWeather.fromMap(resData.data);
-
       totalData.value?.currentWeather = CurrentWeather.fromMap(resData.data);
-
       Lo.g('weatherData : ${currentWeather.toString()}');
       //Utils.alert('날씨 가져오기 성공');
 
       // 좌료를 통해 동네이름 가져오기
-      ResData resData2 = await myLocatorRepo.getLocationName(position);
+      ResData resData2 = await myLocatorRepo.getLocationName(position!);
       if (resData2.code != '00') {
         Utils.alert(resData2.msg.toString());
         return;
@@ -111,6 +108,37 @@ class _VideoPageState extends State<VideoPage> {
     } catch (e) {
       Lo.g('getDate() error : ' + e.toString());
     }
+  }
+
+  // 현재 위치 가져오기
+  Future<void> getCurrentLocation() async {
+    localName.value = '';
+    MyLocatorRepo myLocatorRepo = MyLocatorRepo();
+    position = await myLocatorRepo.getCurrentLocation();
+    ResData resData2 = await myLocatorRepo.getLocationName(position!);
+    if (resData2.code != '00') {
+      Utils.alert(resData2.msg.toString());
+      return;
+    }
+    //Utils.alert('동네이름 가져오기 성공');
+    Lo.g('동네이름() resData2 : ${resData2.data['ADDR']}');
+    localName.value = resData2.data['ADDR'];
+    totalData.value?.localName = resData2.data['ADDR'];
+  }
+
+  // 날씨 가져오기
+  Future<void> getWeather() async {
+    currentWeather.value = null;
+    // 좌료를 통해 날씨 정보 가져오기
+    OpenWheatherRepo repo = OpenWheatherRepo();
+    ResData resData = await repo.getWeather(position!);
+
+    if (resData.code != '00') {
+      Utils.alert(resData.msg.toString());
+      return;
+    }
+    Lo.g('getDate() resData : ${resData.data}');
+    currentWeather.value = CurrentWeather.fromMap(resData.data);
   }
 
   // 파일 업로드
@@ -207,6 +235,7 @@ class _VideoPageState extends State<VideoPage> {
   @override
   void dispose() {
     _videoController.dispose();
+    VideoCompress.deleteAllCache();
     _subscription.unsubscribe();
     super.dispose();
   }
@@ -214,176 +243,181 @@ class _VideoPageState extends State<VideoPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      //  backgroundColor: Colors.white,
+      backgroundColor: Colors.white,
+      //   resizeToAvoidBottomInset: false,
       //resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        centerTitle: false,
-      ),
-      body: Stack(
-        children: [
-          Padding(
+          backgroundColor: Colors.white, centerTitle: false, forceMaterialTransparency: false, elevation: 0, scrolledUnderElevation: 0),
+      body: Expanded(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: SingleChildScrollView(
-              physics: const ClampingScrollPhysics(),
-              child: Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    //  const Gap(10),
-                    Container(
-                      height: 300,
-                      width: double.infinity,
-                      alignment: Alignment.center,
-                      child: Stack(
-                        children: [
-                          AspectRatio(
-                            aspectRatio: 9 / 16,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(15),
-                              child: VideoPlayer(_videoController),
-                            ),
-                          ),
-                          // Positioned(
-                          //   bottom: 0.2,
-                          //   left: 9,
-                          //   right: 9,
-                          //   child: ValueListenableBuilder<double>(
-                          //       valueListenable: progress,
-                          //       builder: (context, value, child) {
-                          //         log('progress : ${(MediaQuery.of(context).size.width) * (value / 100)}');
-
-                          //         return Stack(
-                          //           children: [
-                          //             Container(
-                          //                 margin: const EdgeInsets.symmetric(
-                          //                     horizontal: 4),
-                          //                 height: 4,
-                          //                 color: Colors.grey,
-                          //                 width: MediaQuery.of(context)
-                          //                     .size
-                          //                     .width),
-                          //             AnimatedContainer(
-                          //               duration:
-                          //                   const Duration(milliseconds: 600),
-                          //               margin: const EdgeInsets.symmetric(
-                          //                   horizontal: 4),
-                          //               height: 4,
-                          //               width: (MediaQuery.of(context)
-                          //                       .size
-                          //                       .width) *
-                          //                   (value / 100),
-                          //               decoration: BoxDecoration(
-                          //                 borderRadius:
-                          //                     BorderRadius.circular(4),
-                          //                 color: const Color.fromRGBO(
-                          //                     215, 215, 215, 1),
-                          //               ),
-                          //             ),
-                          //           ],
-                          //         );
-                          //       }),
-                          // ),
-                          const Positioned(
-                              right: 5,
-                              bottom: 5,
-                              child: Icon(Icons.zoom_in,
-                                  size: 30, color: Colors.white))
-                        ],
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  height: 300,
+                  width: double.infinity,
+                  alignment: Alignment.center,
+                  child: Stack(
+                    children: [
+                      AspectRatio(
+                        aspectRatio: 9 / 16,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(15),
+                          child: GestureDetector(
+                              onTap: () {
+                                Navigator.push<_PlayerVideoAndPopPage>(
+                                  context,
+                                  MaterialPageRoute<_PlayerVideoAndPopPage>(
+                                    builder: (BuildContext context) => _PlayerVideoAndPopPage(),
+                                  ),
+                                );
+                              },
+                              child: VideoPlayer(_videoController)),
+                        ),
                       ),
-                    ),
-                    const Gap(20),
-                    Column(
+                      const Positioned(right: 5, bottom: 5, child: Icon(Icons.zoom_in, size: 30, color: Colors.white))
+                    ],
+                  ),
+                ),
+                const Gap(20),
+                Column(
+                  children: [
+                    // Text(_videoController.value.duration.toString().split('.').first,
+                    //     style: const TextStyle(fontSize: 14, color: Colors.black)),
+                    Row(
                       children: [
+                        const Icon(Icons.location_on, color: Colors.red, size: 20),
                         ValueListenableBuilder<String?>(
                             valueListenable: localName,
                             builder: (context, value, child) {
-                              if (value == null) {
-                                return const SizedBox();
+                              if (value == null || value == '') {
+                                return const Text(
+                                  '현재위치 가져오는중..',
+                                );
                               }
-                              return Text(
-                                value.toString(),
-                                style: const TextStyle(
-                                    fontSize: 14, color: Colors.green),
+                              return GestureDetector(
+                                onTap: () => getCurrentLocation(),
+                                child: Text(
+                                  value.toString(),
+                                  style: const TextStyle(fontSize: 14, color: Colors.black),
+                                ),
                               );
                             }),
-                        const Gap(10),
+                      ],
+                    ),
+                    const Gap(10),
+                    Row(
+                      children: [
                         ValueListenableBuilder<CurrentWeather?>(
                           valueListenable: currentWeather,
                           builder: (context, value, child) {
                             if (value == null) {
-                              return const SizedBox();
+                              return const SizedBox(
+                                  height: 40,
+                                  child: Center(
+                                    child: Text(
+                                      '  날씨정보 가져오는중..',
+                                      textAlign: TextAlign.left,
+                                    ),
+                                  ));
                             }
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                    '${value.weather![0].description.toString()}'),
-                                Text('${value.main!.temp.toString()}°'),
-                              ],
+                            return GestureDetector(
+                              onTap: () => getWeather(),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '  ${value.main!.temp!.toStringAsFixed(1)}°',
+                                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                                  ),
+                                  SizedBox(
+                                    width: 50,
+                                    height: 50,
+                                    child: Image.network(
+                                      // 'http://openweathermap.org/img/wn/${value.weather![0].icon}@2x.png',
+                                      'http://openweathermap.org/img/w/${value.weather![0].icon}.png',
+                                      scale: 1,
+                                      fit: BoxFit.contain,
+                                      alignment: Alignment.centerLeft,
+                                    ),
+                                  ),
+                                  const Text(
+                                    ' · ',
+                                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                  ),
+                                  //  Text(value.weather![0].description.toString()),
+                                  Text(OpenWheatherRepo().weatherDescKo[value.weather![0].id]),
+                                ],
+                              ),
                             );
                           },
                         ),
                       ],
                     ),
-
-                    const Gap(20),
-                    const TextField(
-                      decoration: InputDecoration(
-                          hintStyle: TextStyle(color: Colors.grey),
-                          hintText: "내용을 입력해주세요!"),
-                    ),
-                    const Gap(20),
-                    const Text('Tag을 입력해주세요!'),
-                    // TextFieldTags<String>(
-                    //     textfieldTagsController: _stringTagController,
-                    //     initialTags: ['python', 'java'],
-                    //     textSeparators: const [' ', ','],
-                    //     validator: (String tag) {
-                    //       if (tag == 'php') {
-                    //         return 'Php not allowed';
-                    //       }
-                    //       return null;
-                    //     },
-                    //     inputFieldBuilder: (context, inputFieldValues) {
-                    //       return TextField(
-                    //         controller: inputFieldValues.textEditingController,
-                    //         focusNode: inputFieldValues.focusNode,
-                    //       );
-                    //     }),
-                    const Gap(200),
                   ],
                 ),
-              ),
+                const Gap(10),
+                HashTagTextField(
+                  basicStyle: const TextStyle(fontSize: 15, color: Colors.black, decorationThickness: 0),
+                  decoratedStyle: const TextStyle(fontSize: 15, color: Colors.blue),
+                  keyboardType: TextInputType.multiline,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: "내용을 입력해주세요! #태그 #태그2 #태그3",
+                    //   hintStyle: TextStyle(fontSize: 15, color: Colors.grey),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(5),
+                        borderSide: const BorderSide(color: Color.fromARGB(255, 59, 104, 81), width: 1.0)),
+                  ),
+
+                  /// Called when detection (word starts with #, or # and @) is being typed
+                  onDetectionTyped: (text) {
+                    print(text);
+                  },
+
+                  /// Called when detection is fully typed
+                  onDetectionFinished: () {
+                    print("detection finished");
+                  },
+                ),
+                const Gap(10),
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text('# Tag 사용 가능.', style: TextStyle(fontSize: 14, color: Colors.black87)),
+                  ],
+                ),
+                const Gap(200),
+              ],
             ),
           ),
-          ValueListenableBuilder<bool>(
-              valueListenable: isUploading,
-              builder: (context, value, child) {
-                return CustomIndicatorOffstage(
-                    isLoading: !value,
-                    color: const Color(0xFFEA3799),
-                    opacity: 0.0);
-              })
-        ],
+        ),
       ),
+
       bottomNavigationBar: Padding(
-        padding:
-            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: Container(
-            padding:
-                const EdgeInsets.only(left: 16, right: 16, top: 5, bottom: 16),
+            padding: const EdgeInsets.only(left: 16, right: 16, top: 5, bottom: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 const Spacer(),
-                CustomButton(
-                    text: '등록하기',
-                    type: 'L',
-                    widthValue: 120,
-                    heightValue: 60,
-                    onPressed: () => upload()),
+                ValueListenableBuilder<bool>(
+                  valueListenable: isUploading,
+                  builder: (context, value, child) {
+                    return CustomButton(
+                        text: !value ? '등록하기' : '처리중..',
+                        type: 'L',
+                        // isEnable: !value,
+                        widthValue: 120,
+                        heightValue: 50,
+                        onPressed: () => !value ? upload() : null);
+                  },
+                ),
               ],
             )),
       ),
@@ -394,4 +428,60 @@ class _VideoPageState extends State<VideoPage> {
 class TotalData {
   String? localName;
   CurrentWeather? currentWeather;
+}
+
+class _PlayerVideoAndPopPage extends StatefulWidget {
+  @override
+  _PlayerVideoAndPopPageState createState() => _PlayerVideoAndPopPageState();
+}
+
+class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage> {
+  late VideoPlayerController _videoPlayerController;
+  bool startedPlaying = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _videoPlayerController = VideoPlayerController.asset('assets/Butterfly-209.mp4');
+    _videoPlayerController.addListener(() {
+      if (startedPlaying && !_videoPlayerController.value.isPlaying) {
+        Navigator.pop(context);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _videoPlayerController.dispose();
+    super.dispose();
+  }
+
+  Future<bool> started() async {
+    await _videoPlayerController.initialize();
+    await _videoPlayerController.play();
+    startedPlaying = true;
+    return true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      child: Center(
+        child: FutureBuilder<bool>(
+          future: started(),
+          builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+            if (snapshot.data ?? false) {
+              return AspectRatio(
+                aspectRatio: _videoPlayerController.value.aspectRatio,
+                child: VideoPlayer(_videoPlayerController),
+              );
+            } else {
+              return const Text('waiting for video to load');
+            }
+          },
+        ),
+      ),
+    );
+  }
 }
