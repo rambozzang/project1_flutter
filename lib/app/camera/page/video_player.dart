@@ -32,12 +32,12 @@ class VideoPage extends StatefulWidget {
 
 class _VideoPageState extends State<VideoPage> {
   late VideoPlayerController _videoController;
+  final TextEditingController hashTagController = TextEditingController();
 
   late Subscription _subscription;
   late MediaInfo? pickedFile;
 
-  final ValueNotifier<CurrentWeather?> currentWeather =
-      ValueNotifier<CurrentWeather?>(null);
+  final ValueNotifier<CurrentWeather?> currentWeather = ValueNotifier<CurrentWeather?>(null);
 
   final ValueNotifier<String?> localName = ValueNotifier<String?>(null);
   final ValueNotifier<TotalData?> totalData = ValueNotifier<TotalData?>(null);
@@ -248,14 +248,9 @@ class _VideoPageState extends State<VideoPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      //   resizeToAvoidBottomInset: false,
-      //resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
-          backgroundColor: Colors.white,
-          centerTitle: false,
-          forceMaterialTransparency: false,
-          elevation: 0,
-          scrolledUnderElevation: 0),
+          backgroundColor: Colors.white, centerTitle: false, forceMaterialTransparency: false, elevation: 0, scrolledUnderElevation: 0),
       body: Expanded(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -280,19 +275,14 @@ class _VideoPageState extends State<VideoPage> {
                                 Navigator.push<_PlayerVideoAndPopPage>(
                                   context,
                                   MaterialPageRoute<_PlayerVideoAndPopPage>(
-                                    builder: (BuildContext context) =>
-                                        _PlayerVideoAndPopPage(),
+                                    builder: (BuildContext context) => _PlayerVideoAndPopPage(),
                                   ),
                                 );
                               },
                               child: VideoPlayer(_videoController)),
                         ),
                       ),
-                      const Positioned(
-                          right: 5,
-                          bottom: 5,
-                          child: Icon(Icons.zoom_in,
-                              size: 30, color: Colors.white))
+                      const Positioned(right: 5, bottom: 5, child: Icon(Icons.zoom_in, size: 30, color: Colors.white))
                     ],
                   ),
                 ),
@@ -303,8 +293,7 @@ class _VideoPageState extends State<VideoPage> {
                     //     style: const TextStyle(fontSize: 14, color: Colors.black)),
                     Row(
                       children: [
-                        const Icon(Icons.location_on,
-                            color: Colors.red, size: 20),
+                        const Icon(Icons.location_on, color: Colors.red, size: 20),
                         ValueListenableBuilder<String?>(
                             valueListenable: localName,
                             builder: (context, value, child) {
@@ -317,8 +306,7 @@ class _VideoPageState extends State<VideoPage> {
                                 onTap: () => getCurrentLocation(),
                                 child: Text(
                                   value.toString(),
-                                  style: const TextStyle(
-                                      fontSize: 14, color: Colors.black),
+                                  style: const TextStyle(fontSize: 14, color: Colors.black),
                                 ),
                               );
                             }),
@@ -347,9 +335,7 @@ class _VideoPageState extends State<VideoPage> {
                                 children: [
                                   Text(
                                     '  ${value.main!.temp!.toStringAsFixed(1)}°',
-                                    style: TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.bold),
+                                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                                   ),
                                   SizedBox(
                                     width: 50,
@@ -364,13 +350,10 @@ class _VideoPageState extends State<VideoPage> {
                                   ),
                                   const Text(
                                     ' · ',
-                                    style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold),
+                                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                                   ),
                                   //  Text(value.weather![0].description.toString()),
-                                  Text(OpenWheatherRepo()
-                                      .weatherDescKo[value.weather![0].id]),
+                                  Text(OpenWheatherRepo().weatherDescKo[value.weather![0].id]),
                                 ],
                               ),
                             );
@@ -382,22 +365,18 @@ class _VideoPageState extends State<VideoPage> {
                 ),
                 const Gap(10),
                 HashTagTextField(
-                  basicStyle: const TextStyle(
-                      fontSize: 15,
-                      color: Colors.black,
-                      decorationThickness: 0),
-                  decoratedStyle:
-                      const TextStyle(fontSize: 15, color: Colors.blue),
+                  controller: hashTagController,
+                  basicStyle: const TextStyle(fontSize: 15, color: Colors.black, decorationThickness: 0),
+                  decoratedStyle: const TextStyle(fontSize: 15, color: Colors.blue),
                   keyboardType: TextInputType.multiline,
                   maxLines: 3,
                   decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
                     hintText: "내용을 입력해주세요! #태그 #태그2 #태그3",
                     //   hintStyle: TextStyle(fontSize: 15, color: Colors.grey),
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(5),
-                        borderSide: const BorderSide(
-                            color: Color.fromARGB(255, 59, 104, 81),
-                            width: 1.0)),
+                        borderSide: const BorderSide(color: Color.fromARGB(255, 59, 104, 81), width: 1.0)),
                   ),
 
                   /// Called when detection (word starts with #, or # and @) is being typed
@@ -414,26 +393,45 @@ class _VideoPageState extends State<VideoPage> {
                 const Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Text('# Tag 사용 가능.',
-                        style: TextStyle(fontSize: 14, color: Colors.black87)),
+                    Text('# 태그 사용가능.', style: TextStyle(fontSize: 14, color: Colors.black87)),
                   ],
                 ),
-                const Gap(200),
+                const Gap(20),
               ],
             ),
           ),
         ),
       ),
-
       bottomNavigationBar: Padding(
-        padding:
-            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: Container(
-            padding:
-                const EdgeInsets.only(left: 16, right: 16, top: 5, bottom: 8),
+            padding: const EdgeInsets.only(left: 16, right: 16, top: 5, bottom: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                ElevatedButton(
+                  onPressed: () {
+                    hashTagController.text = hashTagController.text + ' #';
+                  },
+                  clipBehavior: Clip.none,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    elevation: 1.5,
+                    minimumSize: const Size(0, 0),
+                    backgroundColor: Colors.grey[200],
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                  ),
+                  child: const Text(
+                    '# 태그추가',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
                 const Spacer(),
                 ValueListenableBuilder<bool>(
                   valueListenable: isUploading,
@@ -472,8 +470,7 @@ class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage> {
   void initState() {
     super.initState();
 
-    _videoPlayerController =
-        VideoPlayerController.asset('assets/Butterfly-209.mp4');
+    _videoPlayerController = VideoPlayerController.asset('assets/Butterfly-209.mp4');
     _videoPlayerController.addListener(() {
       if (startedPlaying && !_videoPlayerController.value.isPlaying) {
         Navigator.pop(context);

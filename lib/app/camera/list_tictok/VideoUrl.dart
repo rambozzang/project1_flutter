@@ -9,6 +9,7 @@ import 'package:hashtagable_v3/hashtagable.dart';
 import 'package:marquee_widget/marquee_widget.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/utils/utils.dart';
+import 'package:text_scroll/text_scroll.dart';
 
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -44,8 +45,7 @@ class _VideoUrlState extends State<VideoUrl> {
     //   Uri.parse(widget.videoUrl),
     //   invalidateCacheIfOlderThan: const Duration(days: 69),)
 
-    final file = await DefaultCacheManager()
-        .getSingleFile(widget.videoUrl, key: widget.videoUrl);
+    final file = await DefaultCacheManager().getSingleFile(widget.videoUrl, key: widget.videoUrl);
     _controller = VideoPlayerController.file(file)
       ..initialize().then((_) {
         if (mounted) {
@@ -64,9 +64,7 @@ class _VideoUrlState extends State<VideoUrl> {
 
       // aspectRatio = _controller.value.aspectRatio;
       position = _controller.value.position;
-      progress.value = (position.inSeconds / max * 100).isNaN
-          ? 0
-          : position.inSeconds / max * 100;
+      progress.value = (position.inSeconds / max * 100).isNaN ? 0 : position.inSeconds / max * 100;
     });
   }
 
@@ -141,14 +139,10 @@ class _VideoUrlState extends State<VideoUrl> {
                               child: value
                                   ? IconButton(
                                       onPressed: () => _controller.pause(),
-                                      icon: Icon(Icons.play_arrow_outlined,
-                                          color: Colors.white.withOpacity(0.5),
-                                          size: 40))
+                                      icon: Icon(Icons.play_arrow_outlined, color: Colors.white.withOpacity(0.5), size: 40))
                                   : IconButton(
                                       onPressed: () => _controller.play(),
-                                      icon: Icon(Icons.pause,
-                                          color: Colors.white.withOpacity(0.5),
-                                          size: 40)),
+                                      icon: Icon(Icons.pause, color: Colors.white.withOpacity(0.5), size: 40)),
                             ),
                           );
                         })),
@@ -168,15 +162,13 @@ class _VideoUrlState extends State<VideoUrl> {
                         valueListenable: soundOff,
                         builder: (context, value, child) {
                           return value
-                              ? const Icon(Icons.volume_off_outlined,
-                                  color: Colors.white)
-                              : const Icon(Icons.volume_up_outlined,
-                                  color: Colors.white);
+                              ? const Icon(Icons.volume_off_outlined, color: Colors.white)
+                              : const Icon(Icons.volume_up_outlined, color: Colors.white);
                         }),
                   ),
                 ),
                 Positioned(
-                  bottom: 25,
+                  bottom: 10,
                   right: 20,
                   left: 20,
                   child: Column(
@@ -191,12 +183,10 @@ class _VideoUrlState extends State<VideoUrl> {
                             decoration: BoxDecoration(
                               color: const Color(0xff7c94b6),
                               image: DecorationImage(
-                                image: NetworkImage(AuthCntr
-                                    .to.resLoginData.value.profilePath!),
+                                image: NetworkImage(AuthCntr.to.resLoginData.value.profilePath!),
                                 fit: BoxFit.cover,
                               ),
-                              borderRadius:
-                                  const BorderRadius.all(Radius.circular(50.0)),
+                              borderRadius: const BorderRadius.all(Radius.circular(50.0)),
                               border: Border.all(
                                 color: Colors.green,
                                 width: 2.0,
@@ -206,23 +196,19 @@ class _VideoUrlState extends State<VideoUrl> {
                           const Gap(10),
                           Text(
                             AuthCntr.to.resLoginData.value.nickNm!,
-                            style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold),
+                            style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
                           ),
                           const Gap(15),
                           ElevatedButton(
                             onPressed: () {},
                             clipBehavior: Clip.none,
                             style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               elevation: 1.5,
                               minimumSize: const Size(0, 0),
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(24.0),
+                                borderRadius: BorderRadius.circular(20.0),
                               ),
                             ),
                             child: const Text(
@@ -233,41 +219,29 @@ class _VideoUrlState extends State<VideoUrl> {
                               ),
                             ),
                           ),
-                          const SizedBox(
-                              width: 35,
-                              height: 23,
-                              child: VerticalDivider(
-                                  thickness: 1, color: Colors.white)),
+                          const SizedBox(width: 35, height: 23, child: VerticalDivider(thickness: 1, color: Colors.white)),
                           const Text(
                             '흐림',
-                            style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600),
+                            style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w600),
                           ),
                         ],
                       ),
                       const Gap(15),
                       const Text(
                         '2024.03.03 · 서울시 서대문구',
-                        style: TextStyle(
-                            fontSize: 15,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700),
+                        style: TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w700),
                       ),
                       const Gap(5),
                       Padding(
                         padding: const EdgeInsets.only(right: 40),
                         child: HashTagText(
-                          text:
-                              "논오는날 #눈대박 #서대문 진짜 #날씨최고 겨울이 제일 좋아 #ReadOnlyText 겨울이 제일 좋아 #ReadOnlyText",
-                          basicStyle: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700),
+                          text: "논오는날 #눈대박 #서대문 진짜 #날씨최고 겨울이 제일 좋아 #ReadOnlyText 겨울이 제일 좋아 #ReadOnlyText",
+                          basicStyle: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w700),
                           decoratedStyle: const TextStyle(
                               fontSize: 17,
-                              color: Color.fromARGB(255, 189, 230, 220),
+                              color: Color.fromARGB(255, 218, 245, 253),
+                              // color: Color.fromARGB(255, 205, 240, 122),
+                              // color: Color.fromARGB(255, 189, 230, 220),
                               fontWeight: FontWeight.bold),
                           textAlign: TextAlign.left,
                           onTap: (text) {
@@ -284,29 +258,37 @@ class _VideoUrlState extends State<VideoUrl> {
                       // ),
                       const Gap(5),
                       SizedBox(
-                        width: Get.width * 0.8,
-                        child: Marquee(
-                          //scrollAxis: Axis.horizontal,
-                          textDirection: TextDirection.rtl,
-                          animationDuration: const Duration(seconds: 1),
-                          backDuration: const Duration(milliseconds: 5000),
-                          pauseDuration: const Duration(milliseconds: 1500),
-                          directionMarguee: DirectionMarguee.TwoDirection,
-                          child: const Row(
-                            children: [
-                              Text(
-                                ' 여기서는 TextButton, FilledButton, ElevatedButton의 크기를 변경하는 방법에 대해서 알아보겠습니다',
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600),
-                              ),
-                              Gap(10),
-                              Icon(Icons.music_note,
-                                  color: Colors.red, size: 15),
-                            ],
-                          ),
+                        width: Get.width * 0.78,
+                        child: const TextScroll(
+                          '여기서는 TextButton, FilledButton, ElevatedButton의 크기를 변경하는 방법에 대해서 알아보겠습니다. ',
+                          mode: TextScrollMode.endless,
+                          numberOfReps: 200,
+                          fadedBorder: false,
+                          delayBefore: Duration(milliseconds: 4000),
+                          pauseBetween: Duration(milliseconds: 2000),
+                          velocity: Velocity(pixelsPerSecond: Offset(100, 0)),
+                          style: TextStyle(fontSize: 16, color: Colors.white),
+                          textAlign: TextAlign.right,
+                          selectable: true,
                         ),
+                        // child: Marquee(
+                        //   //scrollAxis: Axis.horizontal,
+                        //   textDirection: TextDirection.rtl,
+                        //   animationDuration: const Duration(seconds: 1),
+                        //   backDuration: const Duration(milliseconds: 5000),
+                        //   pauseDuration: const Duration(milliseconds: 1500),
+                        //   directionMarguee: DirectionMarguee.TwoDirection,
+                        //   child: const Row(
+                        //     children: [
+                        //       Text(
+                        //         ' 여기서는 TextButton, FilledButton, ElevatedButton의 크기를 변경하는 방법에 대해서 알아보겠습니다',
+                        //         style: TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
+                        //       ),
+                        //       Gap(10),
+                        //       Icon(Icons.music_note, color: Colors.red, size: 15),
+                        //     ],
+                        //   ),
+                        // ),
                       )
                     ],
                   ),
@@ -317,29 +299,21 @@ class _VideoUrlState extends State<VideoUrl> {
                   child: Column(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.favorite_border,
-                            color: Colors.white),
+                        icon: const Icon(Icons.favorite_border, color: Colors.white),
                         onPressed: () {},
                       ),
                       const Text(
                         '1.2M',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600),
+                        style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
                       ),
                       const Gap(10),
                       IconButton(
-                        icon: const Icon(Icons.message_outlined,
-                            color: Colors.white),
+                        icon: const Icon(Icons.message_outlined, color: Colors.white),
                         onPressed: () {},
                       ),
                       const Text(
                         '1.2M',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600),
+                        style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
                       ),
                       const Gap(10),
                       IconButton(
@@ -358,8 +332,7 @@ class _VideoUrlState extends State<VideoUrl> {
                   right: 10,
                   top: Get.height / 2,
                   child: ConstrainedBox(
-                    constraints:
-                        const BoxConstraints.tightFor(width: 65, height: 40),
+                    constraints: const BoxConstraints.tightFor(width: 65, height: 40),
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white.withOpacity(0.15),
@@ -374,8 +347,7 @@ class _VideoUrlState extends State<VideoUrl> {
                       },
                       child: const Text(
                         'Join',
-                        style: TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -389,16 +361,11 @@ class _VideoUrlState extends State<VideoUrl> {
                       builder: (context, value, child) {
                         return Stack(
                           children: [
-                            Container(
-                                height: 2,
-                                color: Colors.grey,
-                                width: MediaQuery.of(context).size.width),
+                            Container(height: 2, color: Colors.grey, width: MediaQuery.of(context).size.width),
                             AnimatedContainer(
-                              duration: Duration(
-                                  milliseconds: value == 0.0 ? 250 : 1000),
+                              duration: Duration(milliseconds: value == 0.0 ? 250 : 1000),
                               height: 2,
-                              width: (MediaQuery.of(context).size.width) *
-                                  (value / 100),
+                              width: (MediaQuery.of(context).size.width) * (value / 100),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(4),
                                 // color: const Color.fromRGBO(215, 215, 215, 1),
