@@ -90,3 +90,8 @@ https://devtalk.kakao.com/t/koe009-invalid-android-key-hash-or-ios-bundle-id-or-
   
 
 
+## TOBE
+
+댓글 기능
+ https://velog.io/@locked/Flutter-%EC%9C%A0%ED%8A%9C%EB%B8%8C-%EB%8B%B5%EA%B8%80-%EA%B8%B0%EB%8A%A5-%EB%A7%8C%EB%93%A4%EA%B8%B0
+
