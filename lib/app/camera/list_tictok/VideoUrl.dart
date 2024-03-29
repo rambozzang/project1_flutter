@@ -1,10 +1,12 @@
 //import 'package:cached_video_player_plus/cached_video_player_plus.dart';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:hashtagable_v3/hashtagable.dart';
+import 'package:like_button/like_button.dart';
 
 import 'package:marquee_widget/marquee_widget.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
@@ -183,7 +185,7 @@ class _VideoUrlState extends State<VideoUrl> {
                             decoration: BoxDecoration(
                               color: const Color(0xff7c94b6),
                               image: DecorationImage(
-                                image: NetworkImage(AuthCntr.to.resLoginData.value.profilePath!),
+                                image: CachedNetworkImageProvider(AuthCntr.to.resLoginData.value.profilePath!),
                                 fit: BoxFit.cover,
                               ),
                               borderRadius: const BorderRadius.all(Radius.circular(50.0)),
@@ -220,17 +222,71 @@ class _VideoUrlState extends State<VideoUrl> {
                             ),
                           ),
                           const SizedBox(width: 35, height: 23, child: VerticalDivider(thickness: 1, color: Colors.white)),
+                          // const Column(
+                          //   crossAxisAlignment: CrossAxisAlignment.start,
+                          //   children: [
+                          //     Text(
+                          //       '2024.03.03',
+                          //       style: TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
+                          //     ),
+                          //     Text(
+                          //       '17:02:13',
+                          //       style: TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
+                          //     ),
+                          //   ],
+                          // ),
+                        ],
+                      ),
+                      const Gap(5),
+                      const Text(
+                        '2024.03.03 17:02:13',
+                        style: TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
+                      ),
+                      Row(
+                        children: [
                           const Text(
-                            '흐림',
-                            style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w600),
+                            '흐림  17.0°',
+                            style: TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w700),
+                          ),
+                          SizedBox(
+                            height: 30,
+                            width: 30,
+                            child: CachedNetworkImage(
+                              width: 50,
+                              height: 50,
+                              imageUrl: 'http://openweathermap.org/img/wn/10n@2x.png',
+                              //   imageUrl:  //'http://openweathermap.org/img/w/${value.weather![0].icon}.png',
+                              imageBuilder: (context, imageProvider) => Container(
+                                decoration: BoxDecoration(
+                                  image: DecorationImage(
+                                      image: imageProvider,
+                                      fit: BoxFit.cover,
+                                      colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn)),
+                                ),
+                              ),
+                              placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 0.6, color: Colors.white),
+                              errorWidget: (context, url, error) => const Icon(Icons.error),
+                            ),
+                            // child: Image.network(
+                            //     width: 40,
+                            //     height: 40,
+                            //     'http://openweathermap.org/img/wn/10n@2x.png',
+                            //     //'http://openweathermap.org/img/w/${value.weather![0].icon}.png',
+                            //     scale: 0.6,
+                            //     fit: BoxFit.contain,
+                            //     alignment: Alignment.topCenter),
+                          ),
+                          const SizedBox(width: 10, height: 10, child: VerticalDivider(thickness: 1, color: Colors.white)),
+                          const Text(
+                            ' 서울시 서대문구',
+                            style: TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w700),
                           ),
                         ],
                       ),
-                      const Gap(15),
-                      const Text(
-                        '2024.03.03 · 서울시 서대문구',
-                        style: TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w700),
-                      ),
+                      // const Text(
+                      //   '2024.03.03 · 서울시 서대문구',
+                      //   style: TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w700),
+                      // ),
                       const Gap(5),
                       Padding(
                         padding: const EdgeInsets.only(right: 40),
@@ -249,13 +305,6 @@ class _VideoUrlState extends State<VideoUrl> {
                           },
                         ),
                       ),
-                      // Text(
-                      //   '논오는날 #눈대박 #서대문 #진짜 #날씨최고',
-                      //   style: TextStyle(
-                      //       fontSize: 15,
-                      //       color: Colors.white,
-                      //       fontWeight: FontWeight.w700),
-                      // ),
                       const Gap(5),
                       SizedBox(
                         width: Get.width * 0.78,
@@ -298,13 +347,47 @@ class _VideoUrlState extends State<VideoUrl> {
                   right: 10,
                   child: Column(
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.favorite_border, color: Colors.white),
-                        onPressed: () {},
-                      ),
-                      const Text(
-                        '1.2M',
-                        style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
+                      // IconButton(
+                      //   icon: const Icon(Icons.favorite_border, color: Colors.white),
+                      //   onPressed: () {},
+                      // ),
+                      // const Text(
+                      //   '1.2M',
+                      //   style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
+                      // ),
+                      LikeButton(
+                        size: 27,
+                        circleColor: const CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+                        bubblesColor: const BubblesColor(
+                          dotPrimaryColor: Color(0xff33b5e5),
+                          dotSecondaryColor: Color(0xff0099cc),
+                        ),
+                        likeBuilder: (bool isLiked) {
+                          return Icon(
+                            isLiked ? Icons.favorite : Icons.favorite_border,
+                            color: isLiked ? Colors.redAccent : Colors.white,
+                            size: 27,
+                          );
+                        },
+                        likeCount: 665,
+                        likeCountPadding: const EdgeInsets.only(top: 8),
+                        countPostion: CountPostion.bottom,
+                        countBuilder: (int? count, bool isLiked, String text) {
+                          Color color = isLiked ? Colors.redAccent : Colors.white;
+                          Widget result;
+                          if (count == 0) {
+                            result = Text(
+                              "love",
+                              style: TextStyle(color: color),
+                            );
+                          } else {
+                            result = Text(
+                              text,
+                              style: TextStyle(color: color),
+                            );
+                          }
+                          return result;
+                        },
                       ),
                       const Gap(10),
                       IconButton(
@@ -323,7 +406,7 @@ class _VideoUrlState extends State<VideoUrl> {
                       const Gap(5),
                       IconButton(
                         icon: const Icon(Icons.more_vert, color: Colors.white),
-                        onPressed: () {},
+                        onPressed: () => Get.toNamed('/MyinfoPage'),
                       ),
                     ],
                   ),
@@ -370,9 +453,9 @@ class _VideoUrlState extends State<VideoUrl> {
                                 borderRadius: BorderRadius.circular(4),
                                 // color: const Color.fromRGBO(215, 215, 215, 1),
                                 // color: const Color.fromRGBO(215, 215, 215, 1),
-                                color: const Color.fromARGB(255, 110, 186, 111),
+                                //color: const Color.fromARGB(255, 110, 186, 111),
                                 // color: const Color.fromARGB(255, 38, 162, 40),
-                                // color: Color.fromARGB(255, 34, 112, 26),
+                                color: const Color.fromARGB(255, 34, 112, 26),
                                 // color: Color.fromARGB(255, 13, 104, 43),
                               ),
                             ),

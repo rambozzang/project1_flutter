@@ -8,6 +8,7 @@ import 'package:project1/app/camera/bloc/camera_state.dart';
 import 'package:project1/app/camera/enums/color_constant.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/camera/utils/permission_utils.dart';
+import 'package:project1/repo/weather/data/current_weather.dart';
 part 'camera_event.dart';
 
 // A BLoC class that handles camera-related operations
@@ -15,6 +16,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   //....... Dependencies ..............
   final CameraUtils cameraUtils;
   final PermissionUtils permissionUtils;
+  final CurrentWeather? currentWeather;
 
   //....... Internal variables ........
   int recordDurationLimit = 15;
@@ -34,8 +36,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   }
 
   //....... Constructor ........
-  CameraBloc({required this.cameraUtils, required this.permissionUtils})
-      : super(CameraInitial()) {
+  CameraBloc({required this.cameraUtils, required this.permissionUtils, this.currentWeather}) : super(CameraInitial()) {
     on<CameraReset>(_onCameraReset);
     on<CameraInitialize>(_onCameraInitialize);
     on<CameraSwitch>(_onCameraSwitch);
@@ -55,17 +56,13 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   }
 
   // Handle CameraInitialize event
-  void _onCameraInitialize(
-      CameraInitialize event, Emitter<CameraState> emit) async {
+  void _onCameraInitialize(CameraInitialize event, Emitter<CameraState> emit) async {
     recordDurationLimit = event.recordingLimit;
     try {
       await _checkPermissionAndInitializeCamera(); // checking and asking for camera permission and initializing camera
       emit(CameraReady(isRecordingVideo: false));
     } catch (e) {
-      emit(CameraError(
-          error: e == CameraErrorType.permission
-              ? CameraErrorType.permission
-              : CameraErrorType.other));
+      emit(CameraError(error: e == CameraErrorType.permission ? CameraErrorType.permission : CameraErrorType.other));
     }
   }
 
@@ -77,8 +74,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   }
 
   // Handle CameraRecordingStart event
-  void _onCameraRecordingStart(
-      CameraRecordingStart event, Emitter<CameraState> emit) async {
+  void _onCameraRecordingStart(CameraRecordingStart event, Emitter<CameraState> emit) async {
     if (!isRecording()) {
       try {
         emit(CameraReady(isRecordingVideo: true));
@@ -91,27 +87,19 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   }
 
   // Handle CameraRecordingStop event
-  void _onCameraRecordingStop(
-      CameraRecordingStop event, Emitter<CameraState> emit) async {
+  void _onCameraRecordingStop(CameraRecordingStop event, Emitter<CameraState> emit) async {
     if (isRecording()) {
       // Check if the recorded video duration is less than 3 seconds to prevent
       // potential issues with very short videos resulting in corrupt files.
       bool hasRecordingLimitError = recordingDuration.value < 2 ? true : false;
-      emit(CameraReady(
-          isRecordingVideo: false,
-          hasRecordingError: hasRecordingLimitError,
-          decativateRecordButton: true));
+      emit(CameraReady(isRecordingVideo: false, hasRecordingError: hasRecordingLimitError, decativateRecordButton: true));
       File? videoFile;
       try {
-        videoFile =
-            await _stopRecording(); // Stop video recording and get the recorded video file
+        videoFile = await _stopRecording(); // Stop video recording and get the recorded video file
         if (hasRecordingLimitError) {
           await Future.delayed(const Duration(milliseconds: 1500),
               () {}); // To prevent rapid consecutive clicks, we introduce a debounce delay of 2 seconds,
-          emit(CameraReady(
-              isRecordingVideo: false,
-              hasRecordingError: false,
-              decativateRecordButton: false));
+          emit(CameraReady(isRecordingVideo: false, hasRecordingError: false, decativateRecordButton: false));
         } else {
           emit(CameraRecordingSuccess(file: videoFile));
         }
@@ -198,16 +186,14 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       if (await permissionUtils.askForPermission()) {
         await _initializeCamera();
       } else {
-        return Future.error(CameraErrorType
-            .permission); // Throw the specific error type for permission denial
+        return Future.error(CameraErrorType.permission); // Throw the specific error type for permission denial
       }
     }
   }
 
   // Initialize the camera controller
   Future<void> _initializeCamera() async {
-    _cameraController = await cameraUtils.getCameraController(
-        lensDirection: currentLensDirection);
+    _cameraController = await cameraUtils.getCameraController(lensDirection: currentLensDirection);
     try {
       await _cameraController?.initialize();
       _cameraController?.addListener(() {
@@ -224,9 +210,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
   // Switch between front and back cameras
   Future<void> _switchCamera() async {
-    currentLensDirection = currentLensDirection == CameraLensDirection.back
-        ? CameraLensDirection.front
-        : CameraLensDirection.back;
+    currentLensDirection = currentLensDirection == CameraLensDirection.back ? CameraLensDirection.front : CameraLensDirection.back;
     await _reInitialize();
   }
 

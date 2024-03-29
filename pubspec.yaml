@@ -54,6 +54,8 @@ dependencies:
   video_compress: ^3.1.2
   hashtagable_v3: ^3.0.1
   comment_sheet: ^0.0.1
+  like_button: ^2.0.5
+  cached_network_image: ^3.3.1
 
 
 

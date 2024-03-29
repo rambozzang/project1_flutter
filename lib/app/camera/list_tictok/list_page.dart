@@ -1,8 +1,11 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:comment_sheet/comment_sheet.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
@@ -51,6 +54,10 @@ class _ListPageState extends State<ListPage> {
   final CommentSheetController commentSheetController = CommentSheetController();
   ScrollController scrollController = ScrollController();
 
+  // 댓글 입력창
+  TextEditingController replyController = TextEditingController();
+  FocusNode replyFocusNode = FocusNode();
+
   //현재 영상의 index값 저장
   int currentIndex = 0;
 
@@ -88,6 +95,8 @@ class _ListPageState extends State<ListPage> {
     isLoading.value = false;
     try {
       urls = await ApiService.getVideos();
+
+      isLoading.value = true;
 
       OpenWheatherRepo repo = OpenWheatherRepo();
 
@@ -130,7 +139,6 @@ class _ListPageState extends State<ListPage> {
     } catch (e) {
       Lo.g('getDate() error : ' + e.toString());
     }
-    isLoading.value = true;
   }
 
   void goRecord() {
@@ -141,6 +149,7 @@ class _ListPageState extends State<ListPage> {
             return CameraBloc(
               cameraUtils: CameraUtils(),
               permissionUtils: PermissionUtils(),
+              currentWeather: currentWeather.value!,
             )..add(const CameraInitialize(recordingLimit: 15));
           },
           child: const CameraPage(),
@@ -151,6 +160,9 @@ class _ListPageState extends State<ListPage> {
 
   @override
   void dispose() {
+    _controller.dispose();
+    scrollController.dispose();
+    replyController.dispose();
     super.dispose();
   }
 
@@ -198,11 +210,8 @@ class _ListPageState extends State<ListPage> {
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           // 투명하게
-
                           shadowColor: Colors.transparent,
-
                           backgroundColor: Colors.transparent,
-
                           // padding: const EdgeInsets.all(1.0),
                           // shape: RoundedRectangleBorder(
                           //   borderRadius: BorderRadius.circular(15.0),
@@ -211,7 +220,7 @@ class _ListPageState extends State<ListPage> {
                         onPressed: () {
                           openSheet(context);
                         },
-                        child: SizedBox(
+                        child: const SizedBox(
                           width: 40,
                           height: 40,
                         ),
@@ -236,39 +245,61 @@ class _ListPageState extends State<ListPage> {
             return const SizedBox();
           }
           return Positioned(
-            top: 95,
+            top: 84,
             right: 10,
             left: 10,
             child: Container(
-              height: 320,
+              height: 98,
               width: double.infinity,
-              // color: Colors.red,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.max,
                     children: [
                       // const Text(
                       //   '현재',
                       //   style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
                       // ),
+                      Text(
+                        value.weather![0].description.toString(),
+                        style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
                       Row(
                         //  crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             '${value.main!.temp?.toStringAsFixed(1)}°',
                             textAlign: TextAlign.right,
                             style: const TextStyle(fontSize: 25, color: Colors.white, fontWeight: FontWeight.bold),
                           ),
-                          Image.network(
-                              width: 50,
-                              height: 50,
-                              'http://openweathermap.org/img/wn/${value.weather![0].icon}@2x.png',
-                              //'http://openweathermap.org/img/w/${value.weather![0].icon}.png',
-                              scale: 1,
-                              fit: BoxFit.fill,
-                              alignment: Alignment.topCenter),
+                          CachedNetworkImage(
+                            width: 50,
+                            height: 50,
+                            // color: Colors.white,
+                            imageUrl: 'http://openweathermap.org/img/wn/${value.weather![0].icon}@2x.png',
+                            //   imageUrl:  'http://openweathermap.org/img/w/${value.weather![0].icon}.png',
+                            imageBuilder: (context, imageProvider) => Container(
+                              decoration: BoxDecoration(
+                                image: DecorationImage(
+                                    image: imageProvider,
+                                    fit: BoxFit.cover,
+                                    colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn)),
+                              ),
+                            ),
+                            placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 1, color: Colors.white),
+                            errorWidget: (context, url, error) => const Icon(Icons.error),
+                          ),
+                          // Image.network(
+                          //     width: 50,
+                          //     height: 50,
+                          //     'http://openweathermap.org/img/wn/${value.weather![0].icon}@2x.png',
+                          //     //'http://openweathermap.org/img/w/${value.weather![0].icon}.png',
+                          //     scale: 1,
+                          //     fit: BoxFit.contain,
+                          //     alignment: Alignment.topCenter),
                         ],
                       ),
                       Text(
@@ -327,12 +358,12 @@ class _ListPageState extends State<ListPage> {
         builder: (context, value, child) {
           return Positioned(
             top: 50,
-            left: 10,
+            left: 3,
             child: Container(
                 width: 200,
                 padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.grey.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(5),
                 ),
                 child: Row(
@@ -348,7 +379,7 @@ class _ListPageState extends State<ListPage> {
                         delayBefore: const Duration(milliseconds: 4000),
                         pauseBetween: const Duration(milliseconds: 2000),
                         velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
-                        style: const TextStyle(fontSize: 16, color: Colors.white),
+                        style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w500),
                         textAlign: TextAlign.right,
                         selectable: true,
                       ),
@@ -377,13 +408,15 @@ class _ListPageState extends State<ListPage> {
     );
   }
 
-  openSheet(context) {
+  void openSheet(context) {
+    replyController.clear();
     showBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) {
         return CommentSheet(
           slivers: [
+            // 댓글 리스트
             buildSliverList(),
           ],
           grabbingPosition: WidgetPosition.above,
@@ -435,11 +468,10 @@ class _ListPageState extends State<ListPage> {
           // 백그라운드 위젯
           // child: const Placeholder(),
           child: const SizedBox.expand(),
-
           backgroundBuilder: (context) {
             return Container(
               color: const Color(0xFF0F0F0F),
-              margin: const EdgeInsets.only(top: 20),
+              margin: const EdgeInsets.only(top: 10),
             );
           },
         );
@@ -447,9 +479,7 @@ class _ListPageState extends State<ListPage> {
     );
   }
 
-  double calculateTopPosition(
-    CommentSheetInfo info,
-  ) {
+  double calculateTopPosition(CommentSheetInfo info) {
     final vy = info.velocity.getVelocity().pixelsPerSecond.dy;
     final top = info.currentTop;
     double p0 = 0;
@@ -492,34 +522,48 @@ class _ListPageState extends State<ListPage> {
   Widget buildSliverList() {
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
-        return const ListItemWidget();
+        return ListItemWidget(controller: replyController, focus: replyFocusNode);
       }, childCount: 20),
     );
   }
 
   // 댓글 입력창
-  Container buildBottomWidget() {
+
+  Widget buildBottomWidget() {
     return Container(
-        color: Colors.transparent,
-        height: 50,
-        child: const TextField(
-          decoration: InputDecoration(
-            hintText: '댓글을 입력해주세요',
-            prefix: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8.0),
-              child: Icon(
-                Icons.emoji_emotions_outlined,
-                color: Colors.white,
-              ),
+      color: Colors.transparent,
+      height: 63,
+      padding: const EdgeInsets.only(left: 5, right: 5),
+      child: TextFormField(
+        keyboardType: TextInputType.text,
+        controller: replyController,
+        focusNode: replyFocusNode,
+        style: const TextStyle(color: Colors.white, decorationThickness: 0),
+        decoration: const InputDecoration(
+          hintText: '댓글을 입력해주세요',
+          hintStyle: TextStyle(color: Colors.white),
+          isDense: true,
+          prefixIconConstraints: BoxConstraints(minWidth: 23, maxHeight: 20),
+          prefixIcon: Padding(
+            padding: EdgeInsets.only(left: 10, right: 10),
+            child: Icon(
+              Icons.emoji_emotions_outlined,
+              color: Colors.white,
             ),
-            suffix: Icon(
+          ),
+          suffixIconConstraints: BoxConstraints(minWidth: 23, maxHeight: 20),
+          suffixIcon: Padding(
+            padding: EdgeInsets.only(left: 10, right: 10),
+            child: Icon(
               Icons.send,
               color: Colors.white,
             ),
-            hintStyle: TextStyle(color: Colors.white),
-            border: InputBorder.none,
-            contentPadding: EdgeInsets.only(left: 10),
           ),
-        ));
+          border: InputBorder.none,
+          //border: OutlineInputBorder(),
+          contentPadding: EdgeInsets.only(left: 10, bottom: 15, top: 15),
+        ),
+      ),
+    );
   }
 }
