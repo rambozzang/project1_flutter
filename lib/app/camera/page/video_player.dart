@@ -1,14 +1,11 @@
 import 'dart:io';
-import 'dart:isolate';
 import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:gap/gap.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:hashtagable_v3/hashtagable.dart';
-import 'package:project1/app/camera/page/video_indicator.dart';
 import 'package:project1/app/cloudinary/cloudinary_page.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/weather/data/current_weather.dart';
@@ -17,14 +14,14 @@ import 'package:project1/repo/weather/open_weather_repo.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_button.dart';
-import 'package:project1/widget/custom_indicator_offstage.dart';
 import 'package:video_compress/video_compress.dart';
 import 'package:video_player/video_player.dart';
 
 // 동영상 압축 FFmpeg로 동영상 압축하기
 class VideoPage extends StatefulWidget {
-  const VideoPage({super.key, required this.videoFile});
+  const VideoPage({super.key, required this.videoFile, required this.currentWeather});
   final File videoFile;
+  final CurrentWeather currentWeather;
 
   @override
   State<VideoPage> createState() => _VideoPageState();
@@ -60,6 +57,8 @@ class _VideoPageState extends State<VideoPage> {
     });
 
     compressVideo();
+
+    currentWeather.value = widget.currentWeather;
 
     // _videoController.addListener(() {
     //   int max = _videoController.value.duration.inSeconds;

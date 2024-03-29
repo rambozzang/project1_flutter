@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
 class ListItemWidget extends StatelessWidget {
-  const ListItemWidget({
+  ListItemWidget({
     Key? key,
+    this.controller,
+    this.focus,
   }) : super(key: key);
+  final TextEditingController? controller;
+  final FocusNode? focus;
 
   @override
   Widget build(BuildContext context) {
@@ -11,7 +15,10 @@ class ListItemWidget extends StatelessWidget {
       color: const Color(0xFF0F0F0F),
       child: InkWell(
         onTap: () {
-          Navigator.of(context).pop();
+          // Navigator.of(context).pop();
+          controller?.text = '@Andrea ';
+          focus?.requestFocus();
+          // controller?.selection = TextSelection.fromPosition(TextPosition(offset: controller?.text.length ?? 0));
         },
         child: Container(
           width: double.infinity,
@@ -29,15 +36,15 @@ class ListItemWidget extends StatelessWidget {
                   ),
                 ),
               ),
-              Expanded(
+              const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Andrea Quintanilla * 3 tháng trước',
                       style: TextStyle(fontSize: 10, fontWeight: FontWeight.w400, color: Color(0xFFAEAEAE)),
                     ),
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.only(top: 6, bottom: 12),
                       child: Text(
                         'Que buen trabajo, que buenos enganches, genial!!!!  MTV la tenes adentro, jajaja. Saludos cordiales desde Buenos Aires, Argentina, Argentina, Argentina!',
@@ -45,7 +52,7 @@ class ListItemWidget extends StatelessWidget {
                       ),
                     ),
                     Row(
-                      children: const [
+                      children: [
                         Icon(
                           Icons.thumb_up_outlined,
                           size: 15,
