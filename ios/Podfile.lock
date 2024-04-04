@@ -5,6 +5,8 @@ PODS:
   - AppAuth/Core (1.7.3)
   - AppAuth/ExternalUserAgent (1.7.3):
     - AppAuth/Core
+  - babstrap_settings_screen (0.0.1):
+    - Flutter
   - camera_avfoundation (0.0.1):
     - Flutter
   - Firebase/Auth (10.22.0):
@@ -55,7 +57,14 @@ PODS:
     - GoogleUtilities/UserDefaults (~> 7.8)
     - nanopb (< 2.30911.0, >= 2.30908.0)
   - Flutter (1.0.0)
+  - flutter_image_compress_common (1.0.0):
+    - Flutter
+    - Mantle
+    - SDWebImage
+    - SDWebImageWebPCoder
   - flutter_local_notifications (0.0.1):
+    - Flutter
+  - flutter_native_image (0.0.1):
     - Flutter
   - flutter_naver_login (0.0.1):
     - Flutter
@@ -105,8 +114,30 @@ PODS:
     - AppAuth/Core (~> 1.6)
     - GTMSessionFetcher/Core (< 4.0, >= 1.5)
   - GTMSessionFetcher/Core (3.3.1)
+  - image_cropper (0.0.4):
+    - Flutter
+    - TOCropViewController (~> 2.6.1)
+  - image_editor_common (1.0.0):
+    - Flutter
+  - image_picker_ios (0.0.1):
+    - Flutter
   - kakao_flutter_sdk_common (1.9.1-2):
     - Flutter
+  - libwebp (1.3.2):
+    - libwebp/demux (= 1.3.2)
+    - libwebp/mux (= 1.3.2)
+    - libwebp/sharpyuv (= 1.3.2)
+    - libwebp/webp (= 1.3.2)
+  - libwebp/demux (1.3.2):
+    - libwebp/webp
+  - libwebp/mux (1.3.2):
+    - libwebp/demux
+  - libwebp/sharpyuv (1.3.2)
+  - libwebp/webp (1.3.2):
+    - libwebp/sharpyuv
+  - Mantle (2.2.0):
+    - Mantle/extobjc (= 2.2.0)
+  - Mantle/extobjc (2.2.0)
   - nanopb (2.30910.0):
     - nanopb/decode (= 2.30910.0)
     - nanopb/encode (= 2.30910.0)
@@ -118,14 +149,26 @@ PODS:
     - FlutterMacOS
   - permission_handler_apple (9.3.0):
     - Flutter
+  - photo_gallery (0.0.1):
+    - Flutter
+  - photo_manager (2.0.0):
+    - Flutter
+    - FlutterMacOS
   - PromisesObjC (2.4.0)
   - RecaptchaInterop (100.0.0)
+  - SDWebImage (5.19.0):
+    - SDWebImage/Core (= 5.19.0)
+  - SDWebImage/Core (5.19.0)
+  - SDWebImageWebPCoder (0.14.5):
+    - libwebp (~> 1.0)
+    - SDWebImage/Core (~> 5.17)
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
   - sqflite (0.0.3):
     - Flutter
     - FlutterMacOS
+  - TOCropViewController (2.6.1)
   - video_compress (0.3.0):
     - Flutter
   - video_player_avfoundation (0.0.1):
@@ -135,20 +178,28 @@ PODS:
     - Flutter
 
 DEPENDENCIES:
+  - babstrap_settings_screen (from `.symlinks/plugins/babstrap_settings_screen/ios`)
   - camera_avfoundation (from `.symlinks/plugins/camera_avfoundation/ios`)
   - firebase_auth (from `.symlinks/plugins/firebase_auth/ios`)
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
   - firebase_messaging (from `.symlinks/plugins/firebase_messaging/ios`)
   - Flutter (from `Flutter`)
+  - flutter_image_compress_common (from `.symlinks/plugins/flutter_image_compress_common/ios`)
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
+  - flutter_native_image (from `.symlinks/plugins/flutter_native_image/ios`)
   - flutter_naver_login (from `.symlinks/plugins/flutter_naver_login/ios`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
   - geolocator_apple (from `.symlinks/plugins/geolocator_apple/ios`)
   - google_sign_in_ios (from `.symlinks/plugins/google_sign_in_ios/darwin`)
+  - image_cropper (from `.symlinks/plugins/image_cropper/ios`)
+  - image_editor_common (from `.symlinks/plugins/image_editor_common/ios`)
+  - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - kakao_flutter_sdk_common (from `.symlinks/plugins/kakao_flutter_sdk_common/ios`)
   - naveridlogin-sdk-ios
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
+  - photo_gallery (from `.symlinks/plugins/photo_gallery/ios`)
+  - photo_manager (from `.symlinks/plugins/photo_manager/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sqflite (from `.symlinks/plugins/sqflite/darwin`)
   - video_compress (from `.symlinks/plugins/video_compress/ios`)
@@ -170,12 +221,19 @@ SPEC REPOS:
     - GoogleUtilities
     - GTMAppAuth
     - GTMSessionFetcher
+    - libwebp
+    - Mantle
     - nanopb
     - naveridlogin-sdk-ios
     - PromisesObjC
     - RecaptchaInterop
+    - SDWebImage
+    - SDWebImageWebPCoder
+    - TOCropViewController
 
 EXTERNAL SOURCES:
+  babstrap_settings_screen:
+    :path: ".symlinks/plugins/babstrap_settings_screen/ios"
   camera_avfoundation:
     :path: ".symlinks/plugins/camera_avfoundation/ios"
   firebase_auth:
@@ -186,8 +244,12 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/firebase_messaging/ios"
   Flutter:
     :path: Flutter
+  flutter_image_compress_common:
+    :path: ".symlinks/plugins/flutter_image_compress_common/ios"
   flutter_local_notifications:
     :path: ".symlinks/plugins/flutter_local_notifications/ios"
+  flutter_native_image:
+    :path: ".symlinks/plugins/flutter_native_image/ios"
   flutter_naver_login:
     :path: ".symlinks/plugins/flutter_naver_login/ios"
   flutter_secure_storage:
@@ -196,12 +258,22 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/geolocator_apple/ios"
   google_sign_in_ios:
     :path: ".symlinks/plugins/google_sign_in_ios/darwin"
+  image_cropper:
+    :path: ".symlinks/plugins/image_cropper/ios"
+  image_editor_common:
+    :path: ".symlinks/plugins/image_editor_common/ios"
+  image_picker_ios:
+    :path: ".symlinks/plugins/image_picker_ios/ios"
   kakao_flutter_sdk_common:
     :path: ".symlinks/plugins/kakao_flutter_sdk_common/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
+  photo_gallery:
+    :path: ".symlinks/plugins/photo_gallery/ios"
+  photo_manager:
+    :path: ".symlinks/plugins/photo_manager/ios"
   shared_preferences_foundation:
     :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
   sqflite:
@@ -215,6 +287,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   AppAuth: a13994980c1ec792f7e2e665acd4d4aa6be43240
+  babstrap_settings_screen: 535097da0fa521a47fef6f6678ff2b464ee15937
   camera_avfoundation: 759172d1a77ae7be0de08fc104cfb79738b8a59e
   Firebase: 797fd7297b7e1be954432743a0b3f90038e45a71
   firebase_auth: 610184b4f624545f81e0416bca60642b6818f27f
@@ -227,7 +300,9 @@ SPEC CHECKSUMS:
   FirebaseInstallations: 763814908793c0da14c18b3dcffdec71e29ed55e
   FirebaseMessaging: 9f71037fd9db3376a4caa54e5a3949d1027b4b6e
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  flutter_image_compress_common: ec1d45c362c9d30a3f6a0426c297f47c52007e3e
   flutter_local_notifications: 4cde75091f6327eb8517fa068a0a5950212d2086
+  flutter_native_image: 9c0b7451838484458e5b0fae007b86a4c2d4bdfe
   flutter_naver_login: 1dbf6d21aae5235cdf76a28ac79cf6871899282f
   flutter_secure_storage: 23fc622d89d073675f2eaa109381aefbcf5a49be
   geolocator_apple: 6cbaf322953988e009e5ecb481f07efece75c450
@@ -237,15 +312,25 @@ SPEC CHECKSUMS:
   GoogleUtilities: d053d902a8edaa9904e1bd00c37535385b8ed152
   GTMAppAuth: 99fb010047ba3973b7026e45393f51f27ab965ae
   GTMSessionFetcher: 8a1b34ad97ebe6f909fb8b9b77fba99943007556
+  image_cropper: a3291c624a953049bc6a02e1f8c8ceb162a24b25
+  image_editor_common: d6f6644ae4a6de80481e89fe6d0a8c49e30b4b43
+  image_picker_ios: b545a5f16c0fa88e3ecbbce3ed4de45567a8ec18
   kakao_flutter_sdk_common: ac22d95194585407db3fbc5f838d67ced11ea0f0
+  libwebp: 1786c9f4ff8a279e4dac1e8f385004d5fc253009
+  Mantle: c5aa8794a29a022dfbbfc9799af95f477a69b62d
   nanopb: 438bc412db1928dac798aa6fd75726007be04262
   naveridlogin-sdk-ios: cdd34e3585a3d5aaf37c1d84c1f41faba4a25d1a
   path_provider_foundation: 3784922295ac71e43754bd15e0653ccfd36a147c
   permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
+  photo_gallery: 9f95e57747cd22c10676ece3660d1ffe6c603ee5
+  photo_manager: 4f6810b7dfc4feb03b461ac1a70dacf91fba7604
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   RecaptchaInterop: 7d1a4a01a6b2cb1610a47ef3f85f0c411434cb21
+  SDWebImage: 981fd7e860af070920f249fd092420006014c3eb
+  SDWebImageWebPCoder: c94f09adbca681822edad9e532ac752db713eabf
   shared_preferences_foundation: b4c3b4cddf1c21f02770737f147a3f5da9d39695
   sqflite: 673a0e54cc04b7d6dba8d24fb8095b31c3a99eec
+  TOCropViewController: edfd4f25713d56905ad1e0b9f5be3fbe0f59c863
   video_compress: fce97e4fb1dfd88175aa07d2ffc8a2f297f87fbe
   video_player_avfoundation: 02011213dab73ae3687df27ce441fbbcc82b5579
   webview_flutter_wkwebview: be0f0d33777f1bfd0c9fdcb594786704dbf65f36

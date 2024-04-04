@@ -8,7 +8,7 @@ import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
-import 'package:project1/repo/data/login_data.dart';
+import 'package:project1/app/auth/cntr/login_data.dart';
 import 'package:project1/repo/secure_storge.dart';
 import 'package:project1/utils/StringUtils.dart';
 import 'package:project1/utils/log_utils.dart';

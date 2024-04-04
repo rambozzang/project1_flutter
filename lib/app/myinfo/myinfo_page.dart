@@ -1,341 +1,353 @@
-import 'dart:math';
+import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:gap/gap.dart';
+import 'package:get/get.dart';
+import 'package:get/get_connect/http/src/utils/utils.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/list/api_service.dart';
+import 'package:project1/app/myinfo/widget/image_avatar.dart';
+import 'package:project1/utils/utils.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
-class MyinfoPage extends StatefulWidget {
-  const MyinfoPage({super.key});
+import 'package:path_provider/path_provider.dart';
+
+// 사진촬영
+// https://dariadobszai.medium.com/set-profile-photo-with-flutter-bloc-or-how-to-bloc-backward-9fb16faa56ed
+
+class MyPage extends StatefulWidget {
+  const MyPage({super.key});
 
   @override
-  State<MyinfoPage> createState() => _MyinfoPageState();
+  State<MyPage> createState() => _MyPageState();
 }
 
-class _MyinfoPageState extends State<MyinfoPage> {
-  ScrollController scrollController = ScrollController();
-  PageController pageController = PageController(initialPage: 0);
+class _MyPageState extends State<MyPage> {
+  final ValueNotifier<List<String>> urls = ValueNotifier<List<String>>([]);
 
-  final double sliverMinHeight = 80.0, sliverMaxHeight = 140.0;
-  int pageIndex = 0;
-
-  final colors = [
-    Colors.red,
-    Colors.purple,
-    Colors.green,
-    Colors.orange,
-    Colors.yellow,
-    Colors.pink,
-    Colors.cyan,
-    Colors.indigo,
-    Colors.blue,
-  ];
+  XFile? _image; //이미지를 담을 변수 선언
+  final ImagePicker picker = ImagePicker(); //ImagePicker 초기화
 
   @override
   void initState() {
     super.initState();
+    getData();
   }
 
-  @override
-  void dispose() {
-    scrollController.dispose();
-    pageController.dispose();
-    super.dispose();
+  Future<void> getData() async {
+    urls.value = await ApiService.getVideos();
+  }
+
+  //이미지를 가져오는 함수
+  Future getImage(ImageSource imageSource) async {
+    //pickedFile에 ImagePicker로 가져온 이미지가 담긴다.
+    final XFile? pickedFile = await picker.pickImage(source: imageSource);
+    if (pickedFile != null) {
+      _image = XFile(pickedFile.path); //가져온 이미지를 _image에 저장
+
+      CroppedFile? croppedFile = await ImageCropper().cropImage(
+        sourcePath: pickedFile.path,
+        aspectRatioPresets: [
+          CropAspectRatioPreset.square,
+          CropAspectRatioPreset.ratio3x2,
+          CropAspectRatioPreset.original,
+          CropAspectRatioPreset.ratio4x3,
+          CropAspectRatioPreset.ratio16x9
+        ],
+        uiSettings: [
+          AndroidUiSettings(
+              toolbarTitle: 'Cropper',
+              toolbarColor: Colors.deepOrange,
+              toolbarWidgetColor: Colors.white,
+              initAspectRatio: CropAspectRatioPreset.original,
+              lockAspectRatio: false),
+          IOSUiSettings(
+            title: 'Cropper',
+          ),
+          WebUiSettings(
+            context: context,
+          ),
+        ],
+      );
+
+      if (croppedFile != null) {
+        setState(() {
+          _image = XFile(croppedFile.path);
+        });
+      }
+
+      File aa = await CompressAndGetFile(croppedFile!.path);
+
+      print(aa.lengthSync());
+      AuthCntr.to.resLoginData.value.profilePath = aa.path;
+    }
+  }
+
+  Future<File> CompressAndGetFile(String path) async {
+    var tmpDir = await getTemporaryDirectory();
+    var targetName = DateTime.now().millisecondsSinceEpoch;
+    XFile? compressFile = await FlutterImageCompress.compressAndGetFile(
+      path,
+      "${tmpDir.absolute.path}/$targetName.jpg",
+      quality: 88,
+      rotate: 180,
+    );
+    // print(file.lengthSync());
+    print(compressFile?.length());
+    final bytes = await File(compressFile!.path);
+    return bytes;
   }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    return DefaultTabController(
+      length: 2,
+      initialIndex: 0,
       child: Scaffold(
-        body: NestedScrollView(
-          controller: scrollController,
-          headerSliverBuilder: headerSliverBuilder,
-          body: Container(
-            margin: EdgeInsets.only(top: sliverMinHeight),
-            child: mainPageView(),
-          ),
-        ),
-      ),
-    );
-  }
-
-  List<Widget> headerSliverBuilder(BuildContext context, bool innerBoxIsScrolled) {
-    return <Widget>[
-      SliverOverlapAbsorber(
-        handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-        sliver: SliverPersistentHeader(
-          pinned: true,
-          delegate: SliverHeaderDelegateCS(
-            minHeight: sliverMinHeight,
-            maxHeight: sliverMaxHeight,
-            minChild: minTopChild(),
-            maxChild: profileInfo(),
-            //  maxChild: topChild(),
-          ),
-        ),
-      ),
-    ];
-  }
-
-  // 프로필 정보
-  Widget profileInfo() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            const Gap(20),
-            Container(
-              width: 60,
-              height: 60,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              decoration: BoxDecoration(
-                color: Colors.grey,
-                borderRadius: BorderRadius.circular(50),
-              ),
-            ),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        appBar: _appBar(),
+        body: RefreshIndicator.adaptive(
+          notificationPredicate: (notification) {
+            if (notification is OverscrollNotification || Platform.isIOS) {
+              return notification.depth == 2;
+            }
+            return notification.depth == 0;
+          },
+          onRefresh: () async {
+            await Future.delayed(const Duration(seconds: 1));
+          },
+          child: NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
+              return [
+                SliverList(delegate: SliverChildListDelegate([_info(), _buttons()])),
+              ];
+            },
+            body: Column(
               children: [
-                Text('Tiger Bk', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                Gap(10),
-                Text('a'),
+                _tabs(),
+                _tabBarView(),
               ],
             ),
-          ],
-        ),
-        pageButtonLayout(),
-      ],
-    );
-  }
-
-  Widget minTopChild() {
-    return Column(
-      children: <Widget>[
-        Expanded(
-          child: Container(
-            alignment: Alignment.center,
-            color: Color(0xFF014F90),
-            child: Text(
-              "Min Top Bar",
-              style: TextStyle(
-                color: Color(0xFFFFFFFF),
-                fontSize: 23,
-              ),
-            ),
           ),
         ),
-        pageButtonLayout(),
-      ],
-    );
-  }
-
-  Widget topChild() {
-    return Column(
-      children: <Widget>[
-        Expanded(
-          child: Container(
-            alignment: Alignment.center,
-            color: Color(0xFFFF1D1D),
-            child: Text(
-              "Max Top Bar",
-              style: TextStyle(
-                color: Color(0xFFFFFFFF),
-                fontSize: 23,
-              ),
-            ),
-          ),
-        ),
-        pageButtonLayout(),
-      ],
-    );
-  }
-
-  Widget pageButtonLayout() {
-    return SizedBox(
-      height: sliverMinHeight / 2,
-      child: Row(
-        children: <Widget>[
-          Expanded(child: pageButton("page 1", 0)),
-          Expanded(child: pageButton("page 2", 1)),
-          Expanded(child: pageButton("page 3", 2)),
-          Expanded(child: pageButton("page 4", 3)),
-        ],
       ),
     );
   }
 
-  Widget pageButton(String title, int page) {
-    final fontColor = pageIndex == page ? Color(0xFF2C313C) : Color(0xFF9E9E9E);
-    final lineColor = pageIndex == page ? Color(0xFF014F90) : Color(0xFFF1F1F1);
-
-    return InkWell(
-      splashColor: Color(0xFF204D7E),
-      onTap: () => pageBtnOnTap(page),
-      child: Column(
-        children: <Widget>[
-          Expanded(
-            child: Center(
-              child: Text(
-                title,
-                style: TextStyle(
-                  color: fontColor,
+  Widget _info() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(15.0),
+          child: GestureDetector(
+              onTap: () => getImage(ImageSource.gallery),
+              child: ImageAvatar(width: 100, url: AuthCntr.to.resLoginData.value.profilePath!, type: AvatarType.MYSTORY)),
+        ),
+        const Expanded(
+          flex: 3,
+          child: Padding(
+            padding: EdgeInsets.all(10.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Padding(
+                  padding: EdgeInsets.all(10.0),
+                  child: MyPageInfo(
+                    count: 35,
+                    label: '게시물',
+                  ),
                 ),
-              ),
+                Padding(
+                  padding: EdgeInsets.all(10.0),
+                  child: MyPageInfo(count: 167, label: '팔로워'),
+                ),
+                Padding(
+                  padding: EdgeInsets.all(10.0),
+                  child: MyPageInfo(count: 144, label: '팔로잉'),
+                ),
+              ],
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buttons() {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(flex: 4, child: MyPageButton(onTap: () {}, label: '프로필 편집')),
+          const SizedBox(
+            width: 10.0,
+          ),
+          Expanded(flex: 4, child: MyPageButton(onTap: () {}, label: '프로필 공유')),
+          const SizedBox(
+            width: 10.0,
           ),
           Container(
-            height: 1,
-            color: lineColor,
-          ),
+              width: 40,
+              height: 40,
+              padding: const EdgeInsets.all(8.0),
+              decoration: BoxDecoration(color: const Color(0xfff3f3f3), borderRadius: BorderRadius.circular(4.0)),
+              child: const Icon(Icons.person_add))
         ],
       ),
     );
   }
 
-  pageBtnOnTap(int page) {
-    setState(() {
-      pageIndex = page;
-      pageController.animateToPage(pageIndex, duration: Duration(milliseconds: 700), curve: Curves.easeOutCirc);
-    });
-  }
-
-  Widget mainPageView() {
-    return PageView(
-      controller: pageController,
-      children: <Widget>[
-        pageItem(
-          Text("page 1"),
-        ),
-        pageItem(Center(
-          child: Text(
-            "page 2\n\n두번째\n\n페이지\n\n스크롤이\n\n되도록\n\n내용을\n\n길게\n\n길게",
-            style: TextStyle(fontSize: 100),
-          ),
-        )),
-        pageListView(),
-        pageItem(Center(
-          child: Text("page 4"),
-        )),
-      ],
-      onPageChanged: (index) => setState(() => pageIndex = index),
+  Widget _tabBarView() {
+    return Expanded(
+      child: TabBarView(children: [
+        _myFeeds(),
+        _tagImages(),
+      ]),
     );
   }
 
-  Widget pageItem(Widget child) {
-    double statusHeight = MediaQuery.of(context).padding.top;
-    double height = MediaQuery.of(context).size.height;
-    double minHeight = height - statusHeight - sliverMinHeight;
+  Widget _myFeeds() {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: ValueListenableBuilder<List<String>>(
+          valueListenable: urls,
+          builder: (context, value, child) {
+            return value.length > 0
+                ? GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3, //1 개의 행에 보여줄 item 개수
+                      childAspectRatio: 3 / 5, //item 의 가로 1, 세로 1 의 비율
+                      mainAxisSpacing: 6, //수평 Padding
+                      crossAxisSpacing: 3, //수직 Padding
+                    ),
+                    itemCount: 50,
+                    itemBuilder: (context, index) => Container(
+                        decoration: BoxDecoration(
+                          color: Colors.blue,
+                          borderRadius: BorderRadius.circular(10.0),
+                          image: DecorationImage(
+                            image: NetworkImage(value[index]),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        child: const Align(
+                          alignment: Alignment.bottomRight,
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.play_arrow_outlined,
+                                color: Colors.white,
+                              ),
+                              Text(
+                                '12,000',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        )),
+                  )
+                : Utils.progressbar();
+          }),
+    );
+  }
 
-    return SingleChildScrollView(
-      child: Container(
-        color: Colors.white,
-        constraints: BoxConstraints(minHeight: minHeight),
-        child: child,
+  Widget _tagImages() {
+    return GridView.builder(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 1.0, mainAxisSpacing: 1.0),
+        itemCount: 50,
+        itemBuilder: (context, index) => Container(
+              color: Colors.red,
+            ));
+  }
+
+  Widget _tabs() {
+    return const TabBar(indicatorColor: Colors.black, tabs: [
+      Tab(
+        child: Icon(Icons.grid_on),
       ),
-    );
+      Tab(
+        child: Icon(Icons.person_pin),
+      ),
+    ]);
   }
 
-  Widget pageListView() {
-    return ListView.builder(
-      itemCount: colors.length,
-      itemBuilder: (BuildContext context, int index) {
-        return Container(
-          color: colors[index],
-          height: 150,
-        );
-      },
+  PreferredSizeWidget _appBar() {
+    return AppBar(
+      // appbar scroll시 bgColor 변경 방지
+      forceMaterialTransparency: true,
+      // scrolledUnderElevation: 0.0,
+      title: Row(
+        children: [
+          InkWell(
+            onTap: () {
+              showModalBottomSheet(
+                  showDragHandle: true,
+                  shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.only(topLeft: Radius.circular(10.0), topRight: Radius.circular(10.0))),
+                  context: context,
+                  builder: (context) => Container(
+                        height: 400,
+                      ));
+            },
+            child: Text(
+              AuthCntr.to.resLoginData.value.custNm.toString(),
+              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        Padding(
+          padding: EdgeInsets.all(14.0),
+          child: IconButton(icon: Icon(Icons.menu), onPressed: () => Get.toNamed('SettingPage')),
+        ),
+      ],
     );
   }
 }
 
-class SliverHeaderDelegateCS extends SliverPersistentHeaderDelegate {
-  SliverHeaderDelegateCS({
-    required this.minHeight,
-    required this.maxHeight,
-    required this.maxChild,
-    required this.minChild,
-  });
-  double minHeight, maxHeight;
-  final Widget maxChild, minChild;
-
-  late double visibleMainHeight, animationVal, width;
+class MyPageButton extends StatelessWidget {
+  final void Function()? onTap;
+  final String label;
+  const MyPageButton({super.key, this.onTap, required this.label});
 
   @override
-  bool shouldRebuild(SliverHeaderDelegateCS oldDelegate) => true;
-  @override
-  double get minExtent => minHeight;
-  @override
-  double get maxExtent => max(maxHeight, minHeight);
-
-  double scrollAnimationValue(double shrinkOffset) {
-    double maxScrollAllowed = maxExtent - minExtent;
-
-    return ((maxScrollAllowed - shrinkOffset) / maxScrollAllowed).clamp(0, 1).toDouble();
-  }
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    width = MediaQuery.of(context).size.width;
-    visibleMainHeight = max(maxExtent - shrinkOffset, minExtent);
-    animationVal = scrollAnimationValue(shrinkOffset);
-
-    return Container(
-        height: visibleMainHeight,
-        width: MediaQuery.of(context).size.width,
-        color: Color(0xFFFFFFFF),
-        child: Stack(
-          children: <Widget>[
-            getMinTop(),
-            animationVal != 0 ? getMaxTop() : Container(),
-          ],
+  Widget build(BuildContext context) {
+    return GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 40,
+          decoration: BoxDecoration(color: const Color(0xfff3f3f3), borderRadius: BorderRadius.circular(8.0)),
+          child: Center(
+              child: Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
+          )),
         ));
   }
+}
 
-  Widget getMaxTop() {
-    return Positioned(
-      bottom: 0.0,
-      child: Opacity(
-        opacity: animationVal,
-        child: SizedBox(
-          height: maxHeight,
-          width: width,
-          child: maxChild,
-        ),
-      ),
-    );
-  }
+class MyPageInfo extends StatelessWidget {
+  final int count;
+  final String label;
+  const MyPageInfo({super.key, required this.count, required this.label});
 
-  Widget getMinTop() {
-    return Opacity(
-      opacity: 1 - animationVal,
-      child: Container(height: visibleMainHeight, width: width, child: minChild),
-    );
-  }
-
-  // 프로필 정보
-  Widget profileInfo() {
+  @override
+  Widget build(BuildContext context) {
     return Column(
       children: [
-        const Gap(20),
-        Row(
-          children: [
-            const Gap(20),
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: Colors.grey,
-                borderRadius: BorderRadius.circular(50),
-              ),
-            ),
-            const Gap(20),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Tiger Bk', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                Gap(10),
-                Text('a'),
-              ],
-            ),
-          ],
+        Text(
+          count.toString(),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+        ),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 15),
         ),
       ],
     );

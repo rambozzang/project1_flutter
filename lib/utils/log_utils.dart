@@ -5,8 +5,7 @@ abstract class lo {
   lo._();
   static void g(String message) {
     if (!kReleaseMode) {
-      debugPrint(
-          "${DateTime.now().toIso8601String()} [🚫♥️DEBUG📛🍇🐯💋💥] : $message");
+      debugPrint("${DateTime.now().toIso8601String()} [🚫♥️DEBUG📛🍇🐯💋💥] : $message");
     }
   }
 }
@@ -16,11 +15,9 @@ abstract class Lo {
   static void g(dynamic message) {
     if (!kReleaseMode) {
       if (message is String) {
-        debugPrint(
-            "${DateTime.now().toIso8601String()} [🚫♥️DEBUG📛🍇🐯💋💥] : $message");
+        debugPrint("${DateTime.now().toIso8601String()} [🚫♥️DEBUG📛🍇🐯💋💥] : $message");
       } else {
-        debugPrint(
-            "${DateTime.now().toIso8601String()} [🚫♥️DEBUG📛🐯💋💥] : ${message.toString()}");
+        debugPrint("${DateTime.now().toIso8601String()} [🚫♥️DEBUG📛🐯💋💥] : ${message.toString()}");
       }
     }
   }
@@ -29,11 +26,9 @@ abstract class Lo {
 void log(String message) {
   if (!kReleaseMode) {
     if (message is String) {
-      debugPrint(
-          "${DateTime.now().toIso8601String()} [🚫♥️DEBUG🐯💥] : $message");
+      debugPrint("${DateTime.now().toIso8601String()} [🚫♥️DEBUG🐯💥] : $message");
     } else {
-      debugPrint(
-          "${DateTime.now().toIso8601String()} [🚫♥️DEBUG🐯💥] : ${message.toString()}");
+      debugPrint("${DateTime.now().toIso8601String()} [🚫♥️DEBUG🐯💥] : ${message.toString()}");
     }
   }
 }

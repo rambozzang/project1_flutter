@@ -12,6 +12,16 @@ const int kLatency = 2;
 //  final List<String> _urls = await ApiService.getVideos();
 class ApiService {
   static final List<String> _videos = [
+    'https://res.cloudinary.com/dfbxar2j5/video/upload/v1712062655/VID_2024-04-02_09-55-271119998743_lqtn3c.mp4',
+    'https://res.cloudinary.com/dfbxar2j5/video/upload/v1712062918/VID_2024-04-02_10-01-17-277601888_yhlf7f.mp4',
+    'https://res.cloudinary.com/dfbxar2j5/video/upload/v1712063169/VID_2024-04-02_10-05-381928330495_sgfgpc.mp4',
+    'https://res.cloudinary.com/dfbxar2j5/video/upload/v1712063315/VID_2024-04-02_10-07-27-1247146133_zpqyek.mp4',
+    'https://res.cloudinary.com/dfbxar2j5/video/upload/v1712063492/VID_2024-04-02_10-10-59320796923_ueg38w.mp4',
+    'https://res.cloudinary.com/dfbxar2j5/video/upload/v1712063901/VID_2024-04-02_10-17-341518806275_yzksuk.mp4',
+    'https://res.cloudinary.com/dfbxar2j5/video/upload/v1712064450/VID_2024-04-02_10-26-11-811574925_fysjhk.mp4',
+    'https://res.cloudinary.com/dfbxar2j5/video/upload/v1712064617/VID_2024-04-02_10-29-57-853825574_jdj7wv.mp4',
+    'https://res.cloudinary.com/dfbxar2j5/video/upload/v1712064756/VID_2024-04-02_10-31-38-665660466_i9tpqe.mp4',
+    'https://res.cloudinary.com/dfbxar2j5/video/upload/v1712065307/VID_2024-04-02_10-41-08-562090897_we9opg.mp4',
     'https://assets.mixkit.co/videos/preview/mixkit-woman-turning-off-her-alarm-clock-42897-large.mp4',
     'https://assets.mixkit.co/videos/preview/mixkit-pair-of-plantain-stalks-in-a-close-up-shot-42956-large.mp4',
     'https://assets.mixkit.co/videos/preview/mixkit-aerial-view-of-city-traffic-at-night-11-large.mp4',
