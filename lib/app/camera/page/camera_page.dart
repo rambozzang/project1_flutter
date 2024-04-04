@@ -10,14 +10,19 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/camera/bloc/camera_state.dart';
 import 'package:project1/app/camera/enums/color_constant.dart';
-import 'package:project1/app/camera/page/video_player.dart';
+import 'package:project1/app/camera/page/video_reg_page.dart';
 import 'package:project1/app/camera/page/widgets/animated_bar.dart';
 import 'package:project1/app/camera/utils/screenshot_utils.dart';
+import 'package:project1/app/camera/utils/zoom_widget.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 // https://github.com/rajaniket/camera_bloc
 //  https://bettercoding.dev/flutter/tutorial-video-recording-and-replay/
+
+// 카메라 기능 추가
+//https://github.com/Lightsnap/flutter_better_camera/blob/master/example/lib/main.dart#L92
+
 class CameraPage extends StatefulWidget {
   const CameraPage({super.key});
 
@@ -102,15 +107,34 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
     );
   }
 
+  /// Display the preview from the camera (or a message if the preview is not available).
+  Widget _cameraPreviewWidget() {
+    if (cameraBloc.getController() == null || !cameraBloc.getController()!.value.isInitialized!) {
+      return const Text(
+        'Tap a camera',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 24.0,
+          fontWeight: FontWeight.w900,
+        ),
+      );
+    } else {
+      return AspectRatio(
+        aspectRatio: cameraBloc.getController()!.value.aspectRatio,
+        child: CameraPreview(cameraBloc.getController()!),
+      );
+    }
+  }
+
   void _cameraBlocListener(BuildContext context, CameraState state) {
     if (state is CameraRecordingSuccess) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => VideoPage(videoFile: state.file, currentWeather: cameraBloc.currentWeather!),
+          builder: (_) => VideoRegPage(videoFile: state.file, currentWeather: cameraBloc.currentWeather!),
         ),
       );
     } else if (state is CameraReady && state.hasRecordingError) {
-      Utils.alert("2초 이상 촬영해주세요!");
+      Utils.alert("${cameraBloc.limitSec}초 이상 촬영해주세요!");
     }
   }
 
@@ -140,6 +164,10 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
   }
 
   void stopRecording() async {
+    if (cameraBloc.recordingDuration.value < cameraBloc.limitSec) {
+      Utils.alert("${cameraBloc.limitSec}초 이상 촬영해주세요!");
+      return;
+    }
     cameraBloc.add(CameraRecordingStop());
   }
 
@@ -169,7 +197,19 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                           var controller = cameraBloc.getController();
                           return Transform.scale(
                             scale: 1 / (controller!.value.aspectRatio * MediaQuery.of(context).size.aspectRatio),
-                            child: CameraPreview(controller),
+                            // child: CameraPreview(controller),
+
+                            child: ZoomableWidget(
+                                child: _cameraPreviewWidget(),
+                                onTapUp: (scaledPoint) {
+                                  //controller.setPointOfInterest(scaledPoint);
+                                },
+                                onZoom: (zoom) {
+                                  print('zoom');
+                                  if (zoom < 11) {
+                                    controller!.setZoomLevel(zoom);
+                                  }
+                                }),
                           );
                         })
                       : state is CameraInitial && screenshotBytes != null

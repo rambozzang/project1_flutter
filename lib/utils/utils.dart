@@ -5,6 +5,7 @@ import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/widget/custom_button.dart';
@@ -453,6 +454,13 @@ abstract class Utils {
         );
       },
     );
+  }
+
+  static String getToday() {
+    DateTime now = DateTime.now();
+    DateFormat formatter = DateFormat('yyyyMMdd');
+    String strToday = formatter.format(now);
+    return strToday;
   }
 }
 

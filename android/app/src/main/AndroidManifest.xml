@@ -1,13 +1,19 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"  package="com.example.project1">
-    <uses-feature
-        android:name="android.hardware.camera"
-        android:required="true" />
+    <uses-feature android:name="android.hardware.camera" android:required="true" />
+   
+    <uses-feature android:name="android.hardware.camera.front" />
+    <uses-feature android:name="android.hardware.camera2" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.flash" android:required="false" />
     
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />     
+    <uses-permission android:name="android.permission.FLASHLIGHT" />
+
+
 
 
     <application
@@ -19,7 +25,8 @@
         android:largeHeap="true"
         android:hardwareAccelerated="true"
         android:fullBackupContent="false"   
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"        
+        >
 
         <activity
             android:name=".MainActivity"
@@ -59,6 +66,11 @@
                 <data android:scheme="kakao257e56e034badf50ce13baaa28018e7d" android:host="oauth"/>
             </intent-filter>
         </activity>
+        <!-- image_cropper -->
+        <activity
+        android:name="com.yalantis.ucrop.UCropActivity"
+        android:screenOrientation="portrait"
+        android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

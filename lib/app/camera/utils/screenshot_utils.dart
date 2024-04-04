@@ -3,14 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'dart:ui' as ui;
 
+import 'package:project1/utils/log_utils.dart';
+
 /// Takes a screenshot of a widget identified by the provided [key].
 Future<Uint8List> takeCameraScreenshot({
   required GlobalKey key,
 }) async {
+  Lo.g("takeCameraScreenshot~@@@@@@");
   try {
     // Find the RenderRepaintBoundary associated with the provided key
-    RenderRepaintBoundary boundary =
-        key.currentContext!.findRenderObject() as RenderRepaintBoundary;
+    RenderRepaintBoundary boundary = key.currentContext!.findRenderObject() as RenderRepaintBoundary;
     ui.Image image = await boundary.toImage(pixelRatio: 1.0);
     ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     Uint8List pngBytes = byteData!.buffer.asUint8List();

@@ -9,6 +9,7 @@ import 'package:project1/app/camera/enums/color_constant.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/camera/utils/permission_utils.dart';
 import 'package:project1/repo/weather/data/current_weather.dart';
+import 'package:project1/utils/log_utils.dart';
 part 'camera_event.dart';
 
 // A BLoC class that handles camera-related operations
@@ -17,6 +18,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   final CameraUtils cameraUtils;
   final PermissionUtils permissionUtils;
   final CurrentWeather? currentWeather;
+  final int limitSec = 5;
 
   //....... Internal variables ........
   int recordDurationLimit = 15;
@@ -91,7 +93,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     if (isRecording()) {
       // Check if the recorded video duration is less than 3 seconds to prevent
       // potential issues with very short videos resulting in corrupt files.
-      bool hasRecordingLimitError = recordingDuration.value < 2 ? true : false;
+      bool hasRecordingLimitError = recordingDuration.value < limitSec ? true : false;
       emit(CameraReady(isRecordingVideo: false, hasRecordingError: hasRecordingLimitError, decativateRecordButton: true));
       File? videoFile;
       try {

@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
-import 'package:project1/app/camera/list_tictok/list_page.dart';
+import 'package:project1/app/list/video_list_page.dart';
 import 'package:project1/root/main_view1.dart';
 import 'package:project1/root/main_view2.dart';
 import 'package:project1/root/cntr/root_cntr.dart';

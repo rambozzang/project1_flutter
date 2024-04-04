@@ -1,39 +1,36 @@
-import 'dart:convert';
+import 'dart:async';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:comment_sheet/comment_sheet.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
-// import 'package:marquee_widget/marquee_widget.dart';
 
 import 'package:preload_page_view/preload_page_view.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
-import 'package:project1/app/camera/list_tictok/VideoUrl.dart';
-import 'package:project1/app/camera/list_tictok/api_service.dart';
-import 'package:project1/app/camera/list_tictok/test_grabin_widget.dart';
-import 'package:project1/app/camera/list_tictok/test_list_item_widget.dart';
+import 'package:project1/app/list/Video_screen_page.dart';
+import 'package:project1/app/list/api_service.dart';
+import 'package:project1/app/list/comment_page.dart';
+import 'package:project1/app/list/test_grabin_widget.dart';
+import 'package:project1/app/list/test_list_item_widget.dart';
 import 'package:project1/app/camera/page/camera_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/camera/utils/permission_utils.dart';
+import 'package:project1/repo/board/board_repo.dart';
+import 'package:project1/repo/board/data/board_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/repo/weather/data/current_weather.dart';
-import 'package:project1/repo/weather/data/weather_data.dart';
 import 'package:project1/repo/weather/mylocator_repo.dart';
 import 'package:project1/repo/weather/open_weather_repo.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:project1/widget/custom2_button.dart';
-import 'package:project1/widget/custom_button.dart';
 import 'package:text_scroll/text_scroll.dart';
-import 'package:video_player/video_player.dart';
 
 class ListPage extends StatefulWidget {
   const ListPage({super.key});
@@ -46,7 +43,6 @@ class _ListPageState extends State<ListPage> {
   late List<String> urls;
   //late VideoPlayerController _videoController;
 
-  final ValueNotifier<bool> isLoading = ValueNotifier<bool>(false);
   final PreloadPageController _controller = PreloadPageController();
   final ValueNotifier<String> localName = ValueNotifier<String>('');
   final ValueNotifier<CurrentWeather?> currentWeather = ValueNotifier<CurrentWeather?>(null);
@@ -57,6 +53,19 @@ class _ListPageState extends State<ListPage> {
   // 댓글 입력창
   TextEditingController replyController = TextEditingController();
   FocusNode replyFocusNode = FocusNode();
+
+  // 동영상을 담은 리스트
+  late List<BoardListData> list = [];
+  //final ValueNotifier<List<BoardListData>> list = ValueNotifier<List<BoardListData>>([]);
+
+  final StreamController<ResStream<List<BoardListData>>> streamController = StreamController();
+
+  // 현재 위치
+  late Position? position;
+  int pageNum = 0;
+  int pagesize = 5;
+
+  bool isLoadingMore = true;
 
   //현재 영상의 index값 저장
   int currentIndex = 0;
@@ -88,21 +97,57 @@ class _ListPageState extends State<ListPage> {
       }
     }
 
-    getDate();
+    getData();
   }
 
-  Future<void> getDate() async {
-    isLoading.value = false;
+  // 참고 싸이트 : https://github.com/octomato/preload_page_view/issues/43
+  Future<void> getMoreData(int index, int length) async {
+    final isBottom = index > length - 3;
+    // if (isBottom && !postCubit.state.hasReachedMax && !postCubit.state.isLoading) {
+    //    getAllPost();
+    // }
+    if (!isBottom) {
+      return;
+    }
+
+    pageNum++;
+
+    BoardRepo boardRepo = BoardRepo();
+    ResData resListData = await boardRepo.list(position!.latitude.toString(), position!.longitude.toString(), pageNum, pagesize);
+
+    if (resListData.code != '00') {
+      Utils.alert(resListData.msg.toString());
+      return;
+    }
+    List<BoardListData> _list = ((resListData.data) as List).map((data) => BoardListData.fromMap(data)).toList();
+    list.addAll(_list);
+    streamController.sink.add(ResStream.completed(list));
+  }
+
+  Future<void> getData() async {
     try {
-      urls = await ApiService.getVideos();
-
-      isLoading.value = true;
-
-      OpenWheatherRepo repo = OpenWheatherRepo();
+      streamController.sink.add(ResStream.loading());
 
       // 위치 좌표 가져오기
       MyLocatorRepo myLocatorRepo = MyLocatorRepo();
-      Position? position = await myLocatorRepo.getCurrentLocation();
+      position = await myLocatorRepo.getCurrentLocation();
+
+      //  urls = await ApiService.getVideos();
+      BoardRepo boardRepo = BoardRepo();
+      ResData resListData = await boardRepo.list(position!.latitude.toString(), position!.longitude.toString(), pageNum, pagesize);
+
+      if (resListData.code != '00') {
+        Utils.alert(resListData.msg.toString());
+        return;
+      }
+      list = ((resListData.data) as List).map((data) => BoardListData.fromMap(data)).toList();
+      streamController.sink.add(ResStream.completed(list));
+
+      //  urls = resListData.data['data'];
+      // Lo.g('getDate() urls : $urls');
+
+      OpenWheatherRepo repo = OpenWheatherRepo();
+
       // Utils.alert('좌표 가져오기 성공');
 
       // 좌료를 통해 날씨 정보 가져오기
@@ -118,7 +163,7 @@ class _ListPageState extends State<ListPage> {
       //Utils.alert('날씨 가져오기 성공');
 
       // 좌료를 통해 동네이름 가져오기
-      ResData resData2 = await myLocatorRepo.getLocationName(position);
+      ResData resData2 = await myLocatorRepo.getLocationName(position!);
       if (resData2.code != '00') {
         Utils.alert(resData2.msg.toString());
         return;
@@ -142,6 +187,8 @@ class _ListPageState extends State<ListPage> {
   }
 
   void goRecord() {
+    // Get.toNamed('/TestPage');
+    // return;
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => BlocProvider(
@@ -184,48 +231,26 @@ class _ListPageState extends State<ListPage> {
               SliverFillRemaining(
                 child: Stack(
                   children: [
-                    ValueListenableBuilder<bool>(
-                        valueListenable: isLoading,
-                        builder: (context, value, child) {
-                          return value
-                              ? PreloadPageView.builder(
-                                  controller: _controller,
-                                  preloadPagesCount: 4,
-                                  scrollDirection: Axis.vertical,
-                                  itemCount: urls.length,
-                                  itemBuilder: (context, i) {
-                                    currentIndex = i;
-                                    return VideoUrl(
-                                      videoUrl: urls[i],
-                                    );
-                                  })
-                              : Utils.progressbar();
-                        }),
+                    Utils.commonStreamList<BoardListData>(streamController, buildVideoBody, getData),
+
+                    // ValueListenableBuilder<List<BoardListData>>(
+                    //     valueListenable: list,
+                    //     builder: (context, value, child) {
+                    //       return value
+                    //           ? PreloadPageView.builder(
+                    //               controller: _controller,
+                    //               preloadPagesCount: 4,
+                    //               scrollDirection: Axis.vertical,
+                    //               itemCount: list.length,
+                    //               itemBuilder: (context, i) {
+                    //                 currentIndex = i;
+                    //                 return VideoSreenPage(data: list[i]);
+                    //               })
+                    //           : Utils.progressbar();
+                    //     }),
                     buildLocalName(),
                     buildTemp(),
                     buildRecodeBtn(),
-                    Positioned(
-                      bottom: 140,
-                      right: 10,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          // 투명하게
-                          shadowColor: Colors.transparent,
-                          backgroundColor: Colors.transparent,
-                          // padding: const EdgeInsets.all(1.0),
-                          // shape: RoundedRectangleBorder(
-                          //   borderRadius: BorderRadius.circular(15.0),
-                          // ),
-                        ),
-                        onPressed: () {
-                          openSheet(context);
-                        },
-                        child: const SizedBox(
-                          width: 40,
-                          height: 40,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -234,6 +259,25 @@ class _ListPageState extends State<ListPage> {
         },
       ),
     );
+  }
+
+  Widget buildVideoBody(List<BoardListData> data) {
+    return PreloadPageView.builder(
+        controller: _controller,
+        preloadPagesCount: 3,
+        scrollDirection: Axis.vertical,
+        itemCount: data.length,
+        physics: const AlwaysScrollableScrollPhysics(),
+        onPageChanged: (int position) {
+          print('page changed. current: $position');
+          getMoreData(position, data.length);
+        },
+        itemBuilder: (context, i) {
+          if (isLoadingMore && position == data.length) {
+            return Utils.progressbar();
+          }
+          return VideoSreenPage(data: data[i]);
+        });
   }
 
   // 상단 현재 온도
@@ -245,11 +289,11 @@ class _ListPageState extends State<ListPage> {
             return const SizedBox();
           }
           return Positioned(
-            top: 84,
+            top: 80,
             right: 10,
             left: 10,
             child: Container(
-              height: 98,
+              //     height: 98,
               width: double.infinity,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -306,6 +350,10 @@ class _ListPageState extends State<ListPage> {
                         '체감온도 ${value.main!.feels_like?.toStringAsFixed(1)}°',
                         style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
                       ),
+                      Text(
+                        '최저 ${value.main!.temp_min?.toStringAsFixed(1)}° · 최고 ${value.main!.temp_max?.toStringAsFixed(1)}°',
+                        style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
+                      ),
                     ],
                   ),
                   SizedBox(
@@ -357,29 +405,36 @@ class _ListPageState extends State<ListPage> {
         valueListenable: localName,
         builder: (context, value, child) {
           return Positioned(
-            top: 50,
+            top: 45,
             left: 3,
             child: Container(
-                width: 200,
+                //  width: 240,
                 padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Colors.grey.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(5),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.location_on, color: Colors.white, size: 20),
+                    Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: const Icon(Icons.location_on, color: Colors.white, size: 15)),
+                    const SizedBox(width: 5),
                     SizedBox(
-                      width: 170,
+                      width: 200,
                       child: TextScroll(
                         value.toString(),
                         mode: TextScrollMode.endless,
-                        numberOfReps: 200,
+                        numberOfReps: 20000,
                         fadedBorder: true,
                         delayBefore: const Duration(milliseconds: 4000),
                         pauseBetween: const Duration(milliseconds: 2000),
                         velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
-                        style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w500),
+                        style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w500),
                         textAlign: TextAlign.right,
                         selectable: true,
                       ),
@@ -405,165 +460,6 @@ class _ListPageState extends State<ListPage> {
             ),
             onPressed: () => goRecord(),
           )),
-    );
-  }
-
-  void openSheet(context) {
-    replyController.clear();
-    showBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return CommentSheet(
-          slivers: [
-            // 댓글 리스트
-            buildSliverList(),
-          ],
-          grabbingPosition: WidgetPosition.above,
-          initTopPosition: 200,
-          calculateTopPosition: calculateTopPosition,
-          scrollController: scrollController,
-          grabbing: Builder(builder: (context) {
-            // 댓글 상단바
-            return buildGrabbing(context);
-          }),
-          topWidget: (info) {
-            // 실제 줄어드는 위젯 위치
-            return Positioned(top: 0, left: 0, right: 0, height: max(0, info.currentTop), child: const SizedBox.shrink()
-                // child: const Placeholder(
-                //   color: Colors.red,
-                // ),
-                // child: AspectRatio(
-                //   aspectRatio: 9 / 16,
-                //   child: ClipRRect(
-                //     borderRadius: BorderRadius.circular(15),
-                //     child: VideoUrl(
-                //       videoUrl: urls[currentIndex],
-                //     ),
-                //   ),
-                // ),
-                );
-          },
-          topPosition: WidgetPosition.below,
-          bottomWidget: buildBottomWidget(),
-          onPointerUp: (
-            BuildContext context,
-            CommentSheetInfo info,
-          ) {
-            // print("On Pointer Up");
-          },
-          onAnimationComplete: (
-            BuildContext context,
-            CommentSheetInfo info,
-          ) {
-            // print("onAnimationComplete");
-            if (info.currentTop >= info.size.maxHeight - 100) {
-              Navigator.of(context).pop();
-            }
-          },
-          commentSheetController: commentSheetController,
-          onTopChanged: (top) {
-            // print("top: $top");
-          },
-          // 백그라운드 위젯
-          // child: const Placeholder(),
-          child: const SizedBox.expand(),
-          backgroundBuilder: (context) {
-            return Container(
-              color: const Color(0xFF0F0F0F),
-              margin: const EdgeInsets.only(top: 10),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  double calculateTopPosition(CommentSheetInfo info) {
-    final vy = info.velocity.getVelocity().pixelsPerSecond.dy;
-    final top = info.currentTop;
-    double p0 = 0;
-    double p1 = 200;
-    double p2 = info.size.maxHeight - 100;
-
-    if (top > p1) {
-      if (vy > 0) {
-        if (info.isAnimating && info.animatingTarget == p1 && top < p1 + 10) {
-          return p1;
-        } else {
-          return p2;
-        }
-      } else {
-        return p1;
-      }
-    } else if (top == p1) {
-      return p1;
-    } else if (top == p0) {
-      return p0;
-    } else {
-      if (vy > 0) {
-        if (info.isAnimating && info.animatingTarget == p0 && top < p0 + 10) {
-          return p0;
-        } else {
-          return p1;
-        }
-      } else {
-        return p0;
-      }
-    }
-  }
-
-  // 댓글 상단바
-  Widget buildGrabbing(BuildContext context) {
-    return const GrabbingWidget();
-  }
-
-  // 댓글 리스트
-  Widget buildSliverList() {
-    return SliverList(
-      delegate: SliverChildBuilderDelegate((context, index) {
-        return ListItemWidget(controller: replyController, focus: replyFocusNode);
-      }, childCount: 20),
-    );
-  }
-
-  // 댓글 입력창
-
-  Widget buildBottomWidget() {
-    return Container(
-      color: Colors.transparent,
-      height: 63,
-      padding: const EdgeInsets.only(left: 5, right: 5),
-      child: TextFormField(
-        keyboardType: TextInputType.text,
-        controller: replyController,
-        focusNode: replyFocusNode,
-        style: const TextStyle(color: Colors.white, decorationThickness: 0),
-        decoration: const InputDecoration(
-          hintText: '댓글을 입력해주세요',
-          hintStyle: TextStyle(color: Colors.white),
-          isDense: true,
-          prefixIconConstraints: BoxConstraints(minWidth: 23, maxHeight: 20),
-          prefixIcon: Padding(
-            padding: EdgeInsets.only(left: 10, right: 10),
-            child: Icon(
-              Icons.emoji_emotions_outlined,
-              color: Colors.white,
-            ),
-          ),
-          suffixIconConstraints: BoxConstraints(minWidth: 23, maxHeight: 20),
-          suffixIcon: Padding(
-            padding: EdgeInsets.only(left: 10, right: 10),
-            child: Icon(
-              Icons.send,
-              color: Colors.white,
-            ),
-          ),
-          border: InputBorder.none,
-          //border: OutlineInputBorder(),
-          contentPadding: EdgeInsets.only(left: 10, bottom: 15, top: 15),
-        ),
-      ),
     );
   }
 }
