@@ -207,26 +207,37 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
                 style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
               ),
               const Gap(15),
-              ElevatedButton(
-                onPressed: () {},
-                clipBehavior: Clip.none,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  elevation: 1.5,
-                  minimumSize: const Size(0, 0),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20.0),
-                  ),
-                ),
-                child: const Text(
-                  '구독',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
+              widget.data.followYn.toString().contains('N')
+                  ? ElevatedButton(
+                      onPressed: () {},
+                      clipBehavior: Clip.none,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        elevation: 1.5,
+                        minimumSize: const Size(0, 0),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20.0),
+                        ),
+                      ),
+                      child: const Text(
+                        '구독',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 14,
+                        ),
+                      ),
+                    )
+                  : Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20.0),
+                      ),
+                      child: Text(
+                        '구독중',
+                        style: TextStyle(color: Colors.black, fontSize: 14),
+                      )),
               // const SizedBox(width: 35, height: 23, child: VerticalDivider(thickness: 1, color: Colors.white)),
               // const Column(
               //   crossAxisAlignment: CrossAxisAlignment.start,
