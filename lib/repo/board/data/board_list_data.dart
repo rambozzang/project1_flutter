@@ -6,6 +6,7 @@ class BoardListData {
   String? custNm;
   String? profilePath;
   String? likeYn;
+  String? followYn;
 
   String? suject;
   String? location;
@@ -37,6 +38,7 @@ class BoardListData {
     this.custNm,
     this.profilePath,
     this.likeYn,
+    this.followYn,
     this.suject,
     this.location,
     this.country,
@@ -69,6 +71,7 @@ class BoardListData {
     String? custNm,
     String? profilePath,
     String? likeYn,
+    String? followYn,
     String? suject,
     String? location,
     String? country,
@@ -100,6 +103,7 @@ class BoardListData {
       custNm: custNm ?? this.custNm,
       profilePath: profilePath ?? this.profilePath,
       likeYn: likeYn ?? this.likeYn,
+      followYn: followYn ?? this.followYn,
       suject: suject ?? this.suject,
       location: location ?? this.location,
       country: country ?? this.country,
@@ -134,6 +138,7 @@ class BoardListData {
       'custNm': custNm,
       'profilePath': profilePath,
       'likeYn': likeYn,
+      'followYn': followYn,
       'suject': suject,
       'location': location,
       'country': country,
@@ -168,6 +173,7 @@ class BoardListData {
       custNm: map['custNm'] != null ? map['custNm'] as String : null,
       profilePath: map['profilePath'] != null ? map['profilePath'] as String : null,
       likeYn: map['likeYn'] != null ? map['likeYn'] as String : null,
+      followYn: map['followYn'] != null ? map['followYn'] as String : null,
       suject: map['suject'] != null ? map['suject'] as String : null,
       location: map['location'] != null ? map['location'] as String : null,
       country: map['country'] != null ? map['country'] as String : null,
@@ -202,7 +208,7 @@ class BoardListData {
 
   @override
   String toString() {
-    return 'BoardListData(nickNm: $nickNm, custNm: $custNm, profilePath: $profilePath, likeYn: $likeYn, suject: $suject, location: $location, country: $country, contents: $contents, parentId: $parentId, distance: $distance, boardId: $boardId, lat: $lat, lon: $lon, weatherInfo: $weatherInfo, videoPath: $videoPath, thumbnailPath: $thumbnailPath, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, city: $city, typeCd: $typeCd, typeDtCd: $typeDtCd, depthNo: $depthNo, chgDtm: $chgDtm, likeCnt: $likeCnt, icon: $icon)';
+    return 'BoardListData(nickNm: $nickNm, custNm: $custNm, profilePath: $profilePath, likeYn: $likeYn, followYn: $followYn, suject: $suject, location: $location, country: $country, contents: $contents, parentId: $parentId, distance: $distance, boardId: $boardId, lat: $lat, lon: $lon, weatherInfo: $weatherInfo, videoPath: $videoPath, thumbnailPath: $thumbnailPath, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, city: $city, typeCd: $typeCd, typeDtCd: $typeDtCd, depthNo: $depthNo, chgDtm: $chgDtm, likeCnt: $likeCnt, icon: $icon)';
   }
 
   @override
@@ -213,6 +219,7 @@ class BoardListData {
         other.custNm == custNm &&
         other.profilePath == profilePath &&
         other.likeYn == likeYn &&
+        other.followYn == followYn &&
         other.suject == suject &&
         other.location == location &&
         other.country == country &&
@@ -246,6 +253,7 @@ class BoardListData {
         custNm.hashCode ^
         profilePath.hashCode ^
         likeYn.hashCode ^
+        followYn.hashCode ^
         suject.hashCode ^
         location.hashCode ^
         country.hashCode ^
