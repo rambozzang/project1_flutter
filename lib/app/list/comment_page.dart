@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/list/test_grabin_widget.dart';
 import 'package:project1/app/list/test_list_item_widget.dart';
+import 'package:project1/root/cntr/root_cntr.dart';
 
 import 'package:project1/utils/log_utils.dart';
 
@@ -44,12 +45,25 @@ class _CommentsPageState extends State<CommentsPage> {
   void initState() {
     replyController.clear();
     super.initState();
+    RootCntr.to.bottomBarStreamController.sink.add(false);
+    getData();
+  }
+
+  Future<void> getData() async {
+    // var res = await BoardRepo().searchComment(boardId);
+    // if (res.success) {
+    //   // replyList = res.data;
+    //   // setState(() {});
+    // } else {
+    //   // Utils().showSnackBar(context, res.msg);
+    // }
   }
 
   @override
   void dispose() {
     replyController.dispose();
     scrollController.dispose();
+    RootCntr.to.bottomBarStreamController.sink.add(true);
     super.dispose();
   }
 

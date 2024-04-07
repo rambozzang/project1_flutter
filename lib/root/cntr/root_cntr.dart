@@ -17,8 +17,7 @@ class RootCntrBinding extends Bindings {
 class RootCntr extends GetxController {
   static RootCntr get to => Get.find();
 
-  final StreamController<bool> bottomBarStreamController =
-      StreamController<bool>();
+  final StreamController<bool> bottomBarStreamController = StreamController<bool>();
 
   RxInt rootPageIndex = 0.obs;
   GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -29,8 +28,12 @@ class RootCntr extends GetxController {
   ScrollController hideButtonController11 = ScrollController();
   ScrollController hideButtonController12 = ScrollController();
 
+  // 내정보
   ScrollController hideButtonController2 = ScrollController();
+
+  // 설정
   ScrollController hideButtonController3 = ScrollController();
+  ScrollController hideButtonController4 = ScrollController();
   late TabController tabController;
 
   // 하단 바 숨기기 변수
@@ -39,16 +42,12 @@ class RootCntr extends GetxController {
 
   @override
   void onInit() {
-    hideButtonController1
-        .addListener(() => changeScrollListner(hideButtonController1));
-    hideButtonController11
-        .addListener(() => changeScrollListner(hideButtonController11));
-    hideButtonController12
-        .addListener(() => changeScrollListner(hideButtonController12));
-    hideButtonController2
-        .addListener(() => changeScrollListner(hideButtonController2));
-    hideButtonController3
-        .addListener(() => changeScrollListner(hideButtonController3));
+    hideButtonController1.addListener(() => changeScrollListner(hideButtonController1));
+    hideButtonController11.addListener(() => changeScrollListner(hideButtonController11));
+    hideButtonController12.addListener(() => changeScrollListner(hideButtonController12));
+    hideButtonController2.addListener(() => changeScrollListner(hideButtonController2));
+    hideButtonController3.addListener(() => changeScrollListner(hideButtonController3));
+    hideButtonController4.addListener(() => changeScrollListner(hideButtonController4));
 
     super.onInit();
   }
@@ -60,8 +59,7 @@ class RootCntr extends GetxController {
         isVisible.value = false;
         bottomBarStreamController.sink.add(isVisible.value);
       }
-    } else if (scrollData.position.userScrollDirection ==
-        ScrollDirection.forward) {
+    } else if (scrollData.position.userScrollDirection == ScrollDirection.forward) {
       if (!isVisible.value) {
         isVisible.value = true;
         bottomBarStreamController.sink.add(isVisible.value);

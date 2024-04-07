@@ -2,12 +2,14 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/list/api_service.dart';
 import 'package:project1/app/myinfo/widget/image_avatar.dart';
+import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -118,6 +120,7 @@ class _MyPageState extends State<MyPage> {
             await Future.delayed(const Duration(seconds: 1));
           },
           child: NestedScrollView(
+            controller: RootCntr.to.hideButtonController2,
             headerSliverBuilder: (context, innerBoxIsScrolled) {
               return [
                 SliverList(delegate: SliverChildListDelegate([_info(), _buttons()])),
@@ -136,42 +139,51 @@ class _MyPageState extends State<MyPage> {
   }
 
   Widget _info() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(15.0),
-          child: GestureDetector(
-              onTap: () => getImage(ImageSource.gallery),
-              child: ImageAvatar(width: 100, url: AuthCntr.to.resLoginData.value.profilePath!, type: AvatarType.MYSTORY)),
-        ),
-        const Expanded(
-          flex: 3,
-          child: Padding(
-            padding: EdgeInsets.all(10.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Padding(
-                  padding: EdgeInsets.all(10.0),
-                  child: MyPageInfo(
-                    count: 35,
-                    label: '게시물',
+    return Container(
+      margin: const EdgeInsets.all(10.0),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        shape: BoxShape.rectangle,
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(10.0),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(15.0),
+            child: GestureDetector(
+                onTap: () => getImage(ImageSource.gallery),
+                child: ImageAvatar(width: 70, url: AuthCntr.to.resLoginData.value.profilePath!, type: AvatarType.MYSTORY)),
+          ),
+          const Expanded(
+            flex: 3,
+            child: Padding(
+              padding: EdgeInsets.all(10.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.all(10.0),
+                    child: MyPageInfo(
+                      count: 35,
+                      label: '게시물',
+                    ),
                   ),
-                ),
-                Padding(
-                  padding: EdgeInsets.all(10.0),
-                  child: MyPageInfo(count: 167, label: '팔로워'),
-                ),
-                Padding(
-                  padding: EdgeInsets.all(10.0),
-                  child: MyPageInfo(count: 144, label: '팔로잉'),
-                ),
-              ],
+                  Padding(
+                    padding: EdgeInsets.all(10.0),
+                    child: MyPageInfo(count: 167, label: '팔로워'),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.all(10.0),
+                    child: MyPageInfo(count: 144, label: '팔로잉'),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -225,7 +237,7 @@ class _MyPageState extends State<MyPage> {
                       mainAxisSpacing: 6, //수평 Padding
                       crossAxisSpacing: 3, //수직 Padding
                     ),
-                    itemCount: 50,
+                    itemCount: urls.value.length,
                     itemBuilder: (context, index) => Container(
                         decoration: BoxDecoration(
                           color: Colors.blue,
@@ -268,10 +280,26 @@ class _MyPageState extends State<MyPage> {
   Widget _tabs() {
     return const TabBar(indicatorColor: Colors.black, tabs: [
       Tab(
-        child: Icon(Icons.grid_on),
+        // child: Icon(Icons.grid_on),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.grid_on),
+            Gap(10),
+            Text('게시물'),
+          ],
+        ),
       ),
       Tab(
-        child: Icon(Icons.person_pin),
+        // child: Icon(Icons.person_pin),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.person_pin),
+            Gap(10),
+            Text('팔로우'),
+          ],
+        ),
       ),
     ]);
   }
@@ -280,7 +308,9 @@ class _MyPageState extends State<MyPage> {
     return AppBar(
       // appbar scroll시 bgColor 변경 방지
       forceMaterialTransparency: true,
+      automaticallyImplyLeading: false,
       // scrolledUnderElevation: 0.0,
+      centerTitle: true,
       title: Row(
         children: [
           InkWell(
@@ -302,10 +332,10 @@ class _MyPageState extends State<MyPage> {
         ],
       ),
       actions: [
-        Padding(
-          padding: EdgeInsets.all(14.0),
-          child: IconButton(icon: Icon(Icons.menu), onPressed: () => Get.toNamed('SettingPage')),
-        ),
+        // Padding(
+        //   padding: EdgeInsets.all(14.0),
+        //   child: IconButton(icon: Icon(Icons.menu), onPressed: () => Get.toNamed('SettingPage')),
+        // ),
       ],
     );
   }

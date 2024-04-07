@@ -6,7 +6,7 @@ const int kNextLimit = 30;
 
 // For better UX, latency should be minimum.
 // For demo: 2s is taken but something under a second will be better
-const int kLatency = 2;
+const int kLatency = 1;
 
 // 사용법
 //  final List<String> _urls = await ApiService.getVideos();

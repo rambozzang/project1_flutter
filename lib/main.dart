@@ -8,6 +8,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/list/cntr/video_list_cntr.dart';
+import 'package:project1/app/list/video_list_page.dart';
 import 'package:project1/common/life_cycle_getx.dart';
 import 'package:project1/config/app_theme.dart';
 import 'package:project1/route/app_route.dart';

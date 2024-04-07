@@ -2,12 +2,14 @@ import 'package:get/get.dart';
 import 'package:project1/app/%08join/join_page.dart';
 import 'package:project1/app/auth/auth_page.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/list/cntr/video_list_cntr.dart';
 import 'package:project1/app/list/video_list_page.dart';
 import 'package:project1/app/camera/page/test.dart';
 import 'package:project1/app/myinfo/myinfo_page.dart';
 import 'package:project1/app/onboarding/onboarding_page.dart';
 import 'package:project1/app/setting/setting_page.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
+import 'package:project1/root/main_view1.dart';
 import 'package:project1/root/root_page.dart';
 
 abstract class AppPages {
@@ -40,6 +42,7 @@ abstract class AppPages {
     GetPage(
       name: '/ListPage',
       page: () => const ListPage(),
+      binding: VideoListBinding(),
       //  transition: Transition.downToUp,
     ),
     GetPage(
@@ -55,6 +58,11 @@ abstract class AppPages {
     GetPage(
       name: '/SettingPage',
       page: () => const SettingPage(),
+      //  transition: Transition.downToUp,
+    ),
+    GetPage(
+      name: '/MainView1',
+      page: () => const MainView1(),
       //  transition: Transition.downToUp,
     ),
   ];

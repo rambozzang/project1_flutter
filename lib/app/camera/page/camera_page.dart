@@ -90,18 +90,22 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
           ),
         ),
         Positioned(
-            top: 30,
-            right: 14,
-            child: IconButton(
-              icon: const Icon(
-                Icons.close,
-                color: Colors.white,
-                weight: 450,
-                size: 27,
+            top: 20,
+            right: 4,
+            child: SizedBox(
+              width: 80,
+              height: 80,
+              child: IconButton(
+                icon: const Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  weight: 450,
+                  size: 27,
+                ),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
               ),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
             ))
       ]),
     );
