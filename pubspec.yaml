@@ -73,8 +73,9 @@ dependencies:
   simple_progress_indicators: ^0.2.0
   scroll_to_index: ^3.0.1
   image_picker: ^1.0.7
-  babstrap_settings_screen: ^0.1.6
-
+  babstrap_settings_screen: ^0.1.6  
+  chips_choice: ^3.0.1
+ 
 
 
 dev_dependencies:

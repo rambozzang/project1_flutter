@@ -2,8 +2,10 @@
 import 'dart:convert';
 
 class BoardListData {
-  String? nickNm;
+  String? custId;
   String? custNm;
+  String? nickNm;
+
   String? profilePath;
   String? likeYn;
   String? followYn;
@@ -30,12 +32,13 @@ class BoardListData {
   String? typeCd;
   String? typeDtCd;
   int? depthNo;
-  String? chgDtm;
+  String? crtDtm;
   int? likeCnt;
   String? icon;
   BoardListData({
-    this.nickNm,
+    this.custId,
     this.custNm,
+    this.nickNm,
     this.profilePath,
     this.likeYn,
     this.followYn,
@@ -61,14 +64,15 @@ class BoardListData {
     this.typeCd,
     this.typeDtCd,
     this.depthNo,
-    this.chgDtm,
+    this.crtDtm,
     this.likeCnt,
     this.icon,
   });
 
   BoardListData copyWith({
-    String? nickNm,
+    String? custId,
     String? custNm,
+    String? nickNm,
     String? profilePath,
     String? likeYn,
     String? followYn,
@@ -94,13 +98,14 @@ class BoardListData {
     String? typeCd,
     String? typeDtCd,
     int? depthNo,
-    String? chgDtm,
+    String? crtDtm,
     int? likeCnt,
     String? icon,
   }) {
     return BoardListData(
-      nickNm: nickNm ?? this.nickNm,
+      custId: custId ?? this.custId,
       custNm: custNm ?? this.custNm,
+      nickNm: nickNm ?? this.nickNm,
       profilePath: profilePath ?? this.profilePath,
       likeYn: likeYn ?? this.likeYn,
       followYn: followYn ?? this.followYn,
@@ -126,7 +131,7 @@ class BoardListData {
       typeCd: typeCd ?? this.typeCd,
       typeDtCd: typeDtCd ?? this.typeDtCd,
       depthNo: depthNo ?? this.depthNo,
-      chgDtm: chgDtm ?? this.chgDtm,
+      crtDtm: crtDtm ?? this.crtDtm,
       likeCnt: likeCnt ?? this.likeCnt,
       icon: icon ?? this.icon,
     );
@@ -134,8 +139,9 @@ class BoardListData {
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
-      'nickNm': nickNm,
+      'custId': custId,
       'custNm': custNm,
+      'nickNm': nickNm,
       'profilePath': profilePath,
       'likeYn': likeYn,
       'followYn': followYn,
@@ -161,7 +167,7 @@ class BoardListData {
       'typeCd': typeCd,
       'typeDtCd': typeDtCd,
       'depthNo': depthNo,
-      'chgDtm': chgDtm,
+      'crtDtm': crtDtm,
       'likeCnt': likeCnt,
       'icon': icon,
     };
@@ -169,8 +175,9 @@ class BoardListData {
 
   factory BoardListData.fromMap(Map<String, dynamic> map) {
     return BoardListData(
-      nickNm: map['nickNm'] != null ? map['nickNm'] as String : null,
+      custId: map['custId'] != null ? map['custId'] as String : null,
       custNm: map['custNm'] != null ? map['custNm'] as String : null,
+      nickNm: map['nickNm'] != null ? map['nickNm'] as String : null,
       profilePath: map['profilePath'] != null ? map['profilePath'] as String : null,
       likeYn: map['likeYn'] != null ? map['likeYn'] as String : null,
       followYn: map['followYn'] != null ? map['followYn'] as String : null,
@@ -196,7 +203,7 @@ class BoardListData {
       typeCd: map['typeCd'] != null ? map['typeCd'] as String : null,
       typeDtCd: map['typeDtCd'] != null ? map['typeDtCd'] as String : null,
       depthNo: map['depthNo'] != null ? map['depthNo'] as int : null,
-      chgDtm: map['chgDtm'] != null ? map['chgDtm'] as String : null,
+      crtDtm: map['crtDtm'] != null ? map['crtDtm'] as String : null,
       likeCnt: map['likeCnt'] != null ? map['likeCnt'] as int : null,
       icon: map['icon'] != null ? map['icon'] as String : null,
     );
@@ -208,15 +215,16 @@ class BoardListData {
 
   @override
   String toString() {
-    return 'BoardListData(nickNm: $nickNm, custNm: $custNm, profilePath: $profilePath, likeYn: $likeYn, followYn: $followYn, suject: $suject, location: $location, country: $country, contents: $contents, parentId: $parentId, distance: $distance, boardId: $boardId, lat: $lat, lon: $lon, weatherInfo: $weatherInfo, videoPath: $videoPath, thumbnailPath: $thumbnailPath, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, city: $city, typeCd: $typeCd, typeDtCd: $typeDtCd, depthNo: $depthNo, chgDtm: $chgDtm, likeCnt: $likeCnt, icon: $icon)';
+    return 'BoardListData(custId: $custId, custNm: $custNm, nickNm: $nickNm, profilePath: $profilePath, likeYn: $likeYn, followYn: $followYn, suject: $suject, location: $location, country: $country, contents: $contents, parentId: $parentId, distance: $distance, boardId: $boardId, lat: $lat, lon: $lon, weatherInfo: $weatherInfo, videoPath: $videoPath, thumbnailPath: $thumbnailPath, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, city: $city, typeCd: $typeCd, typeDtCd: $typeDtCd, depthNo: $depthNo, crtDtm: $crtDtm, likeCnt: $likeCnt, icon: $icon)';
   }
 
   @override
   bool operator ==(covariant BoardListData other) {
     if (identical(this, other)) return true;
 
-    return other.nickNm == nickNm &&
+    return other.custId == custId &&
         other.custNm == custNm &&
+        other.nickNm == nickNm &&
         other.profilePath == profilePath &&
         other.likeYn == likeYn &&
         other.followYn == followYn &&
@@ -242,15 +250,16 @@ class BoardListData {
         other.typeCd == typeCd &&
         other.typeDtCd == typeDtCd &&
         other.depthNo == depthNo &&
-        other.chgDtm == chgDtm &&
+        other.crtDtm == crtDtm &&
         other.likeCnt == likeCnt &&
         other.icon == icon;
   }
 
   @override
   int get hashCode {
-    return nickNm.hashCode ^
+    return custId.hashCode ^
         custNm.hashCode ^
+        nickNm.hashCode ^
         profilePath.hashCode ^
         likeYn.hashCode ^
         followYn.hashCode ^
@@ -276,7 +285,7 @@ class BoardListData {
         typeCd.hashCode ^
         typeDtCd.hashCode ^
         depthNo.hashCode ^
-        chgDtm.hashCode ^
+        crtDtm.hashCode ^
         likeCnt.hashCode ^
         icon.hashCode;
   }

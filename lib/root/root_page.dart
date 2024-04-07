@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/cupertino.dart';
@@ -6,8 +7,18 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:project1/app/camera/bloc/camera_bloc.dart';
+import 'package:project1/app/camera/page/camera_page.dart';
+import 'package:project1/app/camera/utils/camera_utils.dart';
+import 'package:project1/app/camera/utils/permission_utils.dart';
+import 'package:project1/app/list/cntr/video_list_cntr.dart';
 import 'package:project1/app/list/video_list_page.dart';
+import 'package:project1/app/myinfo/myinfo_page.dart';
+import 'package:project1/app/search/search_page.dart';
+import 'package:project1/app/setting/setting_page.dart';
 import 'package:project1/root/main_view1.dart';
 import 'package:project1/root/main_view2.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
@@ -46,21 +57,14 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     super.initState();
     initializeTimer();
 
-    mainlist = [
-      const MainView1(),
-      MainView2(title: 'aaa'),
-      const MainView3(),
-      const Center(child: Text("data5")),
-      const Center(child: Text("data5")),
-      const Center(child: Text("data5")),
-    ];
+    mainlist = [const ListPage(), SearchPage(), const SizedBox(), const MyPage(), const SettingPage()];
 
     bottomItemList = [
       bottomItem(Icons.home, '홈'),
       bottomItem(Icons.search, '검색'),
       bottomItem(Icons.add, '추가'),
-      bottomItem(Icons.favorite, '즐겨찾기'),
-      bottomItem(Icons.person, '내정보'),
+      bottomItem(Icons.favorite, '내정보'),
+      bottomItem(Icons.person, '설정'),
     ];
     // getData();
   }
@@ -85,10 +89,6 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     initializeTimer();
   }
 
-  void goPage(int page) async {
-    Utils.alert('page : $page');
-  }
-
   @override
   Widget build(BuildContext context) {
     return Listener(
@@ -98,6 +98,8 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
       onPointerUp: handleUserInteraction,
       child: Scaffold(
         // backgroundColor: Colors.transparent,
+        extendBodyBehindAppBar: true,
+        resizeToAvoidBottomInset: true,
         body: Stack(
           children: [
             Positioned.fill(
@@ -112,12 +114,10 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
                 // }
                 // Utils.alert('onPopInvoked');
               },
-              child: SafeArea(
-                child: Obx(() => FadeIndexedStack(
-                    index: RootCntr.to.rootPageIndex.value, // RootCntr.to.rootPageIndex.value,
-                    key: scaffoldKey,
-                    children: mainlist)),
-              ),
+              child: Obx(() => FadeIndexedStack(
+                  index: RootCntr.to.rootPageIndex.value, // RootCntr.to.rootPageIndex.value,
+                  key: scaffoldKey,
+                  children: mainlist)),
             )),
             ValueListenableBuilder(
                 valueListenable: isEventBox,
@@ -126,44 +126,84 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
                 }),
           ],
         ),
-        extendBodyBehindAppBar: true,
-        bottomNavigationBar: Obx(() => HideBottomBar(children: makeBottomItem())),
+        extendBody: true,
+        floatingActionButtonLocation: Platform.isIOS ? FloatingActionButtonLocation.centerDocked : FloatingActionButtonLocation.centerFloat,
+        floatingActionButtonAnimator: FloatingActionButtonAnimator.scaling,
+        // floatingActionButton: makeBottomItem(),
+        bottomSheet: const Padding(padding: EdgeInsets.only(bottom: 0.0)),
+
+        floatingActionButton: Obx(() => HideBottomBar(childWdiget: makeBottomItem())),
+        // bottomNavigationBar: Obx(() => HideBottomBar(children: makeBottomItem())),
       ),
     );
   }
 
-  BottomNavigationBarItem bottomItem(IconData icondata, String label) {
-    // 4번 클릭시 화면 호출
-    if (RootCntr.to.rootPageIndex.value == 2) {
-      //   WidgetsBinding.instance.addPostFrameCallback((_) => goPage(RootCntr.to.rootPageIndex.value));
-      //   WidgetsBinding.instance.addPostFrameCallback((_) => goPage(RootCntr.to.rootPageIndex.value));
-    }
-    return BottomNavigationBarItem(
-      backgroundColor: Colors.white,
-      icon: Icon(
-        icondata,
-        color: Colors.grey,
+  void goRecord() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => BlocProvider(
+          create: (context) {
+            return CameraBloc(
+              cameraUtils: CameraUtils(),
+              permissionUtils: PermissionUtils(),
+              currentWeather: Get.find<VideoListCntr>().currentWeather.value,
+            )..add(const CameraInitialize(recordingLimit: 15));
+          },
+          child: const CameraPage(),
+        ),
       ),
+    );
+  }
+
+  onClick(index) {
+    if (index == 2) {
+      goRecord();
+      return;
+    }
+    RootCntr.to.changeRootPageIndex(index);
+  }
+
+  BottomNavigationBarItem bottomItem(IconData icondata, String label) {
+    return BottomNavigationBarItem(
+      icon: Obx(() => Icon(
+            icondata,
+            color: RootCntr.to.rootPageIndex.value == 0 ? Colors.white : Colors.grey,
+          )),
       label: label,
       activeIcon: Icon(icondata, color: Colors.black),
     );
   }
 
   Widget makeBottomItem() {
-    return BottomNavigationBar(
-      currentIndex: RootCntr.to.rootPageIndex.value,
-      backgroundColor: Colors.transparent,
-      showSelectedLabels: true,
-      showUnselectedLabels: true,
-      iconSize: 22,
-      onTap: RootCntr.to.changeRootPageIndex,
-      selectedIconTheme: const IconThemeData(size: 25),
-      selectedFontSize: 13,
-      selectedItemColor: Colors.black,
-      unselectedFontSize: 11,
-      unselectedItemColor: Colors.black,
-      unselectedIconTheme: const IconThemeData(size: 23),
-      items: bottomItemList,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 0),
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 1),
+      decoration: BoxDecoration(
+        // color: Colors.grey.withOpacity(0.63),
+        color: Colors.white10.withOpacity(0.63),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.withOpacity(0.63), width: 0.35),
+      ),
+      child: BottomNavigationBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        currentIndex: RootCntr.to.rootPageIndex.value,
+        showUnselectedLabels: true,
+        type: BottomNavigationBarType.fixed,
+        //    backgroundColor: Colors.grey[100],
+        showSelectedLabels: true,
+        iconSize: 22,
+        onTap: (index) {
+          onClick(index);
+        },
+        selectedIconTheme: const IconThemeData(size: 24),
+        selectedFontSize: 13,
+        selectedItemColor: Colors.black,
+        unselectedFontSize: 11,
+        unselectedItemColor: RootCntr.to.rootPageIndex.value == 0 ? Colors.white : Colors.grey,
+        unselectedIconTheme: const IconThemeData(size: 22),
+        items: bottomItemList,
+      ),
     );
   }
 

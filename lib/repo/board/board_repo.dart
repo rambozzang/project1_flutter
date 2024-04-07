@@ -49,6 +49,17 @@ class BoardRepo {
     } finally {}
   }
 
+  // 댓글 저장
+  Future<ResData> saveComment(String boardId, String comment) async {
+    try {
+      var url = '${UrlConfig.baseURL}/board/saveComment';
+      Response response = await dio.post(url, data: {'boardId': boardId, 'comment': comment});
+      return dioResponse(response);
+    } on DioException catch (e) {
+      return dioException(e);
+    } finally {}
+  }
+
   // 좋아요 클릭시
   Future<ResData> like(String boardId) async {
     try {
@@ -60,6 +71,7 @@ class BoardRepo {
     } finally {}
   }
 
+  // 좋아요 취소 클릭시
   Future<ResData> likeCancle(String boardId) async {
     try {
       var url = '${UrlConfig.baseURL}/like/cancle?boardId=$boardId';
@@ -71,10 +83,21 @@ class BoardRepo {
   }
 
   // follow 클릭시
-  Future<ResData> follow(String custId, String followCustId) async {
+  Future<ResData> follow(String followCustId) async {
     try {
-      var url = '${UrlConfig.baseURL}/board/follow';
-      Response response = await dio.post(url, data: {'custId': custId, 'followCustId': followCustId});
+      var url = '${UrlConfig.baseURL}/follow/save?custId=$followCustId';
+      Response response = await dio.post(url);
+      return dioResponse(response);
+    } on DioException catch (e) {
+      return dioException(e);
+    } finally {}
+  }
+
+  // follow 클릭시
+  Future<ResData> followCancle(String followCustId) async {
+    try {
+      var url = '${UrlConfig.baseURL}/follow/cancle?custId=$followCustId';
+      Response response = await dio.post(url);
       return dioResponse(response);
     } on DioException catch (e) {
       return dioException(e);

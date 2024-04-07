@@ -1,5 +1,8 @@
 //import 'package:cached_video_player_plus/cached_video_player_plus.dart';
 
+import 'dart:ffi' as ffi;
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
@@ -8,12 +11,12 @@ import 'package:get/get.dart';
 import 'package:hashtagable_v3/hashtagable.dart';
 import 'package:like_button/like_button.dart';
 
-import 'package:marquee_widget/marquee_widget.dart';
-import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/list/cntr/video_list_cntr.dart';
 import 'package:project1/app/list/comment_page.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:text_scroll/text_scroll.dart';
 
@@ -41,6 +44,8 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
   // double progress = 0;
   Duration position = Duration.zero;
 
+  double bottomHeight = Platform.isIOS ? 92.0 : 80.0;
+
   @override
   void initState() {
     initiliazeVideo();
@@ -48,13 +53,8 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
   }
 
   Future initiliazeVideo() async {
-    //  _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
-
-    // _controller = CachedVideoPlayerPlusController.networkUrl(
-    //   Uri.parse(widget.videoUrl),
-    //   invalidateCacheIfOlderThan: const Duration(days: 69),)
-
     final file = await DefaultCacheManager().getSingleFile(widget.data.videoPath.toString(), key: widget.data.videoPath.toString());
+
     _controller = VideoPlayerController.file(file)
       ..initialize().then((_) {
         if (mounted) {
@@ -68,10 +68,7 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
 
     _controller.addListener(() {
       isPlay.value = _controller.value.isPlaying;
-
       int max = _controller.value.duration.inSeconds;
-
-      // aspectRatio = _controller.value.aspectRatio;
       position = _controller.value.position;
       progress.value = (position.inSeconds / max * 100).isNaN ? 0 : position.inSeconds / max * 100;
     });
@@ -85,7 +82,12 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
         Utils.alert(resData.msg.toString());
         return;
       }
-      //Utils.alert('정상 등록되었습니다!');
+
+      // 현재 리스트에 좋아요 카운트 증가
+      Get.find<VideoListCntr>().list[Get.find<VideoListCntr>().currentIndex.value].likeCnt =
+          (Get.find<VideoListCntr>().list[Get.find<VideoListCntr>().currentIndex.value].likeCnt! + 1);
+      // 현재 리스트에 좋아요 여부 변경
+      Get.find<VideoListCntr>().list[Get.find<VideoListCntr>().currentIndex.value].likeYn = 'Y';
     } catch (e) {
       Utils.alert('좋아요 실패! 다시 시도해주세요');
     }
@@ -99,9 +101,43 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
         Utils.alert(resData.msg.toString());
         return;
       }
-      //Utils.alert('정상 등록되었습니다!');
+      // 현재 리스트에 좋아요 카운트 감소
+      Get.find<VideoListCntr>().list[Get.find<VideoListCntr>().currentIndex.value].likeCnt =
+          (Get.find<VideoListCntr>().list[Get.find<VideoListCntr>().currentIndex.value].likeCnt! - 1);
+      // 현재 리스트에 좋아요 여부 변경
+      Get.find<VideoListCntr>().list[Get.find<VideoListCntr>().currentIndex.value].likeYn = 'N';
     } catch (e) {
       Utils.alert('좋아요 실패! 다시 시도해주세요');
+    }
+  }
+
+  Future<void> follow() async {
+    try {
+      BoardRepo boardRepo = BoardRepo();
+      ResData resData = await boardRepo.follow(widget.data.custId.toString());
+      if (resData.code != '00') {
+        Utils.alert(resData.msg.toString());
+        return;
+      }
+      // 현재 리스트에 구독여부 변경
+      Get.find<VideoListCntr>().list[Get.find<VideoListCntr>().currentIndex.value].followYn = 'Y';
+    } catch (e) {
+      Utils.alert('구독 실패! 다시 시도해주세요');
+    }
+  }
+
+  Future<void> followCancle() async {
+    try {
+      BoardRepo boardRepo = BoardRepo();
+      ResData resData = await boardRepo.followCancle(widget.data.custId.toString());
+      if (resData.code != '00') {
+        Utils.alert(resData.msg.toString());
+        return;
+      }
+      // 현재 리스트에 구독여부 변경
+      Get.find<VideoListCntr>().list[Get.find<VideoListCntr>().currentIndex.value].followYn = 'N';
+    } catch (e) {
+      Utils.alert('구독 실패! 다시 시도해주세요');
     }
   }
 
@@ -121,11 +157,13 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
         if (info.visibleFraction > 0.5) {
           if (initialized) {
             _controller.play();
+            Get.find<VideoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
           }
         } else if (info.visibleFraction < 0.4) {
           if (initialized) {
             _controller.pause();
             _controller.seekTo(Duration.zero);
+            Get.find<VideoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
           }
         }
       },
@@ -161,8 +199,7 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
                 buildBottomContent(),
                 // 오른쪽 메뉴바
                 buildRightMenuBar(),
-                // Join 버튼
-                buildJoinButton(),
+
                 // 재생 progressbar
                 buildPlayProgress(),
               ],
@@ -176,7 +213,7 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
     String locationNm =
         '${widget.data.location.toString().split(' ')[0]} ${widget.data.location.toString().split(' ')[1]} ${widget.data.location.toString().split(' ')[2]}';
     return Positioned(
-      bottom: 10,
+      bottom: bottomHeight,
       right: 20,
       left: 20,
       child: Column(
@@ -207,62 +244,39 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
                 style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
               ),
               const Gap(15),
-              widget.data.followYn.toString().contains('N')
-                  ? ElevatedButton(
-                      onPressed: () {},
-                      clipBehavior: Clip.none,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        elevation: 1.5,
-                        minimumSize: const Size(0, 0),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20.0),
-                        ),
-                      ),
-                      child: const Text(
-                        '구독',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 14,
-                        ),
-                      ),
-                    )
-                  : Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20.0),
-                      ),
-                      child: Text(
-                        '구독중',
-                        style: TextStyle(color: Colors.black, fontSize: 14),
-                      )),
-              // const SizedBox(width: 35, height: 23, child: VerticalDivider(thickness: 1, color: Colors.white)),
-              // const Column(
-              //   crossAxisAlignment: CrossAxisAlignment.start,
-              //   children: [
-              //     Text(
-              //       '2024.03.03',
-              //       style: TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
-              //     ),
-              //     Text(
-              //       '17:02:13',
-              //       style: TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
-              //     ),
-              //   ],
-              // ),
+              ElevatedButton(
+                onPressed: () => widget.data.followYn.toString().contains('N') ? follow() : followCancle(),
+                clipBehavior: Clip.none,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  elevation: 1.5,
+                  minimumSize: const Size(0, 0),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  backgroundColor: widget.data.followYn.toString().contains('N') ? Colors.white : Colors.grey,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20.0),
+                  ),
+                ),
+                child: Text(
+                  widget.data.followYn.toString().contains('N') ? '구독' : '구독중',
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 14,
+                  ),
+                ),
+              )
             ],
           ),
           const Gap(5),
-          Text(
-            widget.data.chgDtm.toString(),
-            style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
-          ),
           Row(
             children: [
               Text(
-                '${widget.data.weatherInfo} ${widget.data.currentTemp}°',
+                '${widget.data.crtDtm.toString().split(':')[0].replaceAll('-', '/')} ${widget.data.crtDtm.toString().split(':')[1]}',
+                style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(width: 20, height: 13, child: VerticalDivider(thickness: 1, color: Colors.white)),
+              Text(
+                '${widget.data.weatherInfo?.split('.')[0]} ${widget.data.currentTemp}°',
                 style: const TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w700),
               ),
               SizedBox(
@@ -271,8 +285,7 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
                 child: CachedNetworkImage(
                   width: 50,
                   height: 50,
-                  imageUrl: 'http://openweathermap.org/img/wn/10n@2x.png',
-                  //   imageUrl:  //'http://openweathermap.org/img/w/${value.weather![0].icon}.png',
+                  imageUrl: 'http://openweathermap.org/img/wn/${widget.data.icon}@2x.png',
                   imageBuilder: (context, imageProvider) => Container(
                     decoration: BoxDecoration(
                       image: DecorationImage(
@@ -284,20 +297,16 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
                   placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 0.6, color: Colors.white),
                   errorWidget: (context, url, error) => const Icon(Icons.error),
                 ),
-                // child: Image.network(
-                //     width: 40,
-                //     height: 40,
-                //     'http://openweathermap.org/img/wn/10n@2x.png',
-                //     //'http://openweathermap.org/img/w/${value.weather![0].icon}.png',
-                //     scale: 0.6,
-                //     fit: BoxFit.contain,
-                //     alignment: Alignment.topCenter),
               ),
-              const SizedBox(width: 10, height: 13, child: VerticalDivider(thickness: 1, color: Colors.white)),
+            ],
+          ),
+          Row(
+            children: [
+              const Icon(Icons.location_on, color: Colors.white, size: 15),
               SizedBox(
-                width: MediaQuery.of(context).size.width * 0.5,
+                width: MediaQuery.of(context).size.width * 0.75,
                 child: TextScroll(
-                  locationNm.toString(),
+                  '${locationNm.toString()} ${widget.data.distance!.toStringAsFixed(1)}km ',
                   mode: TextScrollMode.endless,
                   numberOfReps: 20000,
                   fadedBorder: true,
@@ -309,16 +318,8 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
                   selectable: true,
                 ),
               ),
-              // Te11xt(
-              //   ' ${widget.data.location}',
-              //   style: const TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w700),
-              // ),
             ],
           ),
-          // const Text(
-          //   '2024.03.03 · 서울시 서대문구',
-          //   style: TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w700),
-          // ),
           const Gap(5),
           widget.data.contents != ""
               ? Padding(
@@ -354,24 +355,6 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
               textAlign: TextAlign.right,
               selectable: true,
             ),
-            // child: Marquee(
-            //   //scrollAxis: Axis.horizontal,
-            //   textDirection: TextDirection.rtl,
-            //   animationDuration: const Duration(seconds: 1),
-            //   backDuration: const Duration(milliseconds: 5000),
-            //   pauseDuration: const Duration(milliseconds: 1500),
-            //   directionMarguee: DirectionMarguee.TwoDirection,
-            //   child: const Row(
-            //     children: [
-            //       Text(
-            //         ' 여기서는 TextButton, FilledButton, ElevatedButton의 크기를 변경하는 방법에 대해서 알아보겠습니다',
-            //         style: TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
-            //       ),
-            //       Gap(10),
-            //       Icon(Icons.music_note, color: Colors.red, size: 15),
-            //     ],
-            //   ),
-            // ),
           )
         ],
       ),
@@ -381,18 +364,10 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
   // 오른쪽 메뉴바
   Widget buildRightMenuBar() {
     return Positioned(
-      bottom: 20,
+      bottom: bottomHeight,
       right: 10,
       child: Column(
         children: [
-          // IconButton(
-          //   icon: const Icon(Icons.favorite_border, color: Colors.white),
-          //   onPressed: () {},
-          // ),
-          // const Text(
-          //   '1.2M',
-          //   style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
-          // ),
           LikeButton(
             size: 27,
             circleColor: const CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
@@ -444,7 +419,7 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
                   child: Text(
                     text,
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
                   ),
                 );
               }
@@ -465,11 +440,11 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
             icon: const Icon(Icons.send, color: Colors.white),
             onPressed: () {},
           ),
-          const Gap(5),
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
-            onPressed: () => Get.toNamed('/MyinfoPage'),
-          ),
+          // const Gap(5),
+          // IconButton(
+          //   icon: const Icon(Icons.more_vert, color: Colors.white),
+          //   onPressed: () => Get.toNamed('/MyinfoPage'),
+          // ),
         ],
       ),
     );
@@ -539,56 +514,24 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
     );
   }
 
-  // Join 버튼
-  Widget buildJoinButton() {
-    return Positioned(
-      right: 10,
-      top: Get.height / 2,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints.tightFor(width: 65, height: 40),
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white.withOpacity(0.15),
-            padding: const EdgeInsets.all(1.0),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16.0),
-            ),
-            elevation: 1.0,
-          ),
-          onPressed: () {
-            Get.toNamed('/OnboardingPage');
-          },
-          child: const Text(
-            'Join',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          ),
-        ),
-      ),
-    );
-  }
-
   // 사운드 on/off 버튼
   Widget buildSoundButton() {
     return Positioned(
       top: Get.height / 2,
       left: 10,
-      child: IconButton(
-        onPressed: () {
-          soundOff.value = !soundOff.value;
-          if (soundOff.value) {
-            _controller.setVolume(0);
-          } else {
-            _controller.setVolume(1);
-          }
-        },
-        icon: ValueListenableBuilder<bool>(
-            valueListenable: soundOff,
-            builder: (context, value, child) {
-              return value
-                  ? const Icon(Icons.volume_off_outlined, color: Colors.white)
-                  : const Icon(Icons.volume_up_outlined, color: Colors.white);
-            }),
-      ),
+      child: Obx(() => IconButton(
+            onPressed: () {
+              Get.find<VideoListCntr>().soundOff.value = !Get.find<VideoListCntr>().soundOff.value;
+              if (Get.find<VideoListCntr>().soundOff.value) {
+                _controller.setVolume(0);
+              } else {
+                _controller.setVolume(1);
+              }
+            },
+            icon: Get.find<VideoListCntr>().soundOff.value
+                ? const Icon(Icons.volume_off_outlined, color: Colors.white)
+                : const Icon(Icons.volume_up_outlined, color: Colors.white),
+          )),
     );
   }
 }

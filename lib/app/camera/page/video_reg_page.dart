@@ -240,7 +240,7 @@ class _VideoRegPageState extends State<VideoRegPage> {
         return;
       }
       Utils.alert('정상 등록되었습니다!');
-      Future.delayed(const Duration(milliseconds: 800), () {
+      Future.delayed(const Duration(milliseconds: 400), () {
         isUploading.value = false;
         Navigator.pop(context);
       });
