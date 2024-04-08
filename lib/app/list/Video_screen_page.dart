@@ -14,7 +14,7 @@ import 'package:like_button/like_button.dart';
 import 'package:project1/app/list/cntr/video_list_cntr.dart';
 import 'package:project1/app/list/comment_page.dart';
 import 'package:project1/repo/board/board_repo.dart';
-import 'package:project1/repo/board/data/board_list_data.dart';
+import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/utils.dart';
@@ -26,7 +26,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 class VideoSreenPage extends StatefulWidget {
   const VideoSreenPage({super.key, required this.data});
 
-  final BoardListData data;
+  final BoardWeatherListData data;
 
   @override
   State<VideoSreenPage> createState() => _VideoSreenPageState();

@@ -5,26 +5,29 @@
 // import 'package:flutter/widgets.dart';
 // import 'package:gap/gap.dart';
 // import 'package:get/get.dart';
+// import 'package:project1/app/setting/data/board_info_data.dart';
+// import 'package:project1/app/setting/data/noti_data.dart';
+// import 'package:project1/repo/board/board_repo.dart';
 // import 'package:project1/repo/common/res_stream.dart';
 
 
-// class MoNotiPage extends StatefulWidget {
-//   const MoNotiPage({super.key});
+// class NotiPage extends StatefulWidget {
+//   const NotiPage({super.key});
 
 //   @override
-//   State<MoNotiPage> createState() => _MoNotiPageState();
+//   State<NotiPage> createState() => _NotiPageState();
 // }
 
-// class _MoNotiPageState extends State<MoNotiPage> {
+// class _NotiPageState extends State<NotiPage> {
 //   final formKey = GlobalKey<FormState>();
 
 //   // 스크롤 컨트롤러
 //   ScrollController scrollCtrl = ScrollController();
 
 //   // 데이터 스크림
-//   final StreamController<ResStream<List<BoardResDetailData>>> listCtrl = StreamController();
+//   final StreamController<ResStream<List<BoardInfoData>>> listCtrl = StreamController();
 
-//   List<BoardResDetailData> boardList = [];
+//   List<BoardInfoData> boardList = [];
 
 //   String ptupDsc = 'NOTI';
 //   String ptupTrgtDsc = 'NOTI';
@@ -55,7 +58,7 @@
 //     isMoreLoading.value = true;
 //     page++;
 //     BoardRepo repo = BoardRepo();
-//     BoardReqData reqData = BoardReqData();
+//     NotiData reqData = NotiData();
 //     reqData.ptupDsc = ptupDsc;
 //     reqData.ptupTrgtDsc = ptupTrgtDsc;
 //     reqData.searchWord = '';
@@ -84,15 +87,9 @@
 //     try {
 //       listCtrl.sink.add(ResStream.loading());
 //       BoardRepo repo = BoardRepo();
-//       BoardReqData reqData = BoardReqData();
-//       reqData.ptupDsc = ptupDsc;
-//       reqData.ptupTrgtDsc = ptupTrgtDsc;
-//       reqData.searchWord = '';
-//       reqData.topYn = topYn;
-//       reqData.page = _page;
-//       reqData.pageSize = pageSzie;
+      
 
-//       ResData resData = await repo.searchList(reqData);
+//       ResData resData = await repo.searchComment(boardId , page , pageSzie);
 
 //       if (resData.code != '00') {
 //         Utils.alert(resData.msg.toString());

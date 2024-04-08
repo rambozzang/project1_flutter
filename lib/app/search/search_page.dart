@@ -152,13 +152,12 @@ class _SearchPageState extends State<SearchPage> {
   // 추천 검색어
   Widget buildRecom() {
     return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text("추천 검색어", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            Text(" ", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300))
-          ],
+          children: [Text("추천 검색어", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)), Spacer()],
         ),
         Column(
           mainAxisAlignment: MainAxisAlignment.start,

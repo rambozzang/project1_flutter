@@ -17,7 +17,7 @@ import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/camera/utils/permission_utils.dart';
 import 'package:project1/app/list/cntr/video_list_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
-import 'package:project1/repo/board/data/board_list_data.dart';
+import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/repo/weather/data/current_weather.dart';
@@ -110,7 +110,7 @@ class _ListPageState extends State<ListPage> {
               SliverFillRemaining(
                 child: Stack(
                   children: [
-                    Utils.commonStreamList<BoardListData>(
+                    Utils.commonStreamList<BoardWeatherListData>(
                         Get.find<VideoListCntr>().videoListCntr, buildVideoBody, Get.find<VideoListCntr>().getData),
                     buildLocalName(),
                     buildTemp(),
@@ -156,7 +156,7 @@ class _ListPageState extends State<ListPage> {
   }
 
   // 동영상 리스트
-  Widget buildVideoBody(List<BoardListData> data) {
+  Widget buildVideoBody(List<BoardWeatherListData> data) {
     return PreloadPageView.builder(
         controller: _controller,
         preloadPagesCount: 3,

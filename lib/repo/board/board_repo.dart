@@ -39,10 +39,10 @@ class BoardRepo {
   }
 
   // 댓글 조회
-  Future<ResData> searchComment(String boardId) async {
+  Future<ResData> searchComment(String boardId, int pageNum, int pageSize) async {
     try {
       var url = '${UrlConfig.baseURL}/board/searchComment';
-      Response response = await dio.post(url, data: {'id': boardId, 'pageNum': 0, 'pageSize': 500});
+      Response response = await dio.post(url, data: {'boardId': boardId, 'pageNum': pageNum.toString(), 'pageSize': pageSize.toString()});
       return dioResponse(response);
     } on DioException catch (e) {
       return dioException(e);
