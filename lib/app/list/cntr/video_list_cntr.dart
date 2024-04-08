@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:project1/repo/board/board_repo.dart';
-import 'package:project1/repo/board/data/board_list_data.dart';
+import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/repo/weather/data/current_weather.dart';
@@ -21,7 +21,7 @@ class VideoListBinding implements Bindings {
 
 class VideoListCntr extends GetxController {
   // 비디오 리스트
-  StreamController<ResStream<List<BoardListData>>> videoListCntr = StreamController();
+  StreamController<ResStream<List<BoardWeatherListData>>> videoListCntr = StreamController();
   // 현재 위치
   late Position? position;
   int pageNum = 0;
@@ -33,7 +33,7 @@ class VideoListCntr extends GetxController {
   //현재 영상의 index값 저장
   var currentIndex = 0.obs;
   // 동영상을 담은 리스트
-  List<BoardListData> list = <BoardListData>[].obs;
+  List<BoardWeatherListData> list = <BoardWeatherListData>[].obs;
   // 현재 날씨
   Rx<CurrentWeather?> currentWeather = CurrentWeather().obs;
   // 동네 이름
@@ -105,7 +105,7 @@ class VideoListCntr extends GetxController {
         Utils.alert(resListData.msg.toString());
         return;
       }
-      list = ((resListData.data) as List).map((data) => BoardListData.fromMap(data)).toList();
+      list = ((resListData.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
       videoListCntr.sink.add(ResStream.completed(list));
       if (position != null) {
         getNowWeather(position!);
@@ -138,7 +138,7 @@ class VideoListCntr extends GetxController {
       Utils.alert(resListData.msg.toString());
       return;
     }
-    List<BoardListData> _list = ((resListData.data) as List).map((data) => BoardListData.fromMap(data)).toList();
+    List<BoardWeatherListData> _list = ((resListData.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
     list.addAll(_list);
     videoListCntr.sink.add(ResStream.completed(list));
   }
