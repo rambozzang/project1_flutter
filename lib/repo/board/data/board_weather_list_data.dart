@@ -1,7 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
-class BoardListData {
+class BoardWeatherListData {
   String? custId;
   String? custNm;
   String? nickNm;
@@ -35,7 +35,7 @@ class BoardListData {
   String? crtDtm;
   int? likeCnt;
   String? icon;
-  BoardListData({
+  BoardWeatherListData({
     this.custId,
     this.custNm,
     this.nickNm,
@@ -69,7 +69,7 @@ class BoardListData {
     this.icon,
   });
 
-  BoardListData copyWith({
+  BoardWeatherListData copyWith({
     String? custId,
     String? custNm,
     String? nickNm,
@@ -102,7 +102,7 @@ class BoardListData {
     int? likeCnt,
     String? icon,
   }) {
-    return BoardListData(
+    return BoardWeatherListData(
       custId: custId ?? this.custId,
       custNm: custNm ?? this.custNm,
       nickNm: nickNm ?? this.nickNm,
@@ -173,8 +173,8 @@ class BoardListData {
     };
   }
 
-  factory BoardListData.fromMap(Map<String, dynamic> map) {
-    return BoardListData(
+  factory BoardWeatherListData.fromMap(Map<String, dynamic> map) {
+    return BoardWeatherListData(
       custId: map['custId'] != null ? map['custId'] as String : null,
       custNm: map['custNm'] != null ? map['custNm'] as String : null,
       nickNm: map['nickNm'] != null ? map['nickNm'] as String : null,
@@ -211,15 +211,15 @@ class BoardListData {
 
   String toJson() => json.encode(toMap());
 
-  factory BoardListData.fromJson(String source) => BoardListData.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory BoardWeatherListData.fromJson(String source) => BoardWeatherListData.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   String toString() {
-    return 'BoardListData(custId: $custId, custNm: $custNm, nickNm: $nickNm, profilePath: $profilePath, likeYn: $likeYn, followYn: $followYn, suject: $suject, location: $location, country: $country, contents: $contents, parentId: $parentId, distance: $distance, boardId: $boardId, lat: $lat, lon: $lon, weatherInfo: $weatherInfo, videoPath: $videoPath, thumbnailPath: $thumbnailPath, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, city: $city, typeCd: $typeCd, typeDtCd: $typeDtCd, depthNo: $depthNo, crtDtm: $crtDtm, likeCnt: $likeCnt, icon: $icon)';
+    return 'BoardWeatherListData(custId: $custId, custNm: $custNm, nickNm: $nickNm, profilePath: $profilePath, likeYn: $likeYn, followYn: $followYn, suject: $suject, location: $location, country: $country, contents: $contents, parentId: $parentId, distance: $distance, boardId: $boardId, lat: $lat, lon: $lon, weatherInfo: $weatherInfo, videoPath: $videoPath, thumbnailPath: $thumbnailPath, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, city: $city, typeCd: $typeCd, typeDtCd: $typeDtCd, depthNo: $depthNo, crtDtm: $crtDtm, likeCnt: $likeCnt, icon: $icon)';
   }
 
   @override
-  bool operator ==(covariant BoardListData other) {
+  bool operator ==(covariant BoardWeatherListData other) {
     if (identical(this, other)) return true;
 
     return other.custId == custId &&
