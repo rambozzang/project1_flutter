@@ -300,7 +300,16 @@ abstract class Utils {
   static Widget progressbar({double? size}) {
     return Center(
       child: LoadingAnimationWidget.threeRotatingDots(
-        color: Colors.cyan,
+        color: Colors.pink,
+        size: size ?? 40,
+      ),
+    );
+  }
+
+  static Widget progressUpload({double? size}) {
+    return Center(
+      child: LoadingAnimationWidget.discreteCircle(
+        color: Colors.pink,
         size: size ?? 40,
       ),
     );

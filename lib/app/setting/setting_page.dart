@@ -4,6 +4,7 @@ import 'package:babstrap_settings_screen/babstrap_settings_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -15,6 +16,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
+import 'package:project1/widget/ads_page.dart';
 
 class SettingPage extends StatefulWidget {
   const SettingPage({Key? key}) : super(key: key);
@@ -137,14 +139,19 @@ class _SettingPageState extends State<SettingPage> {
               settingsGroupTitleStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 16),
               items: [
                 SettingsItem(
-                  onTap: () {},
+                  onTap: () => Get.toNamed('/NotiPage'),
                   icons: Icons.exit_to_app_rounded,
                   title: "공지사항",
                 ),
                 SettingsItem(
-                  onTap: () {},
+                  onTap: () => Get.toNamed('/FaqPage'),
                   icons: CupertinoIcons.repeat,
                   title: "FAQ",
+                ),
+                SettingsItem(
+                  onTap: () => Get.toNamed('/FaqPage'),
+                  icons: CupertinoIcons.arrow_turn_down_right,
+                  title: "1대1 건의사항",
                 ),
               ],
             ),
@@ -164,17 +171,6 @@ class _SettingPageState extends State<SettingPage> {
                 ),
                 SettingsItem(
                   onTap: () {},
-                  icons: Icons.fingerprint,
-                  iconStyle: IconStyle(
-                    iconsColor: Colors.white,
-                    withBackground: true,
-                    backgroundColor: Colors.red,
-                  ),
-                  title: '서비스 이용약관',
-                  // subtitle: "Lock Ziar'App to improve your privacy",
-                ),
-                SettingsItem(
-                  onTap: () {},
                   icons: Icons.dark_mode_rounded,
                   iconStyle: IconStyle(
                     iconsColor: Colors.white,
@@ -190,89 +186,108 @@ class _SettingPageState extends State<SettingPage> {
                 ),
               ],
             ),
+            buildAddmob(),
             SettingsGroup(
               items: [
                 SettingsItem(
-                  onTap: () {},
+                  onTap: () => Get.toNamed('/AgreePage'),
+                  icons: Icons.fingerprint,
+                  iconStyle: IconStyle(
+                    iconsColor: Colors.white,
+                    withBackground: true,
+                    backgroundColor: Colors.red,
+                  ),
+                  title: '서비스 이용약관',
+                  // subtitle: "Lock Ziar'App to improve your privacy",
+                ),
+                SettingsItem(
+                  onTap: () => Get.toNamed('/PrivecyPage'),
                   icons: Icons.info_rounded,
                   iconStyle: IconStyle(
                     backgroundColor: Colors.purple,
                   ),
                   title: '개인정보 처리방침',
-                  subtitle: "Learn more about Ziar'App",
+                  subtitle: "회사 개인정보 처리방침",
                 ),
                 SettingsItem(
-                  onTap: () {},
-                  icons: CupertinoIcons.delete_solid,
-                  title: "회원탈퇴",
-                  titleStyle: const TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
+                  onTap: () => Get.toNamed('/LocatinServicePage'),
+                  icons: Icons.location_on_rounded,
+                  iconStyle: IconStyle(
+                    backgroundColor: Colors.green,
                   ),
+                  title: '위치기반 서비스 이용약관',
+                  subtitle: "위치기반 서비스 이용약관",
                 ),
+
                 SettingsItem(
-                  onTap: () => Get.toNamed('/MainView1'),
-                  icons: CupertinoIcons.delete_solid,
-                  title: "TestPage",
-                  titleStyle: const TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
+                  onTap: () => Get.toNamed('/OpenSourcePage'),
+                  icons: Icons.insert_chart,
+                  iconStyle: IconStyle(
+                    backgroundColor: Colors.deepOrange,
                   ),
+                  title: '오픈 소스 라이센스',
+                  subtitle: "라이센스 목록",
                 ),
+                // SettingsItem(
+                //   onTap: () {},
+                //   icons: CupertinoIcons.link_circle,
+                //   title: "회원탈퇴",
+                //   titleStyle: const TextStyle(
+                //     color: Colors.red,
+                //     fontWeight: FontWeight.bold,
+                //   ),
+                // ),
+                // SettingsItem(
+                //   onTap: () => Get.toNamed('/FollowListPage'),
+                //   icons: CupertinoIcons.delete_solid,
+                //   title: "FollowListPage",
+                //   titleStyle: const TextStyle(
+                //     color: Colors.red,
+                //     fontWeight: FontWeight.bold,
+                //   ),
+                // ),
               ],
             ),
-            const Gap(250),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _info() {
-    return Container(
-      margin: const EdgeInsets.all(10.0),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        shape: BoxShape.rectangle,
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(10.0),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(15.0),
-            child: GestureDetector(
-                onTap: () => getImage(ImageSource.gallery),
-                child: ImageAvatar(width: 70, url: AuthCntr.to.resLoginData.value.profilePath!, type: AvatarType.MYSTORY)),
-          ),
-          const Expanded(
-            flex: 3,
-            child: Padding(
-              padding: EdgeInsets.all(10.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+            const Gap(20),
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
                 children: [
-                  Padding(
-                    padding: EdgeInsets.all(10.0),
-                    child: MyPageInfo(
-                      count: 35,
-                      label: '게시물',
-                    ),
+                  const Text(
+                    "BK Investment\n서울시 서대문구 종로35길 125 TigerGroup (05510)  대표자 : TigerBk, 사업자등록번호 : 110-81-28774 ",
+                    style: TextStyle(fontSize: 13, color: Colors.black54),
                   ),
-                  Padding(
-                    padding: EdgeInsets.all(10.0),
-                    child: MyPageInfo(count: 167, label: '팔로워'),
+                  const Gap(20),
+                  const Text(
+                    'Copyright 2024 TIGER Group..',
+                    style: TextStyle(fontSize: 13, color: Colors.black),
                   ),
-                  Padding(
-                    padding: EdgeInsets.all(10.0),
-                    child: MyPageInfo(count: 144, label: '팔로잉'),
+                  const Text(
+                    'All rights reserved',
+                    style: TextStyle(fontSize: 13, color: Colors.black),
                   ),
+                  const Gap(20),
+                  Stack(
+                    children: [
+                      Image.asset('assets/images/5124556.jpg', fit: BoxFit.cover, width: double.infinity, height: 75),
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Text(
+                          "02-1588-1234",
+                          style: TextStyle(fontSize: 15, color: Colors.black, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // 출처 <a href="https://kr.freepik.com/free-vector/flat-design-illustration-customer-support_12982910.htm#query=%EA%B3%A0%EA%B0%9D%EC%84%BC%ED%84%B0&position=1&from_view=keyword&track=ais&uuid=aa7b7691-daa1-46c6-88d0-55653a755271">Freepik</a>
                 ],
               ),
             ),
-          ),
-        ],
+            const Gap(100),
+          ],
+        ),
       ),
     );
   }

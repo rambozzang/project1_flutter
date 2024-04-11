@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:project1/repo/board/data/board_main_detail_data.dart';
 
 class ListItemWidget extends StatelessWidget {
-  ListItemWidget({
-    Key? key,
+  const ListItemWidget({
+    super.key,
     this.controller,
     this.focus,
-  }) : super(key: key);
+    required this.boardDetailData,
+  });
   final TextEditingController? controller;
   final FocusNode? focus;
+  final BoardDetailData boardDetailData;
 
   @override
   Widget build(BuildContext context) {
@@ -36,22 +39,22 @@ class ListItemWidget extends StatelessWidget {
                   ),
                 ),
               ),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Andrea Quintanilla * 3 tháng trước',
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w400, color: Color(0xFFAEAEAE)),
+                      boardDetailData.contents.toString(),
+                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w400, color: Color(0xFFAEAEAE)),
                     ),
                     Padding(
                       padding: EdgeInsets.only(top: 6, bottom: 12),
                       child: Text(
-                        'Que buen trabajo, que buenos enganches, genial!!!!  MTV la tenes adentro, jajaja. Saludos cordiales desde Buenos Aires, Argentina, Argentina, Argentina!',
+                        boardDetailData.contents.toString(),
                         style: TextStyle(fontSize: 13, fontWeight: FontWeight.w400, color: Color(0xFFF6F6F6)),
                       ),
                     ),
-                    Row(
+                    const Row(
                       children: [
                         Icon(
                           Icons.thumb_up_outlined,

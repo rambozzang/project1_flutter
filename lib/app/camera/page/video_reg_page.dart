@@ -8,14 +8,15 @@ import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:hashtagable_v3/hashtagable.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:project1/repo/board/board_repo.dart';
-import 'package:project1/repo/board/data/board_all_in_data.dart';
-import 'package:project1/repo/board/data/board_mast_in_data.dart';
-import 'package:project1/repo/board/data/board_weather_data.dart';
+import 'package:project1/repo/board/data/board_save_data.dart';
+import 'package:project1/repo/board/data/board_save_main_data.dart';
+import 'package:project1/repo/board/data/board_save_weather_data.dart';
 import 'package:project1/repo/cloudinary/cloudinary_page.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/weather/data/current_weather.dart';
 import 'package:project1/repo/weather/mylocator_repo.dart';
 import 'package:project1/repo/weather/open_weather_repo.dart';
+import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_button.dart';
@@ -39,7 +40,7 @@ class _VideoRegPageState extends State<VideoRegPage> {
   late VideoPlayerController _videoController;
   final TextEditingController hashTagController = TextEditingController();
 
-  late Subscription _subscription;
+  // late Subscription _subscription;
   late MediaInfo? pickedFile;
 
   final ValueNotifier<CurrentWeather?> currentWeather = ValueNotifier<CurrentWeather?>(null);
@@ -53,9 +54,9 @@ class _VideoRegPageState extends State<VideoRegPage> {
 
   final ValueNotifier<double> progress = ValueNotifier<double>(0.0);
   late Position? position;
-  final ValueNotifier<bool> isCompress = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> isCompress = ValueNotifier<bool>(true);
   late String? thumbnailFile;
-
+  BoardSaveData boardSaveData = BoardSaveData();
   @override
   void initState() {
     _videoController = VideoPlayerController.file(widget.videoFile);
@@ -67,7 +68,7 @@ class _VideoRegPageState extends State<VideoRegPage> {
     //   log('VideoCompress progress: $progress');
     // });
 
-    compressVideo();
+    // compressVideo();
 
     currentWeather.value = widget.currentWeather;
 
@@ -161,88 +162,93 @@ class _VideoRegPageState extends State<VideoRegPage> {
 
     //  MediaInfo? pickedFile = await compressVideo();
 
-    if (isCompress.value == false) {
-      await compressVideo();
-    }
+    //  if (isCompress.value == false) {
+    // await compressVideo();
+    //  }
 
     try {
-      log(pickedFile!.path.toString());
+      // log(pickedFile!.path.toString());
 
-      final res = await cloudinaryVideo.uploadFile(
-        CloudinaryFile.fromFile(
-          pickedFile!.path.toString(),
-          resourceType: CloudinaryResourceType.Video,
-          folder: today,
-          // context: {
-          //   'alt': 'Hello',
-          //   'caption': 'An example image',
-          // },
-        ),
-        onProgress: (count, total) {
-          uploadingPercentage1.value = (count / total) * 100;
-        },
-      );
-      lo.g("영상업로드 업로드 결과 : " + res.toString());
-      final res2 = await cloudinaryImage.uploadFile(
-        CloudinaryFile.fromFile(
-          thumbnailFile.toString(),
-          resourceType: CloudinaryResourceType.Image,
-          folder: today,
-          // context: {
-          //   'alt': 'Hello',
-          //   'caption': 'An example image',
-          // },
-        ),
-        onProgress: (count, total) {
-          uploadingPercentage2.value = (count / total) * 100;
-        },
-      );
-      lo.g("썸네일 업로드 결과 : " + res2.toString());
+      // final res = await cloudinaryVideo.uploadFile(
+      //   CloudinaryFile.fromFile(
+      //     pickedFile!.path.toString(),
+      //     resourceType: CloudinaryResourceType.Video,
+      //     folder: today,
+      //     // context: {
+      //     //   'alt': 'Hello',
+      //     //   'caption': 'An example image',
+      //     // },
+      //   ),
+      //   onProgress: (count, total) {
+      //     uploadingPercentage1.value = (count / total) * 100;
+      //   },
+      // );
+      // lo.g("영상업로드 업로드 결과 : " + res.toString());
+      // final res2 = await cloudinaryImage.uploadFile(
+      //   CloudinaryFile.fromFile(
+      //     thumbnailFile.toString(),
+      //     resourceType: CloudinaryResourceType.Image,
+      //     folder: today,
+      //     // context: {
+      //     //   'alt': 'Hello',
+      //     //   'caption': 'An example image',
+      //     // },
+      //   ),
+      //   onProgress: (count, total) {
+      //     uploadingPercentage2.value = (count / total) * 100;
+      //   },
+      // );
+      // lo.g("썸네일 업로드 결과 : " + res2.toString());
 
       // 저장
       BoardRepo boardRepo = BoardRepo();
 
-      BoardMastInData boardMastInData = BoardMastInData();
-      boardMastInData.contents = hashTagController.text;
-      boardMastInData.depthNo = '0';
-      boardMastInData.notiEdAt = '';
-      boardMastInData.notiStAt = '';
-      boardMastInData.subject = '';
-      boardMastInData.typeCd = 'V';
-      boardMastInData.typeDtCd = 'V';
+      BoardSaveMainData boardSaveMainData = BoardSaveMainData();
+      boardSaveMainData.contents = hashTagController.text;
+      boardSaveMainData.depthNo = '0';
+      boardSaveMainData.notiEdAt = '';
+      boardSaveMainData.notiStAt = '';
+      boardSaveMainData.subject = '';
+      boardSaveMainData.typeCd = 'V';
+      boardSaveMainData.typeDtCd = 'V';
 
-      BoardWeatherData boardWeatherData = BoardWeatherData();
-      boardWeatherData.boardId = 0;
-      boardWeatherData.city = currentWeather.value!.name;
-      boardWeatherData.country = currentWeather.value!.sys!.country;
-      boardWeatherData.currentTemp = currentWeather.value!.main!.temp?.toStringAsFixed(1);
-      boardWeatherData.feelsTemp = currentWeather.value!.main!.feels_like?.toStringAsFixed(1);
-      boardWeatherData.humidity = currentWeather.value!.main!.humidity.toString();
-      boardWeatherData.icon = currentWeather.value!.weather![0].icon;
-      boardWeatherData.lat = currentWeather.value!.coord!.lat.toString();
-      boardWeatherData.location = localName.value;
-      boardWeatherData.lon = currentWeather.value!.coord!.lon.toString();
-      boardWeatherData.speed = currentWeather.value!.wind!.speed.toString();
-      boardWeatherData.tempMax = currentWeather.value!.main!.temp_max?.toStringAsFixed(1);
-      boardWeatherData.tempMin = currentWeather.value!.main!.temp_min?.toStringAsFixed(1);
-      boardWeatherData.thumbnailPath = res2.secureUrl;
-      boardWeatherData.videoPath = res.secureUrl;
-      boardWeatherData.weatherInfo = currentWeather.value!.weather![0].description;
+      BoardSaveWeatherData boardSaveWeatherData = BoardSaveWeatherData();
+      boardSaveWeatherData.boardId = 0;
+      boardSaveWeatherData.city = currentWeather.value!.name;
+      boardSaveWeatherData.country = currentWeather.value!.sys!.country;
+      boardSaveWeatherData.currentTemp = currentWeather.value!.main!.temp?.toStringAsFixed(1);
+      boardSaveWeatherData.feelsTemp = currentWeather.value!.main!.feels_like?.toStringAsFixed(1);
+      boardSaveWeatherData.humidity = currentWeather.value!.main!.humidity.toString();
+      boardSaveWeatherData.icon = currentWeather.value!.weather![0].icon;
+      boardSaveWeatherData.lat = currentWeather.value!.coord!.lat.toString();
+      boardSaveWeatherData.location = localName.value;
+      boardSaveWeatherData.lon = currentWeather.value!.coord!.lon.toString();
+      boardSaveWeatherData.speed = currentWeather.value!.wind!.speed.toString();
+      boardSaveWeatherData.tempMax = currentWeather.value!.main!.temp_max?.toStringAsFixed(1);
+      boardSaveWeatherData.tempMin = currentWeather.value!.main!.temp_min?.toStringAsFixed(1);
+      // boardSaveWeatherData.thumbnailPath = res2.secureUrl;
+      // boardSaveWeatherData.videoPath = res.secureUrl;
+      boardSaveWeatherData.weatherInfo = currentWeather.value!.weather![0].description;
 
-      BoardAllInData boardAllInData = BoardAllInData();
-      boardAllInData.boardMastInVo = boardMastInData;
-      boardAllInData.boardWeatherVo = boardWeatherData;
+      boardSaveData.boardMastInVo = boardSaveMainData;
+      boardSaveData.boardWeatherVo = boardSaveWeatherData;
 
-      ResData resData = await boardRepo.save(boardAllInData);
+      //  ResData resData = await boardRepo.save(boardSaveData);
 
-      if (resData.code != '00') {
-        Utils.alert(resData.msg.toString());
-        return;
-      }
-      Utils.alert('정상 등록되었습니다!');
-      Future.delayed(const Duration(milliseconds: 400), () {
+      // if (resData.code != '00') {
+      //   Utils.alert(resData.msg.toString());
+      //   return;
+      // }
+      Lo.g("Root upload() videoFilePath : ${widget.videoFile.path}");
+      Lo.g("Root upload() videoFilePath : ${widget.videoFile.path}");
+      Lo.g("Root upload() videoFilePath : ${widget.videoFile.path}");
+      Lo.g("Root upload() videoFilePath : ${widget.videoFile.path}");
+
+      Utils.alert('임시 등록되었습니다! 잠시후 정상 게시됩니다!');
+
+      Future.delayed(const Duration(milliseconds: 500), () {
         isUploading.value = false;
-        Navigator.pop(context);
+        Get.back();
       });
       return;
 
@@ -281,25 +287,37 @@ class _VideoRegPageState extends State<VideoRegPage> {
     try {
       isCompress.value = false;
       log(widget.videoFile.path);
+      final List list;
+      list = await Future.wait([
+        VideoCompress.compressVideo(
+          widget.videoFile.path,
+          quality: VideoQuality.LowQuality,
+          deleteOrigin: false,
+          includeAudio: true,
+        ),
+        VideoCompress.getFileThumbnail(widget.videoFile.path, quality: 50),
+      ]);
+      pickedFile = list[0];
+      thumbnailFile = list[1].path;
 
-      pickedFile = await VideoCompress.compressVideo(
-        widget.videoFile.path,
-        quality: VideoQuality.MediumQuality,
-        deleteOrigin: false,
-        includeAudio: true,
-      );
-      Lo.g('비디오 압축 결과 : ${pickedFile?.toJson()}');
-      File ff = await VideoCompress.getFileThumbnail(widget.videoFile.path, quality: 100);
-      thumbnailFile = ff.path;
-      // thumbnailFile = await VideoThumbnail.thumbnailFile(
-      //   video: pickedFile!.path.toString(),
-      //   thumbnailPath: (await getTemporaryDirectory()).path,
-      //   imageFormat: ImageFormat.JPEG,
-      //   maxHeight: 640,
-      //   quality: 70,
+      // pickedFile = await VideoCompress.compressVideo(
+      //   widget.videoFile.path,
+      //   quality: VideoQuality.LowQuality,
+      //   deleteOrigin: false,
+      //   includeAudio: true,
       // );
+      // Lo.g('비디오 압축 결과 : ${pickedFile?.toJson()}');
+      // File ff = await VideoCompress.getFileThumbnail(widget.videoFile.path, quality: 50);
+      // thumbnailFile = ff.path;
+      // // thumbnailFile = await VideoThumbnail.thumbnailFile(
+      // //   video: pickedFile!.path.toString(),
+      // //   thumbnailPath: (await getTemporaryDirectory()).path,
+      // //   imageFormat: ImageFormat.JPEG,
+      // //   maxHeight: 640,
+      // //   quality: 70,
+      // // );
 
-      Lo.g('비디오 썸네일 결과 : ${thumbnailFile.toString()}');
+      // Lo.g('비디오 썸네일 결과 : ${thumbnailFile.toString()}');
 
       isCompress.value = true;
 
@@ -323,14 +341,15 @@ class _VideoRegPageState extends State<VideoRegPage> {
   void dispose() {
     _videoController.dispose();
 
-    VideoCompress.deleteAllCache();
+    // VideoCompress.deleteAllCache();
     VideoCompress.cancelCompression();
 
-    File(pickedFile!.path.toString()).delete();
-    File(thumbnailFile!.toString()).delete();
-    _subscription.unsubscribe();
+    // File(pickedFile!.path.toString()).delete();
+    // File(thumbnailFile!.toString()).delete();
+    // _subscription.unsubscribe();
 
     super.dispose();
+    Get.find<RootCntr>().goTimer(widget.videoFile, boardSaveData);
   }
 
   @override

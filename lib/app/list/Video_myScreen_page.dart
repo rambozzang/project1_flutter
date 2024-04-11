@@ -18,22 +18,21 @@ import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:text_scroll/text_scroll.dart';
 
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
-class VideoSreenPage extends StatefulWidget {
-  const VideoSreenPage({super.key, required this.data});
+class VideoMySreenPage extends StatefulWidget {
+  const VideoMySreenPage({super.key, required this.data});
 
   final BoardWeatherListData data;
 
   @override
-  State<VideoSreenPage> createState() => _VideoSreenPageState();
+  State<VideoMySreenPage> createState() => _VideoMySreenPageState();
 }
 
-class _VideoSreenPageState extends State<VideoSreenPage> {
+class _VideoMySreenPageState extends State<VideoMySreenPage> {
   late VideoPlayerController _controller;
   //late CachedVideoPlayerPlusController _controller;
   bool initialized = false;
@@ -45,7 +44,7 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
   // double progress = 0;
   Duration position = Duration.zero;
 
-  double bottomHeight = Platform.isIOS ? 92.0 : 80.0;
+  double bottomHeight = Platform.isIOS ? 22.0 : 10.0;
 
   @override
   void initState() {
@@ -142,19 +141,6 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
     }
   }
 
-  Future<void> share() async {
-    // final result = await Share.shareXFiles([XFile('${directory.path}/image.jpg')], text: 'Great picture');
-
-    // if (result.status == ShareResultStatus.success) {
-    //     print('Thank you for sharing the picture!');
-    // }
-    final result = await Share.shareWithResult('check out my website https://example.com');
-
-    if (result.status == ShareResultStatus.success) {
-      print('Thank you for sharing my website!');
-    }
-  }
-
   @override
   void dispose() {
     if (initialized) {
@@ -199,19 +185,14 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
                       child: SizedBox(
                         width: _controller.value.size.width,
                         height: _controller.value.size.height,
-                        child: Container(
-                          color: Colors.black,
-                          child: Text(
-                            "adfadsfads",
-                            style: TextStyle(color: Colors.black),
-                          ),
-                        ),
-                        //    child: CachedVideoPlayerPlus(_controller),
-                        // child: VideoPlayer(_controller),
+                        //   child: CachedVideoPlayerPlus(_controller),
+                        child: VideoPlayer(_controller),
                       ),
                     ),
                   ),
                 ),
+                // 오른쪽 상단 close 버튼
+                buildCloseButton(),
                 // 중앙 play 버튼
                 buildCenterPlayButton(),
                 // 사운드 on/off 버튼
@@ -226,6 +207,19 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
               ],
             )
           : Center(child: Utils.progressbar()),
+    );
+  }
+
+  Widget buildCloseButton() {
+    return Positioned(
+      top: 40,
+      right: 10,
+      child: IconButton(
+        icon: const Icon(Icons.close, color: Colors.white),
+        onPressed: () {
+          Get.back();
+        },
+      ),
     );
   }
 
@@ -459,7 +453,7 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
           const Gap(10),
           IconButton(
             icon: const Icon(Icons.send, color: Colors.white),
-            onPressed: () => share(),
+            onPressed: () {},
           ),
           // const Gap(5),
           // IconButton(
@@ -515,7 +509,7 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
                 AnimatedContainer(
                   duration: Duration(milliseconds: value == 0.0 ? 200 : 1000),
                   height: 2,
-                  width: (MediaQuery.of(context).size.width) * ((value + 5) / 100),
+                  width: (MediaQuery.of(context).size.width) * (value / 100),
                   decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(4),
                       // color: const Color.fromRGBO(215, 215, 215, 1),

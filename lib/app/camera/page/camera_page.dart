@@ -132,7 +132,9 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
 
   void _cameraBlocListener(BuildContext context, CameraState state) {
     if (state is CameraRecordingSuccess) {
-      Navigator.of(context).pushReplacement(
+      Navigator.of(
+        context,
+      ).pushReplacement(
         MaterialPageRoute(
           builder: (_) => VideoRegPage(videoFile: state.file, currentWeather: cameraBloc.currentWeather!),
         ),

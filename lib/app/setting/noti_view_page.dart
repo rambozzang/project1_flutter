@@ -1,101 +1,121 @@
-// import 'dart:async';
+import 'dart:async';
 
-// import 'package:flutter/cupertino.dart';
-// import 'package:flutter/material.dart';
-// import 'package:gap/gap.dart';
-// import 'package:get/get.dart';
-// import 'package:project1/repo/common/res_stream.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:gap/gap.dart';
+import 'package:get/get.dart';
+import 'package:project1/repo/board/board_repo.dart';
+import 'package:project1/repo/board/data/board_main_detail_data.dart';
+import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/repo/common/res_stream.dart';
+import 'package:project1/utils/log_utils.dart';
+import 'package:project1/utils/utils.dart';
 
+class NotiViewPage extends StatefulWidget {
+  const NotiViewPage({super.key});
 
-// class MoNotiViewPage extends StatefulWidget {
-//   const MoNotiViewPage({super.key});
+  @override
+  State<NotiViewPage> createState() => _NotiViewPageState();
+}
 
-//   @override
-//   State<MoNotiViewPage> createState() => _MoNotiViewPageState();
-// }
+class _NotiViewPageState extends State<NotiViewPage> {
+  final formKey = GlobalKey<FormState>();
 
-// class _MoNotiViewPageState extends State<MoNotiViewPage> {
-//   final formKey = GlobalKey<FormState>();
+  final StreamController<ResStream<BoardDetailData>> dataCtrl = StreamController();
 
-//   final StreamController<ResStream<SearchPostListRes>> listCtrl = StreamController();
+  late String boardId;
 
-//   late int seq;
+  @override
+  initState() {
+    super.initState();
 
-//   @override
-//   initState() {
-//     super.initState();
+    boardId = Get.arguments['boardId'] ?? '0';
+    Lo.g('boardId : $boardId');
+    if (boardId == null) {
+      Utils.alertIcon('비정상적인 접근입니다.', icontype: 'E');
+      Get.back();
+      return;
+    }
 
-//     seq = int.parse(Get.arguments['seq'] ?? '0');
-//     Lo.g('seq : $seq');
-//     if (seq == null) {
-//       Utils.alertIcon('이미 삭제된 게시글 입니다.', icontype: 'E');
-//       Get.back();
-//       return;
-//     }
+    getData(boardId);
+  }
 
-//     getData(seq);
-//   }
+  Future<void> getDataInit() async => getData(boardId);
 
-//   Future<void> getDataInit() async => getData(seq);
+  Future<void> getData(String boardId) async {
+    try {
+      dataCtrl.sink.add(ResStream.loading());
+      BoardRepo repo = BoardRepo();
+      ResData resData = await repo.getDefBoardByBoardId(boardId);
 
-//   Future<void> getData(int seq) async {
-//     try {
-//       listCtrl.sink.add(ResStream.loading());
-//       BoardRepo repo = BoardRepo();
-//       ResData resData = await repo.getView(seq);
+      if (resData.code != '00') {
+        Utils.alert(resData.msg.toString());
+        dataCtrl.sink.add(ResStream.error(resData.msg.toString()));
+        return;
+      }
 
-//       if (resData.code != '00') {
-//         Utils.alert(resData.msg.toString());
-//         listCtrl.sink.add(ResStream.error(resData.msg.toString()));
-//         return;
-//       }
+      BoardDetailData boardList = BoardDetailData.fromMap(resData.data);
+      dataCtrl.sink.add(ResStream.completed(boardList, message: '조회가 완료되었습니다.'));
+    } catch (e) {
+      dataCtrl.sink.add(ResStream.error(e.toString()));
+    }
+  }
 
-//       SearchPostListRes boardList = SearchPostListRes.fromMap(resData.data);
-//       listCtrl.sink.add(ResStream.completed(boardList, message: '조회가 완료되었습니다.'));
-//     } catch (e) {
-//       listCtrl.sink.add(ResStream.error(e.toString()));
-//     }
-//   }
+  @override
+  Widget build(BuildContext context) {
+    var _isChecked = false;
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text('공지사항 보기'),
+        centerTitle: true,
+        elevation: 0,
+      ),
+      backgroundColor: Colors.white,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Utils.commonStreamBody<BoardDetailData>(dataCtrl, buildBody, getDataInit),
+      ),
+    );
+  }
 
-//   @override
-//   Widget build(BuildContext context) {
-//     var _isChecked = false;
-//     return Scaffold(
-//       appBar: AppBar(
-//         leading: IconButton(
-//           icon: const Icon(Icons.arrow_back_ios),
-//           onPressed: () => Navigator.pop(context),
-//         ),
-//         title: Text('공지사항 보기', style: KosStyle.headingH3),
-//         centerTitle: true,
-//         elevation: 0,
-//       ),
-//       backgroundColor: Colors.white,
-//       body: SingleChildScrollView(
-//         padding: const EdgeInsets.symmetric(horizontal: 16.0),
-//         child: Utils.commonStreamBody<SearchPostListRes>(listCtrl, buildBody, getDataInit),
-//       ),
-//     );
-//   }
-
-//   Column buildBody(SearchPostListRes data) {
-//     return Column(
-//       mainAxisAlignment: MainAxisAlignment.start,
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       children: [
-//         const Gap(20),
-//         Text(
-//           '${data.ptupTtl}',
-//           style: KosStyle.bodyblack18,
-//         ),
-//         Text(
-//           '${data.ptupDt}',
-//           style: KosStyle.styleB1SemanticGray14,
-//         ),
-//         const Gap(20),
-//         const Gap(20),
-//         Text("${data.ptupDsc}", style: KosStyle.styleB2),
-//       ],
-//     );
-//   }
-// }
+  Column buildBody(BoardDetailData data) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Gap(20),
+        Wrap(
+          children: [
+            Text(
+              '${data.subject}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        Text(
+          "${data.crtDtm!.replaceAll('T', ' ')}",
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w300),
+        ),
+        const Divider(
+          height: 25,
+          thickness: 1,
+          color: Colors.black38,
+        ),
+        Wrap(
+          children: [
+            Text(
+              '${data.contents}',
+            ),
+          ],
+        ),
+        const Gap(20),
+        const Gap(20),
+      ],
+    );
+  }
+}

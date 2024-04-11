@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:project1/config/url_config.dart';
 import 'package:project1/repo/api/auth_dio.dart';
 import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/repo/cust/data/cust_update_data.dart';
 import 'package:project1/repo/cust/data/google_join_data.dart';
 import 'package:project1/repo/cust/data/kakao_join_data.dart';
 import 'package:project1/repo/cust/data/naver_join_data.dart';
@@ -51,9 +52,29 @@ class CustRepo {
   }
 
   // 회원정보 수정
-  Future<void> updateCust() async {
-    // Update customer
+  Future<ResData> updateCust(CustUpdataData data) async {
+    try {
+      var url = '${UrlConfig.baseURL}/cust/updateCustInfo';
+
+      // log(data.toString());
+      Response response = await dio.post(url, data: data.toJson());
+      return dioResponse(response);
+    } on DioException catch (e) {
+      return dioException(e);
+    } finally {}
   }
+
+  // 회원정보 수정
+  Future<ResData> getCustInfo(String custId) async {
+    try {
+      var url = '${UrlConfig.baseURL}/cust/getCustInfo?custId=$custId';
+      Response response = await dio.get(url);
+      return dioResponse(response);
+    } on DioException catch (e) {
+      return dioException(e);
+    } finally {}
+  }
+
   // 회원탈퇴
   Future<void> deleteCust() async {
     // Delete customer

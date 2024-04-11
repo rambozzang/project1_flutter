@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
@@ -23,6 +24,7 @@ import 'package:project1/root/main_view1.dart';
 import 'package:project1/root/main_view2.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/root/main_view3.dart';
+import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/fade_stack.dart';
 import 'package:project1/widget/hide_bottombar.dart';
@@ -57,7 +59,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     super.initState();
     initializeTimer();
 
-    mainlist = [const ListPage(), SearchPage(), const SizedBox(), const MyPage(), const SettingPage()];
+    mainlist = [const VideoListPage(), SearchPage(), const SizedBox(), const SizedBox(), const SettingPage()];
 
     bottomItemList = [
       bottomItem(Icons.home, '홈'),
@@ -89,6 +91,26 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     initializeTimer();
   }
 
+  DateTime? currentBackPressTime = null;
+
+  //뒤로가기 로직(핸드폰 뒤로가기 버튼 클릭시)
+  Future<void> onGoBack(didPop) async {
+    DateTime now = DateTime.now();
+    if (currentBackPressTime == null || now.difference(currentBackPressTime!) > const Duration(milliseconds: 2000)) {
+      currentBackPressTime = now;
+      Utils.alertIcon('한번 더 백버튼을 누르면 앱이 종료됩니다.', // Page No : ${RootCntr.to.rootPageIndex.value}',
+          icontype: 'W',
+          duration: const Duration(milliseconds: 2000));
+      return Future.value(false);
+    }
+    //앱 종료
+    if (Platform.isIOS) {
+      exit(0);
+    } else {
+      SystemNavigator.pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Listener(
@@ -105,20 +127,79 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
             Positioned.fill(
                 child: PopScope(
               canPop: false,
-              onPopInvoked: (bool didPop) {
-                // Lo.g('root > onPopInvoked > didPop : $didPop');
-                // if (didPop) {
-                //   Utils.alert('didPop');
-                // } else {
-                //   Utils.alert('not didPop');
-                // }
-                // Utils.alert('onPopInvoked');
-              },
+              onPopInvoked: (bool didPop) async => onGoBack(didPop),
               child: Obx(() => FadeIndexedStack(
                   index: RootCntr.to.rootPageIndex.value, // RootCntr.to.rootPageIndex.value,
                   key: scaffoldKey,
                   children: mainlist)),
             )),
+            Positioned(
+              top: 100,
+              right: 20,
+              child: Obx(() => Column(
+                    children: [
+                      RootCntr.to.isFileUploading.value == UploadingType.UPLOADING
+                          ? Column(
+                              children: [
+                                Utils.progressUpload(size: 20),
+                                const Gap(5),
+                                const Text(
+                                  "Uploading..",
+                                  style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                )
+                              ],
+                            )
+                          : RootCntr.to.isFileUploading.value == UploadingType.SUCCESS
+                              ? Container(
+                                  color: Colors.black,
+                                  child: const Center(
+                                    child: Row(
+                                      children: [
+                                        // Icon(Icons.check, color: Colors.yellow, size: 20),
+                                        Text(
+                                          "게시물이 정상 게시 되었습니다.",
+                                          style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              : const SizedBox(),
+                    ],
+                  )),
+            )
+
+            // RootCntr.to.isFileUploading.value == UploadingType.NONE
+            //     ? const SizedBox()
+            //     :  ( RootCntr.to.isFileUploading.value == UploadingType.UPLOADING
+            //        ? Positioned(
+            //           top: 90,
+            //           right: 20,
+            // child: Column(
+            //   children: [
+            //     Utils.progressUpload(size: 20),
+            //     const Gap(5),
+            //     const Text(
+            //       "Uploading..",
+            //       style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+            //     )
+            //   ],
+            // ),)
+            //       : (RootCntr.to.isFileUploading.value == UploadingType.SUCCESS
+            //         ? Container(
+            //             color: Colors.black,
+            //             child: const Center(
+            //               child: Text(
+            //                 "임시 게시물이 정상 게시 되었습니다.",
+            //                 style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+            //               ),
+            //             ),
+            //           )
+            //         : const SizedBox(),)
+            //  : const SizedBox(),
+            //           ),
+            //)
+            ,
             ValueListenableBuilder(
                 valueListenable: isEventBox,
                 builder: (BuildContext context, bool value, Widget? child) {
@@ -156,9 +237,14 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   }
 
   onClick(index) {
+    // 가운데 + 키 눌렀을대 카메라로 이동
     if (index == 2) {
       goRecord();
       return;
+    }
+    //
+    if (index == 3) {
+      mainlist[3] = const MyPage();
     }
     RootCntr.to.changeRootPageIndex(index);
   }
@@ -180,9 +266,9 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 1),
       decoration: BoxDecoration(
         // color: Colors.grey.withOpacity(0.63),
-        color: Colors.white10.withOpacity(0.63),
+        color: RootCntr.to.rootPageIndex.value == 0 ? Colors.white10.withOpacity(0.63) : Colors.grey[200]?.withOpacity(0.75),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.withOpacity(0.63), width: 0.35),
+        border: Border.all(color: Colors.grey.withOpacity(0.63), width: 0.25),
       ),
       child: BottomNavigationBar(
         backgroundColor: Colors.transparent,
@@ -200,7 +286,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
         selectedFontSize: 13,
         selectedItemColor: Colors.black,
         unselectedFontSize: 11,
-        unselectedItemColor: RootCntr.to.rootPageIndex.value == 0 ? Colors.white : Colors.grey,
+        unselectedItemColor: RootCntr.to.rootPageIndex.value == 0 ? Colors.white : Colors.black,
         unselectedIconTheme: const IconThemeData(size: 22),
         items: bottomItemList,
       ),

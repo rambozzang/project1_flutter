@@ -95,3 +95,30 @@ https://devtalk.kakao.com/t/koe009-invalid-android-key-hash-or-ios-bundle-id-or-
 댓글 기능
  https://velog.io/@locked/Flutter-%EC%9C%A0%ED%8A%9C%EB%B8%8C-%EB%8B%B5%EA%B8%80-%EA%B8%B0%EB%8A%A5-%EB%A7%8C%EB%93%A4%EA%B8%B0
 
+
+
+## 불법영상 검거 방법
+ - awa rekongnition
+  https://aws.amazon.com/ko/rekognition/pricing/?nc=sn&loc=4
+
+ - flutter_node_detector 패키지
+ - https://huggingface.co/Falconsai/nsfw_image_deection
+
+#카메라 변경
+camerawesome: ^2.0.1
+
+#video play 변경
+ - chewie
+    ->https://github.com/fluttercommunity/chewie
+
+
+
+1. 회원정보 수정
+  - 회원 정보 조회 서비스
+  - 이름 / 자기소개 / 뽀송ID 3개 수정 서비스
+  - 프로필 파일 수정 서비스 
+
+
+2. 팔로워 리스트 팔로위 리스트 - 회정정보 리스트 조회
+
+3. 다른 사람 회원 정보 조회 화면
