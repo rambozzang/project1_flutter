@@ -3,11 +3,17 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
+import 'package:get/get.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 
 import 'package:project1/app/test/color_page.dart';
 import 'package:project1/app/test/test_link_page.dart';
+import 'package:project1/root/board_list_page.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
+import 'package:project1/root/follow_list_page.dart';
+import 'package:project1/root/like_list_page.dart';
+import 'package:project1/utils/log_utils.dart';
 import 'package:project1/widget/custom_tabbarview.dart';
 
 class MainView1 extends StatefulWidget {
@@ -20,22 +26,31 @@ class MainView1 extends StatefulWidget {
 class _MainView1State extends State<MainView1> with SingleTickerProviderStateMixin {
   var alignment = Alignment.centerRight;
 
-  List<String> tabNames = ["테스트", "색상", "TextStyle", "버튼", "Badge"];
+  List<String> tabNames = ["게시물", "좋아요", "팔로워", "팔로잉", "Test"];
 
 // 탭 바디 부분
-  List<dynamic> tabBodys = [
-    TestLinkPage(key: ValueKey(1)),
-    const ColorPage(key: ValueKey(2)),
-    const Center(child: Text("asdfasdfasdf", style: TextStyle(fontSize: 30, color: Colors.black))),
-    const Center(child: Text("통합 게시판", style: TextStyle(fontSize: 30, color: Colors.black))),
-    const Center(child: Text("채팅 화면", style: TextStyle(fontSize: 30, color: Colors.black))),
-  ];
+  List<dynamic> tabBodys = [];
 
   @override
   void initState() {
     RootCntr.to.tabController = TabController(vsync: this, length: tabNames.length, animationDuration: const Duration(milliseconds: 130));
+    Lo.g("1widget.searchWord : ${Get.parameters['searchWord']}");
+    Lo.g("1widget.tabPage : ${Get.parameters['tabPage']}");
+    tabBodys = [
+      BoardListPage(searchWord: Get.parameters['searchWord'].toString()),
+      const LikeListPage(),
+      const FollowListPage(),
+      const FollowListPage(),
+      TestLinkPage(key: const ValueKey(1)),
+    ];
 
     super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    RootCntr.to.tabController.index = int.parse(Get.parameters['tabPage'].toString());
+    super.didChangeDependencies();
   }
 
   @override
@@ -87,13 +102,13 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
                   // app bar를 따라오게 (기본값은 false 근데) 원래는 뒤에 흰 배경이 보임
                   // stretch: true,
                   forceElevated: innerBoxIsScrolled,
-                  toolbarHeight: 105,
+                  toolbarHeight: 60,
                   elevation: 0,
                   centerTitle: false,
                   backgroundColor: Colors.white,
                   title: Row(
                     // crossAxisAlignment: CrossAxisAlignment.start,
-                    // mainAxisAlignment: MainAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // SvgPicture.asset(
                       //   'assets/appicon.svg',
@@ -102,13 +117,16 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
                       // SizedBox(
                       //   width: 10,
                       // ),
-                      Text('Nice Kos ${AuthCntr.to.resLoginData.value.nickNm}',
+                      Text('${AuthCntr.to.resLoginData.value.nickNm}',
                           style: const TextStyle(
                               color: Colors.black,
                               fontWeight: FontWeight.w700,
                               fontFamily: "NotoSansKR",
                               fontStyle: FontStyle.normal,
                               fontSize: 19.0)),
+                      Align(
+                          alignment: Alignment.topRight,
+                          child: IconButton(icon: const Icon(Icons.close, color: Colors.black), onPressed: () => Get.back()))
                     ],
                   ),
                 ),

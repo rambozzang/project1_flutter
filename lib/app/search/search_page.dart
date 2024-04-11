@@ -4,13 +4,17 @@ import 'package:dio/dio.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/painting.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:gap/gap.dart';
+import 'package:get/get.dart';
 import 'package:get/get_connect/http/src/response/response.dart';
 import 'package:project1/app/list/api_service.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:dio/src/response.dart' as r;
+import 'package:project1/widget/ads_page.dart';
 
 class SearchPage extends StatefulWidget {
   SearchPage({Key? key}) : super(key: key);
@@ -48,6 +52,14 @@ class _SearchPageState extends State<SearchPage> {
   //     // Keyboard is not visible.
   //     RootCntr.to.bottomBarStreamController.sink.add(true);
   //   }
+  void goSearchPage(String searchWord) {
+    Utils.alert("검색어: $searchWord");
+    if (searchWord.isEmpty) {
+      Utils.alert("검색어를 입력해주세요");
+      return;
+    }
+    Get.toNamed('/MainView1/${Uri.encodeComponent(searchWord)}/0');
+  }
 
   getUrls() async {
     urls.value = await ApiService.getVideos();
@@ -83,40 +95,45 @@ class _SearchPageState extends State<SearchPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       //  backgroundColor: Colors.white.withOpacity(.94),
+
       appBar: AppBar(
         forceMaterialTransparency: true,
         automaticallyImplyLeading: false,
         title: Container(
           margin: const EdgeInsets.symmetric(horizontal: 0),
-          padding: const EdgeInsets.only(top: 3),
-          height: 52,
+          padding: const EdgeInsets.only(top: 5),
+          height: 54,
           child: TextFormField(
             controller: searchController,
             focusNode: textFocus,
             maxLines: 1,
+            style: const TextStyle(decorationThickness: 0), // 한글밑줄제거
             decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
               filled: true,
               fillColor: Colors.grey[100],
-              prefixIcon: const Icon(Icons.search, color: Colors.grey),
+              suffixIcon: const Icon(Icons.search, color: Colors.grey),
               enabledBorder: OutlineInputBorder(
                 // width: 0.0 produces a thin "hairline" border
                 borderSide: const BorderSide(color: Colors.grey, width: 0.2),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(10),
               ),
               border: OutlineInputBorder(
                 // width: 0.0 produces a thin "hairline" border
                 //  borderSide: const BorderSide(color: Colors.grey, width: 0.1),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(10),
               ),
               focusedBorder: OutlineInputBorder(
                 borderSide: const BorderSide(color: Colors.grey, width: 0.2),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(10),
               ),
               label: const Text("검색어를 입력해주세요"),
               labelStyle: const TextStyle(color: Colors.black38),
             ),
-            onFieldSubmitted: (text) {
-              // Perform search
+            onFieldSubmitted: (searchWord) {
+              // Perform search searchWord
+              // Get.toNamed('/MainView1/$searchWord');
+              goSearchPage(searchWord);
             },
           ),
         ),
@@ -124,27 +141,55 @@ class _SearchPageState extends State<SearchPage> {
         //  backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: Padding(
+      body: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          // image: DecorationImage(
+          //   image: AssetImage('assets/images/girl-6356393_640.jpg'),
+          //   fit: BoxFit.cover,
+          // ),
+        ),
         child: ListView(
           controller: RootCntr.to.hideButtonController4,
           children: [
             buildLastSearch(),
             const Gap(20),
             buildRecom(),
-            Container(
-              height: 70,
-              width: 200,
-              margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 0),
-              decoration: BoxDecoration(
-                color: Colors.red[300],
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: const Center(child: Text('검색 영역')),
-            ),
-            myFeeds()
+            buildWeatherInfoImg(),
+            buildAddmob(),
+
+            Image.asset('assets/images/girl-6356393_640.jpg', fit: BoxFit.cover, width: double.infinity, height: 700),
+            // myFeeds()
           ],
         ),
+      ),
+    );
+  }
+
+  Widget buildWeatherInfoImg() {
+    return Container(
+      height: 80,
+      width: 200,
+      margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 0),
+      decoration: BoxDecoration(
+        color: Colors.red[300],
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Stack(
+        children: [
+          Image.asset('assets/images/rain-4996916_640.jpg', fit: BoxFit.cover, width: double.infinity, height: double.infinity),
+          Align(
+            alignment: Alignment.bottomRight,
+            child: Container(
+              margin: const EdgeInsets.only(right: 10),
+              child: const Text(
+                "비오는 날",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          )
+        ],
       ),
     );
   }
@@ -170,7 +215,13 @@ class _SearchPageState extends State<SearchPage> {
               padding: const EdgeInsets.all(0),
               wrapped: true,
               value: tags,
-              onChanged: (val) => setState(() => tags = val),
+              onChanged: (val) {
+                //  Utils.alert(val[0].toString());
+                String searchWord = val[0].toString();
+
+                goSearchPage(searchWord);
+                // setState(() => tags = val);
+              },
               choiceCheckmark: true,
               //  choiceStyle: C2ChipStyle.outlined(),
               choiceStyle: C2ChipStyle.filled(
@@ -209,11 +260,17 @@ class _SearchPageState extends State<SearchPage> {
           ],
         ),
         const Gap(10),
-        Wrap(
-          spacing: 6.0,
-          runSpacing: 6.0,
-          children: <Widget>[
-            buildChip('Gamer'),
+        Row(
+          children: [
+            Wrap(
+              spacing: 6.0,
+              runSpacing: 6.0,
+              children: <Widget>[
+                buildChip('홍제역'),
+                buildChip('광화문'),
+                buildChip('개화'),
+              ],
+            ),
           ],
         )
       ],
@@ -274,21 +331,22 @@ class _SearchPageState extends State<SearchPage> {
 
   // 최그
   Widget buildChip(String label) {
-    return Container(
+    return InkWell(
+        onTap: () => goSearchPage(label),
         child: Row(
-      children: [
-        Chip(
-          backgroundColor: Colors.grey[200],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: Colors.transparent),
-          ),
-          label: Text(label),
-          onDeleted: () {
-            // Perform delete
-          },
-        ),
-      ],
-    ));
+          children: [
+            Chip(
+              backgroundColor: Colors.grey[200],
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: const BorderSide(color: Colors.transparent),
+              ),
+              label: Text(label),
+              onDeleted: () {
+                // Perform delete
+              },
+            ),
+          ],
+        ));
   }
 }

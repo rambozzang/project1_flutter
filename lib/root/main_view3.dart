@@ -60,7 +60,7 @@ class _MyHomePageState extends State<MainView3> {
             children: [
               SizedBox(width: 50, child: CustomButton(text: '+', type: 'S', onPressed: () => goRecord())),
               const Gap(20),
-              SizedBox(width: 70, child: CustomButton(text: 'tictok', type: 'S', onPressed: () => Get.toNamed('/ListPage'))),
+              SizedBox(width: 70, child: CustomButton(text: 'tictok', type: 'S', onPressed: () => Get.toNamed('/VideoListPage'))),
             ],
           ),
         )));

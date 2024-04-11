@@ -3,14 +3,16 @@ import 'dart:convert';
 
 import 'package:project1/utils/log_utils.dart';
 
-class BoardWeatherData {
+class BoardSaveWeatherData {
   int? boardId;
   String? lat;
   String? lon;
   String? location;
   String? weatherInfo;
   String? videoPath;
+  String? videoId;
   String? thumbnailPath;
+  String? thumbnailId;
   String? icon;
   String? currentTemp;
   String? feelsTemp;
@@ -20,14 +22,16 @@ class BoardWeatherData {
   String? speed;
   String? country;
   String? city;
-  BoardWeatherData({
+  BoardSaveWeatherData({
     this.boardId,
     this.lat,
     this.lon,
     this.location,
     this.weatherInfo,
     this.videoPath,
+    this.videoId,
     this.thumbnailPath,
+    this.thumbnailId,
     this.icon,
     this.currentTemp,
     this.feelsTemp,
@@ -39,14 +43,16 @@ class BoardWeatherData {
     this.city,
   });
 
-  BoardWeatherData copyWith({
+  BoardSaveWeatherData copyWith({
     int? boardId,
     String? lat,
     String? lon,
     String? location,
     String? weatherInfo,
     String? videoPath,
+    String? videoId,
     String? thumbnailPath,
+    String? thumbnailId,
     String? icon,
     String? currentTemp,
     String? feelsTemp,
@@ -57,14 +63,16 @@ class BoardWeatherData {
     String? country,
     String? city,
   }) {
-    return BoardWeatherData(
+    return BoardSaveWeatherData(
       boardId: boardId ?? this.boardId,
       lat: lat ?? this.lat,
       lon: lon ?? this.lon,
       location: location ?? this.location,
       weatherInfo: weatherInfo ?? this.weatherInfo,
       videoPath: videoPath ?? this.videoPath,
+      videoId: videoId ?? this.videoId,
       thumbnailPath: thumbnailPath ?? this.thumbnailPath,
+      thumbnailId: thumbnailId ?? this.thumbnailId,
       icon: icon ?? this.icon,
       currentTemp: currentTemp ?? this.currentTemp,
       feelsTemp: feelsTemp ?? this.feelsTemp,
@@ -85,7 +93,9 @@ class BoardWeatherData {
       'location': location,
       'weatherInfo': weatherInfo,
       'videoPath': videoPath,
+      'videoId': videoId,
       'thumbnailPath': thumbnailPath,
+      'thumbnailId': thumbnailId,
       'icon': icon,
       'currentTemp': currentTemp,
       'feelsTemp': feelsTemp,
@@ -98,15 +108,17 @@ class BoardWeatherData {
     };
   }
 
-  factory BoardWeatherData.fromMap(Map<String, dynamic> map) {
-    return BoardWeatherData(
+  factory BoardSaveWeatherData.fromMap(Map<String, dynamic> map) {
+    return BoardSaveWeatherData(
       boardId: map['boardId'] != null ? map['boardId'] as int : null,
       lat: map['lat'] != null ? map['lat'] as String : null,
       lon: map['lon'] != null ? map['lon'] as String : null,
       location: map['location'] != null ? map['location'] as String : null,
       weatherInfo: map['weatherInfo'] != null ? map['weatherInfo'] as String : null,
       videoPath: map['videoPath'] != null ? map['videoPath'] as String : null,
+      videoId: map['videoId'] != null ? map['videoId'] as String : null,
       thumbnailPath: map['thumbnailPath'] != null ? map['thumbnailPath'] as String : null,
+      thumbnailId: map['thumbnailId'] != null ? map['thumbnailId'] as String : null,
       icon: map['icon'] != null ? map['icon'] as String : null,
       currentTemp: map['currentTemp'] != null ? map['currentTemp'] as String : null,
       feelsTemp: map['feelsTemp'] != null ? map['feelsTemp'] as String : null,
@@ -121,15 +133,15 @@ class BoardWeatherData {
 
   String toJson() => json.encode(toMap());
 
-  factory BoardWeatherData.fromJson(String source) => BoardWeatherData.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory BoardSaveWeatherData.fromJson(String source) => BoardSaveWeatherData.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   String toString() {
-    return 'BoardWeatherData(boardId: $boardId, lat: $lat, lon: $lon, location: $location, weatherInfo: $weatherInfo, videoPath: $videoPath, thumbnailPath: $thumbnailPath, icon: $icon, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, country: $country, city: $city)';
+    return 'BoardSaveWeatherData(boardId: $boardId, lat: $lat, lon: $lon, location: $location, weatherInfo: $weatherInfo, videoPath: $videoPath, videoId: $videoId, thumbnailPath: $thumbnailPath, thumbnailId: $thumbnailId, icon: $icon, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, country: $country, city: $city)';
   }
 
   @override
-  bool operator ==(covariant BoardWeatherData other) {
+  bool operator ==(covariant BoardSaveWeatherData other) {
     if (identical(this, other)) return true;
 
     return other.boardId == boardId &&
@@ -138,7 +150,9 @@ class BoardWeatherData {
         other.location == location &&
         other.weatherInfo == weatherInfo &&
         other.videoPath == videoPath &&
+        other.videoId == videoId &&
         other.thumbnailPath == thumbnailPath &&
+        other.thumbnailId == thumbnailId &&
         other.icon == icon &&
         other.currentTemp == currentTemp &&
         other.feelsTemp == feelsTemp &&
@@ -158,7 +172,9 @@ class BoardWeatherData {
         location.hashCode ^
         weatherInfo.hashCode ^
         videoPath.hashCode ^
+        videoId.hashCode ^
         thumbnailPath.hashCode ^
+        thumbnailId.hashCode ^
         icon.hashCode ^
         currentTemp.hashCode ^
         feelsTemp.hashCode ^

@@ -27,14 +27,14 @@ import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:text_scroll/text_scroll.dart';
 
-class ListPage extends StatefulWidget {
-  const ListPage({super.key});
+class VideoListPage extends StatefulWidget {
+  const VideoListPage({super.key});
 
   @override
-  State<ListPage> createState() => _ListPageState();
+  State<VideoListPage> createState() => _VideoListPageState();
 }
 
-class _ListPageState extends State<ListPage> {
+class _VideoListPageState extends State<VideoListPage> {
   final PreloadPageController _controller = PreloadPageController();
   final ScrollController scrollController = ScrollController();
 

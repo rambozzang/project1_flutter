@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -6,9 +7,16 @@ import 'package:flutter/material.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/list/test_grabin_widget.dart';
 import 'package:project1/app/list/test_list_item_widget.dart';
+import 'package:project1/repo/board/board_repo.dart';
+import 'package:project1/repo/board/data/board_main_detail_data.dart';
+import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 
 import 'package:project1/utils/log_utils.dart';
+import 'package:project1/utils/utils.dart';
+import 'package:project1/widget/error_page.dart';
+import 'package:project1/widget/no_data_widget.dart';
 
 class CommentPage {
   Future<dynamic> open(
@@ -19,15 +27,16 @@ class CommentPage {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
-        return CommentsPage(contextParent: context);
+        return CommentsPage(contextParent: context, boardId: boardId);
       },
     );
   }
 }
 
 class CommentsPage extends StatefulWidget {
-  const CommentsPage({super.key, required this.contextParent});
+  const CommentsPage({super.key, required this.contextParent, required this.boardId});
   final BuildContext contextParent;
+  final String boardId;
 
   @override
   State<CommentsPage> createState() => _CommentsPageState();
@@ -37,26 +46,48 @@ class _CommentsPageState extends State<CommentsPage> {
   ScrollController scrollController = ScrollController();
   final CommentSheetController commentSheetController = CommentSheetController();
 
+  final StreamController<ResStream<List<BoardDetailData>>> listCtrl = StreamController.broadcast();
+
   // 댓글 입력창
   TextEditingController replyController = TextEditingController();
   FocusNode replyFocusNode = FocusNode();
+
+  int pageNum = 0;
+  int pageSize = 500;
+  late List<BoardDetailData> list = [];
 
   @override
   void initState() {
     replyController.clear();
     super.initState();
+    // 루트페이지 바텀바 숨김
     RootCntr.to.bottomBarStreamController.sink.add(false);
-    getData();
+    getData(widget.boardId);
   }
 
-  Future<void> getData() async {
-    // var res = await BoardRepo().searchComment(boardId);
-    // if (res.success) {
-    //   // replyList = res.data;
-    //   // setState(() {});
-    // } else {
-    //   // Utils().showSnackBar(context, res.msg);
-    // }
+  Future<void> getFakeData() => getData(widget.boardId);
+  Future<void> getData(boardId) async {
+    try {
+      listCtrl.sink.add(ResStream.loading());
+      ResData resListData = await BoardRepo().searchComment('1', pageNum, pageSize);
+      if (resListData.code != '00') {
+        Utils.alert(resListData.msg.toString());
+        return;
+      }
+      list = ((resListData.data['boardInfoList']) as List).map((data) => BoardDetailData.fromMap(data)).toList();
+      //listCtrl.sink.add(ResStream.completed([]));
+      listCtrl.sink.add(ResStream.completed(list));
+    } catch (e) {
+      Lo.g('getDate() error : $e');
+      listCtrl.sink.add(ResStream.error(e.toString()));
+    }
+  }
+
+  void onClose() {
+    //Navigator.pop(widget.contextParent);
+    // Navigator.pop(context);
+
+    Navigator.of(context).pop(false);
   }
 
   @override
@@ -75,15 +106,82 @@ class _CommentsPageState extends State<CommentsPage> {
         body: CommentSheet(
           slivers: [
             // 댓글 리스트
-            buildSliverList(),
+            //  buildSliverList(),
+            StreamBuilder<ResStream<List<BoardDetailData>>>(
+              stream: listCtrl.stream,
+              builder: (BuildContext context, AsyncSnapshot<ResStream<List<BoardDetailData>>> snapshot) {
+                if (snapshot.hasData) {
+                  switch (snapshot.data?.status) {
+                    case Status.LOADING:
+                      return SliverList(
+                          delegate: SliverChildBuilderDelegate(childCount: 0, (BuildContext context, int index) {
+                        return Center(
+                            child: Padding(
+                          padding: const EdgeInsets.all(68.0),
+                          child: Utils.progressbar(),
+                        ));
+                      }));
+                    case Status.COMPLETED:
+                      var list = snapshot.data!.data;
+                      return SliverList(
+                          delegate: SliverChildBuilderDelegate(childCount: list!.length, (BuildContext context, int index) {
+                        return list!.isEmpty
+                            ? const NoDataWidget()
+                            : ListItemWidget(
+                                controller: replyController,
+                                focus: replyFocusNode,
+                                boardDetailData: list[index],
+                              );
+                      }));
+                    case Status.ERROR:
+                      return SliverList(
+                          delegate: SliverChildBuilderDelegate(childCount: 0, (BuildContext context, int index) {
+                        return ErrorPage(
+                          errorMessage: snapshot.data!.message ?? '',
+                          onRetryPressed: () => getData(widget.boardId),
+                        );
+                      }));
+                    case null:
+                      return SliverList(
+                          delegate: SliverChildBuilderDelegate(childCount: 0, (BuildContext context, int index) {
+                        return const SizedBox(
+                          width: 200,
+                          height: 300,
+                          child: Text("조회 중 오류가 발생했습니다."),
+                        );
+                      }));
+                  }
+                }
+                return SliverList(
+                    delegate: SliverChildBuilderDelegate(childCount: 0, (BuildContext context, int index) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(48.0),
+                      child: Text("조회 된 데이터가 없습니다."),
+                    ),
+                  );
+                }));
+              },
+            )
+            // Utils.commonStreamList<BoardDetailData>(listCtrl, buildSliverList, getFakeData)
           ],
           grabbingPosition: WidgetPosition.above,
           initTopPosition: 200,
           calculateTopPosition: calculateTopPosition,
           scrollController: scrollController,
-          grabbing: Builder(builder: (contextParent) {
+          grabbing: Builder(builder: (context) {
             // 댓글 상단바
-            return buildGrabbing(context);
+            return StreamBuilder<ResStream<List<BoardDetailData>>>(
+                stream: listCtrl.stream,
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    if (snapshot.data?.status == Status.COMPLETED) {
+                      var list = snapshot.data!.data;
+                      return buildGrabbing(context, list!.length);
+                    }
+                  }
+                  return buildGrabbing(context, 0);
+                });
           }),
 
           topWidget: (info) {
@@ -104,18 +202,20 @@ class _CommentsPageState extends State<CommentsPage> {
           topPosition: WidgetPosition.below,
           bottomWidget: buildBottomWidget(),
           onPointerUp: (
-            BuildContext contextParent,
+            BuildContext context,
             CommentSheetInfo info,
           ) {
             // print("On Pointer Up");
           },
           onAnimationComplete: (
-            BuildContext contextParent,
+            BuildContext context,
             CommentSheetInfo info,
           ) {
             // print("onAnimationComplete");
             if (info.currentTop >= info.size.maxHeight - 130) {
-              Navigator.of(context).pop();
+              onClose();
+
+              return;
             }
           },
           commentSheetController: commentSheetController,
@@ -125,7 +225,7 @@ class _CommentsPageState extends State<CommentsPage> {
           // 백그라운드 위젯
           // child: const Placeholder(),
           child: const SizedBox.expand(),
-          backgroundBuilder: (contextParent) {
+          backgroundBuilder: (context) {
             return Container(
               color: const Color(0xFF0F0F0F),
               margin: const EdgeInsets.only(top: 10),
@@ -169,16 +269,23 @@ class _CommentsPageState extends State<CommentsPage> {
   }
 
   // 댓글 상단바
-  Widget buildGrabbing(BuildContext context) {
-    return const GrabbingWidget();
+  Widget buildGrabbing(BuildContext context, int listLength) {
+    return GrabbingWidget(listLength: listLength);
   }
 
   // 댓글 리스트
-  Widget buildSliverList() {
+  Widget buildSliverList(List<BoardDetailData> list) {
     return SliverList(
-      delegate: SliverChildBuilderDelegate((context, index) {
-        return ListItemWidget(controller: replyController, focus: replyFocusNode);
-      }, childCount: 20),
+      delegate: SliverChildBuilderDelegate(
+        childCount: list.length,
+        (BuildContext context, int index) {
+          return ListItemWidget(
+            controller: replyController,
+            focus: replyFocusNode,
+            boardDetailData: list[index],
+          );
+        },
+      ),
     );
   }
 
@@ -221,8 +328,8 @@ class _CommentsPageState extends State<CommentsPage> {
             //   color: Colors.white,
             // ),
           ),
-          suffixIconConstraints: BoxConstraints(minWidth: 23, maxHeight: 20),
-          suffixIcon: Padding(
+          suffixIconConstraints: const BoxConstraints(minWidth: 23, maxHeight: 20),
+          suffixIcon: const Padding(
             padding: EdgeInsets.only(left: 10, right: 10),
             child: Icon(
               Icons.send,
@@ -231,7 +338,7 @@ class _CommentsPageState extends State<CommentsPage> {
           ),
           border: InputBorder.none,
           //border: OutlineInputBorder(),
-          contentPadding: EdgeInsets.only(left: 10, bottom: 15, top: 15),
+          contentPadding: const EdgeInsets.only(left: 10, bottom: 15, top: 15),
         ),
       ),
     );

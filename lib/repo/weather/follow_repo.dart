@@ -49,4 +49,28 @@ class FollowRepo {
       return dioException(e);
     } finally {}
   }
+
+  // 내가 팔로한 사용자 리스트 조회 - FollowCustData
+  // /follow/findFollowList
+  Future<ResData> findFollowList() async {
+    try {
+      var url = '${UrlConfig.baseURL}/follow/findFollowList';
+      Response response = await dio.post(url);
+      return dioResponse(response);
+    } on DioException catch (e) {
+      return dioException(e);
+    } finally {}
+  }
+
+  // 나를 팔로한 사용자 리스트 조회 - FollowCustData
+  // /follow/findFollowerList
+  Future<ResData> findFollowerList() async {
+    try {
+      var url = '${UrlConfig.baseURL}/follow/findFollowerList';
+      Response response = await dio.post(url);
+      return dioResponse(response);
+    } on DioException catch (e) {
+      return dioException(e);
+    } finally {}
+  }
 }

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 class GrabbingWidget extends StatelessWidget {
   const GrabbingWidget({
     Key? key,
+    required this.listLength,
   }) : super(key: key);
+  final int listLength;
 
   @override
   Widget build(BuildContext context) {
@@ -38,11 +41,11 @@ class GrabbingWidget extends StatelessWidget {
                   ),
                 ),
               ),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(left: 6.0),
                 child: Text(
-                  "48",
-                  style: TextStyle(
+                  listLength.toString(),
+                  style: const TextStyle(
                     fontWeight: FontWeight.w400,
                     color: Colors.white70,
                     fontSize: 13,
@@ -59,7 +62,7 @@ class GrabbingWidget extends StatelessWidget {
                 padding: const EdgeInsets.only(left: 10.0, right: 10),
                 child: IconButton(
                   onPressed: () {
-                    Navigator.of(context).pop();
+                    Get.back();
                   },
                   icon: const Icon(
                     Icons.close,

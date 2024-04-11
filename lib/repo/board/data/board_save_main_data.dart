@@ -1,7 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
-class BoardMastInData {
+class BoardSaveMainData {
   String? typeCd;
   String? typeDtCd;
   String? notiStAt;
@@ -9,7 +9,7 @@ class BoardMastInData {
   String? subject;
   String? contents;
   String? depthNo;
-  BoardMastInData({
+  BoardSaveMainData({
     this.typeCd,
     this.typeDtCd,
     this.notiStAt,
@@ -19,7 +19,7 @@ class BoardMastInData {
     this.depthNo,
   });
 
-  BoardMastInData copyWith({
+  BoardSaveMainData copyWith({
     String? typeCd,
     String? typeDtCd,
     String? notiStAt,
@@ -28,7 +28,7 @@ class BoardMastInData {
     String? contents,
     String? depthNo,
   }) {
-    return BoardMastInData(
+    return BoardSaveMainData(
       typeCd: typeCd ?? this.typeCd,
       typeDtCd: typeDtCd ?? this.typeDtCd,
       notiStAt: notiStAt ?? this.notiStAt,
@@ -51,8 +51,8 @@ class BoardMastInData {
     };
   }
 
-  factory BoardMastInData.fromMap(Map<String, dynamic> map) {
-    return BoardMastInData(
+  factory BoardSaveMainData.fromMap(Map<String, dynamic> map) {
+    return BoardSaveMainData(
       typeCd: map['typeCd'] != null ? map['typeCd'] as String : null,
       typeDtCd: map['typeDtCd'] != null ? map['typeDtCd'] as String : null,
       notiStAt: map['notiStAt'] != null ? map['notiStAt'] as String : null,
@@ -65,15 +65,15 @@ class BoardMastInData {
 
   String toJson() => json.encode(toMap());
 
-  factory BoardMastInData.fromJson(String source) => BoardMastInData.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory BoardSaveMainData.fromJson(String source) => BoardSaveMainData.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   String toString() {
-    return 'BoardMastInData(typeCd: $typeCd, typeDtCd: $typeDtCd, notiStAt: $notiStAt, notiEdAt: $notiEdAt, subject: $subject, contents: $contents, depthNo: $depthNo)';
+    return 'BoardSaveMainData(typeCd: $typeCd, typeDtCd: $typeDtCd, notiStAt: $notiStAt, notiEdAt: $notiEdAt, subject: $subject, contents: $contents, depthNo: $depthNo)';
   }
 
   @override
-  bool operator ==(covariant BoardMastInData other) {
+  bool operator ==(covariant BoardSaveMainData other) {
     if (identical(this, other)) return true;
 
     return other.typeCd == typeCd &&

@@ -18,7 +18,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   final CameraUtils cameraUtils;
   final PermissionUtils permissionUtils;
   final CurrentWeather? currentWeather;
-  final int limitSec = 5;
+  final int limitSec = 2;
 
   //....... Internal variables ........
   int recordDurationLimit = 15;
