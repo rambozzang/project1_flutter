@@ -26,7 +26,7 @@ class MainView1 extends StatefulWidget {
 class _MainView1State extends State<MainView1> with SingleTickerProviderStateMixin {
   var alignment = Alignment.centerRight;
 
-  List<String> tabNames = ["게시물", "좋아요", "팔로워", "팔로잉", "Test"];
+  List<String> tabNames = ["게시물", "좋아요", "팔로워", "팔로잉"];
 
 // 탭 바디 부분
   List<dynamic> tabBodys = [];
@@ -39,9 +39,13 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
     tabBodys = [
       BoardListPage(searchWord: Get.parameters['searchWord'].toString()),
       const LikeListPage(),
-      const FollowListPage(),
-      const FollowListPage(),
-      TestLinkPage(key: const ValueKey(1)),
+      const FollowListPage(
+        followType: 1,
+      ),
+      const FollowListPage(
+        followType: 0,
+      ),
+      // TestLinkPage(key: const ValueKey(1)),
     ];
 
     super.initState();

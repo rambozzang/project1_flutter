@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
@@ -15,8 +16,10 @@ import 'package:project1/app/list/cntr/video_list_cntr.dart';
 import 'package:project1/app/list/comment_page.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
+import 'package:project1/repo/cloudflare/cloudflare_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
+import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:text_scroll/text_scroll.dart';
@@ -24,23 +27,28 @@ import 'package:text_scroll/text_scroll.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
-class VideoSreenPage extends StatefulWidget {
-  const VideoSreenPage({super.key, required this.data});
+class VideoScreenPage extends StatefulWidget {
+  const VideoScreenPage({super.key, required this.data, required this.controller});
 
   final BoardWeatherListData data;
+  final VideoPlayerController? controller;
 
   @override
-  State<VideoSreenPage> createState() => _VideoSreenPageState();
+  State<VideoScreenPage> createState() => VideoScreenPageState();
 }
 
-class _VideoSreenPageState extends State<VideoSreenPage> {
-  late VideoPlayerController _controller;
-  //late CachedVideoPlayerPlusController _controller;
+class VideoScreenPageState extends State<VideoScreenPage> {
+  //late VideoPlayerController _controller;
+  late VideoPlayerController? _controller;
+
+  GlobalKey _key = GlobalKey();
   bool initialized = false;
 
   final ValueNotifier<bool> soundOff = ValueNotifier<bool>(false);
   final ValueNotifier<bool> isPlay = ValueNotifier<bool>(true);
   final ValueNotifier<double> progress = ValueNotifier<double>(0.0);
+
+  ValueNotifier<String> isFollowed = ValueNotifier<String>('N');
 
   // double progress = 0;
   Duration position = Duration.zero;
@@ -49,30 +57,96 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
 
   @override
   void initState() {
-    initiliazeVideo();
     super.initState();
+    if (widget.controller != null) {
+      _controller = widget.controller;
+      initiliazeVideo();
+    }
+
+    isFollowed.value = widget.data.followYn.toString();
   }
 
-  Future initiliazeVideo() async {
-    final file = await DefaultCacheManager().getSingleFile(widget.data.videoPath.toString(), key: widget.data.videoPath.toString());
+  Future<void> initiliazeVideo() async {
+    // lo.g('idget.data.videoPath.toString() : ${widget.data.videoPath.toString()}');
 
-    _controller = VideoPlayerController.file(file)
-      ..initialize().then((_) {
-        if (mounted) {
-          setState(() {
-            _controller.setLooping(true);
-            _controller.pause();
-            initialized = true;
-          });
-        }
+    if (initialized) {
+      return;
+    }
+    //late File sfile;
+
+    lo.g('🚀 VideoScreenPageState initiliazeVideo()');
+
+    // video_player 오류  https://github.com/flutter/flutter/issues/61309 , https://github.com/flutter/flutter/issues/25558
+
+    try {
+      // sfile = await DefaultCacheManager().getSingleFile(widget.data.videoPath.toString(), key: widget.data.boardId.toString());
+      //  lo.g('sfile : ${sfile.lengthSync() / 1000 / 1000}Mb');
+
+      // _controller = CachedVideoPlayerPlusController.networkUrl(
+      //   Uri.parse(widget.data.videoPath.toString()),
+      //   httpHeaders: {
+      //     'Connection': 'keep-alive',
+      //   },
+      //   invalidateCacheIfOlderThan: const Duration(days: 10),
+      // )
+      //   // _controller = CachedVideoPlayerPlusController.file(sfile, videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true))
+      // ignore: avoid_single_cascade_in_expression_statements
+      _controller
+        ?..initialize().then((_) {
+          if (mounted) {
+            setState(() {
+              _controller!.setLooping(true);
+              _controller!.pause();
+              initialized = true;
+            });
+          }
+        });
+
+      _controller!.addListener(() {
+        isPlay.value = _controller!.value.isPlaying;
+        int max = _controller!.value.duration.inSeconds;
+        position = _controller!.value.position;
+        progress.value = (position.inSeconds / max * 100).isNaN ? 0 : position.inSeconds / max * 100;
       });
+    } catch (e) {
+      lo.g('======>>>>>> DefaultCacheManager().getSingleFile error : $e');
+      // _controller = CachedVideoPlayerPlusController.networkUrl(
+      //   Uri.parse(widget.data.videoPath.toString()),
+      //   httpHeaders: {
+      //     'Connection': 'keep-alive',
+      //   },
+      //   invalidateCacheIfOlderThan: const Duration(days: 10),
+      // )
+      //   //   videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true))
+      //   ..initialize().then((_) {
+      //     if (mounted) {
+      //       setState(() {
+      //         _controller!.setLooping(true);
+      //         _controller!.pause();
+      //         initialized = true;
+      //       });
+      //     }
+      //   });
+      // ignore: avoid_single_cascade_in_expression_statements
+      _controller
+        ?..initialize().then((_) {
+          if (mounted) {
+            setState(() {
+              _controller!.setLooping(true);
+              _controller!.pause();
+              initialized = true;
+            });
+          }
+        });
 
-    _controller.addListener(() {
-      isPlay.value = _controller.value.isPlaying;
-      int max = _controller.value.duration.inSeconds;
-      position = _controller.value.position;
-      progress.value = (position.inSeconds / max * 100).isNaN ? 0 : position.inSeconds / max * 100;
-    });
+      _controller!.addListener(() {
+        isPlay.value = _controller!.value.isPlaying;
+        int max = _controller!.value.duration.inSeconds;
+        position = _controller!.value.position;
+        progress.value = (position.inSeconds / max * 100).isNaN ? 0 : position.inSeconds / max * 100;
+      });
+    }
+    // initialized = true;
   }
 
   Future<void> like() async {
@@ -122,6 +196,8 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
       }
       // 현재 리스트에 구독여부 변경
       Get.find<VideoListCntr>().list[Get.find<VideoListCntr>().currentIndex.value].followYn = 'Y';
+      isFollowed.value = 'Y';
+      Utils.alert('구독 되었습니다!');
     } catch (e) {
       Utils.alert('구독 실패! 다시 시도해주세요');
     }
@@ -137,6 +213,8 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
       }
       // 현재 리스트에 구독여부 변경
       Get.find<VideoListCntr>().list[Get.find<VideoListCntr>().currentIndex.value].followYn = 'N';
+      isFollowed.value = 'N';
+      Utils.alert('구독	취소되었습니다!');
     } catch (e) {
       Utils.alert('구독 실패! 다시 시도해주세요');
     }
@@ -157,75 +235,84 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
 
   @override
   void dispose() {
-    if (initialized) {
-      initialized = false;
-      _controller.dispose();
-    }
+    // if (initialized) {
+    initialized = false;
+    _controller!.removeListener(() {});
+    _controller!.dispose();
+    _controller = null;
+    //}
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return VisibilityDetector(
-      onVisibilityChanged: (info) {
-        if (info.visibleFraction > 0.5) {
-          if (initialized) {
-            _controller.play();
-            Get.find<VideoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
-          }
-        } else if (info.visibleFraction < 0.4) {
-          if (initialized) {
-            _controller.pause();
-            _controller.seekTo(Duration.zero);
-            Get.find<VideoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
-          }
-        }
-      },
-      key: UniqueKey(),
-      child: initialized
-          ? Stack(
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    if (_controller.value.isPlaying) {
-                      _controller.pause();
-                    } else {
-                      _controller.play();
-                    }
-                  },
-                  child: SizedBox.expand(
-                    child: FittedBox(
-                      fit: BoxFit.cover,
-                      child: SizedBox(
-                        width: _controller.value.size.width,
-                        height: _controller.value.size.height,
-                        child: Container(
-                          color: Colors.black,
-                          child: Text(
-                            "adfadsfads",
-                            style: TextStyle(color: Colors.black),
+    return Scaffold(
+      // backgroundColor: Colors.black87,
+      resizeToAvoidBottomInset: true,
+      extendBodyBehindAppBar: true,
+      extendBody: true,
+      body: _controller == null
+          ? Utils.progressbar(color: Colors.white)
+          : VisibilityDetector(
+              onVisibilityChanged: (info) {
+                if (info.visibleFraction > 0.2) {
+                  if (initialized) {
+                    _controller!.play();
+                    Get.find<VideoListCntr>().soundOff.value ? _controller!.setVolume(0) : _controller!.setVolume(1);
+                  }
+                } else if (info.visibleFraction < 0.4) {
+                  // } else {
+                  if (initialized) {
+                    _controller!.pause();
+                    _controller!.seekTo(Duration.zero);
+                    Get.find<VideoListCntr>().soundOff.value ? _controller!.setVolume(0) : _controller!.setVolume(1);
+                  }
+                }
+              },
+              key: _key,
+              child: initialized
+                  ? Stack(
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            if (_controller!.value.isPlaying) {
+                              _controller!.pause();
+                            } else {
+                              _controller!.play();
+                            }
+                          },
+                          child: SizedBox.expand(
+                            child: FittedBox(
+                              fit: BoxFit.cover,
+                              child: SizedBox(
+                                width: _controller!.value.size.width,
+                                height: _controller!.value.size.height,
+                                // child: Container(
+                                //   color: Colors.black,
+                                //   child: Text(
+                                //     "adfadsfads",
+                                //     style: TextStyle(color: Colors.black),
+                                //   ),
+                                // ),
+                                child: VideoPlayer(_controller!),
+                              ),
+                            ),
                           ),
                         ),
-                        //    child: CachedVideoPlayerPlus(_controller),
-                        // child: VideoPlayer(_controller),
-                      ),
-                    ),
-                  ),
-                ),
-                // 중앙 play 버튼
-                buildCenterPlayButton(),
-                // 사운드 on/off 버튼
-                buildSoundButton(),
-                // 하단 컨텐츠
-                buildBottomContent(),
-                // 오른쪽 메뉴바
-                buildRightMenuBar(),
-
-                // 재생 progressbar
-                buildPlayProgress(),
-              ],
-            )
-          : Center(child: Utils.progressbar()),
+                        // 중앙 play 버튼
+                        buildCenterPlayButton(),
+                        // 사운드 on/off 버튼
+                        buildSoundButton(),
+                        // 하단 컨텐츠
+                        buildBottomContent(),
+                        // 오른쪽 메뉴바
+                        buildRightMenuBar(),
+                        // 재생 progressbar
+                        buildPlayProgress(),
+                      ],
+                    )
+                  : Center(child: Utils.progressbar()),
+            ),
     );
   }
 
@@ -265,27 +352,30 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
                 style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
               ),
               const Gap(15),
-              ElevatedButton(
-                onPressed: () => widget.data.followYn.toString().contains('N') ? follow() : followCancle(),
-                clipBehavior: Clip.none,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  elevation: 1.5,
-                  minimumSize: const Size(0, 0),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  backgroundColor: widget.data.followYn.toString().contains('N') ? Colors.white : Colors.grey,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20.0),
-                  ),
-                ),
-                child: Text(
-                  widget.data.followYn.toString().contains('N') ? '구독' : '구독중',
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 14,
-                  ),
-                ),
-              )
+              ValueListenableBuilder<String>(
+                  valueListenable: isFollowed,
+                  builder: (context, value, child) {
+                    return ElevatedButton(
+                      onPressed: () => value.toString().contains('N') ? follow() : followCancle(),
+                      clipBehavior: Clip.none,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        elevation: 0.5,
+                        minimumSize: const Size(0, 0),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        backgroundColor: widget.data.followYn.toString().contains('N') ? Colors.transparent : Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.0), side: BorderSide(color: Colors.white, width: 0.7)),
+                      ),
+                      child: Text(
+                        value.toString().contains('N') ? '팔로우' : '팔로잉',
+                        style: TextStyle(
+                          color: value.toString().contains('N') ? Colors.white : Colors.black,
+                          fontSize: 15,
+                        ),
+                      ),
+                    );
+                  })
             ],
           ),
           const Gap(5),
@@ -449,9 +539,10 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
           ),
           const Gap(10),
           IconButton(
-            icon: const Icon(Icons.message_outlined, color: Colors.white),
-            onPressed: () => CommentPage().open(context, widget.data.boardId.toString()),
-          ),
+              icon: const Icon(Icons.message_outlined, color: Colors.white),
+              onPressed: () {
+                CommentPage().open(context, widget.data.boardId.toString());
+              }),
           const Text(
             '1.2M',
             style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
@@ -473,7 +564,9 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
 
   // 중앙 play 버튼
   Widget buildCenterPlayButton() {
-    return Center(
+    return Positioned(
+      bottom: MediaQuery.of(context).size.height * 0.5,
+      left: (MediaQuery.of(context).size.width - 50) * 0.5,
       // child: _controller.value.isPlaying ? const SizedBox() : const Icon(Icons.play_arrow, color: Colors.white, size: 50),
       child: ValueListenableBuilder<bool>(
         valueListenable: isPlay,
@@ -489,10 +582,10 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
               ),
               child: value
                   ? IconButton(
-                      onPressed: () => _controller.pause(),
+                      onPressed: () => _controller!.pause(),
                       icon: Icon(Icons.play_arrow_outlined, color: Colors.white.withOpacity(0.5), size: 40))
                   : IconButton(
-                      onPressed: () => _controller.play(), icon: Icon(Icons.pause, color: Colors.white.withOpacity(0.5), size: 40)),
+                      onPressed: () => _controller!.play(), icon: Icon(Icons.pause, color: Colors.white.withOpacity(0.5), size: 40)),
             ),
           );
         },
@@ -538,15 +631,15 @@ class _VideoSreenPageState extends State<VideoSreenPage> {
   // 사운드 on/off 버튼
   Widget buildSoundButton() {
     return Positioned(
-      top: Get.height / 2,
+      bottom: (MediaQuery.of(context).size.height - 15) * .5,
       left: 10,
       child: Obx(() => IconButton(
             onPressed: () {
               Get.find<VideoListCntr>().soundOff.value = !Get.find<VideoListCntr>().soundOff.value;
               if (Get.find<VideoListCntr>().soundOff.value) {
-                _controller.setVolume(0);
+                _controller!.setVolume(0);
               } else {
-                _controller.setVolume(1);
+                _controller!.setVolume(1);
               }
             },
             icon: Get.find<VideoListCntr>().soundOff.value

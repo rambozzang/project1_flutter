@@ -17,20 +17,20 @@ class OpenWheatherRepo {
         headers: {'Content-Type': 'application/json', 'accept': 'application/json'},
         connectTimeout: const Duration(seconds: 5),
         receiveTimeout: const Duration(seconds: 60)));
-    dio.interceptors.add(PrettyDioLogger(
-      requestHeader: true,
-      requestBody: true,
-      responseBody: true,
-      responseHeader: true,
-      error: true,
-      compact: true,
-      maxWidth: 120,
-    ));
+    // dio.interceptors.add(PrettyDioLogger(
+    //   requestHeader: true,
+    //   requestBody: true,
+    //   responseBody: true,
+    //   responseHeader: true,
+    //   error: true,
+    //   compact: true,
+    //   maxWidth: 120,
+    // ));
 
     try {
       log(position.toString());
       var url =
-          '${OpenWeatherApiConfig.apiUrl}?q=seoul&lang=kr&units=metric&lat=${position!.latitude}&lon=${position.longitude}&appid=${OpenWeatherApiConfig.apiKey}';
+          '${OpenWeatherApiConfig.apiUrl}?lang=kr&units=metric&lat=${position!.latitude}&lon=${position.longitude}&appid=${OpenWeatherApiConfig.apiKey}';
       log(url);
 
       Response response = await dio.get(url);

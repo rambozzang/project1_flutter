@@ -24,15 +24,15 @@ class MyLocatorRepo {
         headers: {'Content-Type': 'application/json', 'accept': 'application/json'},
         connectTimeout: const Duration(seconds: 5),
         receiveTimeout: const Duration(seconds: 60)));
-    dio.interceptors.add(PrettyDioLogger(
-      requestHeader: true,
-      requestBody: true,
-      responseBody: true,
-      responseHeader: true,
-      error: true,
-      compact: true,
-      maxWidth: 120,
-    ));
+    // dio.interceptors.add(PrettyDioLogger(
+    //   requestHeader: true,
+    //   requestBody: true,
+    //   responseBody: true,
+    //   responseHeader: true,
+    //   error: true,
+    //   compact: true,
+    //   maxWidth: 120,
+    // ));
 
     try {
       log(position.toString());

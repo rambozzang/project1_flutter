@@ -1,10 +1,22 @@
+import 'dart:async';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:gap/gap.dart';
+import 'package:get/get.dart';
+import 'package:get/get_connect/http/src/utils/utils.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/repo/board/board_repo.dart';
+import 'package:project1/repo/board/data/follow_data.dart';
+import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/utils/utils.dart';
 
 class FollowListPage extends StatefulWidget {
-  const FollowListPage({super.key});
+  const FollowListPage({super.key, required this.followType});
+  final int followType; // 0: 팔로잉, 1: 팔로워
 
   @override
   State<FollowListPage> createState() => _FollowListPageState();
@@ -12,15 +24,52 @@ class FollowListPage extends StatefulWidget {
 
 class _FollowListPageState extends State<FollowListPage> {
   ScrollController scrollController = ScrollController();
+
+  StreamController<ResStream<List<FollowData>>> listCntr = StreamController();
+  List<FollowData> followList = [];
+
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
+    getInitFollowList();
   }
 
-  void addAlram() {
-    // 알람 추가
-    Utils.alert("알람 추가");
+  getInitFollowList() {
+    getFollowList(widget.followType);
+  }
+
+  // followType 0: 팔로잉, 1: 팔로워
+  // follow list 가져오기
+  void getFollowList(int followType) async {
+    try {
+      listCntr.sink.add(ResStream.loading());
+      BoardRepo repo = BoardRepo();
+      ResData res = await repo.getFollowList(followType, AuthCntr.to.resLoginData.value.custId.toString());
+      if (res.code != '00') {
+        Utils.alert(res.msg.toString());
+        listCntr.sink.add(ResStream.error(res.msg.toString()));
+        return;
+      }
+      followList.clear();
+
+      followList = ((res.data) as List).map((data) => FollowData.fromMap(data)).toList();
+      listCntr.sink.add(ResStream.completed(followList));
+    } catch (e) {
+      Utils.alert("팔로우 리스트 가져오기 실패");
+      listCntr.sink.add(ResStream.error(e.toString()));
+    }
+  }
+
+  void addAlram(String yn) async {
+    try {
+      BoardRepo repo = BoardRepo();
+      ResData res = await repo.changeFollowAlram(AuthCntr.to.resLoginData.value.custId.toString(), yn);
+      if (res.code == '00') {
+        listCntr.sink.add(ResStream.completed(followList));
+      }
+    } catch (e) {
+      Utils.alert("알람 설정 실패");
+    }
   }
 
   void addFollow() {
@@ -63,60 +112,78 @@ class _FollowListPageState extends State<FollowListPage> {
                     color: Colors.transparent,
                     borderRadius: BorderRadius.circular(40),
                   ),
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: 10,
-                    physics: const BouncingScrollPhysics(),
-                    itemBuilder: (BuildContext context, int index) {
-                      return Container(
-                        //height: 50,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        margin: const EdgeInsets.symmetric(vertical: 6),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        child: Row(
-                          children: [
-                            Container(
-                                height: 45,
-                                width: 45,
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade300,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(Icons.person, color: Colors.white)),
-                            const Gap(10),
-                            const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('@tigerBk', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                                Text('TigerBK ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
-                              ],
-                            ),
-                            const Spacer(),
-                            GestureDetector(
-                              onTap: () {
-                                addFollow();
-                              },
-                              child: Container(
-                                height: 30,
-                                width: 60,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade300,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Center(child: Text("팔로잉", style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal))),
-                              ),
-                            ),
-                            IconButton(onPressed: () => addAlram(), icon: Icon(Icons.alarm_add, color: Colors.grey.shade400))
-                          ],
-                        ),
-                      );
-                    },
-                  ))
+                  child: Utils.commonStreamList<FollowData>(listCntr, buildList, getInitFollowList))
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildList(List<FollowData> list) {
+    return ListView.builder(
+        shrinkWrap: true,
+        itemCount: list.length,
+        physics: const BouncingScrollPhysics(),
+        itemBuilder: (BuildContext context, int index) {
+          return buildItem(list[index]);
+        });
+  }
+
+  Widget buildItem(FollowData data) {
+    return InkWell(
+      onTap: () => Get.toNamed('/OtherInfoPage/${data.custId}'),
+      child: Container(
+        //height: 50,
+        decoration: BoxDecoration(
+          //  color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        child: Row(
+          children: [
+            Container(
+                height: 45,
+                width: 45,
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                  // color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(10),
+                  image: DecorationImage(
+                    image: CachedNetworkImageProvider(data.profilePath.toString()),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                child: const Icon(Icons.person, color: Colors.white)),
+            const Gap(10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('@${data.selfId ?? data.custNm}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text('${data.nickNm} ', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
+              ],
+            ),
+            const Spacer(),
+            GestureDetector(
+              onTap: () {
+                addFollow();
+              },
+              child: Container(
+                height: 30,
+                width: 60,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Center(child: Text("구독중", style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal))),
+              ),
+            ),
+            IconButton(
+              onPressed: () => addAlram(data.alramYn.toString() == 'Y' ? 'Y' : 'N'),
+              icon: Icon(Icons.alarm_add, color: data.alramYn.toString() == 'Y' ? Colors.grey.shade400 : Colors.black),
+            )
+          ],
         ),
       ),
     );

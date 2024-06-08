@@ -6,10 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
-import 'package:project1/app/list/api_service.dart';
 import 'package:project1/app/myinfo/widget/image_avatar.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
@@ -61,19 +59,36 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
   int followboardageSize = 5000;
   StreamController<ResStream<List<BoardWeatherListData>>> followVideoListCntr = BehaviorSubject();
 
+  // 관심태그 리스트 가져오기
+  StreamController<ResStream<List<String>>> tagStream = StreamController();
+
+  // 관심태그 추가
+  TextEditingController tagController = TextEditingController();
+
+  FocusNode textFocus = FocusNode();
+  bool _keyboardVisible = false;
+
   @override
   void initState() {
     super.initState();
     getCountData();
     getMyBoard();
     getFollowBoard();
+    getTag();
+    textFocus.addListener(() {
+      if (textFocus.hasFocus) {
+        RootCntr.to.bottomBarStreamController.sink.add(false);
+      } else {
+        RootCntr.to.bottomBarStreamController.sink.add(true);
+      }
+    });
   }
 
   Future<void> getCountData() async {
     try {
       //  myCountCntr.sink.add(ResStream.loading());
       BoardRepo repo = BoardRepo();
-      ResData res = await repo.getCustCount();
+      ResData res = await repo.getCustCount(Get.find<AuthCntr>().resLoginData.value.custId.toString());
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         return;
@@ -91,7 +106,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
     try {
       myVideoListCntr.sink.add(ResStream.loading());
       BoardRepo repo = BoardRepo();
-      ResData res = await repo.getMyBoard(myboardPageNum, myboardageSize);
+      ResData res = await repo.getMyBoard(Get.find<AuthCntr>().resLoginData.value.custId.toString(), myboardPageNum, myboardageSize);
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         return;
@@ -109,7 +124,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
     try {
       followVideoListCntr.sink.add(ResStream.loading());
       BoardRepo repo = BoardRepo();
-      ResData res = await repo.getFollowBoard(followboardPageNum, followboardageSize);
+      ResData res =
+          await repo.getFollowBoard(Get.find<AuthCntr>().resLoginData.value.custId.toString(), followboardPageNum, followboardageSize);
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         return;
@@ -216,7 +232,52 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
 
   // 관심태그 삭제
   Future<void> removeTag(String tagNm) async {
-    Utils.alert('$tagNm 삭제');
+    try {
+      CustRepo repo = CustRepo();
+      ResData res = await repo.deleteTag(AuthCntr.to.resLoginData.value.custId.toString(), tagNm);
+      if (res.code != '00') {
+        Utils.alert(res.msg.toString());
+        return;
+      }
+      // Utils.alert('삭제되었습니다.');
+      getTag();
+    } catch (e) {
+      Utils.alert(e.toString());
+    }
+  }
+
+  // 관심태그 추가
+  Future<void> addTag(String tagNm) async {
+    try {
+      CustRepo repo = CustRepo();
+      ResData res = await repo.saveTag(AuthCntr.to.resLoginData.value.custId.toString(), tagNm);
+      if (res.code != '00') {
+        Utils.alert(res.msg.toString());
+        return;
+      }
+      // Utils.alert('추가되었습니다.');
+      getTag();
+    } catch (e) {
+      Utils.alert(e.toString());
+    }
+  }
+
+  // 관심태그 조회
+  Future<void> getTag() async {
+    try {
+      CustRepo repo = CustRepo();
+      ResData res = await repo.getTagList(AuthCntr.to.resLoginData.value.custId.toString());
+      if (res.code != '00') {
+        Utils.alert(res.msg.toString());
+        return;
+      }
+      List<String> _list = (res.data as List).map((e) => e['tagNm'].toString()).toList();
+
+      tagStream.sink.add(ResStream.completed(_list));
+    } catch (e) {
+      Utils.alert(e.toString());
+      // myCountCntr.sink.add(ResStream.error(e.toString()));
+    }
   }
 
   @override
@@ -234,6 +295,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
       length: 2,
       initialIndex: 0,
       child: Scaffold(
+        resizeToAvoidBottomInset: true,
         appBar: _appBar(),
         body: RefreshIndicator.adaptive(
           notificationPredicate: (notification) {
@@ -247,6 +309,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
             getCountData();
             getMyBoard();
             getFollowBoard();
+            getTag();
           },
           child: NestedScrollView(
             controller: RootCntr.to.hideButtonController2,
@@ -276,18 +339,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
         border: Border.all(color: Colors.grey.shade300),
         borderRadius: BorderRadius.circular(10.0),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(15.0),
-            child: GestureDetector(
-                onTap: () => getImage(ImageSource.gallery),
-                child: ImageAvatar(width: 70, url: AuthCntr.to.resLoginData.value.profilePath!, type: AvatarType.MYSTORY)),
-          ),
-          Expanded(flex: 3, child: Utils.commonStreamBody<CustCountData>(myCountCntr, _builtCount, getCountData)),
-        ],
-      ),
+      child: Utils.commonStreamBody<CustCountData>(myCountCntr, _builtCount, getCountData),
     );
   }
 
@@ -301,13 +353,13 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Text('관심태그', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+              const Text('관심태그', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
               const Spacer(),
               const Text('*위치기반과 관심사를 기준으로 리스트구성.', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 10, color: Colors.grey)),
               const Gap(10),
               SizedBox(
-                height: 15,
-                width: 15,
+                height: 20,
+                width: 20,
                 child: IconButton(
                     padding: const EdgeInsets.all(0),
                     constraints: const BoxConstraints(),
@@ -316,7 +368,9 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
                       padding: MaterialStateProperty.all(EdgeInsets.zero),
                       backgroundColor: MaterialStateProperty.all(Colors.grey),
                     ),
-                    onPressed: () => showProfileModifyModal(),
+                    onPressed: () {
+                      showProfileModifyModal();
+                    },
                     icon: const Icon(
                       Icons.add,
                       size: 15,
@@ -326,24 +380,84 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
             ],
           ),
           const Gap(4),
-          Wrap(
-            spacing: 6.0,
-            runSpacing: 6.0,
-            direction: Axis.horizontal,
-            crossAxisAlignment: WrapCrossAlignment.start,
-            verticalDirection: VerticalDirection.down,
-            runAlignment: WrapAlignment.start,
-            alignment: WrapAlignment.start,
-            children: <Widget>[
-              buildChip('#홍제역'),
-              buildChip('#광화문'),
-              buildChip('#여의도'),
-              buildChip('#강남역'),
-              buildChip('#삼성역'),
-              buildChip('#마포'),
-              buildChip('#선릉'),
-            ],
-          ),
+          StreamBuilder<ResStream<List<String>>>(
+              stream: tagStream.stream,
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  if (snapshot.data!.status == Status.COMPLETED) {
+                    List<String> list = snapshot.data!.data!;
+                    if (list.isEmpty) {
+                      return Container(
+                        padding: const EdgeInsets.all(20),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '등록된 관심태그가 없습니다.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      );
+                    }
+                    return Wrap(
+                      spacing: 6.0,
+                      runSpacing: 6.0,
+                      direction: Axis.horizontal,
+                      crossAxisAlignment: WrapCrossAlignment.start,
+                      verticalDirection: VerticalDirection.down,
+                      runAlignment: WrapAlignment.start,
+                      alignment: WrapAlignment.start,
+                      children: list.map((e) => buildChip(e)).toList(),
+                    );
+                  } else {
+                    return Container(
+                      padding: const EdgeInsets.all(20),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '등록된 관심태그가 없습니다.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    );
+                  }
+                } else {
+                  // getTag();
+                  return Container(
+                    padding: const EdgeInsets.all(20),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '등록된 관심태그가 없습니다.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  );
+                }
+                // return Wrap(
+                //   spacing: 6.0,
+                //   runSpacing: 6.0,
+                //   direction: Axis.horizontal,
+                //   crossAxisAlignment: WrapCrossAlignment.start,
+                //   verticalDirection: VerticalDirection.down,
+                //   runAlignment: WrapAlignment.start,
+                //   alignment: WrapAlignment.start,
+                //   children: <Widget>[
+                //     buildChip('#홍제역'),
+                //     buildChip('#광화문'),
+                //     buildChip('#여의도'),
+                //     buildChip('#강남역'),
+                //     buildChip('#삼성역'),
+                //     buildChip('#마포'),
+                //     buildChip('#선릉'),
+                //   ],
+                // );
+              }),
           // const Gap(10),
         ],
       ),
@@ -351,60 +465,78 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
   }
 
   Widget _builtCount(CustCountData data) {
-    return Padding(
-      padding: const EdgeInsets.all(10.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(6.0),
-                child: MyPageInfo(
-                  count: data.boardCnt!.toInt(),
-                  label: '게시물',
-                  onTap: () => Get.toNamed('/MainView1/${null}/0'), //Get.toNamed('/MainView1
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(15.0),
+          child: GestureDetector(
+              onTap: () => getImage(ImageSource.gallery),
+              child: ImageAvatar(width: 70, url: AuthCntr.to.resLoginData.value.profilePath!, type: AvatarType.MYSTORY)),
+        ),
+        Expanded(
+          flex: 3,
+          child: Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(6.0),
+                      child: MyPageInfo(
+                        count: data.boardCnt!.toInt(),
+                        label: '게시물',
+                        onTap: () => Get.toNamed('/MainView1/0/${null}'), //Get.toNamed('/MainView1
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(6.0),
+                      child: MyPageInfo(
+                        count: data.likeCnt!.toInt(),
+                        label: '좋아요',
+                        onTap: () => Get.toNamed('/MainView1/1/${null}'),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(6.0),
+                      child: MyPageInfo(
+                        count: data.followCnt!.toInt(),
+                        label: '팔로워',
+                        onTap: () => Get.toNamed('/MainView1/2/${null}'),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(6.0),
+                      child: MyPageInfo(
+                        count: data.followerCnt!.toInt(),
+                        label: '팔로잉',
+                        onTap: () => Get.toNamed('/MainView1/3/${null}'),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(6.0),
-                child: MyPageInfo(
-                  count: data.likeCnt!.toInt(),
-                  label: '좋아요',
-                  onTap: () => Get.toNamed('/MainView1/${null}/1'),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(6.0),
-                child: MyPageInfo(
-                  count: data.followCnt!.toInt(),
-                  label: '팔로워',
-                  onTap: () => Get.toNamed('/MainView1/${null}/2'),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(6.0),
-                child: MyPageInfo(
-                  count: data.followerCnt!.toInt(),
-                  label: '팔로잉',
-                  onTap: () => Get.toNamed('/MainView1/${null}/3'),
-                ),
-              ),
-            ],
+                // const Gap(10),
+                data.custInfo!.selfId.toString() == 'null'
+                    ? const SizedBox()
+                    : Text(
+                        '@${data.custInfo!.selfId.toString()}',
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                      ),
+                data.custInfo!.selfId.toString() == 'null'
+                    ? const SizedBox()
+                    : Text(
+                        data.custInfo!.selfIntro.toString(),
+                        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+                      ),
+              ],
+            ),
           ),
-          // const Gap(10),
-          Text(
-            '@${data.selfId.toString()}',
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-          ),
-          Text(
-            data.selfIntro.toString(),
-            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -417,7 +549,10 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
           const SizedBox(
             width: 20.0,
           ),
-          Expanded(flex: 4, child: MyPageButton(onTap: () => Get.toNamed('/MyinfoModifyPage'), label: '프로필 수정')),
+          Expanded(
+              flex: 4,
+              child: MyPageButton(
+                  onTap: () => Get.toNamed('/MyinfoModifyPage')!.then((value) => value == true ? getCountData() : null), label: '프로필 수정')),
           const SizedBox(
             width: 10.0,
           ),
@@ -466,29 +601,30 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
                   Get.toNamed('/VideoMyinfoListPage', arguments: list[index]);
                 },
                 child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.blue,
-                      borderRadius: BorderRadius.circular(10.0),
-                      image: DecorationImage(
-                        image: CachedNetworkImageProvider(list[index].thumbnailPath!),
-                        fit: BoxFit.cover,
-                      ),
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    borderRadius: BorderRadius.circular(10.0),
+                    image: DecorationImage(
+                      image: CachedNetworkImageProvider(list[index].thumbnailPath!),
+                      fit: BoxFit.cover,
                     ),
-                    child: const Align(
-                      alignment: Alignment.bottomRight,
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.play_arrow_outlined,
-                            color: Colors.white,
-                          ),
-                          Text(
-                            '12,000',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    )),
+                  ),
+                  child: const Align(
+                    alignment: Alignment.bottomRight,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.play_arrow_outlined,
+                          color: Colors.white,
+                        ),
+                        Text(
+                          '12,000',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             )
           : Utils.progressbar(),
@@ -554,6 +690,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
       // scrolledUnderElevation: 0.0,
       centerTitle: true,
       title: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           InkWell(
             onTap: () {
@@ -571,6 +708,10 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
               style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
             ),
           ),
+          IconButton(
+            onPressed: () => Get.toNamed('/SettingPage'),
+            icon: const Icon(Icons.settings),
+          )
         ],
       ),
       actions: [
@@ -585,68 +726,112 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
   void showProfileModifyModal() {
     showModalBottomSheet(
       isScrollControlled: true,
-      showDragHandle: true,
+      showDragHandle: false,
+      backgroundColor: Colors.white,
       useSafeArea: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.only(topLeft: Radius.circular(10.0), topRight: Radius.circular(10.0))),
       context: context,
       builder: (BuildContext context) {
-        return FractionallySizedBox(
-          heightFactor: 0.45,
-          child: Container(
-            height: 130,
-            padding: EdgeInsets.only(
-              right: 20,
-              left: 20,
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-            ),
-            child: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 0),
-                padding: const EdgeInsets.only(top: 5),
-                height: 54,
-                child: TextFormField(
-                  //    controller: searchController,
-                  //    focusNode: textFocus,
-                  maxLines: 1,
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
-                    filled: true,
-                    fillColor: Colors.grey[100],
-                    suffixIcon: const Icon(Icons.search, color: Colors.grey),
-                    enabledBorder: OutlineInputBorder(
-                      // width: 0.0 produces a thin "hairline" border
-                      borderSide: const BorderSide(color: Colors.grey, width: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    border: OutlineInputBorder(
-                      // width: 0.0 produces a thin "hairline" border
-                      //  borderSide: const BorderSide(color: Colors.grey, width: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: Colors.grey, width: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    label: const Text("자기 소개를 입력해주세요."),
-                    labelStyle: const TextStyle(color: Colors.black38),
+        return Padding(
+          padding: MediaQuery.of(context).viewInsets,
+          child: SizedBox(
+            height: 210,
+            child: Column(
+              children: [
+                Container(
+                  height: 45,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(topLeft: Radius.circular(10.0), topRight: Radius.circular(10.0)),
                   ),
-                  onFieldSubmitted: (text) {
-                    // Perform search
-                  },
+                  child: Row(
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20),
+                        child: Text('관심태그 추가', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        style: ButtonStyle(
+                          padding: MaterialStateProperty.all(EdgeInsets.zero),
+                          minimumSize: MaterialStateProperty.all(Size.zero),
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const Spacer(),
-              Padding(
-                padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: CustomButton(text: '등록하기', type: 'XL', heightValue: 55, isEnable: true, onPressed: () => save()),
+                Container(
+                  height: 150,
+                  // padding: const EdgeInsets.only(
+                  //   right: 16,
+                  //   left: 16,
+                  // ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  color: Colors.white,
+
+                  child: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
+                    const Gap(10),
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 0),
+                      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                      height: 54,
+                      child: TextFormField(
+                        controller: tagController,
+                        focusNode: textFocus,
+                        autofocus: true,
+                        maxLines: 1,
+                        decoration: InputDecoration(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                          //  suffixIcon: const Icon(Icons.search, color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(
+                            // width: 0.0 produces a thin "hairline" border
+                            borderSide: const BorderSide(color: Colors.grey, width: 0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          border: OutlineInputBorder(
+                            // width: 0.0 produces a thin "hairline" border
+                            //  borderSide: const BorderSide(color: Colors.grey, width: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: const BorderSide(color: Colors.grey, width: 0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          label: const Text("Tag 를 입력해주세요."),
+                          labelStyle: const TextStyle(color: Colors.black38),
+                        ),
+                        onFieldSubmitted: (text) {
+                          // Perform search
+                          addTag(text);
+                          tagController.text = '';
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ),
+                    const Spacer(),
+                    CustomButton(
+                        text: '등록하기',
+                        type: 'XL',
+                        heightValue: 55,
+                        isEnable: true,
+                        onPressed: () {
+                          addTag(tagController.text);
+                          tagController.text = '';
+                          Navigator.pop(context);
+                        }),
+                    const Gap(23)
+                  ]),
                 ),
-              ),
-              const Gap(10)
-            ]),
+              ],
+            ),
           ),
         );
       },

@@ -116,10 +116,23 @@ class BoardRepo {
     } finally {}
   }
 
-  // 내정보 > 게시물,팔로워,팔로잉 갯ㅅ수 가져오기
-  Future<ResData> getCustCount() async {
+  // follow list 가져오기
+  Future<ResData> getFollowList(int followType, String custId) async {
     try {
-      var url = '${UrlConfig.baseURL}/board/getCustCount';
+      var url0 = '${UrlConfig.baseURL}/follow/getFollowList?custId=$custId';
+      var url1 = '${UrlConfig.baseURL}/follow/getFollowerList?custId=$custId';
+
+      Response response = await dio.post(followType == 0 ? url0 : url1);
+      return dioResponse(response);
+    } on DioException catch (e) {
+      return dioException(e);
+    } finally {}
+  }
+
+  // 내정보 > 게시물,팔로워,팔로잉 갯ㅅ수 가져오기
+  Future<ResData> getCustCount(String custId) async {
+    try {
+      var url = '${UrlConfig.baseURL}/board/getCustCount?custId=$custId';
       Response response = await dio.post(url);
       return dioResponse(response);
     } on DioException catch (e) {
@@ -128,9 +141,9 @@ class BoardRepo {
   }
 
   // 내 게시물 가져오기
-  Future<ResData> getMyBoard(int pageNum, int pageSize) async {
+  Future<ResData> getMyBoard(String custId, int pageNum, int pageSize) async {
     try {
-      var url = '${UrlConfig.baseURL}/board/getMyBoard?pageNum=$pageNum&pageSize=$pageSize';
+      var url = '${UrlConfig.baseURL}/board/getMyBoard?custId=$custId&pageNum=$pageNum&pageSize=$pageSize';
       Response response = await dio.post(url);
       return dioResponse(response);
     } on DioException catch (e) {
@@ -139,9 +152,9 @@ class BoardRepo {
   }
 
   // 팔로우 게시물 가져오기
-  Future<ResData> getFollowBoard(int pageNum, int pageSize) async {
+  Future<ResData> getFollowBoard(String custId, int pageNum, int pageSize) async {
     try {
-      var url = '${UrlConfig.baseURL}/board/getFollowBoard?pageNum=$pageNum&pageSize=$pageSize';
+      var url = '${UrlConfig.baseURL}/board/getFollowBoard?custId=$custId&pageNum=$pageNum&pageSize=$pageSize';
       Response response = await dio.post(url);
       return dioResponse(response);
     } on DioException catch (e) {
@@ -166,6 +179,17 @@ class BoardRepo {
       var url = '${UrlConfig.baseURL}/board/getSearchBoard';
       Response response =
           await dio.post(url, data: {'lat': lat, 'lon': lon, 'pageNum': pageNum, 'pageSize': pageSize, 'searchWord': searchWord});
+      return dioResponse(response);
+    } on DioException catch (e) {
+      return dioException(e);
+    } finally {}
+  }
+
+  // follow alram y/n 변경
+  Future<ResData> changeFollowAlram(String custId, String alramYn) async {
+    try {
+      var url = '${UrlConfig.baseURL}/follow/updateAlramYn?custId=$custId&alramYn=$alramYn';
+      Response response = await dio.post(url);
       return dioResponse(response);
     } on DioException catch (e) {
       return dioException(e);

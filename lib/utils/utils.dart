@@ -297,10 +297,10 @@ abstract class Utils {
         animationDuration: const Duration(milliseconds: 300));
   }
 
-  static Widget progressbar({double? size}) {
+  static Widget progressbar({double? size, Color? color}) {
     return Center(
       child: LoadingAnimationWidget.threeRotatingDots(
-        color: Colors.pink,
+        color: color ?? Colors.pink,
         size: size ?? 40,
       ),
     );
@@ -313,6 +313,11 @@ abstract class Utils {
         size: size ?? 40,
       ),
     );
+  }
+
+  // 예) 서울특별시 => 서울
+  static String localReplace(String) {
+    return String.replaceAll('특별시', '').replaceAll('광역시', '').replaceAll('특별자치시', '').replaceAll('특별자치도', '');
   }
 
   static void showAutomaticCloseDialog(
@@ -468,6 +473,13 @@ abstract class Utils {
   static String getToday() {
     DateTime now = DateTime.now();
     DateFormat formatter = DateFormat('yyyyMMdd');
+    String strToday = formatter.format(now);
+    return strToday;
+  }
+
+  static String getTime() {
+    DateTime now = DateTime.now();
+    DateFormat formatter = DateFormat('HH:mm');
     String strToday = formatter.format(now);
     return strToday;
   }

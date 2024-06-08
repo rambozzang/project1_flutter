@@ -203,8 +203,6 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                           var controller = cameraBloc.getController();
                           return Transform.scale(
                             scale: 1 / (controller!.value.aspectRatio * MediaQuery.of(context).size.aspectRatio),
-                            // child: CameraPreview(controller),
-
                             child: ZoomableWidget(
                                 child: _cameraPreviewWidget(),
                                 onTapUp: (scaledPoint) {
@@ -213,7 +211,7 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                                 onZoom: (zoom) {
                                   print('zoom');
                                   if (zoom < 11) {
-                                    controller!.setZoomLevel(zoom);
+                                    controller.setZoomLevel(zoom);
                                   }
                                 }),
                           );
@@ -324,12 +322,8 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
           startRecording();
         }
       },
-      onLongPress: () {
-        startRecording();
-      },
-      onLongPressEnd: (_) {
-        stopRecording();
-      },
+      onLongPress: () => startRecording(),
+      onLongPressEnd: (_) => stopRecording(),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         height: isRecording ? 90 : 80,

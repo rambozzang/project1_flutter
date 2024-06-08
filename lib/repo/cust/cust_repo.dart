@@ -16,6 +16,7 @@ class CustRepo {
   Future<ResData> createKakaoCust(KakaoJoinData data) async {
     try {
       var url = '${UrlConfig.baseURL}/auth/kakaojoin';
+      log(url.toString());
       log(data.toString());
       Response response = await dio.post(url, data: data.toJson());
       return dioResponse(response);
@@ -88,6 +89,39 @@ class CustRepo {
       //  log(data.toString());
       Response response = await dio.post(url, data: {'custId': custId, 'fcmId': fcmId});
 
+      return dioResponse(response);
+    } on DioException catch (e) {
+      return dioException(e);
+    } finally {}
+  }
+
+  // Tag 저장
+  Future<ResData> saveTag(String custId, String tag) async {
+    try {
+      var url = '${UrlConfig.baseURL}/tag/save';
+      Response response = await dio.post(url, data: {'custId': custId, 'tagNm': tag});
+      return dioResponse(response);
+    } on DioException catch (e) {
+      return dioException(e);
+    } finally {}
+  }
+
+  // Tag 삭제
+  Future<ResData> deleteTag(String custId, String tag) async {
+    try {
+      var url = '${UrlConfig.baseURL}/tag/delete';
+      Response response = await dio.post(url, data: {'custId': custId, 'tagNm': tag});
+      return dioResponse(response);
+    } on DioException catch (e) {
+      return dioException(e);
+    } finally {}
+  }
+
+  // Tag 조회
+  Future<ResData> getTagList(String custId) async {
+    try {
+      var url = '${UrlConfig.baseURL}/tag/getTagList?custId=$custId';
+      Response response = await dio.post(url);
       return dioResponse(response);
     } on DioException catch (e) {
       return dioException(e);

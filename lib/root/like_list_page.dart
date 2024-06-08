@@ -2,11 +2,8 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -45,7 +42,8 @@ class _LikeListPageState extends State<LikeListPage> with AutomaticKeepAliveClie
     try {
       followVideoListCntr.sink.add(ResStream.loading());
       BoardRepo repo = BoardRepo();
-      ResData res = await repo.getFollowBoard(followboardPageNum, followboardageSize);
+      ResData res =
+          await repo.getFollowBoard(Get.find<AuthCntr>().resLoginData.value.custId.toString(), followboardPageNum, followboardageSize);
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         return;

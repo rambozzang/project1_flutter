@@ -9,6 +9,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/list/cntr/video_list_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
@@ -79,7 +80,7 @@ class _BoardListPageState extends State<BoardListPage> with AutomaticKeepAliveCl
     try {
       followVideoListCntr.sink.add(ResStream.loading());
       BoardRepo repo = BoardRepo();
-      ResData res = await repo.getMyBoard(boardPageNum, boardageSize);
+      ResData res = await repo.getMyBoard(Get.find<AuthCntr>().resLoginData.value.custId.toString(), boardPageNum, boardageSize);
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         return;

@@ -1,16 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:bot_toast/bot_toast.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:project1/app/alram/alram_page.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/camera/page/camera_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
@@ -18,12 +14,8 @@ import 'package:project1/app/camera/utils/permission_utils.dart';
 import 'package:project1/app/list/cntr/video_list_cntr.dart';
 import 'package:project1/app/list/video_list_page.dart';
 import 'package:project1/app/myinfo/myinfo_page.dart';
-import 'package:project1/app/search/search_page.dart';
-import 'package:project1/app/setting/setting_page.dart';
-import 'package:project1/root/main_view1.dart';
-import 'package:project1/root/main_view2.dart';
+import 'package:project1/app/weather/Screens/weather_page.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
-import 'package:project1/root/main_view3.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/fade_stack.dart';
@@ -59,14 +51,15 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     super.initState();
     initializeTimer();
 
-    mainlist = [const VideoListPage(), SearchPage(), const SizedBox(), const SizedBox(), const SettingPage()];
+    mainlist = [const VideoListPage(), const WeatherPage(), const SizedBox(), const SizedBox(), const SizedBox()];
 
     bottomItemList = [
       bottomItem(Icons.home, '홈'),
-      bottomItem(Icons.search, '검색'),
+      bottomItem(Icons.cloudy_snowing, '날씨'),
+      // bottomItem(Icons.cloud_queue, '날씨'),
       bottomItem(Icons.add, '추가'),
-      bottomItem(Icons.favorite, '내정보'),
-      bottomItem(Icons.person, '설정'),
+      bottomItem(Icons.favorite, '알람'),
+      bottomItem(Icons.person, '내정보'),
     ];
     // getData();
   }
@@ -95,6 +88,11 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
 
   //뒤로가기 로직(핸드폰 뒤로가기 버튼 클릭시)
   Future<void> onGoBack(didPop) async {
+    lo.g('mounted : ${mounted} ');
+    lo.g('context.mounted : ${context.mounted} ');
+
+    // if (!context.mounted) return;
+
     DateTime now = DateTime.now();
     if (currentBackPressTime == null || now.difference(currentBackPressTime!) > const Duration(milliseconds: 2000)) {
       currentBackPressTime = now;
@@ -138,33 +136,37 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
               right: 20,
               child: Obx(() => Column(
                     children: [
-                      RootCntr.to.isFileUploading.value == UploadingType.UPLOADING
-                          ? Column(
-                              children: [
-                                Utils.progressUpload(size: 20),
-                                const Gap(5),
-                                const Text(
-                                  "Uploading..",
-                                  style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                                )
-                              ],
+                      if (RootCntr.to.isFileUploading.value == UploadingType.UPLOADING) ...[
+                        Column(
+                          children: [
+                            Utils.progressUpload(size: 20),
+                            const Gap(5),
+                            const Text(
+                              "Uploading..",
+                              style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
                             )
-                          : RootCntr.to.isFileUploading.value == UploadingType.SUCCESS
-                              ? Container(
-                                  color: Colors.black,
-                                  child: const Center(
-                                    child: Row(
-                                      children: [
-                                        // Icon(Icons.check, color: Colors.yellow, size: 20),
-                                        Text(
-                                          "게시물이 정상 게시 되었습니다.",
-                                          style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                              : const SizedBox(),
+                          ],
+                        )
+                      ],
+                      if (RootCntr.to.isFileUploading.value == UploadingType.SUCCESS) ...[
+                        Container(
+                          color: Colors.black,
+                          child: const Center(
+                            child: Row(
+                              children: [
+                                // Icon(Icons.check, color: Colors.yellow, size: 20),
+                                Text(
+                                  "게시물이 정상 게시 되었습니다.",
+                                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      ],
+                      if (RootCntr.to.isFileUploading.value == UploadingType.FAIL) ...[
+                        const SizedBox(),
+                      ]
                     ],
                   )),
             )
@@ -237,14 +239,23 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   }
 
   onClick(index) {
+    // 검색 페이지로 이동
+    // if (index == 1) {
+    //   mainlist[1] = const WeatherPage();
+    //   // mainlist[1] = const SearchPage();
+    // }
     // 가운데 + 키 눌렀을대 카메라로 이동
     if (index == 2) {
       goRecord();
       return;
     }
-    //
+    // 알람 페이지로 이동
     if (index == 3) {
-      mainlist[3] = const MyPage();
+      mainlist[3] = const AlramPage();
+    }
+    //내정보 페이지로 이동
+    if (index == 4) {
+      mainlist[4] = const MyPage();
     }
     RootCntr.to.changeRootPageIndex(index);
   }

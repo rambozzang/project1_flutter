@@ -21,13 +21,13 @@ class _FadeIndexedStackState extends State<FadeIndexedStack> with TickerProvider
   late final AnimationController _slideController;
   late final Animation<Offset> _animation;
 
-  final Duration _fadeDuration = const Duration(milliseconds: 550);
+  final Duration _fadeDuration = const Duration(milliseconds: 400);
   final Duration _slideDuration = const Duration(milliseconds: 250);
 
   @override
   void didUpdateWidget(FadeIndexedStack oldWidget) {
     if (widget.index != oldWidget.index) {
-      _fadeController.forward(from: 0.3);
+      _fadeController.forward(from: 0.2);
       _slideController.forward(from: 0.0);
     }
     super.didUpdateWidget(oldWidget);

@@ -46,6 +46,7 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdk 21
+        minSdkVersion 23
         targetSdk flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
@@ -56,6 +57,14 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig signingConfigs.debug
+             // ProGuard 활성화
+            minifyEnabled true
+            shrinkResources true
+
+            // ProGuard 규칙 파일
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+
+
         }
     }
 }
@@ -64,4 +73,27 @@ flutter {
     source '../..'
 }
 
-dependencies {}
+dependencies {
+    // implementation('com.google.android.exoplayer:exoplayer:2.19.1')
+    //  implementation 'com.google.android.exoplayer:exoplayer-core:2.19.1'
+    //     implementation 'com.google.android.exoplayer:exoplayer-hls:2.19.1'
+    //     implementation 'com.google.android.exoplayer:exoplayer-dash:2.19.1'
+    //     implementation 'com.google.android.exoplayer:exoplayer-smoothstreaming:2.19.1'
+
+    // 20240601 추가
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.2.2'
+    // fcm setting add
+    implementation platform('com.google.firebase:firebase-bom:32.3.1')
+    implementation "com.google.firebase:firebase-analytics"
+
+    implementation "com.google.firebase:firebase-auth"
+    implementation "com.google.firebase:firebase-firestore"
+
+    implementation 'androidx.window:window:1.0.0'
+    implementation 'androidx.window:window-java:1.0.0'
+
+    // admob
+    implementation("com.google.android.gms:play-services-ads:22.6.0")
+
+}

@@ -2,20 +2,30 @@ import 'dart:io';
 
 import 'package:bot_toast/bot_toast.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
+import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/chatting/supabase_options.dart';
 import 'package:project1/app/list/cntr/video_list_cntr.dart';
 import 'package:project1/app/list/video_list_page.dart';
+import 'package:project1/app/weather/provider/weatherProvider.dart';
 import 'package:project1/common/life_cycle_getx.dart';
 import 'package:project1/config/app_theme.dart';
 import 'package:project1/route/app_route.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:project1/utils/log_utils.dart';
+import 'package:provider/provider.dart';
 import 'firebase_options.dart';
+
+import 'package:flutter_supabase_chat_core/flutter_supabase_chat_core.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // fcm 배경 처리 (종료되어있거나, 백그라운드에 경우)
 @pragma('vm:entry-point')
@@ -158,6 +168,9 @@ void initializeFCM() async {
 //   Get.put(() => LifeCycleGetx());
 //   Get.put(() => AuthCntr());
 // }
+const supabaseUrl = 'https://wtyeuynrapbgtpquxxfm.supabase.co';
+const supabaseKey = String.fromEnvironment(
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0eWV1eW5yYXBiZ3RwcXV4eGZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTc1NTM4NzYsImV4cCI6MjAzMzEyOTg3Nn0.RZKF6Nfkqr7fA7Uc7RtZc_Jnl4zw_Q6iDV-5J9DfIM8');
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -170,6 +183,22 @@ void main() async {
   KakaoSdk.init(
     nativeAppKey: '257e56e034badf50ce13baaa28018e7d',
     loggingEnabled: true,
+  );
+
+  // 광고 init
+  if (Platform.isIOS) {
+    AdManager.init(targetPlatform: TargetPlatform.iOS);
+  } else if (Platform.isAndroid) {
+    AdManager.init(targetPlatform: TargetPlatform.android);
+  }
+  //  MobileAds.instance.initialize();
+
+  // supabase
+  // await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
+  await Supabase.initialize(
+    url: supabaseOptions.url,
+    anonKey: supabaseOptions.anonKey,
+    debug: true,
   );
 
   // ...
@@ -198,18 +227,34 @@ class TigerBk extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
-      title: "Application",
-      useInheritedMediaQuery: true,
-      debugShowCheckedModeBanner: false,
-      builder: BotToastInit(),
-      theme: AppTheme.theme,
-      initialRoute: AppPages.INITIAL,
-      initialBinding: BindingsBuilder(() {
-        Get.put(LifeCycleGetx());
-        Get.put(AuthCntr());
-      }),
-      getPages: AppPages.routes,
+    return ChangeNotifierProvider(
+      create: (context) => WeatherProvider(),
+      child: GetMaterialApp(
+        title: "Application",
+        useInheritedMediaQuery: true,
+        debugShowCheckedModeBanner: false,
+        builder: BotToastInit(),
+        theme: AppTheme.theme,
+        initialRoute: AppPages.INITIAL,
+        initialBinding: BindingsBuilder(() {
+          Get.put(LifeCycleGetx());
+          Get.put(AuthCntr());
+        }),
+        locale: const Locale('ko'),
+        supportedLocales: const [
+          //    const Locale('en', 'US'),
+          Locale('ko', 'KR'),
+        ],
+        localizationsDelegates: const [
+          DefaultMaterialLocalizations.delegate,
+          DefaultWidgetsLocalizations.delegate,
+          DefaultCupertinoLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+        ],
+        getPages: AppPages.routes,
+      ),
     );
   }
 }

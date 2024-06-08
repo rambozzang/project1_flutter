@@ -182,7 +182,7 @@ class _FaqPageState extends State<FaqPage> {
           icon: const Icon(Icons.arrow_back_ios),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('자주 찾는 질문'),
+        title: const Text('자주 찾는 질문'),
         centerTitle: true,
         elevation: 0,
       ),
@@ -360,6 +360,7 @@ class _FaqPageState extends State<FaqPage> {
 
           //  maintainState: true,
           clipBehavior: Clip.antiAlias,
+
           // dense: true,
           // visualDensity: VisualDensity.compact,
           tilePadding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 0.0),
@@ -371,23 +372,30 @@ class _FaqPageState extends State<FaqPage> {
               //  style: KosStyle.bodyB4,
             ),
           ),
-          shape: Border(
-            top: BorderSide(color: Colors.grey.shade300, width: 1),
-            bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+
+          shape: const Border(
+            top: BorderSide(color: Colors.white, width: 0),
+            bottom: BorderSide(color: Colors.white, width: 0),
           ),
           childrenPadding: const EdgeInsets.symmetric(horizontal: .0, vertical: 0.0),
+          collapsedShape: const RoundedRectangleBorder(
+            side: BorderSide.none,
+          ),
+
           children: [
             ListTile(
               style: ListTileStyle.drawer,
+              contentPadding: EdgeInsets.zero, // this also removes horizontal padding
               dense: true,
               // shape: const Border(
               //   top: BorderSide(),
               //   bottom: BorderSide(),
               // ),
               visualDensity: VisualDensity.compact,
+
               trailing: null,
-              selectedTileColor: Colors.grey[100],
-              contentPadding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 0.0),
+              selectedTileColor: Colors.red,
+              selected: false,
               horizontalTitleGap: 0,
               minVerticalPadding: 0,
               title: Container(

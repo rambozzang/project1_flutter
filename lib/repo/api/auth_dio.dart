@@ -17,24 +17,21 @@ import 'package:project1/utils/StringUtils.dart';
 
 Dio authDio() {
   final dio = Dio(BaseOptions(
-      headers: {
-        'Content-Type': 'application/json',
-        'accept': 'application/json'
-      },
+      headers: {'Content-Type': 'application/json', 'accept': 'application/json'},
       connectTimeout: const Duration(seconds: 5),
       receiveTimeout: const Duration(seconds: 60)));
 
   dio.interceptors.clear();
   dio.interceptors.add(interceptorsWrapper(dio));
-  dio.interceptors.add(PrettyDioLogger(
-    requestHeader: true,
-    requestBody: true,
-    responseBody: true,
-    responseHeader: true,
-    error: true,
-    compact: true,
-    maxWidth: 120,
-  ));
+  // dio.interceptors.add(PrettyDioLogger(
+  //   requestHeader: true,
+  //   requestBody: true,
+  //   responseBody: true,
+  //   responseHeader: true,
+  //   error: true,
+  //   compact: true,
+  //   maxWidth: 120,
+  // ));
 
   return dio;
 }
@@ -80,8 +77,7 @@ InterceptorsWrapper interceptorsWrapper(dio) {
   return InterceptorsWrapper(onRequest: (options, handler) async {
     try {
       if (!StringUtils.isEmpty(AuthCntr.to.resLoginData.value.accessToken)) {
-        options.headers['Authorization'] =
-            'Bearer ${AuthCntr.to.resLoginData.value.accessToken}';
+        options.headers['Authorization'] = 'Bearer ${AuthCntr.to.resLoginData.value.accessToken}';
       }
       return handler.next(options);
     } catch (e) {
@@ -99,9 +95,7 @@ InterceptorsWrapper interceptorsWrapper(dio) {
       dynamic clonedRequest;
       try {
         clonedRequest = await dio.request(error.requestOptions.path,
-            options: Options(
-                method: error.requestOptions.method,
-                headers: error.requestOptions.headers),
+            options: Options(method: error.requestOptions.method, headers: error.requestOptions.headers),
             data: error.requestOptions.data,
             queryParameters: error.requestOptions.queryParameters);
       } catch (e) {

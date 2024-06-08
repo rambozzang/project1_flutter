@@ -81,7 +81,7 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
       AuthCntr.to.resLoginData.value.nickNm = nickNmController.text;
       AuthCntr.to.resLoginData.value.custNm = custNmController.text;
 
-      Get.back();
+      Get.back(result: true);
     } catch (e) {
       Utils.alert(e.toString());
       dataCntr.sink.add(ResStream.error(e.toString()));

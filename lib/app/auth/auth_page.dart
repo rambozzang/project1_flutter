@@ -1,9 +1,5 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:project1/app/auth/cntr/auth_cntr.dart';
-import 'package:project1/utils/utils.dart';
+import 'package:project1/widget/play_lottie.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -17,12 +13,12 @@ class _AuthPageState extends State<AuthPage> {
   Widget build(BuildContext context) {
     // log(AuthCntr.to.custId.value);
 
-    return Scaffold(
+    return const Scaffold(
       body: Center(
         child: SizedBox(
           height: 65,
           width: 65,
-          child: Utils.progressbar(),
+          child: PlayLottie(lottie: 'assets/lottie/loading_weather.json'),
         ),
       ),
     );

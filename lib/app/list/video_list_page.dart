@@ -1,11 +1,10 @@
 import 'dart:async';
-import 'dart:ffi';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:comment_sheet/comment_sheet.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:get/get.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -16,13 +15,7 @@ import 'package:project1/app/camera/page/camera_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/camera/utils/permission_utils.dart';
 import 'package:project1/app/list/cntr/video_list_cntr.dart';
-import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
-import 'package:project1/repo/common/res_data.dart';
-import 'package:project1/repo/common/res_stream.dart';
-import 'package:project1/repo/weather/data/current_weather.dart';
-import 'package:project1/repo/weather/mylocator_repo.dart';
-import 'package:project1/repo/weather/open_weather_repo.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:text_scroll/text_scroll.dart';
@@ -34,7 +27,7 @@ class VideoListPage extends StatefulWidget {
   State<VideoListPage> createState() => _VideoListPageState();
 }
 
-class _VideoListPageState extends State<VideoListPage> {
+class _VideoListPageState extends State<VideoListPage> with SingleTickerProviderStateMixin {
   final PreloadPageController _controller = PreloadPageController();
   final ScrollController scrollController = ScrollController();
 
@@ -95,34 +88,30 @@ class _VideoListPageState extends State<VideoListPage> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       resizeToAvoidBottomInset: true,
-      body: Builder(
-        builder: (context) {
-          return CustomScrollView(
-            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-            slivers: [
-              LoadingCupertinoSliverRefreshControl(
-                onRefresh: () async {
-                  await Future.delayed(const Duration(seconds: 1));
-                  Get.find<VideoListCntr>().pageNum = 0;
-                  Get.find<VideoListCntr>().getData();
-                },
-              ),
-              SliverFillRemaining(
-                child: Stack(
-                  children: [
-                    Utils.commonStreamList<BoardWeatherListData>(
-                        Get.find<VideoListCntr>().videoListCntr, buildVideoBody, Get.find<VideoListCntr>().getData),
-                    buildLocalName(),
-                    buildTemp(),
-                    // buildRecodeBtn(),
-                    // Join 버튼
-                    buildJoinButton(),
-                  ],
-                ),
-              ),
-            ],
-          );
+      backgroundColor: Colors.black87,
+      extendBody: true,
+      body: RefreshIndicator(
+        onRefresh: () async {
+          Get.find<VideoListCntr>().pageNum = 0;
+          Get.find<VideoListCntr>().getData();
         },
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Utils.commonStreamList<BoardWeatherListData>(
+                  Get.find<VideoListCntr>().videoListCntr, buildVideoBody, Get.find<VideoListCntr>().getData),
+            ),
+            buildLocalName(),
+            buildTemp(),
+            // buildRecodeBtn(),
+            // Join 버튼
+            //  buildJoinButton(),
+            // 검색하기
+            buildSeachBtn(),
+            // 캐쉬 삭제하기
+            buildEmptyCacheBtn()
+          ],
+        ),
       ),
     );
   }
@@ -159,20 +148,32 @@ class _VideoListPageState extends State<VideoListPage> {
   Widget buildVideoBody(List<BoardWeatherListData> data) {
     return PreloadPageView.builder(
         controller: _controller,
-        preloadPagesCount: 3,
+        preloadPagesCount: 2,
         scrollDirection: Axis.vertical,
         itemCount: data.length,
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics: const CustomPhysics(),
+        // physics: const AlwaysScrollableScrollPhysics(),
+        // physics: const NeverScrollableScrollPhysics(),
         onPageChanged: (int position) {
-          print('page changed. current: $position');
+          lo.g('🚀🚀🚀 onPageChanged position : $position');
+          if (Get.find<VideoListCntr>().currentIndex.value > position) {
+            Get.find<VideoListCntr>().playPrevious(position);
+          } else {
+            Get.find<VideoListCntr>().playNext(position);
+          }
           Get.find<VideoListCntr>().currentIndex.value = position;
           Get.find<VideoListCntr>().getMoreData(position, data.length);
         },
         itemBuilder: (context, i) {
-          if (Get.find<VideoListCntr>().isLoadingMore.value && Get.find<VideoListCntr>().currentIndex.value == data.length) {
-            return Utils.progressbar();
+          // if (Get.find<VideoListCntr>().isLoadingMore.value && Get.find<VideoListCntr>().currentIndex.value == data.length) {
+          //   return Utils.progressbar();
+          // }
+          // lo.g('itemBuilder : ${Get.find<VideoListCntr>().videoPlayerControllerList[i]!.dataSource.toString()}');
+          if (Get.find<VideoListCntr>().videoPlayerControllerList[i] == null) {
+            return Utils.progressbar(color: Colors.blue);
           }
-          return VideoSreenPage(data: data[i]);
+          //  return VideoItem(data: data[i]);
+          return VideoScreenPage(controller: Get.find<VideoListCntr>().videoPlayerControllerList[i], data: data[i]);
         });
   }
 
@@ -183,7 +184,7 @@ class _VideoListPageState extends State<VideoListPage> {
           right: 10,
           left: 10,
           child: Get.find<VideoListCntr>().currentWeather.value!.coord != null
-              ? Container(
+              ? SizedBox(
                   width: double.infinity,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -229,7 +230,11 @@ class _VideoListPageState extends State<VideoListPage> {
                             style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
                           ),
                           Text(
-                            '최저 ${Get.find<VideoListCntr>().currentWeather.value?.main!.temp_min?.toStringAsFixed(1) ?? 0}° · 최고 ${Get.find<VideoListCntr>().currentWeather.value?.main!.temp_max?.toStringAsFixed(1) ?? 0}°',
+                            '${Get.find<VideoListCntr>().currentWeather.value?.main!.temp_min?.toStringAsFixed(1) ?? 0}° · ${Get.find<VideoListCntr>().currentWeather.value?.main!.temp_max?.toStringAsFixed(1) ?? 0}°',
+                            style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
+                          ),
+                          Text(
+                            '미세먼지:${Get.find<VideoListCntr>().mist10Grade} · 초미세먼지:${Get.find<VideoListCntr>().mist25Grade}',
                             style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
                           ),
                         ],
@@ -264,7 +269,7 @@ class _VideoListPageState extends State<VideoListPage> {
                       child: const Icon(Icons.location_on, color: Colors.white, size: 15)),
                   const SizedBox(width: 5),
                   SizedBox(
-                    width: 200,
+                    width: 100,
                     child: TextScroll(
                       Get.find<VideoListCntr>().localName.value,
                       mode: TextScrollMode.endless,
@@ -302,4 +307,64 @@ class _VideoListPageState extends State<VideoListPage> {
               : const SizedBox.shrink(),
         ));
   }
+
+  // 상단 검색 하기
+  Widget buildSeachBtn() {
+    return Obx(() => Positioned(
+          top: 45,
+          right: 10,
+          child: Get.find<VideoListCntr>().currentWeather.value!.coord != null
+              ? SizedBox(
+                  width: 40,
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.search,
+                      color: Colors.white,
+                      size: 30,
+                    ),
+                    onPressed: () => Get.toNamed('/SearchPage'),
+                  ))
+              : const SizedBox.shrink(),
+        ));
+  }
+
+  // 캐쉬 삭제 하기
+  Widget buildEmptyCacheBtn() {
+    return Obx(() => Positioned(
+          top: 105,
+          right: 10,
+          child: Get.find<VideoListCntr>().currentWeather.value!.coord != null
+              ? SizedBox(
+                  width: 40,
+                  child: IconButton(
+                      icon: const Icon(
+                        Icons.dangerous_outlined,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                      onPressed: () async {
+                        await DefaultCacheManager().emptyCache();
+                        Utils.alert('캐쉬 삭제 완료');
+                      }))
+              : const SizedBox.shrink(),
+        ));
+  }
+}
+
+// 화면 넘어 가는 스크롤 속도 조절
+class CustomPhysics extends ScrollPhysics {
+  const CustomPhysics({super.parent});
+  // const CustomPhysics({ScrollPhysics? parent}) : super(parent: parent);
+
+  @override
+  CustomPhysics applyTo(ScrollPhysics? ancestor) {
+    return CustomPhysics(parent: buildParent(ancestor));
+  }
+
+  @override
+  SpringDescription get spring => const SpringDescription(
+        mass: 150,
+        stiffness: 100,
+        damping: 1,
+      );
 }
