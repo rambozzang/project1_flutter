@@ -35,6 +35,14 @@ class BoardWeatherListData {
   String? crtDtm;
   int? likeCnt;
   String? icon;
+  String? videoId;
+  int? size1;
+  String? thumbnail;
+  String? preview;
+  String? mp4;
+  String? hls;
+  double? range1;
+  double? total;
   BoardWeatherListData({
     this.custId,
     this.custNm,
@@ -67,6 +75,14 @@ class BoardWeatherListData {
     this.crtDtm,
     this.likeCnt,
     this.icon,
+    this.videoId,
+    this.size1,
+    this.thumbnail,
+    this.preview,
+    this.mp4,
+    this.hls,
+    this.range1,
+    this.total,
   });
 
   BoardWeatherListData copyWith({
@@ -101,6 +117,14 @@ class BoardWeatherListData {
     String? crtDtm,
     int? likeCnt,
     String? icon,
+    String? videoId,
+    int? size1,
+    String? thumbnail,
+    String? preview,
+    String? mp4,
+    String? hls,
+    double? range1,
+    double? total,
   }) {
     return BoardWeatherListData(
       custId: custId ?? this.custId,
@@ -134,6 +158,14 @@ class BoardWeatherListData {
       crtDtm: crtDtm ?? this.crtDtm,
       likeCnt: likeCnt ?? this.likeCnt,
       icon: icon ?? this.icon,
+      videoId: videoId ?? this.videoId,
+      size1: size1 ?? this.size1,
+      thumbnail: thumbnail ?? this.thumbnail,
+      preview: preview ?? this.preview,
+      mp4: mp4 ?? this.mp4,
+      hls: hls ?? this.hls,
+      range1: range1 ?? this.range1,
+      total: total ?? this.total,
     );
   }
 
@@ -170,6 +202,14 @@ class BoardWeatherListData {
       'crtDtm': crtDtm,
       'likeCnt': likeCnt,
       'icon': icon,
+      'videoId': videoId,
+      'size1': size1,
+      'thumbnail': thumbnail,
+      'preview': preview,
+      'mp4': mp4,
+      'hls': hls,
+      'range1': range1,
+      'total': total,
     };
   }
 
@@ -206,6 +246,14 @@ class BoardWeatherListData {
       crtDtm: map['crtDtm'] != null ? map['crtDtm'] as String : null,
       likeCnt: map['likeCnt'] != null ? map['likeCnt'] as int : null,
       icon: map['icon'] != null ? map['icon'] as String : null,
+      videoId: map['videoId'] != null ? map['videoId'] as String : null,
+      size1: map['size1'] != null ? map['size1'] as int : null,
+      thumbnail: map['thumbnail'] != null ? map['thumbnail'] as String : null,
+      preview: map['preview'] != null ? map['preview'] as String : null,
+      mp4: map['mp4'] != null ? map['mp4'] as String : null,
+      hls: map['hls'] != null ? map['hls'] as String : null,
+      range1: map['range1'] != null ? map['range1'] as double : null,
+      total: map['total'] != null ? map['total'] as double : null,
     );
   }
 
@@ -215,7 +263,7 @@ class BoardWeatherListData {
 
   @override
   String toString() {
-    return 'BoardWeatherListData(custId: $custId, custNm: $custNm, nickNm: $nickNm, profilePath: $profilePath, likeYn: $likeYn, followYn: $followYn, suject: $suject, location: $location, country: $country, contents: $contents, parentId: $parentId, distance: $distance, boardId: $boardId, lat: $lat, lon: $lon, weatherInfo: $weatherInfo, videoPath: $videoPath, thumbnailPath: $thumbnailPath, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, city: $city, typeCd: $typeCd, typeDtCd: $typeDtCd, depthNo: $depthNo, crtDtm: $crtDtm, likeCnt: $likeCnt, icon: $icon)';
+    return 'BoardWeatherListData(custId: $custId, custNm: $custNm, nickNm: $nickNm, profilePath: $profilePath, likeYn: $likeYn, followYn: $followYn, suject: $suject, location: $location, country: $country, contents: $contents, parentId: $parentId, distance: $distance, boardId: $boardId, lat: $lat, lon: $lon, weatherInfo: $weatherInfo, videoPath: $videoPath, thumbnailPath: $thumbnailPath, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, city: $city, typeCd: $typeCd, typeDtCd: $typeDtCd, depthNo: $depthNo, crtDtm: $crtDtm, likeCnt: $likeCnt, icon: $icon, videoId: $videoId, size1: $size1, thumbnail: $thumbnail, preview: $preview, mp4: $mp4, hls: $hls, range1: $range1, total: $total)';
   }
 
   @override
@@ -252,7 +300,15 @@ class BoardWeatherListData {
         other.depthNo == depthNo &&
         other.crtDtm == crtDtm &&
         other.likeCnt == likeCnt &&
-        other.icon == icon;
+        other.icon == icon &&
+        other.videoId == videoId &&
+        other.size1 == size1 &&
+        other.thumbnail == thumbnail &&
+        other.preview == preview &&
+        other.mp4 == mp4 &&
+        other.hls == hls &&
+        other.range1 == range1 &&
+        other.total == total;
   }
 
   @override
@@ -287,6 +343,14 @@ class BoardWeatherListData {
         depthNo.hashCode ^
         crtDtm.hashCode ^
         likeCnt.hashCode ^
-        icon.hashCode;
+        icon.hashCode ^
+        videoId.hashCode ^
+        size1.hashCode ^
+        thumbnail.hashCode ^
+        preview.hashCode ^
+        mp4.hashCode ^
+        hls.hashCode ^
+        range1.hashCode ^
+        total.hashCode;
   }
 }

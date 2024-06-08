@@ -9,7 +9,6 @@ import 'package:project1/app/camera/enums/color_constant.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/camera/utils/permission_utils.dart';
 import 'package:project1/repo/weather/data/current_weather.dart';
-import 'package:project1/utils/log_utils.dart';
 part 'camera_event.dart';
 
 // A BLoC class that handles camera-related operations

@@ -9,7 +9,11 @@ import 'package:project1/app/camera/page/test.dart';
 import 'package:project1/app/list/video_myinfo_list_page.dart';
 import 'package:project1/app/myinfo/myinfo_modify_page.dart';
 import 'package:project1/app/myinfo/myinfo_page.dart';
+import 'package:project1/app/myinfo/otherinfo_page.dart';
 import 'package:project1/app/onboarding/onboarding_page.dart';
+import 'package:project1/app/search/cntr/map_cntr.dart';
+import 'package:project1/app/search/map_page.dart';
+import 'package:project1/app/search/search_page.dart';
 import 'package:project1/app/setting/agree_page.dart';
 import 'package:project1/app/setting/faq_page.dart';
 import 'package:project1/app/setting/location_service_page.dart';
@@ -18,6 +22,10 @@ import 'package:project1/app/setting/noti_view_page.dart';
 import 'package:project1/app/setting/open_source_page.dart';
 import 'package:project1/app/setting/privecy_page.dart';
 import 'package:project1/app/setting/setting_page.dart';
+import 'package:project1/app/test/test_dio_page.dart';
+import 'package:project1/app/weather/Screens/sevenDayForecastDetailScreen.dart';
+import 'package:project1/app/weather/Screens/weather_page.dart';
+import 'package:project1/app/webview/weather_webvide.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/root/follow_list_page.dart';
 import 'package:project1/root/main_view1.dart';
@@ -50,6 +58,13 @@ abstract class AppPages {
       binding: RootCntrBinding(),
       //  transition: Transition.downToUp,
     ),
+
+    GetPage(
+      name: '/SearchPage',
+      page: () => const SearchPage(),
+      // binding: VideoListBinding(),
+      //  transition: Transition.downToUp,
+    ),
     GetPage(
       name: '/VideoListPage',
       page: () => const VideoListPage(),
@@ -78,7 +93,7 @@ abstract class AppPages {
       //  transition: Transition.downToUp,
     ),
     GetPage(
-      name: '/MainView1/:searchWord/:tabPage',
+      name: '/MainView1/:tabPage/:searchWord',
       page: () => const MainView1(),
       //  transition: Transition.downToUp,
     ),
@@ -118,14 +133,49 @@ abstract class AppPages {
       //  transition: Transition.downToUp,
     ),
     GetPage(
-      name: '/FollowListPage',
-      page: () => const FollowListPage(),
-      //  transition: Transition.downToUp,
-    ),
-    GetPage(
       name: '/LocatinServicePage',
       page: () => const LocatinServicePage(),
       //  transition: Transition.downToUp,
+    ),
+    GetPage(
+      name: '/MapPage',
+      page: () => const MapPage(),
+      binding: MapBinding(),
+      // transition: Transition.downToUp,
+    ),
+    GetPage(
+      name: '/OtherInfoPage/:custId',
+      page: () => const OtherInfoPage(),
+
+      // transition: Transition.downToUp,
+    ),
+    GetPage(
+      name: '/TestDioPage',
+      page: () => const TestDioPage(),
+
+      // transition: Transition.downToUp,
+    ),
+
+    //날씨 관련 페이지
+    GetPage(
+      name: '/WeatherPage',
+      page: () => const WeatherPage(),
+
+      // transition: Transition.downToUp,
+    ),
+    GetPage(
+      name: '/SevenDayForecastDetail/:initialIndex',
+      page: () => const SevenDayForecastDetail(),
+
+      // transition: Transition.downToUp,
+    ),
+    GetPage(
+      name: '/WeatherWebVidew',
+      page: () => WeatherWebVidew(
+        isBackBtn: true,
+      ),
+
+      // transition: Transition.downToUp,
     ),
   ];
 }

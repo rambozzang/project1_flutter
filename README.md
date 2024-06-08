@@ -122,3 +122,79 @@ camerawesome: ^2.0.1
 2. 팔로워 리스트 팔로위 리스트 - 회정정보 리스트 조회
 
 3. 다른 사람 회원 정보 조회 화면
+
+4. CCTV Api 
+https://padro.tistory.com/171
+
+담당자 : 허재영(도시교통정보센터) j1008@naver.com
+CCTV 데이터 URL - http://www.utic.go.kr/guide/cctvOpenData.do?key=인증키
+[VI6l9pfWdIclwcZP3Go7orBQKYcp2jKs3AtbfXuAOsQOZ3bZmgpdQ9AJ0AM4fEfmJKYyLlSmhLFLWRRrIwg]
+(https://www.utic.go.kr/guide/cctvOpenData.do?key=sVI6l9pfWdIclwcZP3Go7orBQKYcp2jKs3AtbfXuAOsQOZ3bZmgpdQ9AJ0AM4fEfmJKYyLlSmhLFLWRRrIwg)
+
+
+https://www.utic.go.kr/view/map/openDataCctvStream.jsp?key=sVI6l9pfWdIclwcZP3Go7orBQKYcp2jKs3AtbfXuAOsQOZ3bZmgpdQ9AJ0AM4fEfmJKYyLlSmhLFLWRRrIwg&cctvid=L933103&cctvName=%25EA%25B0%2595%25EC%259B%2590%2520%25EA%25B0%2595%25EB%25A6%2589%2520%25EC%25A3%25BC%25EB%25AC%25B8%25EC%25A7%2584%25EB%25B0%25A9%25ED%258C%258C%25EC%25A0%259C&kind=KB&cctvip=9995&cctvch=null&id=null&cctvpasswd=null&cctvport=null
+
+
+5. android 사이즈 apk 파일 줄이기
+https://github.com/google/bundletool/issues/155
+
+ android:extractNativeLibs="true" 또는
+
+android {
+  packagingOptions {
+    jniLibs {
+      useLegacyPackaging true
+    }
+  }
+}
+
+6. Navigator.pop(context) 변경
+ -> 
+  if(!context.mounted) return;
+  Navigator.pop(context);
+  
+
+ 7. android impellar video player 안되는 문제
+  -> https://github.com/flutter/packages/pull/6456 
+
+  /.pub-cache/hosted/pub.dev/video_player_android-2.4.14/android/src/main/java/io/flutter/plugins/videoplayer  vi VideoPlayer.java
+  189 라인 수정
+  
+
+  8. 이쁜 컨테이너
+  Container(
+    decoration : BoxDecoration(
+      gradient : LinearGradient(
+        color :[
+          Color.fromARGB(255,21,85,169),
+          Color.fromARGB(255,44,162,246),
+
+        ]
+      )
+    )
+  )
+
+  7 날씨 아이콘
+  https://basmilius.github.io/weather-icons/index-fill.html
+
+  아이콘 변경
+  https://peter-codinglife.tistory.com/70
+
+
+  8. 오픈 초기 동영상이 부족할때 아래에서 가져온다 ( 이미지, 동영상 모두 무료)
+   https://www.pexels.com/ko-kr/search/videos/%ED%9D%B0%EA%B5%AC%EB%A6%84/
+
+
+g
+
+   9 supabase Db passwd : GsH1yDz1ZytaChAS
+   Creating project:    skysnap-chat
+  Selected org-id:     lzonmptiklzcsgkuyuox
+  Selected region:     ap-northeast-2
+   REFERENCE ID     : wtyeuynrapbgtpquxxfm
+
+Selected project: wtyeuynrapbgtpquxxfm
+    ───────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    anon         │ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0eWV1eW5yYXBiZ3RwcXV4eGZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTc1NTM4NzYsImV4cCI6MjAzMzEyOTg3Nn0.RZKF6Nfkqr7fA7Uc7RtZc_Jnl4zw_Q6iDV-5J9DfIM8
+    service_role │ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0eWV1eW5yYXBiZ3RwcXV4eGZtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxNzU1Mzg3NiwiZXhwIjoyMDMzMTI5ODc2fQ.Eq9HKyTCAjOCAmZdvWe83M-KZRAsfoJOFqISnssmLa4
+

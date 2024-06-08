@@ -149,9 +149,8 @@ class TypeAheadTextFieldController extends TextEditingController {
         print('check -- ${painter.height}');
 
         _cursorWidth = (textFieldKey.currentWidget as TextField).cursorWidth;
-        _cursorHeight = ((textFieldKey.currentWidget as TextField).cursorHeight ??
-            style?.fontSize ??
-            Theme.of(textFieldKey.currentContext!).textTheme.headline6!.fontSize!);
+        _cursorHeight = ((textFieldKey.currentWidget as TextField).cursorHeight ?? style?.fontSize ?? 18);
+        // Theme.of(textFieldKey.currentContext!).textTheme.headline6!.fontSize!);
 
         if (devicePixelRatio == null && textFieldKey.currentContext != null) {
           devicePixelRatio = MediaQuery.of(textFieldKey.currentContext!).devicePixelRatio;

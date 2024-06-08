@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:hashtagable_v3/hashtagable.dart';
 import 'package:like_button/like_button.dart';
 
@@ -17,6 +18,7 @@ import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
+import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:text_scroll/text_scroll.dart';
 
@@ -41,6 +43,8 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
   final ValueNotifier<bool> isPlay = ValueNotifier<bool>(true);
   final ValueNotifier<double> progress = ValueNotifier<double>(0.0);
 
+  ValueNotifier<String> isFollowed = ValueNotifier<String>('N');
+
   // double progress = 0;
   Duration position = Duration.zero;
 
@@ -49,29 +53,40 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
   @override
   void initState() {
     initiliazeVideo();
+    isFollowed.value = widget.data.followYn.toString();
     super.initState();
   }
 
   Future initiliazeVideo() async {
-    final file = await DefaultCacheManager().getSingleFile(widget.data.videoPath.toString(), key: widget.data.videoPath.toString());
+    lo.g('initiliazeVideo 시작!!!!');
+    //  final file = await DefaultCacheManager().getSingleFile(widget.data.videoPath.toString(), key: widget.data.videoPath.toString());
+    try {
+      //  final sfile = await DefaultCacheManager().getSingleFile(widget.data.videoPath.toString(), key: widget.data.boardId.toString());
+      //  lo.g('initiliazeVideo sfile !!!!  ==> ' + sfile.toString());
 
-    _controller = VideoPlayerController.file(file)
-      ..initialize().then((_) {
-        if (mounted) {
-          setState(() {
-            _controller.setLooping(true);
-            _controller.pause();
-            initialized = true;
-          });
-        }
+      // .x-mpegurl 확장자 , .mp4는 확장자로 정상
+
+      //  _controller = VideoPlayerController.file(sfile)
+      _controller = VideoPlayerController.networkUrl(Uri.parse(widget.data.videoPath.toString()))
+        ..initialize().then((_) {
+          if (mounted) {
+            setState(() {
+              _controller.setLooping(true);
+              _controller.pause();
+              initialized = true;
+            });
+          }
+        });
+
+      _controller.addListener(() {
+        isPlay.value = _controller.value.isPlaying;
+        int max = _controller.value.duration.inSeconds;
+        position = _controller.value.position;
+        progress.value = (position.inSeconds / max * 100).isNaN ? 0 : position.inSeconds / max * 100;
       });
-
-    _controller.addListener(() {
-      isPlay.value = _controller.value.isPlaying;
-      int max = _controller.value.duration.inSeconds;
-      position = _controller.value.position;
-      progress.value = (position.inSeconds / max * 100).isNaN ? 0 : position.inSeconds / max * 100;
-    });
+    } catch (e) {
+      lo.g('initiliazeVideo  : ${e.toString()}');
+    }
   }
 
   Future<void> like() async {
@@ -121,6 +136,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
       }
       // 현재 리스트에 구독여부 변경
       Get.find<VideoListCntr>().list[Get.find<VideoListCntr>().currentIndex.value].followYn = 'Y';
+      isFollowed.value = 'Y';
     } catch (e) {
       Utils.alert('구독 실패! 다시 시도해주세요');
     }
@@ -136,6 +152,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
       }
       // 현재 리스트에 구독여부 변경
       Get.find<VideoListCntr>().list[Get.find<VideoListCntr>().currentIndex.value].followYn = 'N';
+      isFollowed.value = 'N';
     } catch (e) {
       Utils.alert('구독 실패! 다시 시도해주세요');
     }
@@ -191,8 +208,8 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                     ),
                   ),
                 ),
-                // 오른쪽 상단 close 버튼
-                buildCloseButton(),
+                // // 오른쪽 상단 close 버튼
+                // buildCloseButton(),
                 // 중앙 play 버튼
                 buildCenterPlayButton(),
                 // 사운드 on/off 버튼
@@ -259,27 +276,31 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                 style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
               ),
               const Gap(15),
-              ElevatedButton(
-                onPressed: () => widget.data.followYn.toString().contains('N') ? follow() : followCancle(),
-                clipBehavior: Clip.none,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  elevation: 1.5,
-                  minimumSize: const Size(0, 0),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  backgroundColor: widget.data.followYn.toString().contains('N') ? Colors.white : Colors.grey,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20.0),
-                  ),
-                ),
-                child: Text(
-                  widget.data.followYn.toString().contains('N') ? '구독' : '구독중',
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 14,
-                  ),
-                ),
-              )
+              ValueListenableBuilder<String>(
+                  valueListenable: isFollowed,
+                  builder: (context, value, child) {
+                    return ElevatedButton(
+                      onPressed: () => value.toString().contains('N') ? follow() : followCancle(),
+                      clipBehavior: Clip.none,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        elevation: 1.5,
+                        minimumSize: const Size(0, 0),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        backgroundColor: widget.data.followYn.toString().contains('N') ? Colors.white : Colors.grey,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20.0),
+                        ),
+                      ),
+                      child: Text(
+                        value.toString().contains('N') ? '구독' : '구독중',
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 14,
+                        ),
+                      ),
+                    );
+                  })
             ],
           ),
           const Gap(5),

@@ -1,33 +1,17 @@
 import 'dart:async';
-import 'dart:ffi';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:comment_sheet/comment_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:geolocator/geolocator.dart';
 
 import 'package:preload_page_view/preload_page_view.dart';
-import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/list/Video_myScreen_page.dart';
-import 'package:project1/app/list/Video_screen_page.dart';
-import 'package:project1/app/camera/page/camera_page.dart';
-import 'package:project1/app/camera/utils/camera_utils.dart';
-import 'package:project1/app/camera/utils/permission_utils.dart';
-import 'package:project1/app/list/cntr/video_list_cntr.dart';
 import 'package:project1/app/list/cntr/video_myinfo_list_cntr.dart';
-import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
-import 'package:project1/repo/common/res_data.dart';
-import 'package:project1/repo/common/res_stream.dart';
-import 'package:project1/repo/weather/data/current_weather.dart';
-import 'package:project1/repo/weather/mylocator_repo.dart';
-import 'package:project1/repo/weather/open_weather_repo.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:text_scroll/text_scroll.dart';
 
 class VideoMyinfoListPage extends StatefulWidget {
   const VideoMyinfoListPage({super.key});
@@ -101,11 +85,26 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
                     // buildRecodeBtn(),
                     // Join 버튼
                     //buildJoinButton(),
+                    // 오른쪽 상단 close 버튼
+                    buildCloseButton(),
                   ],
                 ),
               ),
             ],
           );
+        },
+      ),
+    );
+  }
+
+  Widget buildCloseButton() {
+    return Positioned(
+      top: 40,
+      right: 10,
+      child: IconButton(
+        icon: const Icon(Icons.close, color: Colors.white),
+        onPressed: () {
+          Get.back();
         },
       ),
     );

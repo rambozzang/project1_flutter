@@ -108,6 +108,10 @@ class _SettingPageState extends State<SettingPage> {
       appBar: AppBar(
         forceMaterialTransparency: true,
         automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text(
           "설정",
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
@@ -148,11 +152,11 @@ class _SettingPageState extends State<SettingPage> {
                   icons: CupertinoIcons.repeat,
                   title: "FAQ",
                 ),
-                SettingsItem(
-                  onTap: () => Get.toNamed('/FaqPage'),
-                  icons: CupertinoIcons.arrow_turn_down_right,
-                  title: "1대1 건의사항",
-                ),
+                // SettingsItem(
+                //   onTap: () => Get.toNamed('/FaqPage'),
+                //   icons: CupertinoIcons.arrow_turn_down_right,
+                //   title: "1대1 건의사항",
+                // ),
               ],
             ),
 
@@ -169,21 +173,21 @@ class _SettingPageState extends State<SettingPage> {
                   titleMaxLine: 1,
                   subtitleMaxLine: 1,
                 ),
-                SettingsItem(
-                  onTap: () {},
-                  icons: Icons.dark_mode_rounded,
-                  iconStyle: IconStyle(
-                    iconsColor: Colors.white,
-                    withBackground: true,
-                    backgroundColor: Colors.red,
-                  ),
-                  title: 'Dark mode',
-                  subtitle: "Automatic",
-                  trailing: Switch.adaptive(
-                    value: false,
-                    onChanged: (value) {},
-                  ),
-                ),
+                // SettingsItem(
+                //   onTap: () {},
+                //   icons: Icons.dark_mode_rounded,
+                //   iconStyle: IconStyle(
+                //     iconsColor: Colors.white,
+                //     withBackground: true,
+                //     backgroundColor: Colors.red,
+                //   ),
+                //   title: 'Dark mode',
+                //   subtitle: "Automatic",
+                //   trailing: Switch.adaptive(
+                //     value: false,
+                //     onChanged: (value) {},
+                //   ),
+                // ),
               ],
             ),
             buildAddmob(),
@@ -228,15 +232,15 @@ class _SettingPageState extends State<SettingPage> {
                   title: '오픈 소스 라이센스',
                   subtitle: "라이센스 목록",
                 ),
-                // SettingsItem(
-                //   onTap: () {},
-                //   icons: CupertinoIcons.link_circle,
-                //   title: "회원탈퇴",
-                //   titleStyle: const TextStyle(
-                //     color: Colors.red,
-                //     fontWeight: FontWeight.bold,
-                //   ),
-                // ),
+                SettingsItem(
+                  onTap: () => Get.toNamed('/TestDioPage'),
+                  icons: CupertinoIcons.link_circle,
+                  title: "TestDioPage",
+                  titleStyle: const TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 // SettingsItem(
                 //   onTap: () => Get.toNamed('/FollowListPage'),
                 //   icons: CupertinoIcons.delete_solid,
@@ -254,7 +258,7 @@ class _SettingPageState extends State<SettingPage> {
               child: Column(
                 children: [
                   const Text(
-                    "BK Investment\n서울시 서대문구 종로35길 125 TigerGroup (05510)  대표자 : TigerBk, 사업자등록번호 : 110-81-28774 ",
+                    "CodeLabTiger\n서울시 서대문구 종로35길 125 TigerGroup (05510)  대표자 : tigerBk, 사업자등록번호 : 110-81-28774 ",
                     style: TextStyle(fontSize: 13, color: Colors.black54),
                   ),
                   const Gap(20),
@@ -273,9 +277,12 @@ class _SettingPageState extends State<SettingPage> {
                       Positioned(
                         right: 0,
                         bottom: 0,
-                        child: Text(
-                          "02-1588-1234",
-                          style: TextStyle(fontSize: 15, color: Colors.black, fontWeight: FontWeight.bold),
+                        child: Container(
+                          color: Colors.white,
+                          child: Text(
+                            "02-1588-1234",
+                            style: TextStyle(fontSize: 15, color: Colors.black, fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ),
                     ],

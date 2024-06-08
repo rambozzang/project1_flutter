@@ -54,6 +54,12 @@ class CustomButton extends StatelessWidget {
     Color.fromARGB(255, 13, 104, 43),
   ];
 
+  // List<Color>? listDefColors2 = [
+  // Color.fromARGB(255, 140, 131, 221),
+  // Color.fromARGB(255, 140, 131, 221),
+
+  // ];
+
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
@@ -80,11 +86,7 @@ class CustomButton extends StatelessWidget {
           ],
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: type != 'XL'
-                ? (!isEnable
-                    ? const BorderSide(width: 1, color: Colors.grey)
-                    : BorderSide.none)
-                : BorderSide.none,
+            side: type != 'XL' ? (!isEnable ? const BorderSide(width: 1, color: Colors.grey) : BorderSide.none) : BorderSide.none,
           ),
         ),
         child: InkWell(

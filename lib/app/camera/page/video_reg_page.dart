@@ -1,17 +1,13 @@
 import 'dart:io';
-import 'package:cloudinary_public/cloudinary_public.dart';
+// import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:hashtagable_v3/hashtagable.dart';
-import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
-import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_save_data.dart';
 import 'package:project1/repo/board/data/board_save_main_data.dart';
 import 'package:project1/repo/board/data/board_save_weather_data.dart';
-import 'package:project1/repo/cloudinary/cloudinary_page.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/weather/data/current_weather.dart';
 import 'package:project1/repo/weather/mylocator_repo.dart';
@@ -23,8 +19,6 @@ import 'package:project1/widget/custom_button.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
 import 'package:video_compress/video_compress.dart';
 import 'package:video_player/video_player.dart';
-
-import 'package:path_provider/path_provider.dart';
 
 // 동영상 압축 FFmpeg로 동영상 압축하기
 class VideoRegPage extends StatefulWidget {
@@ -57,29 +51,17 @@ class _VideoRegPageState extends State<VideoRegPage> {
   final ValueNotifier<bool> isCompress = ValueNotifier<bool>(true);
   late String? thumbnailFile;
   BoardSaveData boardSaveData = BoardSaveData();
+
   @override
   void initState() {
+    super.initState();
+    currentWeather.value = widget.currentWeather;
+
     _videoController = VideoPlayerController.file(widget.videoFile);
 
     initializeVideo();
-    super.initState();
+
     getDate();
-    // _subscription = VideoCompress.compressProgress$.subscribe((progress) {
-    //   log('VideoCompress progress: $progress');
-    // });
-
-    // compressVideo();
-
-    currentWeather.value = widget.currentWeather;
-
-    // _videoController.addListener(() {
-    //   int max = _videoController.value.duration.inSeconds;
-
-    //   position = _videoController.value.position;
-    //   progress.value = (position.inSeconds / max * 100).isNaN
-    //       ? 0
-    //       : position.inSeconds / max * 100;
-    // });
   }
 
   void initializeVideo() async {
@@ -158,51 +140,10 @@ class _VideoRegPageState extends State<VideoRegPage> {
   // 파일 업로드
   Future<void> upload() async {
     isUploading.value = true;
-    String today = Utils.getToday();
-
-    //  MediaInfo? pickedFile = await compressVideo();
-
-    //  if (isCompress.value == false) {
-    // await compressVideo();
-    //  }
-
+    // String today = Utils.getToday();
     try {
-      // log(pickedFile!.path.toString());
-
-      // final res = await cloudinaryVideo.uploadFile(
-      //   CloudinaryFile.fromFile(
-      //     pickedFile!.path.toString(),
-      //     resourceType: CloudinaryResourceType.Video,
-      //     folder: today,
-      //     // context: {
-      //     //   'alt': 'Hello',
-      //     //   'caption': 'An example image',
-      //     // },
-      //   ),
-      //   onProgress: (count, total) {
-      //     uploadingPercentage1.value = (count / total) * 100;
-      //   },
-      // );
-      // lo.g("영상업로드 업로드 결과 : " + res.toString());
-      // final res2 = await cloudinaryImage.uploadFile(
-      //   CloudinaryFile.fromFile(
-      //     thumbnailFile.toString(),
-      //     resourceType: CloudinaryResourceType.Image,
-      //     folder: today,
-      //     // context: {
-      //     //   'alt': 'Hello',
-      //     //   'caption': 'An example image',
-      //     // },
-      //   ),
-      //   onProgress: (count, total) {
-      //     uploadingPercentage2.value = (count / total) * 100;
-      //   },
-      // );
-      // lo.g("썸네일 업로드 결과 : " + res2.toString());
-
       // 저장
-      BoardRepo boardRepo = BoardRepo();
-
+      // BoardRepo boardRepo = BoardRepo();
       BoardSaveMainData boardSaveMainData = BoardSaveMainData();
       boardSaveMainData.contents = hashTagController.text;
       boardSaveMainData.depthNo = '0';
@@ -229,38 +170,28 @@ class _VideoRegPageState extends State<VideoRegPage> {
       // boardSaveWeatherData.thumbnailPath = res2.secureUrl;
       // boardSaveWeatherData.videoPath = res.secureUrl;
       boardSaveWeatherData.weatherInfo = currentWeather.value!.weather![0].description;
-
       boardSaveData.boardMastInVo = boardSaveMainData;
       boardSaveData.boardWeatherVo = boardSaveWeatherData;
-
-      //  ResData resData = await boardRepo.save(boardSaveData);
-
-      // if (resData.code != '00') {
-      //   Utils.alert(resData.msg.toString());
-      //   return;
-      // }
       Lo.g("Root upload() videoFilePath : ${widget.videoFile.path}");
       Lo.g("Root upload() videoFilePath : ${widget.videoFile.path}");
       Lo.g("Root upload() videoFilePath : ${widget.videoFile.path}");
       Lo.g("Root upload() videoFilePath : ${widget.videoFile.path}");
-
       Utils.alert('임시 등록되었습니다! 잠시후 정상 게시됩니다!');
-
       Future.delayed(const Duration(milliseconds: 500), () {
         isUploading.value = false;
         Get.back();
       });
-      return;
-
+      // return;
       // {asset_id: 589dcec7931c12efb379ea632472b541, public_id: VID_2024-03-26_09-53-54-688112223_euuauj, created_at: 2024-03-26 12:54:04.000Z, url: http://res.cloudinary.com/dfbxar2j5/video/upload/v1711457644/VID_2024-03-26_09-53-54-688112223_euuauj.mp4, secure_url: https://res.cloudinary.com/dfbxar2j5/video/upload/v1711457644/VID_2024-03-26_09-53-54-688112223_euuauj.mp4, original_filename: VID_2024-03-26 09-53-54-688112223, tags: [], context: {}, data: {asset_id: 589dcec7931c12efb379ea632472b541, public_id: VID_2024-03-26_09-53-54-688112223_euuauj, version: 1711457644, version_id: 399c18d5612ddbc8dba302632442ea62, signature: f6b7e4ec4e869f18d4112882bdf5d37aba8d582d, width: 640, height: 1136, format: mp4, resource_type: video, created_at: 2024-03-26T12:54:04Z, tags: [], pages: 0, bytes: 1612764, type: upload, etag: 116c06206b2f85fb10ca3fdfdfbe273e, placeholder: false, url: http://res.cloudinary.com/dfbxar2j5/video/upload/v1711457644/VID_2024-03-26_09-53-54-6881
-    } on CloudinaryException catch (e) {
-      debugPrint(e.message);
-      debugPrint(e.request.toString());
+    } catch (e) {
+      debugPrint(e.toString());
+      // debugPrint(e.request.toString());
       isUploading.value = false;
       uploadingPercentage1.value = 0.0;
       uploadingPercentage2.value = 0.0;
     }
   }
+  // Cloudinary에 동영상 업로드 Vo
   //{asset_id: 9d5df6f19ad1a256301c40bb3c346cad,
   // public_id: VID_2024-03-26_07-49-12-268456455_heecms,
   // created_at: 2024-03-26 10:49:21.000Z,
@@ -299,34 +230,11 @@ class _VideoRegPageState extends State<VideoRegPage> {
       ]);
       pickedFile = list[0];
       thumbnailFile = list[1].path;
-
-      // pickedFile = await VideoCompress.compressVideo(
-      //   widget.videoFile.path,
-      //   quality: VideoQuality.LowQuality,
-      //   deleteOrigin: false,
-      //   includeAudio: true,
-      // );
-      // Lo.g('비디오 압축 결과 : ${pickedFile?.toJson()}');
-      // File ff = await VideoCompress.getFileThumbnail(widget.videoFile.path, quality: 50);
-      // thumbnailFile = ff.path;
-      // // thumbnailFile = await VideoThumbnail.thumbnailFile(
-      // //   video: pickedFile!.path.toString(),
-      // //   thumbnailPath: (await getTemporaryDirectory()).path,
-      // //   imageFormat: ImageFormat.JPEG,
-      // //   maxHeight: 640,
-      // //   quality: 70,
-      // // );
-
-      // Lo.g('비디오 썸네일 결과 : ${thumbnailFile.toString()}');
-
       isCompress.value = true;
-
-      // return pickedFile;
     } catch (e) {
       Lo.g('비디오 압축 에러 : $e');
       VideoCompress.cancelCompression();
       isCompress.value = false;
-      //return null;
     }
   }
 
@@ -340,14 +248,7 @@ class _VideoRegPageState extends State<VideoRegPage> {
   @override
   void dispose() {
     _videoController.dispose();
-
-    // VideoCompress.deleteAllCache();
     VideoCompress.cancelCompression();
-
-    // File(pickedFile!.path.toString()).delete();
-    // File(thumbnailFile!.toString()).delete();
-    // _subscription.unsubscribe();
-
     super.dispose();
     Get.find<RootCntr>().goTimer(widget.videoFile, boardSaveData);
   }
@@ -482,8 +383,8 @@ class _VideoRegPageState extends State<VideoRegPage> {
                                       mainAxisAlignment: MainAxisAlignment.start,
                                       children: [
                                         const Gap(5),
-                                        Text(value.weather![0].description.toString()),
-                                        //   Text(OpenWheatherRepo().weatherDescKo[value.weather![0].id]),
+                                        //Text(value.weather![0].description.toString()),
+                                        Text(OpenWheatherRepo().weatherDescKo[value.weather![0].id]),
                                         const Text(
                                           ' · ',
                                           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),

@@ -83,11 +83,18 @@ class _CommentsPageState extends State<CommentsPage> {
     }
   }
 
-  void onClose() {
-    //Navigator.pop(widget.contextParent);
-    // Navigator.pop(context);
+  void onClose(bool didPop) {
+    if (didPop) {
+      Lo.g('PopScope 2 didPop');
 
-    Navigator.of(context).pop(false);
+      // Navigator.pop(context);
+    } else {
+      Lo.g('PopScope 3 not didPop');
+      return;
+    }
+    //Navigator.pop(widget.contextParent);
+
+    // Navigator.of(context).pop(false);
   }
 
   @override
@@ -101,137 +108,140 @@ class _CommentsPageState extends State<CommentsPage> {
   @override
   Widget build(BuildContext context) {
     Lo.g('CommentsPage build');
-    return Scaffold(
-        backgroundColor: Colors.transparent,
-        body: CommentSheet(
-          slivers: [
-            // 댓글 리스트
-            //  buildSliverList(),
-            StreamBuilder<ResStream<List<BoardDetailData>>>(
-              stream: listCtrl.stream,
-              builder: (BuildContext context, AsyncSnapshot<ResStream<List<BoardDetailData>>> snapshot) {
-                if (snapshot.hasData) {
-                  switch (snapshot.data?.status) {
-                    case Status.LOADING:
-                      return SliverList(
-                          delegate: SliverChildBuilderDelegate(childCount: 0, (BuildContext context, int index) {
-                        return Center(
-                            child: Padding(
-                          padding: const EdgeInsets.all(68.0),
-                          child: Utils.progressbar(),
-                        ));
-                      }));
-                    case Status.COMPLETED:
-                      var list = snapshot.data!.data;
-                      return SliverList(
-                          delegate: SliverChildBuilderDelegate(childCount: list!.length, (BuildContext context, int index) {
-                        return list!.isEmpty
-                            ? const NoDataWidget()
-                            : ListItemWidget(
-                                controller: replyController,
-                                focus: replyFocusNode,
-                                boardDetailData: list[index],
-                              );
-                      }));
-                    case Status.ERROR:
-                      return SliverList(
-                          delegate: SliverChildBuilderDelegate(childCount: 0, (BuildContext context, int index) {
-                        return ErrorPage(
-                          errorMessage: snapshot.data!.message ?? '',
-                          onRetryPressed: () => getData(widget.boardId),
-                        );
-                      }));
-                    case null:
-                      return SliverList(
-                          delegate: SliverChildBuilderDelegate(childCount: 0, (BuildContext context, int index) {
-                        return const SizedBox(
-                          width: 200,
-                          height: 300,
-                          child: Text("조회 중 오류가 발생했습니다."),
-                        );
-                      }));
-                  }
-                }
-                return SliverList(
-                    delegate: SliverChildBuilderDelegate(childCount: 0, (BuildContext context, int index) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(48.0),
-                      child: Text("조회 된 데이터가 없습니다."),
-                    ),
-                  );
-                }));
-              },
-            )
-            // Utils.commonStreamList<BoardDetailData>(listCtrl, buildSliverList, getFakeData)
-          ],
-          grabbingPosition: WidgetPosition.above,
-          initTopPosition: 200,
-          calculateTopPosition: calculateTopPosition,
-          scrollController: scrollController,
-          grabbing: Builder(builder: (context) {
-            // 댓글 상단바
-            return StreamBuilder<ResStream<List<BoardDetailData>>>(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (bool didPop) async => onClose(didPop),
+      child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: CommentSheet(
+            slivers: [
+              // 댓글 리스트
+              //  buildSliverList(),
+              StreamBuilder<ResStream<List<BoardDetailData>>>(
                 stream: listCtrl.stream,
-                builder: (context, snapshot) {
+                builder: (BuildContext context, AsyncSnapshot<ResStream<List<BoardDetailData>>> snapshot) {
                   if (snapshot.hasData) {
-                    if (snapshot.data?.status == Status.COMPLETED) {
-                      var list = snapshot.data!.data;
-                      return buildGrabbing(context, list!.length);
+                    switch (snapshot.data?.status) {
+                      case Status.LOADING:
+                        return SliverList(
+                            delegate: SliverChildBuilderDelegate(childCount: 0, (BuildContext context, int index) {
+                          return Center(
+                              child: Padding(
+                            padding: const EdgeInsets.all(68.0),
+                            child: Utils.progressbar(),
+                          ));
+                        }));
+                      case Status.COMPLETED:
+                        var list = snapshot.data!.data;
+                        return SliverList(
+                            delegate: SliverChildBuilderDelegate(childCount: list!.length, (BuildContext context, int index) {
+                          return list!.isEmpty
+                              ? const NoDataWidget()
+                              : ListItemWidget(
+                                  controller: replyController,
+                                  focus: replyFocusNode,
+                                  boardDetailData: list[index],
+                                );
+                        }));
+                      case Status.ERROR:
+                        return SliverList(
+                            delegate: SliverChildBuilderDelegate(childCount: 0, (BuildContext context, int index) {
+                          return ErrorPage(
+                            errorMessage: snapshot.data!.message ?? '',
+                            onRetryPressed: () => getData(widget.boardId),
+                          );
+                        }));
+                      case null:
+                        return SliverList(
+                            delegate: SliverChildBuilderDelegate(childCount: 0, (BuildContext context, int index) {
+                          return const SizedBox(
+                            width: 200,
+                            height: 300,
+                            child: Text("조회 중 오류가 발생했습니다."),
+                          );
+                        }));
                     }
                   }
-                  return buildGrabbing(context, 0);
-                });
-          }),
+                  return SliverList(
+                      delegate: SliverChildBuilderDelegate(childCount: 0, (BuildContext context, int index) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(48.0),
+                        child: Text("조회 된 데이터가 없습니다."),
+                      ),
+                    );
+                  }));
+                },
+              )
+              // Utils.commonStreamList<BoardDetailData>(listCtrl, buildSliverList, getFakeData)
+            ],
+            grabbingPosition: WidgetPosition.above,
+            initTopPosition: 200,
+            calculateTopPosition: calculateTopPosition,
+            scrollController: scrollController,
+            grabbing: Builder(builder: (context) {
+              // 댓글 상단바
+              return StreamBuilder<ResStream<List<BoardDetailData>>>(
+                  stream: listCtrl.stream,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      if (snapshot.data?.status == Status.COMPLETED) {
+                        var list = snapshot.data!.data;
+                        return buildGrabbing(context, list!.length);
+                      }
+                    }
+                    return buildGrabbing(context, 0);
+                  });
+            }),
 
-          topWidget: (info) {
-            // 실제 줄어드는 위젯 위치
-            // return Container(
-            //   color: Colors.transparent,
-            // );122
-            return Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 0,
-                // height: max(0, info.currentTop),
-                child: Container(
-                  color: Colors.transparent,
-                ));
-          },
-          topPosition: WidgetPosition.below,
-          bottomWidget: buildBottomWidget(),
-          onPointerUp: (
-            BuildContext context,
-            CommentSheetInfo info,
-          ) {
-            // print("On Pointer Up");
-          },
-          onAnimationComplete: (
-            BuildContext context,
-            CommentSheetInfo info,
-          ) {
-            // print("onAnimationComplete");
-            if (info.currentTop >= info.size.maxHeight - 130) {
-              onClose();
-
-              return;
-            }
-          },
-          commentSheetController: commentSheetController,
-          onTopChanged: (top) {
-            // print("top: $top");
-          },
-          // 백그라운드 위젯
-          // child: const Placeholder(),
-          child: const SizedBox.expand(),
-          backgroundBuilder: (context) {
-            return Container(
-              color: const Color(0xFF0F0F0F),
-              margin: const EdgeInsets.only(top: 10),
-            );
-          },
-        ));
+            topWidget: (info) {
+              // 실제 줄어드는 위젯 위치
+              // return Container(
+              //   color: Colors.transparent,
+              // );122
+              return Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 0,
+                  // height: max(0, info.currentTop),
+                  child: Container(
+                    color: Colors.transparent,
+                  ));
+            },
+            topPosition: WidgetPosition.below,
+            bottomWidget: buildBottomWidget(),
+            onPointerUp: (
+              BuildContext context,
+              CommentSheetInfo info,
+            ) {
+              // print("On Pointer Up");
+            },
+            onAnimationComplete: (
+              BuildContext context,
+              CommentSheetInfo info,
+            ) {
+              // print("onAnimationComplete");
+              if (info.currentTop >= info.size.maxHeight - 130) {
+                Navigator.of(context).pop();
+                return;
+              }
+            },
+            commentSheetController: commentSheetController,
+            onTopChanged: (top) {
+              // print("top: $top");
+            },
+            // 백그라운드 위젯
+            // child: const Placeholder(),
+            child: const SizedBox.expand(),
+            backgroundBuilder: (context) {
+              return Container(
+                color: const Color(0xFF0F0F0F),
+                margin: const EdgeInsets.only(top: 10),
+              );
+            },
+          )),
+    );
   }
 
   double calculateTopPosition(CommentSheetInfo info) {
