@@ -40,7 +40,7 @@ class _LocatinServicePageState extends State<LocatinServicePage> {
       dataCtrl.sink.add(ResStream.loading());
       BoardRepo repo = BoardRepo();
 
-      ResData resData = await repo.searchOriginList('FAQ', 'ALL', page, pageSzie);
+      ResData resData = await repo.searchOriginList('AGRE', 'LOCT', page, pageSzie);
 
       if (resData.code != '00') {
         Utils.alert(resData.msg.toString());

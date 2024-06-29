@@ -5,19 +5,23 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
-import 'package:project1/app/auth/cntr/auth_cntr.dart';
 
-import 'package:project1/app/test/color_page.dart';
-import 'package:project1/app/test/test_link_page.dart';
+import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/repo/cust/cust_repo.dart';
+import 'package:project1/repo/cust/data/cust_data.dart';
 import 'package:project1/root/board_list_page.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/root/follow_list_page.dart';
+import 'package:project1/root/following_list_page.dart';
 import 'package:project1/root/like_list_page.dart';
 import 'package:project1/utils/log_utils.dart';
+import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_tabbarview.dart';
 
 class MainView1 extends StatefulWidget {
-  const MainView1({super.key});
+  const MainView1({
+    super.key,
+  });
 
   @override
   State<MainView1> createState() => _MainView1State();
@@ -31,30 +35,60 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
 // 탭 바디 부분
   List<dynamic> tabBodys = [];
 
+  late String custId;
+  late String searchWord;
+  late String tabPage;
+  final ValueNotifier<String> nickNm = ValueNotifier<String>('');
+
   @override
   void initState() {
     RootCntr.to.tabController = TabController(vsync: this, length: tabNames.length, animationDuration: const Duration(milliseconds: 130));
     Lo.g("1widget.searchWord : ${Get.parameters['searchWord']}");
     Lo.g("1widget.tabPage : ${Get.parameters['tabPage']}");
+    Lo.g("1widget.custId 1: ${Get.parameters['custId']}");
+
+    custId = Get.parameters['custId'].toString();
+    searchWord = Get.parameters['searchWord'].toString();
+    tabPage = Get.parameters['tabPage'].toString();
+
     tabBodys = [
-      BoardListPage(searchWord: Get.parameters['searchWord'].toString()),
-      const LikeListPage(),
-      const FollowListPage(
-        followType: 1,
-      ),
-      const FollowListPage(
-        followType: 0,
-      ),
+      BoardListPage(custId: custId, searchWord: searchWord),
+      LikeListPage(custId: custId),
+      FollowListPage(custId: custId),
+      FollowingListPage(custId: custId),
       // TestLinkPage(key: const ValueKey(1)),
     ];
 
     super.initState();
+    getUserData(custId);
+  }
+
+  Future<void> getUserData(String custId) async {
+    try {
+      CustRepo repo = CustRepo();
+      ResData res = await repo.getCustInfo(custId.toString());
+      if (res.code != '00') {
+        Utils.alert(res.msg.toString());
+        return;
+      }
+      CustData custData = CustData.fromMap(res.data);
+
+      lo.g('custData : ${custData.toString()}');
+      nickNm.value = custData!.nickNm.toString();
+    } catch (e) {
+      Utils.alert(e.toString());
+    }
   }
 
   @override
   void didChangeDependencies() {
     RootCntr.to.tabController.index = int.parse(Get.parameters['tabPage'].toString());
     super.didChangeDependencies();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   @override
@@ -67,22 +101,22 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
           statusBarColor: Colors.white, statusBarBrightness: Brightness.light, statusBarIconBrightness: Brightness.dark),
       child: Material(
         color: Colors.white,
-        // child: bodyWidget(),
-        child: NotificationListener<UserScrollNotification>(
-          onNotification: (notification) {
-            if (notification.depth >= 2) {
-              if (notification.direction == ScrollDirection.forward && RootCntr.to.hideButtonController1.offset != 0) {
-                RootCntr.to.hideButtonController1.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.ease);
-              } else if (notification.depth >= 2 &&
-                  notification.direction == ScrollDirection.reverse &&
-                  RootCntr.to.hideButtonController1.offset != 105) {
-                RootCntr.to.hideButtonController1.animateTo(105, duration: const Duration(milliseconds: 300), curve: Curves.ease);
-              }
-            }
-            return false;
-          },
-          child: bodyWidget(),
-        ),
+        child: bodyWidget(),
+        // child: NotificationListener<UserScrollNotification>(
+        //   onNotification: (notification) {
+        //     if (notification.depth >= 2) {
+        //       if (notification.direction == ScrollDirection.forward && RootCntr.to.hideButtonController1.offset != 0) {
+        //         RootCntr.to.hideButtonController1.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.ease);
+        //       } else if (notification.depth >= 2 &&
+        //           notification.direction == ScrollDirection.reverse &&
+        //           RootCntr.to.hideButtonController1.offset != 105) {
+        //         RootCntr.to.hideButtonController1.animateTo(105, duration: const Duration(milliseconds: 300), curve: Curves.ease);
+        //       }
+        //     }
+        //     return false;
+        //   },
+        //   child: bodyWidget(),
+        // ),
       ),
     );
   }
@@ -94,7 +128,7 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
         child: DefaultTabController(
           length: tabNames.length,
           child: NestedScrollView(
-            controller: RootCntr.to.hideButtonController1,
+            //     controller: RootCntr.to.hideButtonController1,
             headerSliverBuilder: (context, innerBoxIsScrolled) {
               return [
                 SliverAppBar(
@@ -121,13 +155,17 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
                       // SizedBox(
                       //   width: 10,
                       // ),
-                      Text('${AuthCntr.to.resLoginData.value.nickNm}',
-                          style: const TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.w700,
-                              fontFamily: "NotoSansKR",
-                              fontStyle: FontStyle.normal,
-                              fontSize: 19.0)),
+                      ValueListenableBuilder<String?>(
+                          valueListenable: nickNm,
+                          builder: (context, value, child) {
+                            return Text(value.toString(),
+                                style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w700,
+                                    fontFamily: "NotoSansKR",
+                                    fontStyle: FontStyle.normal,
+                                    fontSize: 19.0));
+                          }),
                       Align(
                           alignment: Alignment.topRight,
                           child: IconButton(icon: const Icon(Icons.close, color: Colors.black), onPressed: () => Get.back()))

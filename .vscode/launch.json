@@ -5,18 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "project1",
+            "name": "skysnap",
             "request": "launch",
             "type": "dart"
         },
         {
-            "name": "project1 (profile mode)",
+            "name": "skysnap (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
-            "name": "project1 (release mode)",
+            "name": "skysnap (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"

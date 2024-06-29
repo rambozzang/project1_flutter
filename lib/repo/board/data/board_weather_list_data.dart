@@ -17,6 +17,7 @@ class BoardWeatherListData {
   int? parentId;
   double? distance;
   int? boardId;
+  String? hideYn;
   String? lat;
   String? lon;
   String? weatherInfo;
@@ -33,7 +34,9 @@ class BoardWeatherListData {
   String? typeDtCd;
   int? depthNo;
   String? crtDtm;
+  int? replyCnt;
   int? likeCnt;
+  int? viewCnt;
   String? icon;
   String? videoId;
   int? size1;
@@ -57,6 +60,7 @@ class BoardWeatherListData {
     this.parentId,
     this.distance,
     this.boardId,
+    this.hideYn,
     this.lat,
     this.lon,
     this.weatherInfo,
@@ -73,7 +77,9 @@ class BoardWeatherListData {
     this.typeDtCd,
     this.depthNo,
     this.crtDtm,
+    this.replyCnt,
     this.likeCnt,
+    this.viewCnt,
     this.icon,
     this.videoId,
     this.size1,
@@ -99,6 +105,7 @@ class BoardWeatherListData {
     int? parentId,
     double? distance,
     int? boardId,
+    String? hideYn,
     String? lat,
     String? lon,
     String? weatherInfo,
@@ -115,7 +122,9 @@ class BoardWeatherListData {
     String? typeDtCd,
     int? depthNo,
     String? crtDtm,
+    int? replyCnt,
     int? likeCnt,
+    int? viewCnt,
     String? icon,
     String? videoId,
     int? size1,
@@ -140,6 +149,7 @@ class BoardWeatherListData {
       parentId: parentId ?? this.parentId,
       distance: distance ?? this.distance,
       boardId: boardId ?? this.boardId,
+      hideYn: hideYn ?? this.hideYn,
       lat: lat ?? this.lat,
       lon: lon ?? this.lon,
       weatherInfo: weatherInfo ?? this.weatherInfo,
@@ -156,7 +166,9 @@ class BoardWeatherListData {
       typeDtCd: typeDtCd ?? this.typeDtCd,
       depthNo: depthNo ?? this.depthNo,
       crtDtm: crtDtm ?? this.crtDtm,
+      replyCnt: replyCnt ?? this.replyCnt,
       likeCnt: likeCnt ?? this.likeCnt,
+      viewCnt: viewCnt ?? this.viewCnt,
       icon: icon ?? this.icon,
       videoId: videoId ?? this.videoId,
       size1: size1 ?? this.size1,
@@ -184,6 +196,7 @@ class BoardWeatherListData {
       'parentId': parentId,
       'distance': distance,
       'boardId': boardId,
+      'hideYn': hideYn,
       'lat': lat,
       'lon': lon,
       'weatherInfo': weatherInfo,
@@ -200,7 +213,9 @@ class BoardWeatherListData {
       'typeDtCd': typeDtCd,
       'depthNo': depthNo,
       'crtDtm': crtDtm,
+      'replyCnt': replyCnt,
       'likeCnt': likeCnt,
+      'viewCnt': viewCnt,
       'icon': icon,
       'videoId': videoId,
       'size1': size1,
@@ -228,6 +243,7 @@ class BoardWeatherListData {
       parentId: map['parentId'] != null ? map['parentId'] as int : null,
       distance: map['distance'] != null ? map['distance'] as double : null,
       boardId: map['boardId'] != null ? map['boardId'] as int : null,
+      hideYn: map['hideYn'] != null ? map['hideYn'] as String : null,
       lat: map['lat'] != null ? map['lat'] as String : null,
       lon: map['lon'] != null ? map['lon'] as String : null,
       weatherInfo: map['weatherInfo'] != null ? map['weatherInfo'] as String : null,
@@ -244,7 +260,9 @@ class BoardWeatherListData {
       typeDtCd: map['typeDtCd'] != null ? map['typeDtCd'] as String : null,
       depthNo: map['depthNo'] != null ? map['depthNo'] as int : null,
       crtDtm: map['crtDtm'] != null ? map['crtDtm'] as String : null,
+      replyCnt: map['replyCnt'] != null ? map['replyCnt'] as int : null,
       likeCnt: map['likeCnt'] != null ? map['likeCnt'] as int : null,
+      viewCnt: map['viewCnt'] != null ? map['viewCnt'] as int : null,
       icon: map['icon'] != null ? map['icon'] as String : null,
       videoId: map['videoId'] != null ? map['videoId'] as String : null,
       size1: map['size1'] != null ? map['size1'] as int : null,
@@ -263,7 +281,7 @@ class BoardWeatherListData {
 
   @override
   String toString() {
-    return 'BoardWeatherListData(custId: $custId, custNm: $custNm, nickNm: $nickNm, profilePath: $profilePath, likeYn: $likeYn, followYn: $followYn, suject: $suject, location: $location, country: $country, contents: $contents, parentId: $parentId, distance: $distance, boardId: $boardId, lat: $lat, lon: $lon, weatherInfo: $weatherInfo, videoPath: $videoPath, thumbnailPath: $thumbnailPath, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, city: $city, typeCd: $typeCd, typeDtCd: $typeDtCd, depthNo: $depthNo, crtDtm: $crtDtm, likeCnt: $likeCnt, icon: $icon, videoId: $videoId, size1: $size1, thumbnail: $thumbnail, preview: $preview, mp4: $mp4, hls: $hls, range1: $range1, total: $total)';
+    return 'BoardWeatherListData(custId: $custId, custNm: $custNm, nickNm: $nickNm, profilePath: $profilePath, likeYn: $likeYn, followYn: $followYn, suject: $suject, location: $location, country: $country, contents: $contents, parentId: $parentId, distance: $distance, boardId: $boardId, hideYn: $hideYn, lat: $lat, lon: $lon, weatherInfo: $weatherInfo, videoPath: $videoPath, thumbnailPath: $thumbnailPath, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, city: $city, typeCd: $typeCd, typeDtCd: $typeDtCd, depthNo: $depthNo, crtDtm: $crtDtm, replyCnt: $replyCnt, likeCnt: $likeCnt, viewCnt: $viewCnt, icon: $icon, videoId: $videoId, size1: $size1, thumbnail: $thumbnail, preview: $preview, mp4: $mp4, hls: $hls, range1: $range1, total: $total)';
   }
 
   @override
@@ -283,6 +301,7 @@ class BoardWeatherListData {
         other.parentId == parentId &&
         other.distance == distance &&
         other.boardId == boardId &&
+        other.hideYn == hideYn &&
         other.lat == lat &&
         other.lon == lon &&
         other.weatherInfo == weatherInfo &&
@@ -299,7 +318,9 @@ class BoardWeatherListData {
         other.typeDtCd == typeDtCd &&
         other.depthNo == depthNo &&
         other.crtDtm == crtDtm &&
+        other.replyCnt == replyCnt &&
         other.likeCnt == likeCnt &&
+        other.viewCnt == viewCnt &&
         other.icon == icon &&
         other.videoId == videoId &&
         other.size1 == size1 &&
@@ -326,6 +347,7 @@ class BoardWeatherListData {
         parentId.hashCode ^
         distance.hashCode ^
         boardId.hashCode ^
+        hideYn.hashCode ^
         lat.hashCode ^
         lon.hashCode ^
         weatherInfo.hashCode ^
@@ -342,7 +364,9 @@ class BoardWeatherListData {
         typeDtCd.hashCode ^
         depthNo.hashCode ^
         crtDtm.hashCode ^
+        replyCnt.hashCode ^
         likeCnt.hashCode ^
+        viewCnt.hashCode ^
         icon.hashCode ^
         videoId.hashCode ^
         size1.hashCode ^

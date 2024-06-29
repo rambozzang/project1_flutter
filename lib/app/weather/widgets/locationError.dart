@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:project1/app/weather/provider/weather_cntr.dart';
 import 'package:provider/provider.dart';
 
 import '../provider/weatherProvider.dart';
@@ -49,8 +51,8 @@ class _LocationErrorState extends State<LocationError> {
             ),
             child: Text('Enable Location'),
             onPressed: () async {
-              await Provider.of<WeatherProvider>(context, listen: false)
-                  .getWeatherData(context);
+              await Get.find<WeatherCntr>().getWeatherData();
+              // await Provider.of<WeatherProvider>(context, listen: false).getWeatherData(context);
             },
           ),
         ],

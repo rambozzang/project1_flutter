@@ -1,39 +1,72 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:pretty_dio_logger/pretty_dio_logger.dart';
+import 'package:latlong2/latlong.dart';
 
 import 'package:project1/config/open_weather_api_config.dart';
 import 'package:project1/repo/api/auth_dio.dart';
 import 'package:project1/repo/common/res_data.dart';
 
-import 'package:project1/repo/weather/mylocator_repo.dart';
 import 'package:project1/utils/log_utils.dart';
 
 class OpenWheatherRepo {
-  Future<ResData> getWeather(Position position) async {
-    final dio = Dio(BaseOptions(
-        headers: {'Content-Type': 'application/json', 'accept': 'application/json'},
-        connectTimeout: const Duration(seconds: 5),
-        receiveTimeout: const Duration(seconds: 60)));
-    // dio.interceptors.add(PrettyDioLogger(
-    //   requestHeader: true,
-    //   requestBody: true,
-    //   responseBody: true,
-    //   responseHeader: true,
-    //   error: true,
-    //   compact: true,
-    //   maxWidth: 120,
-    // ));
-
+  Future<ResData> getWeather(LatLng position) async {
+    lo.g('OpenWheatherRepo : getWeather() 1');
+    final dio = await AuthDio.instance.getNoAuthDio();
     try {
-      log(position.toString());
-      var url =
-          '${OpenWeatherApiConfig.apiUrl}?lang=kr&units=metric&lat=${position!.latitude}&lon=${position.longitude}&appid=${OpenWeatherApiConfig.apiKey}';
-      log(url);
+      // final dio = Dio();
+      lo.g('OpenWheatherRepo : getWeather() 2');
 
-      Response response = await dio.get(url);
+      Response response = await dio.get(
+        OpenWeatherApiConfig.apiUrl,
+        queryParameters: {
+          'lang': 'kr',
+          'lat': position.latitude,
+          'lon': position.longitude,
+          'units': 'metric',
+          'appid': OpenWeatherApiConfig.apiKey,
+        },
+      );
+      lo.g('OpenWheatherRepo : getWeather() 3 ${response.statusCode} : ${response.data}');
+
+      // 304도 추가 캐싱 떄문에 304로 넘어온다. 200이랑 똑같이 처리해야함
+      // 왜냐면 200하고 결과가 같기 때문에
+      if (response.statusCode == 200) {
+        lo.g('OpenWheatherRepo : getWeather() 3-2 ${response.data}');
+        return ResData.fromJson(jsonEncode({'code': '00', 'data': response.data}));
+      }
+
+      if (response.statusCode == 304) {
+        var cacheData = response.data;
+        lo.g('OpenWheatherRepo : getWeather() 3-1 ${cacheData}');
+        ResData res = ResData();
+        res.code = '00';
+        res.data = cacheData;
+
+        return res;
+      }
+
+      return ResData.fromJson(jsonEncode({'code': response.statusCode, 'message': response.statusMessage}));
+    } on DioException catch (e) {
+      lo.g('OpenWheatherRepo : getWeather() 4 ${e}');
+      return AuthDio.instance.dioException(e);
+    } finally {}
+  }
+
+  Future<ResData> getDailyWeather(LatLng position) async {
+    final dio = await AuthDio.instance.getNoAuthDio();
+    try {
+      Response response = await dio.get(OpenWeatherApiConfig.oneCallUrl, queryParameters: {
+        'lang': 'kr',
+        'lat': position.latitude,
+        'lon': position.longitude,
+        'units': 'metric',
+        'exclude': 'minutely,current',
+        'appid': OpenWeatherApiConfig.apiKey,
+      });
+
       log(response.toString());
       if (response.statusCode == 200) {
         return ResData.fromJson(jsonEncode({'code': '00', 'data': response.data}));
@@ -41,7 +74,7 @@ class OpenWheatherRepo {
         return ResData.fromJson(jsonEncode({'code': response.statusCode, 'message': response.statusMessage}));
       }
     } on DioException catch (e) {
-      return dioException(e);
+      return AuthDio.instance.dioException(e);
     } finally {}
   }
 

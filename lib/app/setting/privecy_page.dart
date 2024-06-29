@@ -23,8 +23,8 @@ class _PrivecyPageState extends State<PrivecyPage> {
 
   List<BoardDetailData> boardList = [];
 
-  String ptupDsc = 'INDL';
-  String ptupTrgtDsc = 'INDL';
+  String ptupDsc = 'AGRE';
+  String ptupTrgtDsc = 'PRIV';
   int page = 0;
   int pageSzie = 20;
   String topYn = 'N';
@@ -40,7 +40,7 @@ class _PrivecyPageState extends State<PrivecyPage> {
       dataCtrl.sink.add(ResStream.loading());
       BoardRepo repo = BoardRepo();
 
-      ResData resData = await repo.searchOriginList('FAQ', 'ALL', page, pageSzie);
+      ResData resData = await repo.searchOriginList(ptupDsc, ptupTrgtDsc, page, pageSzie);
 
       if (resData.code != '00') {
         Utils.alert(resData.msg.toString());

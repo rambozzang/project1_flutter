@@ -1,17 +1,11 @@
 import 'dart:async';
-import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'package:latlong2/latlong.dart';
-import 'package:project1/app/list/cntr/video_list_cntr.dart';
-import 'package:project1/repo/cctv/cctv_repo.dart';
-import 'package:project1/repo/cctv/data/cctv_res_data.dart';
+import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/repo/weather/mylocator_repo.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
@@ -29,6 +23,8 @@ class MapCntr extends GetxController {
   late Position? position;
   final onCameraChangeStreamController = StreamController<NCameraUpdateReason>.broadcast();
 
+  RxBool soundOn = true.obs;
+
   @override
   void onInit() {
     super.onInit();
@@ -37,11 +33,13 @@ class MapCntr extends GetxController {
 
   void init() async {
     await NaverMapSdk.instance.initialize(
-        clientId: 'oqpkzdp38l',
+        clientId: '1gvb59zfma',
         onAuthFailed: (ex) {
           Lo.g("********* 네이버맵 인증오류 : $ex *********");
+          Utils.alert("네이버 지도 인증 실패 ClientID 확인해주세요~");
         });
     isInit.value = true;
+    // getLocation();
   }
 
   // 만약 위치 이동시 마다 이벤트를 받고 싶다면 아래와 같이 사용
@@ -68,90 +66,6 @@ class MapCntr extends GetxController {
     final cameraUpdate = NCameraUpdate.withParams(target: currentCoord)
       ..setAnimation(animation: NCameraAnimation.linear, duration: const Duration(milliseconds: 500)); // 2초는 너무 길 수도 있어요.
     await mapController.updateCamera(cameraUpdate);
-  }
-  // void markerClick(NaverMapController controller, Marker marker) {
-  //   Lo.g("마커 클릭됨! : ${marker.captionText}");
-  // }
-
-  Future<void> buildMarker111(BuildContext context) async {
-    Size size = const Size(40, 40);
-    const iconImage1 = NOverlayImage.fromAssetImage('assets/images/map/fog.png');
-    const iconImage2 = NOverlayImage.fromAssetImage('assets/images/map/rain.png');
-    const iconImage3 = NOverlayImage.fromAssetImage('assets/images/map/sun1.png');
-
-    Get.find<VideoListCntr>().list.forEach((element) async {
-      // final NOverlayImage icon = await buildMarket(size, element, context);
-      final NOverlayImage icon = NOverlayImage.fromAssetImage('assets/images/map/blue_pin.png');
-
-      final marker = NMarker(
-        id: element.boardId.toString(),
-        position: NLatLng(double.parse(element.lat.toString()), double.parse(element.lon.toString())),
-        icon: icon,
-        size: size,
-        captionOffset: 0,
-      );
-      mapController.addOverlay(marker);
-      final onMarkerInfoWindow = NInfoWindow.onMarker(id: marker.info.id, text: "${element.currentTemp}°");
-      marker.openInfoWindow(onMarkerInfoWindow);
-      marker.setOnTapListener((overlay) async {
-        // 마커 클릭 시 이벤트 정의
-        //HapticFeedback.selectionClick();
-
-        Utils.alert("마커 클릭됨! : ${overlay.toString()}");
-      });
-    });
-  }
-
-  Future<NOverlayImage> buildMarket(size, element, context) {
-    return NOverlayImage.fromWidget(
-      size: size,
-      context: context!,
-      widget: Column(
-        children: [
-          Container(
-            width: size.width,
-            height: size.height,
-            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(20),
-              image: const DecorationImage(
-                image: AssetImage('assets/images/map/blue_pin.png'),
-                fit: BoxFit.fill,
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  '${element.weatherInfo}',
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Row(
-                  children: [
-                    makeMarkerIcon(element.weatherInfo),
-                    // Image.asset('assets/images/map/fog.png', width: 30, height: 30),
-                    Text(
-                      '${element.currentTemp}°',
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget makeMarkerIcon(String weather) {
@@ -221,6 +135,9 @@ class MapCntr extends GetxController {
 
   @override
   void onClose() {
+    mapController.dispose();
+    onCameraChangeStreamController.close();
+
     super.onClose();
   }
 }

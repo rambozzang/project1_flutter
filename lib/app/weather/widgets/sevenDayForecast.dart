@@ -5,15 +5,11 @@ import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:project1/app/weather/Screens/sevenDayForecastDetailScreen.dart';
 import 'package:project1/app/weather/helper/extensions.dart';
 import 'package:project1/app/weather/models/dailyWeather.dart';
-import 'package:project1/app/weather/provider/weatherProvider.dart';
-import 'package:project1/app/weather/theme/colors.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
 import 'package:project1/app/weather/widgets/customShimmer.dart';
-import 'package:project1/utils/log_utils.dart';
-import 'package:provider/provider.dart';
+import 'package:project1/app/weather/provider/weather_cntr.dart';
 import 'package:supercharged/supercharged.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:syncfusion_flutter_gauges/gauges.dart';
@@ -26,7 +22,7 @@ class SevenDayForecast extends StatelessWidget {
   Widget build(BuildContext context) {
     tempNum = 0;
     return Container(
-      color: backgroundBlack,
+      color: const Color(0xFF262B49),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -48,23 +44,25 @@ class SevenDayForecast extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                Consumer<WeatherProvider>(
-                  builder: (context, weatherProv, _) {
+                GetBuilder<WeatherCntr>(
+                  builder: (weatherProv) {
                     return TextButton(
                       style: TextButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        padding: EdgeInsets.zero,
-                        textStyle: mediumText.copyWith(fontSize: 14.0),
-                        foregroundColor: primaryBlue,
-                        elevation: 4.0,
+                        padding: const EdgeInsets.all(0.0),
+                        // backgroundColor: primaryBlue,
                       ),
-                      onPressed: weatherProv.isLoading
-                          ? null
-                          : () {
-                              //  Navigator.of(context).pushNamed(SevenDayForecastDetail.routeName);
-                              Get.toNamed('/SevenDayForecastDetail/0');
-                            },
-                      child: const Text('자세히 보기 ▶'),
+                      onPressed: () => Get.toNamed('/SevenDayForecastDetail/0'),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            '자세히 보기',
+                            style: semiboldText.copyWith(fontSize: 11.0),
+                          ),
+                          const Gap(5),
+                          const Icon(Icons.arrow_forward_ios, size: 10.0, color: Colors.amber),
+                        ],
+                      ),
                     );
                   },
                 )
@@ -73,9 +71,9 @@ class SevenDayForecast extends StatelessWidget {
           ),
           const SizedBox(height: 8.0),
           Container(
-            child: Consumer<WeatherProvider>(
-              builder: (context, weatherProv, _) {
-                if (weatherProv.isLoading) {
+            child: GetBuilder<WeatherCntr>(
+              builder: (weatherProv) {
+                if (weatherProv.isLoading.value) {
                   return ListView.builder(
                     shrinkWrap: true,
                     padding: EdgeInsets.zero,
@@ -100,12 +98,12 @@ class SevenDayForecast extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 25.0),
-          Consumer<WeatherProvider>(builder: (context, weatherProv, _) {
-            if (weatherProv.isLoading) {
+          GetBuilder<WeatherCntr>(builder: (weatherProv) {
+            if (weatherProv.isLoading.value) {
               return SizedBox.shrink();
             }
             return SfCartesianChart(
-              backgroundColor: Colors.black87,
+              backgroundColor: const Color(0xFF262B49), // Colors.black87,
               plotAreaBorderWidth: 0,
               enableAxisAnimation: false,
               legend: const Legend(
@@ -148,10 +146,12 @@ class SevenDayForecast extends StatelessWidget {
                     builder: (dynamic data, dynamic point, dynamic series, int pointIndex, int seriesIndex) {
                       final DailyWeather weather = data;
 
-                      final minTemp =
-                          weatherProv.isCelsius ? weather.tempMin.toStringAsFixed(0) : weather.tempMin.toFahrenheit().toStringAsFixed(0);
-                      final maxTemp =
-                          weatherProv.isCelsius ? weather.tempMax.toStringAsFixed(0) : weather.tempMax.toFahrenheit().toStringAsFixed(0);
+                      final minTemp = weatherProv.isCelsius.value
+                          ? weather.tempMin.toStringAsFixed(0)
+                          : weather.tempMin.toFahrenheit().toStringAsFixed(0);
+                      final maxTemp = weatherProv.isCelsius.value
+                          ? weather.tempMax.toStringAsFixed(0)
+                          : weather.tempMax.toFahrenheit().toStringAsFixed(0);
 
                       final temp = tempNum % 2 == 0 ? maxTemp : minTemp;
                       final ttempNum = tempNum;
@@ -195,11 +195,11 @@ class SevenDayForecast extends StatelessWidget {
     );
   }
 
-  Widget listDetail(int index, WeatherProvider weatherProv, BuildContext context) {
+  Widget listDetail(int index, WeatherCntr weatherProv, BuildContext context) {
     final DailyWeather weather = weatherProv.dailyWeather[index];
     // °
-    final minTemp = weatherProv.isCelsius ? weather.tempMin.toStringAsFixed(0) : weather.tempMin.toFahrenheit().toStringAsFixed(0);
-    final maxTemp = weatherProv.isCelsius ? weather.tempMax.toStringAsFixed(0) : weather.tempMax.toFahrenheit().toStringAsFixed(0);
+    final minTemp = weatherProv.isCelsius.value ? weather.tempMin.toStringAsFixed(0) : weather.tempMin.toFahrenheit().toStringAsFixed(0);
+    final maxTemp = weatherProv.isCelsius.value ? weather.tempMax.toStringAsFixed(0) : weather.tempMax.toFahrenheit().toStringAsFixed(0);
 
     return Material(
       borderRadius: BorderRadius.circular(12.0),

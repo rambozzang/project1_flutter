@@ -1,22 +1,21 @@
 import 'dart:async';
-import 'dart:convert';
 
-import 'package:dio/dio.dart';
-import 'package:faker/faker.dart';
+import 'package:bot_toast/bot_toast.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:get/get.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/chatting/main.dart';
+import 'package:project1/app/chatting/chat_main_page.dart';
 import 'package:project1/repo/alram/alram_repo.dart';
 import 'package:project1/repo/alram/data/alram_req_data.dart';
 import 'package:project1/repo/alram/data/alram_res_data.dart';
-import 'package:project1/repo/board/data/board_main_detail_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
-import 'package:project1/repo/mist_gogoapi/data/mist_data.dart';
-import 'package:project1/repo/mist_gogoapi/mist_repo.dart';
+import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:project1/widget/custom_badge.dart';
 import 'package:rxdart/rxdart.dart';
 
 class AlramPage extends StatefulWidget {
@@ -26,7 +25,7 @@ class AlramPage extends StatefulWidget {
   State<AlramPage> createState() => _AlramPageState();
 }
 
-class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixin {
+class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
   List<AlramResData> list = <AlramResData>[];
 
   @override
@@ -39,35 +38,64 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
 
   // bool isLastPage = false;
   int page = 0;
-  int pageSzie = 10;
-  final ValueNotifier<bool> isLastPage = ValueNotifier<bool>(false);
+  int pageSzie = 15;
+  bool isLastPage = false;
   final ValueNotifier<bool> isMoreLoading = ValueNotifier<bool>(false);
+
+  late TabController tabController;
+
+  GlobalKey<ChatMainAppState> chatMainPageKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
+    tabController = TabController(vsync: this, length: 2);
+
     getData(0);
     scrollCtrl.addListener(() {
+      RootCntr.to.changeScrollListner(scrollCtrl);
       if (scrollCtrl.position.pixels == scrollCtrl.position.maxScrollExtent) {
-        if (!isLastPage.value) {
+        if (!isLastPage) {
           page++;
+          isMoreLoading.value = true;
           getData(page);
         }
       }
     });
   }
 
-  Future<void> getDataInit() async => getData(0);
+  Future<void> getDataInit() async {
+    page = 0;
+    getData(page);
+  }
+
   Future<void> getData(int page) async {
     try {
-      listCtrl.sink.add(ResStream.loading());
+      if (page == 0) {
+        listCtrl.sink.add(ResStream.loading());
+        list.clear();
+      }
+
       AlramRepo repo = AlramRepo();
       AlramReqData reqData = AlramReqData();
-      reqData.receiverCustId = '3393153168';
-      reqData.senderCustId = 'tigerbk';
-      reqData.alramCd = '100';
+      reqData.receiverCustId = Get.find<AuthCntr>().custId.value;
+      reqData.senderCustId = '';
+      reqData.alramCd = '';
+      reqData.pageNum = page;
+      reqData.pageSize = pageSzie;
+
       final ResData res = await repo.getAlramList(reqData);
-      list = (res.data as List).map((data) => AlramResData.fromMap(data)).toList();
+      if (res.data == null) {
+        isLastPage = true;
+        listCtrl.sink.add(ResStream.completed(list));
+        return;
+      }
+      List<AlramResData> _list = (res.data as List).map((data) => AlramResData.fromMap(data)).toList();
+      list.addAll(_list);
+      if (_list.length < pageSzie) {
+        isLastPage = true;
+      }
+      isMoreLoading.value = false;
       listCtrl.sink.add(ResStream.completed(list));
 
       Lo.g(res);
@@ -77,35 +105,18 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
     }
   }
 
-  // 미세먼지 가져오기
-  void getMistData(String localName) async {
-    try {
-      MistRepo mistRepo = MistRepo();
+  @override
+  void dispose() {
+    tabController.dispose();
+    listCtrl.close();
+    scrollCtrl.dispose();
 
-      // 동이름 가져오기
-      // String _localName = localName.split(' ')[1];
-      String _localName = localName;
-      Lo.g('_localName :  $_localName');
-
-      Response? res = await mistRepo.getMistData(_localName);
-      Lo.g('getMistData() res1 : ${res!.data}');
-      Lo.g('getMistData() res2 : ${res!.data['response']}');
-      Lo.g('getMistData() res3 : ${res!.data['response']['body']}');
-
-      MistData mistData = MistData.fromJson(jsonEncode(res!.data['response']['body']));
-      Lo.g('10 >>>' + mistData.items![0].pm10Value!);
-      String result10 = mistRepo.getMist10Grade(mistData.items![0].pm10Value!);
-      String result25 = mistRepo.getMist25Grade(mistData.items![0].pm10Value!);
-
-      Lo.g('10 >>>' + result10);
-      // Lo.g('25 >>>' + getMist25Grade(mistData.items![0].pm25Value!));
-    } catch (e) {
-      Lo.g('getMistData() error : $e');
-    }
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return DefaultTabController(
       length: 2,
       initialIndex: 0,
@@ -115,17 +126,16 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
           forceMaterialTransparency: true,
           centerTitle: false,
           title: const Text('알람'),
-          // actions: [
-
-          //   IconButton(
-          //     onPressed: () async => await getData(0),
-          //     icon: const Icon(Icons.refresh_outlined),
-          //   ),
-          // IconButton(
-          //     onPressed: () async => await getData(0),
-          //     icon: const Icon(Icons.refresh_outlined),
-          //   ),
-          // ],
+          actions: [
+            // IconButton(
+            //   onPressed: () => NotiShow(),
+            //   icon: const Icon(Icons.chat_bubble_outline),
+            // ),
+            IconButton(
+              onPressed: () => tabController.index == 0 ? getDataInit() : chatMainPageKey.currentState?.initSupaBaseSession(),
+              icon: const Icon(Icons.refresh_outlined),
+            ),
+          ],
         ),
         backgroundColor: Colors.white,
         body: Column(
@@ -136,7 +146,7 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
   }
 
   Widget _tabs() {
-    return const TabBar(indicatorColor: Colors.black, tabs: [
+    return TabBar(controller: tabController, indicatorColor: Colors.black, tabs: const [
       Tab(
         // child: Icon(Icons.grid_on),
         child: Row(
@@ -155,7 +165,7 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
           children: [
             Icon(Icons.message),
             Gap(10),
-            Text('메세지'),
+            Text('대화하기'),
           ],
         ),
       ),
@@ -164,16 +174,20 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
 
   Widget _tabBarView() {
     return Expanded(
-      child: TabBarView(children: [
+      child: TabBarView(controller: tabController, children: [
         buildAlramWidget(),
-        TextButton(
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ChatMainApp())),
-          child: const Text('채팅'),
+        ChatMainApp(
+          key: chatMainPageKey,
         )
+        // TextButton(
+        //   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ChatMainApp())),
+        //   child: const Text('채팅'),
+        // )
       ]),
     );
   }
 
+  // 알림 리스트 위젯
   Widget buildAlramWidget() {
     return RefreshIndicator(
       onRefresh: () async => await getData(0),
@@ -189,7 +203,7 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
               valueListenable: isMoreLoading,
               builder: (context, val, snapshot) {
                 if (val) {
-                  return SizedBox(height: 60, child: Utils.progressbar());
+                  return SizedBox(height: 60, child: Utils.progressbar(size: 50));
                 } else {
                   return const SizedBox(
                     height: 60,
@@ -205,6 +219,7 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
   Widget buildList(List<AlramResData> list) {
     return Column(
       children: [
+        const Gap(15),
         ListView.builder(
           shrinkWrap: true,
           itemCount: list.length,
@@ -226,95 +241,179 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
         //   thickness: 1,
         //   color: Colors.grey[300],
         // ),
-        const Gap(10),
-        Divider(
-          height: 2,
-          thickness: 2,
-          color: Colors.grey[300],
-        ),
+        // const Gap(10),
+        // Divider(
+        //   height: 2,
+        //   thickness: 2,
+        //   color: Colors.grey[300],
+        // ),
         ElevatedButton(
           clipBehavior: Clip.none,
           style: ElevatedButton.styleFrom(
             shadowColor: Colors.transparent,
             // fixedSize: Size(0, 0),
             minimumSize: Size.zero, // Set this
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 7),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             visualDensity: const VisualDensity(horizontal: 0, vertical: 0),
             elevation: 3,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(5),
-              // side: BorderSide(color: Colors.grey.shade500, width: 0.5),
             ),
-
             backgroundColor: Colors.transparent,
           ),
-          onPressed: () => print('눌림'),
+          onPressed: () {
+            if (data.boardId != null) {
+              Get.toNamed('/VideoMyinfoListPage',
+                  arguments: {'datatype': 'ONE', 'custId': AuthCntr.to.resLoginData.value.custId, 'boardId': data.boardId.toString()});
+            } else {
+              Get.toNamed('/OtherInfoPage/${data.senderCustId}');
+            }
+          },
           child: Row(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: Colors.grey[100],
-                child: ClipOval(
-                  child: Image.network('https://picsum.photos/200/300',
-                      width: 90, height: 90, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => const Icon(Icons.error)),
-                ),
-              ),
+              Container(
+                  height: 45,
+                  width: 45,
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    // color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(10),
+                    image: DecorationImage(
+                      image: CachedNetworkImageProvider(data.profilePath.toString()),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  child: data.profilePath == null ? const Icon(Icons.person, color: Colors.white) : null),
               const Gap(10),
-
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      data.alramContents.toString() + data.alramContents.toString(),
-                      softWrap: true,
-                      // overflow: TextOverflow.fade,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black),
-                    ),
-                    const Gap(6),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         Text(
-                          '${data.crtDtm.toString().substring(0, 10).replaceAll('-', '/')}:${data.crtDtm.toString().substring(11, 16)}',
-                          // '${data.crtDtm.toString().substring(0, 4)}.${data.crtDtm.toString().substring(5, 7)}.${data.crtDtm.toString().substring(8, 10)}',
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black),
-                        ),
-                        const Gap(10),
-                        Text(
-                          data.senderCustId.toString(),
+                          data.alramTitle.toString(),
                           softWrap: true,
-                          overflow: TextOverflow.fade,
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black),
+                          // overflow: TextOverflow.fade,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black),
                         ),
+                        const Spacer(),
                       ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            data.alramContents.toString(),
+                            // softWrap: true,
+                            overflow: TextOverflow.clip,
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black),
+                          ),
+                        ),
+                        const Gap(5),
+                        data.boardId != null
+                            ?
+                            // 이쁜 게시물확인 버튼 만들어주세요.
+
+                            SizedBox(
+                                width: 20,
+                                height: 25,
+                                child: TextButton(
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                  ),
+                                  onPressed: () {
+                                    Get.toNamed('/VideoMyinfoListPage', arguments: {
+                                      'datatype': 'ONE',
+                                      'custId': AuthCntr.to.resLoginData.value.custId,
+                                      'boardId': data.boardId.toString()
+                                    });
+                                  },
+                                  child: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black),
+                                ),
+                              )
+                            : const SizedBox(
+                                width: 10,
+                              ),
+                      ],
+                    ),
+                    // const Gap(6),
+                    SizedBox(
+                      height: 30,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              // backgroundColor: Colors.red,
+                            ),
+                            onPressed: () => Get.toNamed('/OtherInfoPage/${data.senderCustId}'),
+                            child: Text(
+                              '@${data.senderNickNm == null ? data.senderCustNm.toString() : data.senderNickNm.toString()}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14.0,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ),
+                          // 가운데 점 표시
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 6.0),
+                            child: Text(
+                              '·',
+                              style: TextStyle(color: Colors.black87, fontSize: 16),
+                            ),
+                          ),
+                          Text(
+                            Utils.timeage(data.crtDtm.toString()),
+                            // '${data.crtDtm.toString().substring(0, 10).replaceAll('-', '/')} ${data.crtDtm.toString().substring(11, 19)}',
+
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: Colors.black),
+                          ),
+
+                          // Text(
+                          //   '@${data.senderNickNm == null ? data.senderCustNm.toString() : data.senderNickNm.toString()}',
+                          //   softWrap: true,
+                          //   overflow: TextOverflow.fade,
+                          //   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black),
+                          // ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
               // const Spacer(),
-              const Gap(10),
-              ElevatedButton(
-                onPressed: () => print('팔로우'),
-                clipBehavior: Clip.none,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                  elevation: 1.5,
-                  minimumSize: const Size(0, 0),
-                  backgroundColor: const Color.fromARGB(255, 140, 131, 221),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                ),
-                child: const Text(
-                  '팔로우',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
-                ),
-              )
+              // const Gap(10),
+              // ElevatedButton(
+              //   onPressed: () => print('팔로우'),
+              //   clipBehavior: Clip.none,
+              //   style: ElevatedButton.styleFrom(
+              //     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              //     elevation: 1.5,
+              //     minimumSize: const Size(0, 0),
+              //     backgroundColor: const Color.fromARGB(255, 140, 131, 221),
+              //     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              //     shape: RoundedRectangleBorder(
+              //       borderRadius: BorderRadius.circular(10.0),
+              //     ),
+              //   ),
+              //   child: const Text(
+              //     '팔로우',
+              //     style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+              //   ),
+              // )
             ],
           ),
         ),

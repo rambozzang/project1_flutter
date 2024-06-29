@@ -6,6 +6,7 @@ import 'package:cloudflare/cloudflare.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
+import 'package:project1/app/weather/provider/weather_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_save_data.dart';
 import 'package:project1/repo/cloudflare/R2_repo.dart';
@@ -151,10 +152,6 @@ class RootCntr extends GetxController {
       return [];
     }
   }
-  // Cloudflare Image 파일 업로드
-  // Future<bool> uploadImage(File imageFile) async {
-
-  // }
 
   void uploadR2Storage(File videoFile, BoardSaveData boardSaveData) async {
     isFileUploading.value = UploadingType.UPLOADING;
@@ -236,112 +233,7 @@ class RootCntr extends GetxController {
     }
   }
 
-  // // uploadCloudFlare R2 파일 업로드
-  // void uploadCloudflareR2(File videoFile, BoardSaveData boardSaveData) async {
-  //   isFileUploading.value = UploadingType.UPLOADING;
-
-  //   String today = Utils.getToday();
-  //   R2Repository repo = R2Repository();
-
-  //   try {
-  //     await compressVideo(videoFile);
-  //     Lo.g('비디오 압축 결과 : ${pickedFile!.toJson()}');
-  //     if (pickedFile == null) {
-  //       Utils.alert('비디오 압축에 실패했습니다.');
-  //       isFileUploading.value = UploadingType.FAIL;
-  //       VideoCompress.deleteAllCache();
-  //       VideoCompress.cancelCompression();
-  //       return;
-  //     }
-  //     if (thumbnailFile == null) {
-  //       Utils.alert('썸네일 압축에 실패했습니다.');
-  //       isFileUploading.value = UploadingType.FAIL;
-  //       VideoCompress.cancelCompression();
-  //       return;
-  //     }
-  //     // uploadVideoFile
-  //     final List list;
-  //     list = await Future.wait([
-  //       repo.uploadFileToR2(uploadVideoFile),
-  //       repo.uploadFileToR2(uploadThumbnailFile),
-  //     ]);
-
-  //     CloudflareHTTPResponse<CloudflareStreamVideo>? videoRes = await list[0];
-  //     CloudflareHTTPResponse<CloudflareImage>? thumbnailres = await list[1];
-
-  //     if (list[0] == null || list[1] == null) {
-  //       Utils.alert('파일 업로드에 실패했습니다.');
-  //       isFileUploading.value = UploadingType.FAIL;
-  //       VideoCompress.deleteAllCache();
-  //       VideoCompress.cancelCompression();
-  //       return;
-  //     }
-  //     lo.g("썸네일 업로드 결과 : ${thumbnailres?.body!.id}");
-  //     lo.g("썸네일 업로드 결과 : ${thumbnailres?.body!.imageDeliveryId}");
-  //     lo.g("썸네일 업로드 결과 : ${thumbnailres?.body!.meta}");
-  //     lo.g("썸네일 업로드 결과 : ${thumbnailres?.body!.filename}");
-  //     lo.g("썸네일 업로드 결과 : ${thumbnailres?.body!.requireSignedURLs}");
-  //     lo.g("썸네일 업로드 결과 : ${thumbnailres?.body!.toString()}");
-
-  //     lo.g("영상업로드 업로드 결과 : ${videoRes!.body!.id}");
-  //     lo.g("영상업로드 업로드 결과 : ${videoRes!.body!.input}");
-  //     lo.g("영상업로드 업로드 결과 : ${videoRes!.body!.preview}");
-  //     lo.g("영상업로드 업로드 결과 : ${videoRes!.body!.size}");
-  //     lo.g("영상업로드 업로드 결과 : ${videoRes!.body!.uploadExpiry}");
-  //     lo.g("영상업로드 업로드 결과 : ${videoRes!.body!.customAccountSubdomainUrl}");
-  //     lo.g("영상업로드 업로드 결과 : ${videoRes!.body!.animatedThumbnail}");
-  //     lo.g("영상업로드 업로드 결과 : ${videoRes!.body!.meta.toString()}");
-  //     lo.g("영상업로드 업로드 결과 : ${videoRes!.body!.toString()}");
-
-  //     if (videoRes?.isSuccessful == false || thumbnailres?.isSuccessful == false) {
-  //       Utils.alert('파일 업로드에 실패했습니다.');
-  //       isFileUploading.value = UploadingType.FAIL;
-  //       VideoCompress.deleteAllCache();
-  //       VideoCompress.cancelCompression();
-  //       return;
-  //     }
-
-  //     // 저장
-  //     BoardRepo boardRepo = BoardRepo();
-  //     boardSaveData.boardWeatherVo?.thumbnailPath = videoRes.body?.thumbnail;
-  //     boardSaveData.boardWeatherVo?.thumbnailId = videoRes.body?.id;
-  //     boardSaveData.boardWeatherVo?.videoPath = videoRes.body?.customAccountSubdomainUrl;
-  //     boardSaveData.boardWeatherVo?.videoId = videoRes.body?.id;
-  //     ResData resData = await boardRepo.save(boardSaveData);
-
-  //     if (resData.code != '00') {
-  //       Utils.alert(resData.msg.toString());
-  //       isFileUploading.value = UploadingType.FAIL;
-  //       File(pickedFile!.path.toString()).delete();
-  //       File(thumbnailFile!.toString()).delete();
-  //       File(videoFile.path!.toString()).delete();
-
-  //       VideoCompress.deleteAllCache();
-  //       VideoCompress.cancelCompression();
-  //       return;
-  //     }
-
-  //     isFileUploading.value = UploadingType.SUCCESS;
-  //     // Utils.alert('정상 등록되었습니다!');
-  //     Future.delayed(const Duration(milliseconds: 2000), () {
-  //       isFileUploading.value = UploadingType.NONE;
-  //       File(pickedFile!.path.toString()).delete();
-  //       File(thumbnailFile!.toString()).delete();
-  //       File(videoFile.path!.toString()).delete();
-
-  //       VideoCompress.deleteAllCache();
-  //       VideoCompress.cancelCompression();
-  //     });
-  //   } catch (e) {
-  //     //   lo.g(e.message);
-  //     isFileUploading.value = UploadingType.FAIL;
-  //     lo.g("ERRRRRRR=> " + e.toString());
-  //     VideoCompress.deleteAllCache();
-  //     VideoCompress.cancelCompression();
-  //   }
-  // }
-
-  // uploadCloudflare IMAGE , STREAM 파일 업로드
+  // Cloudflare  STREAM 파일 업로드
   void uploadCloudflare(File videoFile, BoardSaveData boardSaveData) async {
     isFileUploading.value = UploadingType.UPLOADING;
     CloudflareRepo cloudflare = CloudflareRepo();
@@ -349,7 +241,13 @@ class RootCntr extends GetxController {
     String today = Utils.getToday();
 
     try {
-      await compressVideo(videoFile);
+      MediaInfo? pickedFile = await VideoCompress.compressVideo(
+        videoFile.path,
+        quality: VideoQuality.HighestQuality,
+        deleteOrigin: false,
+        includeAudio: true,
+      );
+
       Lo.g('비디오 압축 결과 : ${pickedFile!.toJson()}');
       if (pickedFile == null) {
         Utils.alert('비디오 압축에 실패했습니다.');
@@ -358,50 +256,10 @@ class RootCntr extends GetxController {
         VideoCompress.cancelCompression();
         return;
       }
-      if (thumbnailFile == null) {
-        Utils.alert('썸네일 압축에 실패했습니다.');
-        isFileUploading.value = UploadingType.FAIL;
-        VideoCompress.cancelCompression();
-        return;
-      }
-      // uploadVideoFile
-      // final List list;
-      // list = await Future.wait([
-      //   cloudflare.videoStreamUpload(uploadVideoFile),
-      //   cloudflare.imageFileUpload(uploadThumbnailFile),
-      // ]);
+
+      File uploadVideoFile = File(pickedFile.path.toString());
 
       CloudflareHTTPResponse<CloudflareStreamVideo?>? videoRes = await cloudflare.videoStreamUpload(uploadVideoFile);
-
-      // s3 api url : https://1227ead63607f2c82ce09310ce378241.r2.cloudflarestorage.com/p1-video
-// account ID : 1227ead63607f2c82ce09310ce378241
-// R2 token value : sD7229xU9wBYda5-yPOshWQPYiXgku8RzPaENkOV
-// R2 access key Id : d6c11b486c284e8792696f6c337b9361
-// R2 secret key : 21538c58031ea22aee7dc6d1e35e4ca9a681a5cd0185c463de03b38e198ec121
-// default bucket : p1-video
-// default url : https://1227ead63607f2c82ce09310ce378241.r2.cloudflarestorage.com
-
-      // String? response = await AwsS3.uploadFile(
-      //     accountId: "1227ead63607f2c82ce09310ce378241",
-      //     accessKey: "d6c11b486c284e8792696f6c337b9361",
-      //     secretKey: "21538c58031ea22aee7dc6d1e35e4ca9a681a5cd0185c463de03b38e198ec121",
-      //     file: uploadVideoFile,
-      //     bucket: "p1-video",
-      //     region: "Asia-Pacific",
-      //     destDir: today,
-      //     filename: uploadVideoFile.path.split('/').last,
-      //     metadata: {"test": "test"});
-
-      // lo.g("AwsS3 response : $response");
-
-      // CloudflareHTTPResponse<CloudflareImage?> thumbnailres = await list[1];
-
-      // lo.g("썸네일 업로드 결과 : ${thumbnailres?.body!.id}");
-      // lo.g("썸네일 업로드 결과 : ${thumbnailres?.body!.imageDeliveryId}");
-      // lo.g("썸네일 업로드 결과 : ${thumbnailres?.body!.meta}");
-      // lo.g("썸네일 업로드 결과 : ${thumbnailres?.body!.filename}");
-      // lo.g("썸네일 업로드 결과 : ${thumbnailres?.body!.requireSignedURLs}");
-      // lo.g("썸네일 업로드 결과 : ${thumbnailres?.body!.toString()}");
 
       CloudflareStreamVideo? video = videoRes?.body;
 
@@ -439,7 +297,8 @@ class RootCntr extends GetxController {
       cloudSaveData.uid = video!.id;
       cloudSaveData.preview = video.preview;
       cloudSaveData.size = video.size;
-      cloudSaveData.thumbnail = video.thumbnail;
+      cloudSaveData.thumbnail = video.animatedThumbnail;
+      // cloudSaveData.thumbnail = video.thumbnail;
       cloudSaveData.dash = video.playback!.dash.toString();
       cloudSaveData.hls = video.playback!.hls.toString();
       cloudSaveData.mp4 = ''; //resMp4['result']['default']['url'];
@@ -461,7 +320,8 @@ class RootCntr extends GetxController {
 
       // 저장
       BoardRepo boardRepo = BoardRepo();
-      boardSaveData.boardWeatherVo?.thumbnailPath = video.thumbnail;
+      // boardSaveData.boardWeatherVo?.thumbnailPath = video.thumbnail;
+      boardSaveData.boardWeatherVo?.thumbnailPath = video.animatedThumbnail;
       boardSaveData.boardWeatherVo?.thumbnailId = video.id;
       boardSaveData.boardWeatherVo?.videoPath = video.playback!.hls.toString();
       boardSaveData.boardWeatherVo?.videoId = video.id;
@@ -483,7 +343,7 @@ class RootCntr extends GetxController {
       Future.delayed(const Duration(milliseconds: 2000), () {
         isFileUploading.value = UploadingType.NONE;
         File(pickedFile!.path.toString()).delete();
-        File(thumbnailFile!.toString()).delete();
+        // File(thumbnailFile!.toString()).delete();
         File(videoFile.path!.toString()).delete();
 
         VideoCompress.deleteAllCache();
@@ -498,108 +358,14 @@ class RootCntr extends GetxController {
     }
   }
 
-  // uploadCloudinary 파일 업로드
-  void uploadCloudinary(File videoFile, BoardSaveData boardSaveData) async {
-    // isFileUploading.value = UploadingType.UPLOADING;
-    // Lo.g("1 ==> ${File(videoFile.path).existsSync()}");
-    // String today = Utils.getToday();
-    // try {
-    //   await compressVideo(videoFile);
-    //   Lo.g('비디오 압축 결과 : ${pickedFile!.toJson()}');
-    //   if (pickedFile == null) {
-    //     Utils.alert('비디오 압축에 실패했습니다.');
-    //     isFileUploading.value = UploadingType.FAIL;
-    //     VideoCompress.deleteAllCache();
-    //     VideoCompress.cancelCompression();
-    //     return;
-    //   }
-
-    //   if (thumbnailFile == null) {
-    //     Utils.alert('썸네일 압축에 실패했습니다.');
-    //     isFileUploading.value = UploadingType.FAIL;
-    //     VideoCompress.cancelCompression();
-    //     return;
-    //   }
-    //   final List list;
-    //   list = await Future.wait([
-    //     cloudinaryImage.uploadFile(
-    //       CloudinaryFile.fromFile(
-    //         thumbnailFile.toString(),
-    //         resourceType: CloudinaryResourceType.Image,
-    //         folder: today,
-    //         // context: {
-    //         //   'alt': 'Hello',
-    //         //   'caption': 'An example image',
-    //         // },
-    //       ),
-    //       onProgress: (count, total) {
-    //         //  uploadingPercentage2.value = (count / total) * 100;
-    //       },
-    //     ),
-    //     cloudinaryVideo.uploadFile(
-    //       CloudinaryFile.fromFile(
-    //         pickedFile!.path.toString(),
-    //         resourceType: CloudinaryResourceType.Video,
-    //         folder: today,
-    //         // context: {
-    //         //   'alt': 'Hello',
-    //         //   'caption': 'An example image',
-    //         // },
-    //       ),
-    //       onProgress: (count, total) {
-    //         // uploadingPercentage1.value = (count / total) * 100;
-    //       },
-    //     )
-    //   ]);
-    //   CloudinaryResponse res2 = list[0];
-    //   CloudinaryResponse res = list[1];
-    //   lo.g("썸네일 업로드 결과 : " + res2.toString());
-
-    //   lo.g("영상업로드 업로드 결과 : " + res.toString());
-
-    //   // 저장
-    //   BoardRepo boardRepo = BoardRepo();
-    //   boardSaveData.boardWeatherVo?.thumbnailPath = res2.secureUrl;
-    //   boardSaveData.boardWeatherVo?.thumbnailId = res2.assetId;
-    //   boardSaveData.boardWeatherVo?.videoPath = res.secureUrl;
-    //   boardSaveData.boardWeatherVo?.videoId = res.assetId;
-    //   ResData resData = await boardRepo.save(boardSaveData);
-
-    //   if (resData.code != '00') {
-    //     Utils.alert(resData.msg.toString());
-    //     isFileUploading.value = UploadingType.FAIL;
-    //     return;
-    //   }
-    //   isFileUploading.value = UploadingType.SUCCESS;
-    //   // Utils.alert('정상 등록되었습니다!');
-    //   Future.delayed(const Duration(milliseconds: 2000), () {
-    //     isFileUploading.value = UploadingType.NONE;
-    //     File(pickedFile!.path.toString()).delete();
-    //     File(thumbnailFile!.toString()).delete();
-    //     File(videoFile.path!.toString()).delete();
-
-    //     VideoCompress.deleteAllCache();
-    //     VideoCompress.cancelCompression();
-    //   });
-
-    //   // {asset_id: 589dcec7931c12efb379ea632472b541, public_id: VID_2024-03-26_09-53-54-688112223_euuauj, created_at: 2024-03-26 12:54:04.000Z, url: http://res.cloudinary.com/dfbxar2j5/video/upload/v1711457644/VID_2024-03-26_09-53-54-688112223_euuauj.mp4, secure_url: https://res.cloudinary.com/dfbxar2j5/video/upload/v1711457644/VID_2024-03-26_09-53-54-688112223_euuauj.mp4, original_filename: VID_2024-03-26 09-53-54-688112223, tags: [], context: {}, data: {asset_id: 589dcec7931c12efb379ea632472b541, public_id: VID_2024-03-26_09-53-54-688112223_euuauj, version: 1711457644, version_id: 399c18d5612ddbc8dba302632442ea62, signature: f6b7e4ec4e869f18d4112882bdf5d37aba8d582d, width: 640, height: 1136, format: mp4, resource_type: video, created_at: 2024-03-26T12:54:04Z, tags: [], pages: 0, bytes: 1612764, type: upload, etag: 116c06206b2f85fb10ca3fdfdfbe273e, placeholder: false, url: http://res.cloudinary.com/dfbxar2j5/video/upload/v1711457644/VID_2024-03-26_09-53-54-6881
-    // } on CloudinaryException catch (e) {
-    //   //   lo.g(e.message);
-    //   isFileUploading.value = UploadingType.FAIL;
-    //   lo.g("ERRRRRRR=> " + e.request.toString());
-    //   lo.g("ERRRRRRR=> " + e.toString());
-    //   VideoCompress.deleteAllCache();
-    //   VideoCompress.cancelCompression();
-    // }
-  }
-
   // Video__reg_page.dart 파일에서 호출 후 등록 처리.
   void goTimer(File videoFile, BoardSaveData boardSaveData) {
     Future.delayed(const Duration(microseconds: 300), () {
-      // uploadCloudinary(videoFile, boardSaveData);
-      // uploadCloudflare(videoFile, boardSaveData);
-      // uploadCloudflareR2(videoFile, boardSaveData);
-      uploadR2Storage(videoFile, boardSaveData);
+      // Cloudflare R2 파일 업로드
+      // uploadR2Storage(videoFile, boardSaveData);
+
+      // Cloudflare Stream 파일 업로드
+      uploadCloudflare(videoFile, boardSaveData);
     });
   }
 

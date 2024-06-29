@@ -9,7 +9,7 @@ import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
-import 'package:project1/app/myinfo/myinfo_page.dart';
+import 'package:project1/app/myinfo/myinfo_page_new.dart';
 import 'package:project1/app/myinfo/widget/image_avatar.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -44,22 +44,31 @@ class _SettingPageState extends State<SettingPage> {
 
       CroppedFile? croppedFile = await ImageCropper().cropImage(
         sourcePath: pickedFile.path,
-        aspectRatioPresets: [
-          CropAspectRatioPreset.square,
-          CropAspectRatioPreset.ratio3x2,
-          CropAspectRatioPreset.original,
-          CropAspectRatioPreset.ratio4x3,
-          CropAspectRatioPreset.ratio16x9
-        ],
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
         uiSettings: [
           AndroidUiSettings(
-              toolbarTitle: 'Cropper',
-              toolbarColor: Colors.deepOrange,
-              toolbarWidgetColor: Colors.white,
-              initAspectRatio: CropAspectRatioPreset.original,
-              lockAspectRatio: false),
+            toolbarTitle: 'Cropper',
+            toolbarColor: Colors.deepOrange,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.original,
+            lockAspectRatio: false,
+            aspectRatioPresets: [
+              CropAspectRatioPreset.square,
+              CropAspectRatioPreset.ratio3x2,
+              CropAspectRatioPreset.original,
+              CropAspectRatioPreset.ratio4x3,
+              CropAspectRatioPreset.ratio16x9
+            ],
+          ),
           IOSUiSettings(
             title: 'Cropper',
+            aspectRatioPresets: [
+              CropAspectRatioPreset.square,
+              CropAspectRatioPreset.ratio3x2,
+              CropAspectRatioPreset.original,
+              CropAspectRatioPreset.ratio4x3,
+              CropAspectRatioPreset.ratio16x9
+            ],
           ),
           WebUiSettings(
             context: context,
@@ -165,7 +174,7 @@ class _SettingPageState extends State<SettingPage> {
               settingsGroupTitleStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 16),
               items: [
                 SettingsItem(
-                  onTap: () {},
+                  onTap: () => Get.toNamed('/MaketingPage'),
                   icons: CupertinoIcons.pencil_outline,
                   iconStyle: IconStyle(),
                   title: '마케팅 수신 동의 설정',
@@ -233,6 +242,15 @@ class _SettingPageState extends State<SettingPage> {
                   subtitle: "라이센스 목록",
                 ),
                 SettingsItem(
+                  onTap: () => Get.toNamed('/OpenSourcePage'),
+                  icons: Icons.insert_chart,
+                  iconStyle: IconStyle(
+                    backgroundColor: Colors.deepOrange,
+                  ),
+                  title: '알림(PUSH) 수신동의',
+                  subtitle: "신규글 등록, 좋아요,댓글 알림을 수신합니다.",
+                ),
+                SettingsItem(
                   onTap: () => Get.toNamed('/TestDioPage'),
                   icons: CupertinoIcons.link_circle,
                   title: "TestDioPage",
@@ -253,48 +271,52 @@ class _SettingPageState extends State<SettingPage> {
               ],
             ),
             const Gap(20),
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                children: [
-                  const Text(
-                    "CodeLabTiger\n서울시 서대문구 종로35길 125 TigerGroup (05510)  대표자 : tigerBk, 사업자등록번호 : 110-81-28774 ",
-                    style: TextStyle(fontSize: 13, color: Colors.black54),
-                  ),
-                  const Gap(20),
-                  const Text(
-                    'Copyright 2024 TIGER Group..',
-                    style: TextStyle(fontSize: 13, color: Colors.black),
-                  ),
-                  const Text(
-                    'All rights reserved',
-                    style: TextStyle(fontSize: 13, color: Colors.black),
-                  ),
-                  const Gap(20),
-                  Stack(
-                    children: [
-                      Image.asset('assets/images/5124556.jpg', fit: BoxFit.cover, width: double.infinity, height: 75),
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          color: Colors.white,
-                          child: Text(
-                            "02-1588-1234",
-                            style: TextStyle(fontSize: 15, color: Colors.black, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // 출처 <a href="https://kr.freepik.com/free-vector/flat-design-illustration-customer-support_12982910.htm#query=%EA%B3%A0%EA%B0%9D%EC%84%BC%ED%84%B0&position=1&from_view=keyword&track=ais&uuid=aa7b7691-daa1-46c6-88d0-55653a755271">Freepik</a>
-                ],
-              ),
-            ),
+            buildCompany(),
             const Gap(100),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget buildCompany() {
+    return Padding(
+      padding: const EdgeInsets.all(20.0),
+      child: Column(
+        children: [
+          const Text(
+            "CodeLabTiger\n서울시 서대문구 종로35길 125 TigerGroup (05510)  대표자 : tigerBk, 사업자등록번호 : 110-81-28774 ",
+            style: TextStyle(fontSize: 13, color: Colors.black54),
+          ),
+          const Gap(20),
+          const Text(
+            'Copyright 2024 TIGER Group..',
+            style: TextStyle(fontSize: 13, color: Colors.black),
+          ),
+          const Text(
+            'All rights reserved',
+            style: TextStyle(fontSize: 13, color: Colors.black),
+          ),
+          const Gap(20),
+          Stack(
+            children: [
+              Image.asset('assets/images/5124556.jpg', fit: BoxFit.cover, width: double.infinity, height: 75),
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  color: Colors.white,
+                  child: Text(
+                    "02-1588-1234",
+                    style: TextStyle(fontSize: 15, color: Colors.black, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // 출처 <a href="https://kr.freepik.com/free-vector/flat-design-illustration-customer-support_12982910.htm#query=%EA%B3%A0%EA%B0%9D%EC%84%BC%ED%84%B0&position=1&from_view=keyword&track=ais&uuid=aa7b7691-daa1-46c6-88d0-55653a755271">Freepik</a>
+        ],
       ),
     );
   }

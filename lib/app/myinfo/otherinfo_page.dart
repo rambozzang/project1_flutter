@@ -1,14 +1,18 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:bot_toast/bot_toast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:flutter_supabase_chat_core/flutter_supabase_chat_core.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/chatting/chat_room_page.dart';
 import 'package:project1/app/myinfo/widget/image_avatar.dart';
+import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/board/data/cust_count_data.dart';
@@ -25,6 +29,9 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 import 'package:path_provider/path_provider.dart';
 
+import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:project1/widget/custom_button.dart';
+
 import 'package:rxdart/rxdart.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -40,7 +47,7 @@ class OtherInfoPage extends StatefulWidget {
 
 class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveClientMixin {
   final ValueNotifier<List<String>> urls = ValueNotifier<List<String>>([]);
-  final ValueNotifier<String> custNm = ValueNotifier<String>('');
+  final ValueNotifier<String> nickNm = ValueNotifier<String>('');
 
   @override
   bool get wantKeepAlive => true;
@@ -50,7 +57,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
   // 상태유지
 
   // 3가지 갯수 가져오기
-  StreamController<ResStream<CustCountData>> myCountCntr = StreamController();
+  StreamController<ResStream<CustCountData>> myCountCntr = StreamController.broadcast();
 
   // 내게시물 리스트 가져오기
   int myboardPageNum = 0;
@@ -73,6 +80,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
   final StreamController<ResStream<CustData>> userCntr = StreamController();
 
   late String? custId;
+  late CustData? custData;
 
   @override
   void initState() {
@@ -83,7 +91,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
       Get.back();
       return;
     }
-    getUserData(custId!);
+    // getUserData(custId!);
     getCountData(custId!);
     getMyBoard(custId!);
     getFollowBoard(custId!);
@@ -97,25 +105,27 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
     });
   }
 
-  Future<void> getInitUserData() => getUserData(custId!);
-  Future<void> getUserData(String custId) async {
-    try {
-      userCntr.sink.add(ResStream.loading());
-      CustRepo repo = CustRepo();
-      ResData res = await repo.getCustInfo(custId.toString());
-      if (res.code != '00') {
-        Utils.alert(res.msg.toString());
-        userCntr.sink.add(ResStream.error(res.msg.toString()));
-        return;
-      }
-      CustData data = CustData.fromMap(res.data);
-      custNm.value = data.custNm.toString();
-      userCntr.sink.add(ResStream.completed(data));
-    } catch (e) {
-      Utils.alert(e.toString());
-      userCntr.sink.add(ResStream.error(e.toString()));
-    }
-  }
+  // Future<void> getInitUserData() => getUserData(custId!);
+  // Future<void> getUserData(String custId) async {
+  //   try {
+  //     userCntr.sink.add(ResStream.loading());
+  //     CustRepo repo = CustRepo();
+  //     ResData res = await repo.getCustInfo(custId.toString());
+  //     if (res.code != '00') {
+  //       Utils.alert(res.msg.toString());
+  //       userCntr.sink.add(ResStream.error(res.msg.toString()));
+  //       return;
+  //     }
+  //     custData = CustData.fromMap(res.data);
+
+  //     lo.g('custData : ${custData.toString()}');
+  //     custNm.value = custData!.custNm.toString();
+  //     userCntr.sink.add(ResStream.completed(custData));
+  //   } catch (e) {
+  //     Utils.alert(e.toString());
+  //     userCntr.sink.add(ResStream.error(e.toString()));
+  //   }
+  // }
 
   Future<void> getInitCountData() => getCountData(custId!);
 
@@ -130,6 +140,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
       }
       print(res.data);
       CustCountData data = CustCountData.fromMap(res.data);
+      nickNm.value = data.custInfo!.nickNm.toString();
       myCountCntr.sink.add(ResStream.completed(data));
     } catch (e) {
       Utils.alert(e.toString());
@@ -177,97 +188,6 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
     }
   }
 
-  //이미지를 가져오는 함수
-  Future getImage(ImageSource imageSource) async {
-    //pickedFile에 ImagePicker로 가져온 이미지가 담긴다.
-    final XFile? pickedFile = await picker.pickImage(source: imageSource);
-    if (pickedFile != null) {
-      _image = XFile(pickedFile.path); //가져온 이미지를 _image에 저장
-
-      CroppedFile? croppedFile = await ImageCropper().cropImage(
-        sourcePath: pickedFile.path,
-        aspectRatioPresets: [
-          CropAspectRatioPreset.square,
-          CropAspectRatioPreset.ratio3x2,
-          CropAspectRatioPreset.original,
-          CropAspectRatioPreset.ratio4x3,
-          CropAspectRatioPreset.ratio16x9
-        ],
-        uiSettings: [
-          AndroidUiSettings(
-              toolbarTitle: 'Cropper',
-              toolbarColor: Colors.deepOrange,
-              toolbarWidgetColor: Colors.white,
-              initAspectRatio: CropAspectRatioPreset.original,
-              lockAspectRatio: false),
-          IOSUiSettings(
-            title: 'Cropper',
-          ),
-          WebUiSettings(
-            context: context,
-          ),
-        ],
-      );
-
-      if (croppedFile != null) {
-        _image = XFile(croppedFile.path);
-      }
-
-      File aa = await CompressAndGetFile(croppedFile!.path);
-      // TODO 파입업로드 후 고객정보 수정
-      // 파일업로드후 save() 함수 호출
-      //AuthCntr.to.resLoginData.value.profilePath = aa.path;
-      Utils.alertIcon('파일업로드 개발중....', icontype: 'E');
-      print(aa.lengthSync());
-    }
-  }
-
-  Future<File> CompressAndGetFile(String path) async {
-    var tmpDir = await getTemporaryDirectory();
-    var targetName = DateTime.now().millisecondsSinceEpoch;
-    XFile? compressFile = await FlutterImageCompress.compressAndGetFile(
-      path,
-      "${tmpDir.absolute.path}/$targetName.jpg",
-      quality: 88,
-      rotate: 180,
-    );
-    // print(file.lengthSync());
-    print(compressFile?.length());
-    final bytes = await File(compressFile!.path);
-    return bytes;
-  }
-
-  Future<void> share() async {
-    // final result = await Share.shareXFiles([XFile('${directory.path}/image.jpg')], text: 'Great picture');
-
-    // if (result.status == ShareResultStatus.success) {
-    //     print('Thank you for sharing the picture!');
-    // }
-    final result = await Share.shareWithResult('check out my website https://example.com');
-
-    if (result.status == ShareResultStatus.success) {
-      print('Thank you for sharing my website!');
-    }
-  }
-
-  // 프로필 사진 업데이트
-  Future<void> save() async {
-    try {
-      CustRepo repo = CustRepo();
-      CustUpdataData data = CustUpdataData();
-      data.custId = AuthCntr.to.resLoginData.value.custId.toString();
-      data.profilePath = AuthCntr.to.resLoginData.value.profilePath.toString();
-      ResData res = await repo.updateCust(data);
-      if (res.code != '00') {
-        Utils.alert(res.msg.toString());
-        return;
-      }
-      Utils.alert('수정되었습니다.');
-    } catch (e) {
-      Utils.alert(e.toString());
-    }
-  }
-
   // 관심태그 조회
   Future<void> getTag(String custId) async {
     try {
@@ -286,6 +206,32 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
     }
   }
 
+  Future<void> addFollow(String cudtId) async {
+    // 팔로우 추가
+
+    String title = "팔로우 하시겠습니까?";
+    Utils.showConfirmDialog("확인", title, BackButtonBehavior.none, confirm: () async {
+      Lo.g('cancel');
+      Get.find<VideoListCntr>().follow(cudtId.toString());
+      getInitCountData();
+    }, cancel: () async {
+      Lo.g('cancel');
+    }, backgroundReturn: () {});
+  }
+
+  Future<void> cancleFollow(String cudtId) async {
+    // 팔로우 추가
+    // 팔로우 추가
+    String title = "팔로우 취소하시겠습니까?";
+    Utils.showConfirmDialog("취소", title, BackButtonBehavior.none, confirm: () async {
+      Lo.g('cancel');
+      Get.find<VideoListCntr>().followCancle(cudtId.toString());
+      getInitCountData();
+    }, cancel: () async {
+      Lo.g('cancel');
+    }, backgroundReturn: () {});
+  }
+
   @override
   void dispose() {
     myCountCntr.close();
@@ -299,6 +245,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return DefaultTabController(
       length: 2,
       initialIndex: 0,
@@ -320,14 +267,13 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
             getTag(custId!);
           },
           child: NestedScrollView(
-            controller: RootCntr.to.hideButtonController2,
             headerSliverBuilder: (context, innerBoxIsScrolled) {
               return [
                 SliverList(
                     delegate: SliverChildListDelegate([
                   _info(),
-                  // _buttons(),
-                  _buildFavoriteTag()
+                  _buttons(),
+                  //  _buildFavoriteTag()
                 ])),
               ];
             },
@@ -341,6 +287,109 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
         ),
       ),
     );
+  }
+
+  Widget _buttons() {
+    return StreamBuilder<ResStream<CustCountData>>(
+        stream: myCountCntr.stream,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const SizedBox();
+          }
+
+          if (snapshot.data!.status == Status.COMPLETED) {
+            CustData data = snapshot.data!.data!.custInfo!;
+            lo.g("chatId : " + data.toString());
+            lo.g(data.chatId.toString());
+            // if (data == null || data.chatId == null || data.chatId.toString() == 'null') {
+            //   return const SizedBox();
+            // }
+            String followyn = 'N';
+            //data.followYn.toString();
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 60.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 4,
+                    child: CustomButton(
+                      text: followyn == 'Y' ? '팔로잉 취소' : '팔로우 하기',
+                      type: 'S',
+                      heightValue: 40,
+                      isEnable: true,
+                      listColors: [
+                        followyn == 'Y' ? const Color(0xFF3A3F65) : const Color.fromARGB(255, 169, 175, 214),
+                        followyn == 'Y' ? const Color(0xFF1E2238) : const Color.fromARGB(255, 188, 195, 233),
+                        followyn == 'Y' ? const Color(0xFF414766) : const Color.fromARGB(255, 171, 175, 193),
+                      ],
+                      onPressed: () => followyn == 'Y' ? cancleFollow(data.custId.toString()) : addFollow(data.custId.toString()),
+                    ),
+                    // child: ElevatedButton(
+                    //   onPressed: () => data.followYn == 'Y' ? cancleFollow(data.custId.toString()) : addFollow(data.custId.toString()),
+                    //   clipBehavior: Clip.none,
+                    //   style: ElevatedButton.styleFrom(
+                    //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                    //     elevation: 0.5,
+                    //     minimumSize: const Size(0, 0),
+                    //     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    //     backgroundColor: data.followYn.toString() == 'N' ? Colors.transparent : Colors.white,
+                    //     // backgroundColor: widget.data.followYn.toString().contains('N') ? Colors.black : Colors.white,
+                    //     shape: RoundedRectangleBorder(
+                    //         borderRadius: BorderRadius.circular(10.0), side: const BorderSide(color: Colors.white, width: 0.7)),
+                    //   ),
+                    //   child: Text(
+                    //     data.followYn.toString() == 'N' ? '팔로우' : '팔로잉',
+                    //     // widget.data.followYn.toString().contains('N') ? '팔로우' : '팔로잉',
+                    //     style: TextStyle(
+                    //       color: data.followYn.toString().contains('N') ? Colors.white : Colors.black,
+                    //       fontSize: 14,
+                    //     ),
+                    //   ),
+                    // ),
+                  ),
+                  const Gap(15),
+                  Expanded(
+                      flex: 4,
+                      child: CustomButton(
+                          text: '대화하기',
+                          type: 'S',
+                          heightValue: 40,
+                          isEnable: true,
+                          onPressed: () async {
+                            types.User otherUser = types.User(
+                                id: data!.chatId.toString(), firstName: data!.nickNm.toString(), imageUrl: data!.profilePath.toString());
+
+                            final room = await SupabaseChatCore.instance.createRoom(otherUser);
+
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => ChatPage(
+                                  room: room,
+                                ),
+                              ),
+                            );
+                          },
+                          suffixIcon: const Padding(
+                            padding: EdgeInsets.only(left: 3.0),
+                            child: Icon(
+                              Icons.arrow_circle_right_outlined,
+                              color: Colors.white,
+                              size: 19,
+                            ),
+                          ),
+                          listColors: const [
+                            Color(0xFF3A3F65),
+                            Color(0xFF1E2238),
+                            Color(0xFF414766),
+                          ])),
+                ],
+              ),
+            );
+          } else {
+            return const SizedBox();
+          }
+        });
   }
 
   Widget _info() {
@@ -462,7 +511,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                       child: OtherInfoPageInfo(
                         count: data.boardCnt!.toInt(),
                         label: '게시물',
-                        onTap: () => Get.toNamed('/MainView1/0/${null}'), //Get.toNamed('/MainView1
+                        onTap: () => Get.toNamed('/MainView1/$custId/0/${null}'), //Get.toNamed('/MainView1
                       ),
                     ),
                     Padding(
@@ -470,7 +519,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                       child: OtherInfoPageInfo(
                         count: data.likeCnt!.toInt(),
                         label: '좋아요',
-                        onTap: () => Get.toNamed('/MainView1/1/${null}'),
+                        onTap: () => Get.toNamed('/MainView1/$custId/1/${null}'),
                       ),
                     ),
                     Padding(
@@ -478,7 +527,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                       child: OtherInfoPageInfo(
                         count: data.followCnt!.toInt(),
                         label: '팔로워',
-                        onTap: () => Get.toNamed('/MainView1/2/${null}'),
+                        onTap: () => Get.toNamed('/MainView1/$custId/2/${null}'),
                       ),
                     ),
                     Padding(
@@ -486,7 +535,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                       child: OtherInfoPageInfo(
                         count: data.followerCnt!.toInt(),
                         label: '팔로잉',
-                        onTap: () => Get.toNamed('/MainView1/3/${null}'),
+                        onTap: () => Get.toNamed('/MainView1/$custId/3/${null}'),
                       ),
                     ),
                   ],
@@ -539,7 +588,8 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
               itemCount: list.length,
               itemBuilder: (context, index) => GestureDetector(
                 onTap: () {
-                  Get.toNamed('/VideoMyinfoListPage', arguments: list[index]);
+                  Get.toNamed('/VideoMyinfoListPage',
+                      arguments: {'datatype': 'MYFEED', 'custId': custId, 'boardId': list[index].boardId.toString()});
                 },
                 child: Container(
                     decoration: BoxDecoration(
@@ -582,12 +632,14 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
         itemCount: list.length,
         itemBuilder: (context, index) => GestureDetector(
           onTap: () {
-            Get.toNamed('/VideoMyinfoListPage', arguments: list[index]);
+            Get.toNamed('/VideoMyinfoListPage',
+                arguments: {'datatype': 'FOLLOW', 'custId': custId, 'boardId': list[index].boardId.toString()});
           },
           child: Container(
             color: Colors.grey.shade300,
             height: (index % 5 + 1) * 60,
             child: CachedNetworkImage(
+              cacheKey: list[index].thumbnailPath!,
               imageUrl: list[index].thumbnailPath!,
               fit: BoxFit.cover,
             ),
@@ -634,7 +686,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
       title: Row(
         children: [
           ValueListenableBuilder<String?>(
-              valueListenable: custNm,
+              valueListenable: nickNm,
               builder: (context, value, child) {
                 return Text(
                   value.toString(),
@@ -645,8 +697,8 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
       ),
       actions: [
         Padding(
-          padding: EdgeInsets.all(4.0),
-          child: IconButton(icon: Icon(Icons.close), onPressed: () => Get.back()),
+          padding: const EdgeInsets.all(4.0),
+          child: IconButton(icon: const Icon(Icons.close), onPressed: () => Get.back()),
         ),
       ],
     );

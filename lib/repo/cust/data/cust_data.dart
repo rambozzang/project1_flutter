@@ -10,10 +10,12 @@ class CustData {
   String? email;
   String? hpNo;
   String? birthday;
+  String? chatId;
   String? fcmId;
   String? provider;
   String? profilePath;
   String? accessToken;
+  String? followYn;
   CustData({
     this.custId,
     this.nickNm,
@@ -23,10 +25,12 @@ class CustData {
     this.email,
     this.hpNo,
     this.birthday,
+    this.chatId,
     this.fcmId,
     this.provider,
     this.profilePath,
     this.accessToken,
+    this.followYn,
   });
 
   CustData copyWith({
@@ -38,10 +42,12 @@ class CustData {
     String? email,
     String? hpNo,
     String? birthday,
+    String? chatId,
     String? fcmId,
     String? provider,
     String? profilePath,
     String? accessToken,
+    String? followYn,
   }) {
     return CustData(
       custId: custId ?? this.custId,
@@ -52,10 +58,12 @@ class CustData {
       email: email ?? this.email,
       hpNo: hpNo ?? this.hpNo,
       birthday: birthday ?? this.birthday,
+      chatId: chatId ?? this.chatId,
       fcmId: fcmId ?? this.fcmId,
       provider: provider ?? this.provider,
       profilePath: profilePath ?? this.profilePath,
       accessToken: accessToken ?? this.accessToken,
+      followYn: followYn ?? this.followYn,
     );
   }
 
@@ -69,10 +77,12 @@ class CustData {
       'email': email,
       'hpNo': hpNo,
       'birthday': birthday,
+      'chatId': chatId,
       'fcmId': fcmId,
       'provider': provider,
       'profilePath': profilePath,
       'accessToken': accessToken,
+      'followYn': followYn,
     };
   }
 
@@ -86,10 +96,12 @@ class CustData {
       email: map['email'] != null ? map['email'] as String : null,
       hpNo: map['hpNo'] != null ? map['hpNo'] as String : null,
       birthday: map['birthday'] != null ? map['birthday'] as String : null,
+      chatId: map['chatId'] != null ? map['chatId'] as String : null,
       fcmId: map['fcmId'] != null ? map['fcmId'] as String : null,
       provider: map['provider'] != null ? map['provider'] as String : null,
       profilePath: map['profilePath'] != null ? map['profilePath'] as String : null,
       accessToken: map['accessToken'] != null ? map['accessToken'] as String : null,
+      followYn: map['followYn'] != null ? map['followYn'] as String : null,
     );
   }
 
@@ -99,7 +111,7 @@ class CustData {
 
   @override
   String toString() {
-    return 'CustData(custId: $custId, nickNm: $nickNm, custNm: $custNm, selfIntro: $selfIntro, selfId: $selfId, email: $email, hpNo: $hpNo, birthday: $birthday, fcmId: $fcmId, provider: $provider, profilePath: $profilePath, accessToken: $accessToken)';
+    return 'CustData(custId: $custId, nickNm: $nickNm, custNm: $custNm, selfIntro: $selfIntro, selfId: $selfId, email: $email, hpNo: $hpNo, birthday: $birthday, chatId: $chatId, fcmId: $fcmId, provider: $provider, profilePath: $profilePath, accessToken: $accessToken, followYn: $followYn)';
   }
 
   @override
@@ -114,10 +126,12 @@ class CustData {
         other.email == email &&
         other.hpNo == hpNo &&
         other.birthday == birthday &&
+        other.chatId == chatId &&
         other.fcmId == fcmId &&
         other.provider == provider &&
         other.profilePath == profilePath &&
-        other.accessToken == accessToken;
+        other.accessToken == accessToken &&
+        other.followYn == followYn;
   }
 
   @override
@@ -130,9 +144,11 @@ class CustData {
         email.hashCode ^
         hpNo.hashCode ^
         birthday.hashCode ^
+        chatId.hashCode ^
         fcmId.hashCode ^
         provider.hashCode ^
         profilePath.hashCode ^
-        accessToken.hashCode;
+        accessToken.hashCode ^
+        followYn.hashCode;
   }
 }

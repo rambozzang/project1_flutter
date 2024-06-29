@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
@@ -10,6 +11,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:project1/app/weather/models/geocode.dart';
 import 'package:project1/app/weather/provider/weatherProvider.dart';
 import 'package:project1/app/weather/theme/colors.dart';
+import 'package:project1/app/weather/provider/weather_cntr.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:provider/provider.dart';
@@ -89,7 +91,8 @@ class _KakaoSearchPageState extends State<KakaoSearchPage> {
       latLng: LatLng(double.parse(data['y'] ?? 0.0), double.parse(data['x'] ?? 0.0)),
     );
 
-    await Provider.of<WeatherProvider>(context, listen: false).searchWeatherKakao(geocodeData);
+    // await Provider.of<WeatherProvider>(context, listen: false).searchWeatherKakao(geocodeData);
+    Get.find<WeatherCntr>().searchWeatherKakao(geocodeData);
   }
 
   @override
@@ -108,8 +111,8 @@ class _KakaoSearchPageState extends State<KakaoSearchPage> {
       hint: '국내 지명, 주소를 검색해주세요.',
       clearQueryOnClose: false,
       scrollPadding: const EdgeInsets.only(top: 8.0, bottom: 56.0, left: 10.0, right: 10.0),
-
-      transitionDuration: const Duration(milliseconds: 400),
+      margins: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 3),
+      transitionDuration: const Duration(milliseconds: 100),
       borderRadius: BorderRadius.circular(14.0),
       transitionCurve: Curves.easeInOut,
       accentColor: primaryBlue,
@@ -117,7 +120,7 @@ class _KakaoSearchPageState extends State<KakaoSearchPage> {
       queryStyle: const TextStyle(color: Colors.black), //regularText,
       physics: const BouncingScrollPhysics(),
       elevation: 20.0,
-      debounceDelay: const Duration(milliseconds: 450),
+      debounceDelay: const Duration(milliseconds: 300),
       onFocusChanged: (isFocused) {
         // if (!isFocused) {
         //   fsc.clear();

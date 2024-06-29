@@ -21,9 +21,7 @@ class CameraUtils {
     return CameraController(
       camera,
       resolutionPreset,
-      imageFormatGroup: Platform.isIOS
-          ? ImageFormatGroup.yuv420
-          : null, // iOS-specific configuration
+      imageFormatGroup: Platform.isIOS ? ImageFormatGroup.yuv420 : null, // iOS-specific configuration
     );
   }
 }

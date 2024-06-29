@@ -3,18 +3,23 @@ import 'dart:convert';
 
 class KakaoJoinData {
   int? id;
+  String? chatId;
+
   KakaoAccount? kakaoAccount;
   KakaoJoinData({
     this.id,
+    this.chatId,
     this.kakaoAccount,
   });
 
   KakaoJoinData copyWith({
     int? id,
+    String? chatId,
     KakaoAccount? kakaoAccount,
   }) {
     return KakaoJoinData(
       id: id ?? this.id,
+      chatId: chatId ?? this.chatId,
       kakaoAccount: kakaoAccount ?? this.kakaoAccount,
     );
   }
@@ -22,6 +27,7 @@ class KakaoJoinData {
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'id': id,
+      'chatId': chatId,
       'kakaoAccount': kakaoAccount?.toMap(),
     };
   }
@@ -29,29 +35,27 @@ class KakaoJoinData {
   factory KakaoJoinData.fromMap(Map<String, dynamic> map) {
     return KakaoJoinData(
       id: map['id'] != null ? map['id'] as int : null,
-      kakaoAccount: map['kakaoAccount'] != null
-          ? KakaoAccount.fromMap(map['kakaoAccount'] as Map<String, dynamic>)
-          : null,
+      chatId: map['chatId'] != null ? map['chatId'] as String : null,
+      kakaoAccount: map['kakaoAccount'] != null ? KakaoAccount.fromMap(map['kakaoAccount'] as Map<String, dynamic>) : null,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory KakaoJoinData.fromJson(String source) =>
-      KakaoJoinData.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory KakaoJoinData.fromJson(String source) => KakaoJoinData.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
-  String toString() => 'KakaoJoinData(id: $id, kakaoAccount: $kakaoAccount)';
+  String toString() => 'KakaoJoinData(id: $id, chatId: $chatId, kakaoAccount: $kakaoAccount)';
 
   @override
   bool operator ==(covariant KakaoJoinData other) {
     if (identical(this, other)) return true;
 
-    return other.id == id && other.kakaoAccount == kakaoAccount;
+    return other.id == id && other.chatId == chatId && other.kakaoAccount == kakaoAccount;
   }
 
   @override
-  int get hashCode => id.hashCode ^ kakaoAccount.hashCode;
+  int get hashCode => id.hashCode ^ chatId.hashCode ^ kakaoAccount.hashCode;
 }
 
 class KakaoAccount {
@@ -116,26 +120,21 @@ class KakaoAccount {
 
   factory KakaoAccount.fromMap(Map<String, dynamic> map) {
     return KakaoAccount(
-      profile: map['profile'] != null
-          ? Profile.fromMap(map['profile'] as Map<String, dynamic>)
-          : null,
+      profile: map['profile'] != null ? Profile.fromMap(map['profile'] as Map<String, dynamic>) : null,
       email: map['email'] != null ? map['email'] as String : null,
       ageRange: map['ageRange'] != null ? map['ageRange'] as String : null,
       gender: map['gender'] != null ? map['gender'] as String : null,
       ci: map['ci'] != null ? map['ci'] as String : null,
       birthday: map['birthday'] != null ? map['birthday'] as String : null,
-      birthdayType:
-          map['birthdayType'] != null ? map['birthdayType'] as String : null,
+      birthdayType: map['birthdayType'] != null ? map['birthdayType'] as String : null,
       name: map['name'] != null ? map['name'] as String : null,
-      phoneNumber:
-          map['phoneNumber'] != null ? map['phoneNumber'] as String : null,
+      phoneNumber: map['phoneNumber'] != null ? map['phoneNumber'] as String : null,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory KakaoAccount.fromJson(String source) =>
-      KakaoAccount.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory KakaoAccount.fromJson(String source) => KakaoAccount.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   String toString() {
@@ -204,34 +203,25 @@ class Profile {
   factory Profile.fromMap(Map<String, dynamic> map) {
     return Profile(
       nickname: map['nickname'] != null ? map['nickname'] as String : null,
-      profileImageUrl: map['profileImageUrl'] != null
-          ? map['profileImageUrl'] as String
-          : null,
-      thumbnailImageUrl: map['thumbnailImageUrl'] != null
-          ? map['thumbnailImageUrl'] as String
-          : null,
+      profileImageUrl: map['profileImageUrl'] != null ? map['profileImageUrl'] as String : null,
+      thumbnailImageUrl: map['thumbnailImageUrl'] != null ? map['thumbnailImageUrl'] as String : null,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory Profile.fromJson(String source) =>
-      Profile.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory Profile.fromJson(String source) => Profile.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
-  String toString() =>
-      'Profile(nickname: $nickname, profileImageUrl: $profileImageUrl, thumbnailImageUrl: $thumbnailImageUrl)';
+  String toString() => 'Profile(nickname: $nickname, profileImageUrl: $profileImageUrl, thumbnailImageUrl: $thumbnailImageUrl)';
 
   @override
   bool operator ==(covariant Profile other) {
     if (identical(this, other)) return true;
 
-    return other.nickname == nickname &&
-        other.profileImageUrl == profileImageUrl &&
-        other.thumbnailImageUrl == thumbnailImageUrl;
+    return other.nickname == nickname && other.profileImageUrl == profileImageUrl && other.thumbnailImageUrl == thumbnailImageUrl;
   }
 
   @override
-  int get hashCode =>
-      nickname.hashCode ^ profileImageUrl.hashCode ^ thumbnailImageUrl.hashCode;
+  int get hashCode => nickname.hashCode ^ profileImageUrl.hashCode ^ thumbnailImageUrl.hashCode;
 }

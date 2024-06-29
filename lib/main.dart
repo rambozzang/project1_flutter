@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:bot_toast/bot_toast.dart';
@@ -5,75 +6,50 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:http/http.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_supabase_chat_core/flutter_supabase_chat_core.dart';
 import 'package:get/get.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:http/http.dart' as http;
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/chatting/supabase_options.dart';
-import 'package:project1/app/list/cntr/video_list_cntr.dart';
-import 'package:project1/app/list/video_list_page.dart';
-import 'package:project1/app/weather/provider/weatherProvider.dart';
+import 'package:project1/app/weather/provider/weather_cntr.dart';
 import 'package:project1/common/life_cycle_getx.dart';
 import 'package:project1/config/app_theme.dart';
+import 'package:project1/repo/api/auth_dio.dart';
 import 'package:project1/route/app_route.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:project1/utils/log_utils.dart';
-import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 
-import 'package:flutter_supabase_chat_core/flutter_supabase_chat_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+// final StreamController<ReceivedNotification> didReceiveLocalNotificationStream = StreamController<ReceivedNotification>.broadcast();
 
 // fcm 배경 처리 (종료되어있거나, 백그라운드에 경우)
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  debugPrint("#### _firebaseMessagingBackgroundHandler : ");
+  // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  Lo.g("#### _firebaseMessagingBackgroundHandler : ");
 }
 
 @pragma('vm:entry-point')
 void backgroundHandler(NotificationResponse details) {
-  debugPrint("#### backgroundHandler :  ${details.payload!.toString()}");
-}
-
-//FCM 위젯
-void showFcmNoti(RemoteMessage message) {
-  RemoteNotification? notification = message.notification;
-  // AndroidNotification? android = message.notification?.android;
-  const AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
-      'high_importance_channel', 'high_importance_notification',
-      priority: Priority.max,
-      importance: Importance.max,
-      channelDescription: "KOS Importance notification",
-      icon: '@mipmap/ic_launcher',
-      showWhen: false);
-
-  if (notification != null && !kIsWeb) {
-    // var seq = message.data["seq"];
-    Lo.g("### main_page  showFlutterNotification :  notification.hashCode : ${notification.hashCode}");
-    // 웹이 아니면서 안드로이드이고, 알림이 있는경우
-    FlutterLocalNotificationsPlugin().show(
-      notification.hashCode,
-      notification.title,
-      notification.body,
-      const NotificationDetails(android: androidNotificationDetails, iOS: DarwinNotificationDetails(badgeNumber: 1)),
-    );
-  }
+  Lo.g("#### backgroundHandler :  ${details.payload!.toString()}");
 }
 
 void initializeFCM() async {
-  final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
       ?.createNotificationChannel(
           const AndroidNotificationChannel('high_importance_channel', 'high_importance_notification', importance: Importance.max));
-
-  await flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-      ?.requestNotificationsPermission();
 
   final DarwinInitializationSettings initializationSettingsDarwin = DarwinInitializationSettings(
     requestAlertPermission: false,
@@ -99,11 +75,12 @@ void initializeFCM() async {
     ),
     onDidReceiveNotificationResponse: (details) {
       // 액션 추가...
-      debugPrint("onDidReceiveNotificationResponse : ${details.payload}");
+      Lo.g("onDidReceiveNotificationResponse : ${details.payload}");
       Get.toNamed("/demo");
     },
     onDidReceiveBackgroundNotificationResponse: backgroundHandler,
   );
+
   if (Platform.isIOS) {
     // iOS foreground notification 권한
     await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
@@ -123,65 +100,38 @@ void initializeFCM() async {
     );
   }
 
-  // foreground 수신처리
-  FirebaseMessaging.onMessage.listen((message) {
-    Lo.g("onMessage");
-    RemoteNotification? notification = message.notification;
-
-    Lo.g("onMessage : ${message.notification.toString()}");
-
-    Lo.g("onMessage : ${message.notification?.title.toString()}");
-    Lo.g("onMessage : ${message.notification?.body.toString()}");
-    Lo.g("onMessage : ${message.data.toString()}");
-
-    if (notification != null) {
-      showFcmNoti(message); // 로컬노티
-    }
-  });
-
-  // 알림 클릭시
-  FirebaseMessaging.onMessageOpenedApp.listen((message) {
-    debugPrint("onMessageOpenedApp");
-    if (message.notification != null) {
-      final routeFromMessage = message.data["url"];
-      debugPrint("onMessageOpenedApp : $routeFromMessage");
-      Get.toNamed("/demo");
-    }
-  });
-  //앱이 완전히 종료된 상태에서 클릭시
-  FirebaseMessaging.instance.getInitialMessage().then((message) {
-    debugPrint("getInitialMessage");
-    // 로컬노티
-    if (message != null) {
-      debugPrint("getInitialMessage : $message}");
-      //   showFlutterNotification(message);
-      final routeFromMessage = message.data["url"];
-      debugPrint("getInitialMessage : $routeFromMessage");
-      Get.toNamed("/demo");
-    }
-  });
   // String? firebaseToken = await FirebaseMessaging.instance.getToken();
-  // debugPrint("firebaseToken : $firebaseToken");
+  // Lo.g("firebaseToken : $firebaseToken");
 }
 
-// Future<void> initGet() async {
-//   Get.put(() => LifeCycleGetx());
-//   Get.put(() => AuthCntr());
-// }
-const supabaseUrl = 'https://wtyeuynrapbgtpquxxfm.supabase.co';
-const supabaseKey = String.fromEnvironment(
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0eWV1eW5yYXBiZ3RwcXV4eGZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTc1NTM4NzYsImV4cCI6MjAzMzEyOTg3Nn0.RZKF6Nfkqr7fA7Uc7RtZc_Jnl4zw_Q6iDV-5J9DfIM8');
+Future<String> downloadAndSaveFile(String url, String fileName) async {
+  final Directory directory = await getApplicationDocumentsDirectory();
+  final String filePath = '${directory.path}/$fileName';
+  final http.Response response = await http.get(Uri.parse(url));
+  final File file = File(filePath);
+  await file.writeAsBytes(response.bodyBytes);
+  return filePath;
+}
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  // WidgetsFlutterBinding.ensureInitialized();
 
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   //fcm Setting
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  ).then((value) {
+    lo.g("main.dart >   Firebase.initializeApp 성공!!!");
+  });
+
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
   initializeFCM();
 
+  // 카카오개발자센터 네이티브 앱키
   KakaoSdk.init(
-    nativeAppKey: '257e56e034badf50ce13baaa28018e7d',
+    nativeAppKey: 'd0023f080e59afd633bc19e469ed4a73',
     loggingEnabled: true,
   );
 
@@ -194,23 +144,90 @@ void main() async {
   //  MobileAds.instance.initialize();
 
   // supabase
-  // await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
   await Supabase.initialize(
     url: supabaseOptions.url,
     anonKey: supabaseOptions.anonKey,
     debug: true,
-  );
-
-  // ...
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  ).then((value) {
-    lo.g("main.dart >   Firebase.initializeApp 성공!!!");
+  ).then((onValue) {
+    lo.g("main.dart >   Supabase.initialize 성공!!!");
   });
 
   // 안드로이드  : Network : CERTIFICATE_VERIFY_FAILED 오류 수정
   HttpOverrides.global = MyHttpOverrides();
 
+  // foreground 수신처리
+  FirebaseMessaging.onMessage.listen((message) async {
+    RemoteNotification? notification = message.notification;
+    Lo.g("=======================================================");
+    Lo.g("======. foreground 수신처리. =========");
+    Lo.g("=======================================================");
+    Lo.g("onMessage : ${message.notification.toString()}");
+    Lo.g("onMessage : ${message.notification?.title.toString()}");
+    Lo.g("onMessage : ${message.notification?.body.toString()}");
+    Lo.g("onMessage : ${message.data.toString()}");
+    Lo.g("onMessage : ${message.data["senderProfilePath"]}");
+
+    if (notification != null) {
+      // AndroidNotification? android = message.notification?.android;
+      AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
+        'high_importance_channel',
+        'high_importance_notification',
+        priority: Priority.max,
+        importance: Importance.max,
+        channelDescription: "KOS Importance notification",
+        icon: '@mipmap/skysnap',
+        showWhen: false,
+        largeIcon: message.data["senderProfilePath"] != ""
+            ? FilePathAndroidBitmap(await downloadAndSaveFile(message.data["senderProfilePath"], 'largeIcon'))
+            : null,
+      );
+
+      if (notification != null && !kIsWeb) {
+        // var seq = message.data["seq"];
+        Lo.g("### main_page  showFlutterNotification :  notification.hashCode : ${notification.hashCode}");
+        // 웹이 아니면서 안드로이드이고, 알림이 있는경우
+        flutterLocalNotificationsPlugin.show(
+          notification.hashCode,
+          notification.title,
+          notification.body,
+          NotificationDetails(android: androidNotificationDetails, iOS: DarwinNotificationDetails(badgeNumber: 1)),
+        );
+      }
+    }
+  });
+
+  // 알림 클릭시
+  FirebaseMessaging.onMessageOpenedApp.listen((message) {
+    Lo.g("onMessageOpenedApp");
+    if (message.notification != null) {
+      final boardId = message.data["boardId"];
+      final senderCustId = message.data["senderCustId"];
+      final followCustId = message.data["followCustId"];
+      final receiveCustId = message.data["receiveCustId"];
+      if (boardId == "" || boardId == null) {
+        return;
+      }
+      Get.toNamed('/VideoMyinfoListPage', arguments: {'datatype': 'ONE', 'custId': receiveCustId, 'boardId': boardId.toString()});
+    }
+  });
+  //앱이 완전히 종료된 상태에서 클릭시
+  FirebaseMessaging.instance.getInitialMessage().then((message) {
+    Lo.g("getInitialMessage");
+
+    // 로컬노티
+    if (message != null) {
+      final boardId = message.data["boardId"];
+      final senderCustId = message.data["senderCustId"];
+      final followCustId = message.data["followCustId"];
+      final receiveCustId = message.data["receiveCustId"];
+      if (boardId == "" || boardId == null) {
+        return;
+      }
+
+      Get.toNamed('/VideoMyinfoListPage', arguments: {'datatype': 'ONE', 'custId': receiveCustId, 'boardId': boardId.toString()});
+    }
+  });
+  FlutterNativeSplash.remove();
   runApp(const TigerBk());
 }
 
@@ -224,37 +241,47 @@ class MyHttpOverrides extends HttpOverrides {
 
 class TigerBk extends StatelessWidget {
   const TigerBk({super.key});
-
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => WeatherProvider(),
-      child: GetMaterialApp(
-        title: "Application",
-        useInheritedMediaQuery: true,
-        debugShowCheckedModeBanner: false,
-        builder: BotToastInit(),
-        theme: AppTheme.theme,
-        initialRoute: AppPages.INITIAL,
-        initialBinding: BindingsBuilder(() {
-          Get.put(LifeCycleGetx());
-          Get.put(AuthCntr());
-        }),
-        locale: const Locale('ko'),
-        supportedLocales: const [
-          //    const Locale('en', 'US'),
-          Locale('ko', 'KR'),
-        ],
-        localizationsDelegates: const [
-          DefaultMaterialLocalizations.delegate,
-          DefaultWidgetsLocalizations.delegate,
-          DefaultCupertinoLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-        ],
-        getPages: AppPages.routes,
-      ),
+    return GetMaterialApp(
+      title: "Application",
+      useInheritedMediaQuery: true,
+      debugShowCheckedModeBanner: false,
+      builder: BotToastInit(),
+      theme: AppTheme.theme,
+      initialRoute: AppPages.INITIAL,
+      initialBinding: BindingsBuilder(() {
+        Get.put(AuthCntr());
+        Get.put(LifeCycleGetx());
+        Get.put(WeatherCntr());
+      }),
+      locale: const Locale('ko'),
+      supportedLocales: const [
+        Locale('ko', 'KR'),
+      ],
+      localizationsDelegates: const [
+        DefaultMaterialLocalizations.delegate,
+        DefaultWidgetsLocalizations.delegate,
+        DefaultCupertinoLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      getPages: AppPages.routes,
     );
   }
+}
+
+class ReceivedNotification {
+  ReceivedNotification({
+    required this.id,
+    required this.title,
+    required this.body,
+    required this.payload,
+  });
+
+  final int id;
+  final String? title;
+  final String? body;
+  final String? payload;
 }

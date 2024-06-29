@@ -11,6 +11,7 @@ class FollowData {
   String? selfIntro;
   String? birthday;
   String? hpNo;
+  String? followYn;
   String? alramYn;
   String? regDate;
   FollowData({
@@ -23,6 +24,7 @@ class FollowData {
     this.selfIntro,
     this.birthday,
     this.hpNo,
+    this.followYn,
     this.alramYn,
     this.regDate,
   });
@@ -37,6 +39,7 @@ class FollowData {
     String? selfIntro,
     String? birthday,
     String? hpNo,
+    String? followYn,
     String? alramYn,
     String? regDate,
   }) {
@@ -50,6 +53,7 @@ class FollowData {
       selfIntro: selfIntro ?? this.selfIntro,
       birthday: birthday ?? this.birthday,
       hpNo: hpNo ?? this.hpNo,
+      followYn: followYn ?? this.followYn,
       alramYn: alramYn ?? this.alramYn,
       regDate: regDate ?? this.regDate,
     );
@@ -66,6 +70,7 @@ class FollowData {
       'selfIntro': selfIntro,
       'birthday': birthday,
       'hpNo': hpNo,
+      'followYn': followYn,
       'alramYn': alramYn,
       'regDate': regDate,
     };
@@ -82,6 +87,7 @@ class FollowData {
       selfIntro: map['selfIntro'] != null ? map['selfIntro'] as String : null,
       birthday: map['birthday'] != null ? map['birthday'] as String : null,
       hpNo: map['hpNo'] != null ? map['hpNo'] as String : null,
+      followYn: map['followYn'] != null ? map['followYn'] as String : null,
       alramYn: map['alramYn'] != null ? map['alramYn'] as String : null,
       regDate: map['regDate'] != null ? map['regDate'] as String : null,
     );
@@ -93,7 +99,7 @@ class FollowData {
 
   @override
   String toString() {
-    return 'FollowData(custId: $custId, custNm: $custNm, nickNm: $nickNm, profilePath: $profilePath, email: $email, selfId: $selfId, selfIntro: $selfIntro, birthday: $birthday, hpNo: $hpNo, alramYn: $alramYn, regDate: $regDate)';
+    return 'FollowData(custId: $custId, custNm: $custNm, nickNm: $nickNm, profilePath: $profilePath, email: $email, selfId: $selfId, selfIntro: $selfIntro, birthday: $birthday, hpNo: $hpNo, followYn: $followYn, alramYn: $alramYn, regDate: $regDate)';
   }
 
   @override
@@ -109,6 +115,7 @@ class FollowData {
         other.selfIntro == selfIntro &&
         other.birthday == birthday &&
         other.hpNo == hpNo &&
+        other.followYn == followYn &&
         other.alramYn == alramYn &&
         other.regDate == regDate;
   }
@@ -124,6 +131,7 @@ class FollowData {
         selfIntro.hashCode ^
         birthday.hashCode ^
         hpNo.hashCode ^
+        followYn.hashCode ^
         alramYn.hashCode ^
         regDate.hashCode;
   }

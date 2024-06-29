@@ -5,10 +5,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:project1/app/list/api_service.dart';
-import 'package:project1/app/list/cntr/video_list_cntr.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/repo/secure_storge.dart';
 import 'package:project1/repo/unsplash/get_image_bg_use_case.dart';
+import 'package:project1/app/weather/provider/weather_cntr.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
@@ -59,11 +59,10 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
     searchController.text = '';
     // 스토리지에 검색어 저장
     lastSerchValue.value = await saveSearchWord(searchWord);
-    Get.toNamed('/MainView1/0/${Uri.encodeComponent(searchWord)}');
+    Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/0/${Uri.encodeComponent(searchWord)}');
   }
 
   getUrls() async {
-    urls.value = await ApiService.getVideos();
     lastSerchValue.value = await getSearchWord() as List<String>;
   }
 
@@ -101,7 +100,7 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
       lo.g('getBgImage Start');
 
       GetImageBgUseCase repo = GetImageBgUseCase();
-      String url = await repo.call(Get.find<VideoListCntr>().currentWeather.value!.weather![0].description!.toString());
+      String url = await repo.call(Get.find<WeatherCntr>().currentWeather.value!.weather![0].description!.toString());
 
       lo.g('getBgImage : $url');
 
@@ -186,6 +185,16 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
             buildLastTop10(),
             const Gap(20),
             buildRecom(),
+            const Gap(20),
+            buildSchool(),
+            const Gap(20),
+            buildSubway(), const Gap(20),
+            buildGolf(), const Gap(20),
+            buildMountine(), const Gap(20),
+            buildCamping(), const Gap(20),
+            buildMarket(), const Gap(20),
+            buildConcert(), const Gap(20),
+
             // ElevatedButton(
             //   onPressed: () async {
             //     var aa = await getSearchWord();
@@ -244,13 +253,13 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
         children: [
           Container(
             padding: const EdgeInsets.all(7),
+            margin: const EdgeInsets.all(0),
             decoration: BoxDecoration(color: Colors.red[300], borderRadius: const BorderRadius.all(Radius.circular(40))),
             child: Text(
-              '${Get.find<VideoListCntr>().currentWeather.value?.main!.temp?.toStringAsFixed(1) ?? 0}°C',
+              '${Get.find<WeatherCntr>().currentWeather.value?.main!.temp?.toStringAsFixed(1) ?? 0}°C',
               style: const TextStyle(color: Colors.white, fontSize: 13),
             ),
           ),
-          const Gap(10),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -260,7 +269,7 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
                 width: 80,
                 height: 80,
                 imageUrl:
-                    'http://openweathermap.org/img/wn/${Get.find<VideoListCntr>().currentWeather.value?.weather![0].icon ?? '10n'}@2x.png',
+                    'http://openweathermap.org/img/wn/${Get.find<WeatherCntr>().currentWeather.value?.weather![0].icon ?? '10n'}@2x.png',
                 //   imageUrl:  'http://openweathermap.org/img/w/${value.weather![0].icon}.png',
                 imageBuilder: (context, imageProvider) => Container(
                   padding: const EdgeInsets.all(0),
@@ -280,11 +289,11 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    '${Get.find<VideoListCntr>().currentWeather.value?.main!.temp?.toStringAsFixed(1) ?? 0}°',
+                    '${Get.find<WeatherCntr>().currentWeather.value?.main!.temp?.toStringAsFixed(1) ?? 0}°',
                     style: const TextStyle(fontSize: 20, color: Colors.white),
                   ),
                   Text(
-                    Get.find<VideoListCntr>().currentWeather.value!.weather![0].description!.toString(),
+                    Get.find<WeatherCntr>().currentWeather.value!.weather![0].description!.toString(),
                     style: const TextStyle(fontSize: 13, color: Colors.white),
                   )
                 ],
@@ -297,7 +306,7 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                '${Get.find<VideoListCntr>().currentWeather.value?.main!.temp_min?.toStringAsFixed(1) ?? 0}° / ${Get.find<VideoListCntr>().currentWeather.value?.main!.temp_max?.toStringAsFixed(1) ?? 0}°',
+                '${Get.find<WeatherCntr>().currentWeather.value?.main!.temp_min?.toStringAsFixed(1) ?? 0}° / ${Get.find<WeatherCntr>().currentWeather.value?.main!.temp_max?.toStringAsFixed(1) ?? 0}°',
                 style: const TextStyle(fontSize: 13, color: Colors.white),
               ),
               // Text(
@@ -305,11 +314,11 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
               //   style: TextStyle(fontSize: 13, color: Colors.white),
               // ),
               Text(
-                Get.find<VideoListCntr>().localName.value,
+                Get.find<WeatherCntr>().currentLocation.value!.name.toString(),
                 style: TextStyle(fontSize: 13, color: Colors.white),
               ),
               Text(
-                '업데이트됨: ${Get.find<VideoListCntr>().updateTime.value}',
+                '${Get.find<WeatherCntr>().lastUpdated.value.toString().substring(0, 10).replaceAll('-', '/')} ${Get.find<WeatherCntr>().lastUpdated.value?.toString().substring(11, 16)}',
                 style: const TextStyle(fontSize: 10, color: Colors.white),
               )
             ],
@@ -376,7 +385,7 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
                     ),
                     Gap(3),
                     Text(
-                      '지도에서 찾기 ',
+                      '지도에서 보기',
                       style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.bold),
                     ),
                   ],
@@ -385,6 +394,363 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
             ),
           ],
         ),
+        Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            const SizedBox(
+              height: 10,
+            ),
+            // https://github.com/davigmacode/flutter_chips_choice/blob/master/example/lib/main.dart
+            ChipsChoice<String>.multiple(
+              padding: const EdgeInsets.all(0),
+              wrapped: true,
+              value: tags,
+              onChanged: (val) {
+                //  Utils.alert(val[0].toString());
+                String searchWord = val[0].toString();
+
+                goSearchPage(searchWord);
+                // setState(() => tags = val);
+              },
+              choiceCheckmark: true,
+              //  choiceStyle: C2ChipStyle.outlined(),
+              choiceStyle: C2ChipStyle.filled(
+                checkmarkColor: Colors.white,
+                selectedStyle: const C2ChipStyle(
+                  borderRadius: BorderRadius.all(
+                    Radius.circular(25),
+                  ),
+                ),
+              ),
+              choiceItems: C2Choice.listFrom<String, String>(
+                source: options,
+                value: (i, v) => v,
+                label: (i, v) => v,
+              ),
+            ),
+            // Using [extraOnToggle]
+            const SizedBox(
+              height: 20,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // 골프장 검색어
+  Widget buildGolf() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("골프장 검색어", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            const SizedBox(
+              height: 10,
+            ),
+            // https://github.com/davigmacode/flutter_chips_choice/blob/master/example/lib/main.dart
+            ChipsChoice<String>.multiple(
+              padding: const EdgeInsets.all(0),
+              wrapped: true,
+              value: tags,
+              onChanged: (val) {
+                //  Utils.alert(val[0].toString());
+                String searchWord = val[0].toString();
+
+                goSearchPage(searchWord);
+                // setState(() => tags = val);
+              },
+              choiceCheckmark: true,
+              //  choiceStyle: C2ChipStyle.outlined(),
+              choiceStyle: C2ChipStyle.filled(
+                checkmarkColor: Colors.white,
+                selectedStyle: const C2ChipStyle(
+                  borderRadius: BorderRadius.all(
+                    Radius.circular(25),
+                  ),
+                ),
+              ),
+              choiceItems: C2Choice.listFrom<String, String>(
+                source: options,
+                value: (i, v) => v,
+                label: (i, v) => v,
+              ),
+            ),
+            // Using [extraOnToggle]
+            const SizedBox(
+              height: 20,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // 콘서트장 검색어
+  Widget buildConcert() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("콘서트장 검색어", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            const SizedBox(
+              height: 10,
+            ),
+            // https://github.com/davigmacode/flutter_chips_choice/blob/master/example/lib/main.dart
+            ChipsChoice<String>.multiple(
+              padding: const EdgeInsets.all(0),
+              wrapped: true,
+              value: tags,
+              onChanged: (val) {
+                //  Utils.alert(val[0].toString());
+                String searchWord = val[0].toString();
+
+                goSearchPage(searchWord);
+                // setState(() => tags = val);
+              },
+              choiceCheckmark: true,
+              //  choiceStyle: C2ChipStyle.outlined(),
+              choiceStyle: C2ChipStyle.filled(
+                checkmarkColor: Colors.white,
+                selectedStyle: const C2ChipStyle(
+                  borderRadius: BorderRadius.all(
+                    Radius.circular(25),
+                  ),
+                ),
+              ),
+              choiceItems: C2Choice.listFrom<String, String>(
+                source: options,
+                value: (i, v) => v,
+                label: (i, v) => v,
+              ),
+            ),
+            // Using [extraOnToggle]
+            const SizedBox(
+              height: 20,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // 시장 검색어
+  Widget buildMarket() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("동네시장/유명5일장 검색어", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            const SizedBox(
+              height: 10,
+            ),
+            // https://github.com/davigmacode/flutter_chips_choice/blob/master/example/lib/main.dart
+            ChipsChoice<String>.multiple(
+              padding: const EdgeInsets.all(0),
+              wrapped: true,
+              value: tags,
+              onChanged: (val) {
+                //  Utils.alert(val[0].toString());
+                String searchWord = val[0].toString();
+
+                goSearchPage(searchWord);
+                // setState(() => tags = val);
+              },
+              choiceCheckmark: true,
+              //  choiceStyle: C2ChipStyle.outlined(),
+              choiceStyle: C2ChipStyle.filled(
+                checkmarkColor: Colors.white,
+                selectedStyle: const C2ChipStyle(
+                  borderRadius: BorderRadius.all(
+                    Radius.circular(25),
+                  ),
+                ),
+              ),
+              choiceItems: C2Choice.listFrom<String, String>(
+                source: options,
+                value: (i, v) => v,
+                label: (i, v) => v,
+              ),
+            ),
+            // Using [extraOnToggle]
+            const SizedBox(
+              height: 20,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // 유명등산 검색어
+  Widget buildMountine() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("등산/유명산 검색어", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            const SizedBox(
+              height: 10,
+            ),
+            // https://github.com/davigmacode/flutter_chips_choice/blob/master/example/lib/main.dart
+            ChipsChoice<String>.multiple(
+              padding: const EdgeInsets.all(0),
+              wrapped: true,
+              value: tags,
+              onChanged: (val) {
+                //  Utils.alert(val[0].toString());
+                String searchWord = val[0].toString();
+
+                goSearchPage(searchWord);
+                // setState(() => tags = val);
+              },
+              choiceCheckmark: true,
+              //  choiceStyle: C2ChipStyle.outlined(),
+              choiceStyle: C2ChipStyle.filled(
+                checkmarkColor: Colors.white,
+                selectedStyle: const C2ChipStyle(
+                  borderRadius: BorderRadius.all(
+                    Radius.circular(25),
+                  ),
+                ),
+              ),
+              choiceItems: C2Choice.listFrom<String, String>(
+                source: options,
+                value: (i, v) => v,
+                label: (i, v) => v,
+              ),
+            ),
+            // Using [extraOnToggle]
+            const SizedBox(
+              height: 20,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // 캠핑장 검색어
+  Widget buildCamping() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("캠핑장 검색어", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            const SizedBox(
+              height: 10,
+            ),
+            // https://github.com/davigmacode/flutter_chips_choice/blob/master/example/lib/main.dart
+            ChipsChoice<String>.multiple(
+              padding: const EdgeInsets.all(0),
+              wrapped: true,
+              value: tags,
+              onChanged: (val) {
+                //  Utils.alert(val[0].toString());
+                String searchWord = val[0].toString();
+
+                goSearchPage(searchWord);
+                // setState(() => tags = val);
+              },
+              choiceCheckmark: true,
+              //  choiceStyle: C2ChipStyle.outlined(),
+              choiceStyle: C2ChipStyle.filled(
+                checkmarkColor: Colors.white,
+                selectedStyle: const C2ChipStyle(
+                  borderRadius: BorderRadius.all(
+                    Radius.circular(25),
+                  ),
+                ),
+              ),
+              choiceItems: C2Choice.listFrom<String, String>(
+                source: options,
+                value: (i, v) => v,
+                label: (i, v) => v,
+              ),
+            ),
+            // Using [extraOnToggle]
+            const SizedBox(
+              height: 20,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // 학교 검색어
+  Widget buildSchool() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("학교 - 초/중/고/대학교", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            const SizedBox(
+              height: 10,
+            ),
+            // https://github.com/davigmacode/flutter_chips_choice/blob/master/example/lib/main.dart
+            ChipsChoice<String>.multiple(
+              padding: const EdgeInsets.all(0),
+              wrapped: true,
+              value: tags,
+              onChanged: (val) {
+                //  Utils.alert(val[0].toString());
+                String searchWord = val[0].toString();
+
+                goSearchPage(searchWord);
+                // setState(() => tags = val);
+              },
+              choiceCheckmark: true,
+              //  choiceStyle: C2ChipStyle.outlined(),
+              choiceStyle: C2ChipStyle.filled(
+                checkmarkColor: Colors.white,
+                selectedStyle: const C2ChipStyle(
+                  borderRadius: BorderRadius.all(
+                    Radius.circular(25),
+                  ),
+                ),
+              ),
+              choiceItems: C2Choice.listFrom<String, String>(
+                source: options,
+                value: (i, v) => v,
+                label: (i, v) => v,
+              ),
+            ),
+            // Using [extraOnToggle]
+            const SizedBox(
+              height: 20,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // 지하철역 검색어
+  Widget buildSubway() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("지하철역", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
@@ -595,7 +961,7 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
   // 금등검색어 칩
   Widget buildChip2(String label) {
     return InkWell(
-        onTap: () => Get.toNamed('/MainView1/0/${Uri.encodeComponent(label)}'),
+        onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/0/${Uri.encodeComponent(label)}'),
         child: Chip(
           backgroundColor: Colors.grey[200],
           shape: RoundedRectangleBorder(

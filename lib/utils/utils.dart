@@ -12,13 +12,14 @@ import 'package:project1/widget/custom_button.dart';
 import 'package:project1/widget/custom_sec_button.dart';
 import 'package:project1/widget/error_page.dart';
 import 'package:project1/widget/no_data_widget.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 abstract class Utils {
   Utils._();
 
   static void alert(String msg) {
     BotToast.showCustomText(
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 3),
       backButtonBehavior: BackButtonBehavior.none,
       animationDuration: const Duration(milliseconds: 300),
       animationReverseDuration: const Duration(milliseconds: 200),
@@ -33,11 +34,18 @@ abstract class Utils {
           ),
           child: Text(
             msg,
-            style: TextStyle(fontSize: 14, color: Colors.white),
+            style: const TextStyle(fontSize: 14, color: Colors.white),
           ),
         ),
       ),
     );
+  }
+
+  static String timeage(String strTime) {
+    return timeago.format(
+        DateTime.now()
+            .subtract(Duration(milliseconds: DateTime.now().millisecondsSinceEpoch - DateTime.parse(strTime).millisecondsSinceEpoch)),
+        locale: 'ko_short');
   }
 
   static void alertLong(String msg) {
@@ -432,18 +440,20 @@ abstract class Utils {
     );
   }
 
-  static Widget commonStreamBody<T>(StreamController stream, Widget Function(T) buildBody, Function()? onRetryPressed) {
+  static Widget commonStreamBody<T>(StreamController stream, Widget Function(T) buildBody, Function()? onRetryPressed,
+      {Widget? noDataWidget, Widget? loadingWidget, Widget? errorWidget}) {
     return StreamBuilder<ResStream<T>>(
       stream: stream.stream as Stream<ResStream<T>>?,
       builder: (BuildContext context, AsyncSnapshot<ResStream<T>> snapshot) {
         if (snapshot.hasData) {
           switch (snapshot.data?.status) {
             case Status.LOADING:
-              return Center(
-                  child: Padding(
-                padding: const EdgeInsets.all(68.0),
-                child: Utils.progressbar(),
-              ));
+              return loadingWidget ??
+                  Center(
+                      child: Padding(
+                    padding: const EdgeInsets.all(68.0),
+                    child: Utils.progressbar(),
+                  ));
             case Status.COMPLETED:
               var result = snapshot.data!.data;
               return result == null ? const NoDataWidget() : buildBody(result);
@@ -453,19 +463,19 @@ abstract class Utils {
                 onRetryPressed: onRetryPressed,
               );
             case null:
-              return const SizedBox(
-                width: 200,
-                height: 300,
-                child: Text("조회 중 오류가 발생했습니다."),
+              return ErrorPage(
+                errorMessage: snapshot.data!.message ?? '',
+                onRetryPressed: onRetryPressed,
               );
           }
         }
-        return const Center(
-          child: Padding(
-            padding: EdgeInsets.all(48.0),
-            child: Text("조회 된 데이터가 없습니다."),
-          ),
-        );
+        return noDataWidget ??
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(48.0),
+                child: Text("조회 된 데이터가 없습니다."),
+              ),
+            );
       },
     );
   }

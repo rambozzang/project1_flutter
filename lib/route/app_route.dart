@@ -2,13 +2,20 @@ import 'package:get/get.dart';
 import 'package:project1/app/%08join/join_page.dart';
 import 'package:project1/app/auth/auth_page.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
-import 'package:project1/app/list/cntr/video_list_cntr.dart';
-import 'package:project1/app/list/cntr/video_myinfo_list_cntr.dart';
-import 'package:project1/app/list/video_list_page.dart';
-import 'package:project1/app/camera/page/test.dart';
-import 'package:project1/app/list/video_myinfo_list_page.dart';
-import 'package:project1/app/myinfo/myinfo_modify_page.dart';
+import 'package:project1/app/chatting/chat_room_page.dart';
+import 'package:project1/app/chatting/main.dart';
+import 'package:project1/app/chatting/repo/suba_test_page.dart';
+import 'package:project1/app/chatting/chat_main_page.dart';
 import 'package:project1/app/myinfo/myinfo_page.dart';
+import 'package:project1/app/setting/maketing_page.dart';
+import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
+import 'package:project1/app/videomylist/cntr/video_myinfo_list_cntr.dart';
+import 'package:project1/app/videolist/video_list_page.dart';
+import 'package:project1/app/camera/page/test.dart';
+import 'package:project1/app/videomylist/video_myinfo_list_page.dart';
+import 'package:project1/app/loading_page.dart';
+import 'package:project1/app/myinfo/myinfo_modify_page.dart';
+import 'package:project1/app/myinfo/myinfo_page_new.dart';
 import 'package:project1/app/myinfo/otherinfo_page.dart';
 import 'package:project1/app/onboarding/onboarding_page.dart';
 import 'package:project1/app/search/cntr/map_cntr.dart';
@@ -25,7 +32,7 @@ import 'package:project1/app/setting/setting_page.dart';
 import 'package:project1/app/test/test_dio_page.dart';
 import 'package:project1/app/weather/Screens/sevenDayForecastDetailScreen.dart';
 import 'package:project1/app/weather/Screens/weather_page.dart';
-import 'package:project1/app/webview/weather_webvide.dart';
+import 'package:project1/app/webview/weather_webview.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/root/follow_list_page.dart';
 import 'package:project1/root/main_view1.dart';
@@ -65,16 +72,16 @@ abstract class AppPages {
       // binding: VideoListBinding(),
       //  transition: Transition.downToUp,
     ),
-    GetPage(
-      name: '/VideoListPage',
-      page: () => const VideoListPage(),
-      binding: VideoListBinding(),
-      //  transition: Transition.downToUp,
-    ),
+    // GetPage(
+    //   name: '/VideoListPage',
+    //   page: () => const VideoListPage(),
+    //   // binding: VideoListBinding(),
+    //   //  transition: Transition.downToUp,
+    // ),
     GetPage(
       name: '/VideoMyinfoListPage',
       page: () => const VideoMyinfoListPage(),
-      binding: VideoMyinfoListBinding(),
+      // binding: VideoMyinfoListBinding(),
       //  transition: Transition.downToUp,
     ),
     GetPage(
@@ -93,7 +100,7 @@ abstract class AppPages {
       //  transition: Transition.downToUp,
     ),
     GetPage(
-      name: '/MainView1/:tabPage/:searchWord',
+      name: '/MainView1/:custId/:tabPage/:searchWord',
       page: () => const MainView1(),
       //  transition: Transition.downToUp,
     ),
@@ -127,6 +134,12 @@ abstract class AppPages {
       page: () => const PrivecyPage(),
       //  transition: Transition.downToUp,
     ),
+    GetPage(
+      name: '/MaketingPage',
+      page: () => const MaketingPage(),
+      //  transition: Transition.downToUp,
+    ),
+
     GetPage(
       name: '/AgreePage',
       page: () => const AgreePage(),
@@ -170,12 +183,31 @@ abstract class AppPages {
       // transition: Transition.downToUp,
     ),
     GetPage(
-      name: '/WeatherWebVidew',
-      page: () => WeatherWebVidew(
+      name: '/WeatherWebView',
+      page: () => const WeatherWebView(
         isBackBtn: true,
       ),
+    ),
 
+    GetPage(
+      name: '/SupaTestPage',
+      page: () => const SupaTestPage(),
       // transition: Transition.downToUp,
     ),
+    GetPage(
+      name: '/ChatMainApp',
+      page: () => const ChatMainApp(),
+      // transition: Transition.downToUp,
+    ),
+    // GetPage(
+    //   name: '/ChatPage',
+    //   page: () => const ChatPage(),
+    //   // transition: Transition.downToUp,
+    // ),
+    // GetPage(
+    //   name: '/LoadingPage',
+    //   page: () => const LoadingPage(),
+    //   // transition: Transition.downToUp,
+    // ),
   ];
 }

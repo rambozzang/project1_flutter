@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
+import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -8,6 +10,8 @@ import 'package:project1/app/weather/provider/weatherProvider.dart';
 import 'package:project1/app/weather/theme/colors.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
 import 'package:project1/app/weather/widgets/customShimmer.dart';
+import 'package:project1/app/weather/provider/weather_cntr.dart';
+import 'package:project1/utils/log_utils.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
@@ -17,7 +21,8 @@ class TwentyFourHourForecast extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(color: backgroundBlack, borderRadius: BorderRadius.circular(16.0)),
+      decoration: BoxDecoration(color: const Color(0xFF262B49), borderRadius: BorderRadius.circular(16.0)),
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 0.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -36,13 +41,15 @@ class TwentyFourHourForecast extends StatelessWidget {
               ],
             ),
           ),
-          Consumer<WeatherProvider>(
-            builder: (context, weatherProv, _) {
-              if (weatherProv.isLoading) {
+          const SizedBox(height: 5.0),
+          GetBuilder<WeatherCntr>(
+            builder: (weatherProv) {
+              if (weatherProv.isLoading.value) {
                 return const SizedBox(
                   height: 1,
                 );
               }
+              lo.g('weatherProv.hourlyWeather.length : ${weatherProv.hourlyWeather.length}');
               return Container(
                 height: 180.0,
                 constraints: const BoxConstraints(
@@ -62,15 +69,15 @@ class TwentyFourHourForecast extends StatelessWidget {
             },
           ),
           const SizedBox(height: 20.0),
-          Consumer<WeatherProvider>(builder: (context, weatherProv, _) {
-            if (weatherProv.isLoading) {
+          GetBuilder<WeatherCntr>(builder: (weatherProv) {
+            if (weatherProv.isLoading.value) {
               return const CustomShimmer(
                 height: 200.0,
                 width: double.infinity,
               );
             }
             return SfCartesianChart(
-              backgroundColor: Colors.grey.withOpacity(0.3),
+              // backgroundColor: Colors.grey.withOpacity(0.3),
               plotAreaBorderWidth: 0,
               enableSideBySideSeriesPlacement: false,
               legend: const Legend(
@@ -83,8 +90,8 @@ class TwentyFourHourForecast extends StatelessWidget {
               primaryXAxis: CategoryAxis(
                 name: '날짜',
                 labelStyle: const TextStyle(fontSize: 13, color: Colors.white),
-                maximumLabels: 100,
-                autoScrollingDelta: 7,
+                maximumLabels: 50,
+                autoScrollingDelta: 8,
                 placeLabelsNearAxisLine: false,
                 autoScrollingMode: AutoScrollingMode.start,
                 majorGridLines: MajorGridLines(width: 0.3, color: Colors.grey.withOpacity(0.3)),
@@ -104,45 +111,47 @@ class TwentyFourHourForecast extends StatelessWidget {
               ),
               series: <LineSeries<HourlyWeather, String>>[
                 LineSeries<HourlyWeather, String>(
-                    name: '최고온도',
-                    dataSource: <HourlyWeather>[
-                      ...weatherProv.hourlyWeather,
-                    ],
-                    xValueMapper: (HourlyWeather sales, _) => '${sales.date.hour}시',
-                    yValueMapper: (HourlyWeather sales, _) => sales.temp,
-                    // dataLabelMapper: (HourlyWeather sales, _) => '${sales.date.hour}시',
-                    dataLabelSettings: DataLabelSettings(
-                      isVisible: true,
-                      labelIntersectAction: LabelIntersectAction.none,
-                      overflowMode: OverflowMode.hide,
-                      labelPosition: ChartDataLabelPosition.outside,
-                      connectorLineSettings: const ConnectorLineSettings(
-                        type: ConnectorType.curve,
-                        color: Colors.red,
-                        width: 2,
-                      ),
-                      builder: (dynamic data, dynamic point, dynamic series, int pointIndex, int seriesIndex) {
-                        return SizedBox(
-                          height: 60,
-                          width: 35,
-                          child: Column(
-                            children: [
-                              Lottie.asset(
-                                getWeatherImage(data.weatherCategory),
-                                fit: BoxFit.cover,
-                              ),
-                              Text(data.temp.toStringAsFixed(1) + '°', style: regularText.copyWith(fontSize: 12, color: Colors.white)),
-                            ],
-                          ),
-                        );
-                      },
+                  name: '온도',
+                  dataSource: <HourlyWeather>[
+                    ...weatherProv.hourlyWeather,
+                  ],
+                  xValueMapper: (HourlyWeather sales, _) => '${sales.date.hour}시',
+                  yValueMapper: (HourlyWeather sales, _) => sales.temp,
+                  // dataLabelMapper: (HourlyWeather sales, _) => '${sales.date.hour}시',
+                  dataLabelSettings: DataLabelSettings(
+                    isVisible: true,
+                    labelIntersectAction: LabelIntersectAction.none,
+                    overflowMode: OverflowMode.hide,
+                    labelPosition: ChartDataLabelPosition.outside,
+                    connectorLineSettings: const ConnectorLineSettings(
+                      type: ConnectorType.curve,
+                      color: Colors.red,
+                      width: 2,
                     ),
-                    width: 4,
-                    color: Colors.yellow[300],
-                    markerSettings: const MarkerSettings(isVisible: true)),
+                    builder: (dynamic data, dynamic point, dynamic series, int pointIndex, int seriesIndex) {
+                      return SizedBox(
+                        height: 60,
+                        width: 35,
+                        child: Column(
+                          children: [
+                            Lottie.asset(
+                              getWeatherImage(data.weatherCategory),
+                              fit: BoxFit.cover,
+                            ),
+                            Text(data.temp.toStringAsFixed(1) + '°', style: regularText.copyWith(fontSize: 12, color: Colors.white)),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  width: 4,
+                  color: Colors.yellow[300],
+                  markerSettings: const MarkerSettings(isVisible: true),
+                ),
               ],
             );
           }),
+          const Gap(14)
         ],
       ),
     );
@@ -189,9 +198,9 @@ class HourlyWeatherWidget extends StatelessWidget {
             // ),
           ),
           const SizedBox(height: 2.0),
-          Consumer<WeatherProvider>(builder: (context, weatherProv, _) {
+          GetBuilder<WeatherCntr>(builder: (weatherProv) {
             return Text(
-              weatherProv.isCelsius ? '${data.temp.toStringAsFixed(1)}°' : '${data.temp.toFahrenheit().toStringAsFixed(1)}°',
+              weatherProv.isCelsius.value ? '${data.temp.toStringAsFixed(1)}°' : '${data.temp.toFahrenheit().toStringAsFixed(1)}°',
               style: semiboldText,
             );
           }),

@@ -3,7 +3,7 @@ import 'package:flutter_supabase_chat_core/flutter_supabase_chat_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'color_schemes.g.dart';
-import 'rooms.dart';
+import 'chat_main_page.dart';
 import 'supabase_options.dart';
 
 // void main() async {
@@ -16,8 +16,8 @@ import 'supabase_options.dart';
 //   runApp(const ChatMainApp());
 // }
 
-class ChatMainApp extends StatelessWidget {
-  const ChatMainApp({
+class ChatMainApp1 extends StatelessWidget {
+  const ChatMainApp1({
     super.key,
   });
 
@@ -33,9 +33,10 @@ class ChatMainApp extends StatelessWidget {
           useMaterial3: true,
           colorScheme: darkColorScheme,
         ),
-        themeMode: ThemeMode.dark,
-        home: const UserOnlineStateObserver(
-          child: RoomsPage(),
-        ),
+        themeMode: ThemeMode.light,
+        //  home: const RoomsPage(),
+        // home: const UserOnlineStateObserver(
+        //   child: RoomsPage(),
+        // ),
       );
 }

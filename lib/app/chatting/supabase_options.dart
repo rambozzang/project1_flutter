@@ -9,7 +9,7 @@ class SupabaseOptions {
 }
 
 final SupabaseOptions supabaseOptions = SupabaseOptions(
-  url: 'https://wtyeuynrapbgtpquxxfm.supabase.co',
+  url: 'https://tnxglgjtuhrxxokpxphr.supabase.co',
   anonKey:
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0eWV1eW5yYXBiZ3RwcXV4eGZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTc1NTM4NzYsImV4cCI6MjAzMzEyOTg3Nn0.RZKF6Nfkqr7fA7Uc7RtZc_Jnl4zw_Q6iDV-5J9DfIM8',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRueGdsZ2p0dWhyeHhva3B4cGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTg3NzUxMjMsImV4cCI6MjAzNDM1MTEyM30.nX6nB4TFhcmXK6tEgCa6PYCcljvImLMp9RfhM0Hl8OE',
 );

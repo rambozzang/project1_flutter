@@ -13,7 +13,8 @@ import 'package:project1/utils/utils.dart';
 import 'package:rxdart/rxdart.dart';
 
 class LikeListPage extends StatefulWidget {
-  const LikeListPage({super.key});
+  const LikeListPage({super.key, required this.custId});
+  final String custId;
 
   @override
   State<LikeListPage> createState() => _LikeListPageState();
@@ -33,7 +34,6 @@ class _LikeListPageState extends State<LikeListPage> with AutomaticKeepAliveClie
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     getFollowBoard();
   }
@@ -43,7 +43,7 @@ class _LikeListPageState extends State<LikeListPage> with AutomaticKeepAliveClie
       followVideoListCntr.sink.add(ResStream.loading());
       BoardRepo repo = BoardRepo();
       ResData res =
-          await repo.getFollowBoard(Get.find<AuthCntr>().resLoginData.value.custId.toString(), followboardPageNum, followboardageSize);
+          await repo.getLikeBoard(Get.find<AuthCntr>().resLoginData.value.custId.toString(), followboardPageNum, followboardageSize);
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         return;
@@ -69,6 +69,8 @@ class _LikeListPageState extends State<LikeListPage> with AutomaticKeepAliveClie
 
   @override
   void dispose() {
+    followVideoListCntr.close();
+    scrollController.dispose();
     super.dispose();
   }
 
@@ -88,18 +90,23 @@ class _LikeListPageState extends State<LikeListPage> with AutomaticKeepAliveClie
         // backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: Container(
-        // color: Colors.white.withOpacity(.94),
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 8.0),
-        child: SingleChildScrollView(
-          controller: scrollController,
-          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
-          child: Column(
-            children: [
-              buildSearchInputBox(),
-              Container(child: Utils.commonStreamList<BoardWeatherListData>(followVideoListCntr, _followFeeds, getFollowBoard)),
-            ],
+      body: RefreshIndicator(
+        onRefresh: () async {
+          getFollowBoard();
+        },
+        child: Container(
+          // color: Colors.white.withOpacity(.94),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 8.0),
+          child: SingleChildScrollView(
+            controller: scrollController,
+            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
+            child: Column(
+              children: [
+                buildSearchInputBox(),
+                Container(child: Utils.commonStreamList<BoardWeatherListData>(followVideoListCntr, _followFeeds, getFollowBoard)),
+              ],
+            ),
           ),
         ),
       ),
@@ -122,7 +129,11 @@ class _LikeListPageState extends State<LikeListPage> with AutomaticKeepAliveClie
         itemCount: list.length,
         itemBuilder: (context, index) => GestureDetector(
           onTap: () {
-            Get.toNamed('/VideoMyinfoListPage', arguments: list[index]);
+            Get.toNamed('/VideoMyinfoListPage', arguments: {
+              'datatype': 'LIKE',
+              'custId': Get.find<AuthCntr>().resLoginData.value.custId.toString(),
+              'boardId': list[index].boardId.toString()
+            });
           },
           child: Container(
             color: Colors.grey.shade300,

@@ -3,18 +3,22 @@ import 'dart:convert';
 
 class NaverJoinData {
   String? stauts;
+  String? chatId;
   NaverAccount? account;
   NaverJoinData({
     this.stauts,
+    this.chatId,
     this.account,
   });
 
   NaverJoinData copyWith({
     String? stauts,
+    String? chatId,
     NaverAccount? account,
   }) {
     return NaverJoinData(
       stauts: stauts ?? this.stauts,
+      chatId: chatId ?? this.chatId,
       account: account ?? this.account,
     );
   }
@@ -22,6 +26,7 @@ class NaverJoinData {
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'stauts': stauts,
+      'chatId': chatId,
       'account': account?.toMap(),
     };
   }
@@ -29,29 +34,27 @@ class NaverJoinData {
   factory NaverJoinData.fromMap(Map<String, dynamic> map) {
     return NaverJoinData(
       stauts: map['stauts'] != null ? map['stauts'] as String : null,
-      account: map['account'] != null
-          ? NaverAccount.fromMap(map['account'] as Map<String, dynamic>)
-          : null,
+      chatId: map['chatId'] != null ? map['chatId'] as String : null,
+      account: map['account'] != null ? NaverAccount.fromMap(map['account'] as Map<String, dynamic>) : null,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory NaverJoinData.fromJson(String source) =>
-      NaverJoinData.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory NaverJoinData.fromJson(String source) => NaverJoinData.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
-  String toString() => 'NaverJoinData(stauts: $stauts, account: $account)';
+  String toString() => 'NaverJoinData(stauts: $stauts, chatId: $chatId, account: $account)';
 
   @override
   bool operator ==(covariant NaverJoinData other) {
     if (identical(this, other)) return true;
 
-    return other.stauts == stauts && other.account == account;
+    return other.stauts == stauts && other.chatId == chatId && other.account == account;
   }
 
   @override
-  int get hashCode => stauts.hashCode ^ account.hashCode;
+  int get hashCode => stauts.hashCode ^ chatId.hashCode ^ account.hashCode;
 }
 
 class NaverAccount {
@@ -129,16 +132,14 @@ class NaverAccount {
       age: map['age'] != null ? map['age'] as String : null,
       birthday: map['birthday'] != null ? map['birthday'] as String : null,
       birthyear: map['birthyear'] != null ? map['birthyear'] as String : null,
-      profileImage:
-          map['profileImage'] != null ? map['profileImage'] as String : null,
+      profileImage: map['profileImage'] != null ? map['profileImage'] as String : null,
       mobile: map['mobile'] != null ? map['mobile'] as String : null,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory NaverAccount.fromJson(String source) =>
-      NaverAccount.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory NaverAccount.fromJson(String source) => NaverAccount.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   String toString() {

@@ -1,17 +1,17 @@
 import 'dart:io';
 // import 'package:cloudinary_public/cloudinary_public.dart';
+import 'package:bot_toast/bot_toast.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:hashtagable_v3/hashtagable.dart';
+import 'package:project1/app/weather/provider/weather_cntr.dart';
 import 'package:project1/repo/board/data/board_save_data.dart';
 import 'package:project1/repo/board/data/board_save_main_data.dart';
 import 'package:project1/repo/board/data/board_save_weather_data.dart';
-import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/weather/data/current_weather.dart';
-import 'package:project1/repo/weather/mylocator_repo.dart';
-import 'package:project1/repo/weather/open_weather_repo.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
@@ -22,9 +22,8 @@ import 'package:video_player/video_player.dart';
 
 // 동영상 압축 FFmpeg로 동영상 압축하기
 class VideoRegPage extends StatefulWidget {
-  const VideoRegPage({super.key, required this.videoFile, required this.currentWeather});
+  const VideoRegPage({super.key, required this.videoFile});
   final File videoFile;
-  final CurrentWeather currentWeather;
 
   @override
   State<VideoRegPage> createState() => _VideoRegPageState();
@@ -52,10 +51,12 @@ class _VideoRegPageState extends State<VideoRegPage> {
   late String? thumbnailFile;
   BoardSaveData boardSaveData = BoardSaveData();
 
+  bool isCancle = false;
+
   @override
   void initState() {
     super.initState();
-    currentWeather.value = widget.currentWeather;
+    // currentWeather.value = widget.currentWeather;
 
     _videoController = VideoPlayerController.file(widget.videoFile);
 
@@ -72,78 +73,15 @@ class _VideoRegPageState extends State<VideoRegPage> {
 
   Future<void> getDate() async {
     try {
-      // 위치 좌표 가져오기
-      MyLocatorRepo myLocatorRepo = MyLocatorRepo();
-      position = await myLocatorRepo.getCurrentLocation();
-      //Utils.alert('좌표 가져오기 성공');
-
-      // 좌료를 통해 날씨 정보 가져오기
-      OpenWheatherRepo repo = OpenWheatherRepo();
-      ResData resData = await repo.getWeather(position!);
-
-      if (resData.code != '00') {
-        Utils.alert(resData.msg.toString());
-        return;
-      }
-      Lo.g('getDate() resData : ${resData.data}');
-      currentWeather.value = CurrentWeather.fromMap(resData.data);
-      totalData.value?.currentWeather = CurrentWeather.fromMap(resData.data);
-      Lo.g('weatherData : ${currentWeather.toString()}');
-      //Utils.alert('날씨 가져오기 성공');
-
-      // 좌료를 통해 동네이름 가져오기
-      ResData resData2 = await myLocatorRepo.getLocationName(position!);
-      if (resData2.code != '00') {
-        Utils.alert(resData2.msg.toString());
-        return;
-      }
-      //Utils.alert('동네이름 가져오기 성공');
-      Lo.g('동네이름() resData2 : ${resData2.data['ADDR']}');
-      localName.value = resData2.data['ADDR'];
-      totalData.value?.localName = resData2.data['ADDR'];
-    } catch (e) {
-      Lo.g('getDate() error : ' + e.toString());
-    }
-  }
-
-  // 현재 위치 가져오기
-  Future<void> getCurrentLocation() async {
-    localName.value = '';
-    MyLocatorRepo myLocatorRepo = MyLocatorRepo();
-    position = await myLocatorRepo.getCurrentLocation();
-    ResData resData2 = await myLocatorRepo.getLocationName(position!);
-    if (resData2.code != '00') {
-      Utils.alert(resData2.msg.toString());
-      return;
-    }
-    //Utils.alert('동네이름 가져오기 성공');
-    Lo.g('동네이름() resData2 : ${resData2.data['ADDR']}');
-    localName.value = resData2.data['ADDR'];
-    totalData.value?.localName = resData2.data['ADDR'];
-  }
-
-  // 날씨 가져오기
-  Future<void> getWeather() async {
-    currentWeather.value = null;
-    // 좌료를 통해 날씨 정보 가져오기
-    OpenWheatherRepo repo = OpenWheatherRepo();
-    ResData resData = await repo.getWeather(position!);
-
-    if (resData.code != '00') {
-      Utils.alert(resData.msg.toString());
-      return;
-    }
-    Lo.g('getDate() resData : ${resData.data}');
-    currentWeather.value = CurrentWeather.fromMap(resData.data);
+      await Get.find<WeatherCntr>().getWeatherData();
+    } catch (e) {}
   }
 
   // 파일 업로드
   Future<void> upload() async {
     isUploading.value = true;
-    // String today = Utils.getToday();
+
     try {
-      // 저장
-      // BoardRepo boardRepo = BoardRepo();
       BoardSaveMainData boardSaveMainData = BoardSaveMainData();
       boardSaveMainData.contents = hashTagController.text;
       boardSaveMainData.depthNo = '0';
@@ -153,104 +91,64 @@ class _VideoRegPageState extends State<VideoRegPage> {
       boardSaveMainData.typeCd = 'V';
       boardSaveMainData.typeDtCd = 'V';
 
+      CurrentWeather? currentWeather = Get.find<WeatherCntr>().currentWeather.value;
+
       BoardSaveWeatherData boardSaveWeatherData = BoardSaveWeatherData();
       boardSaveWeatherData.boardId = 0;
-      boardSaveWeatherData.city = currentWeather.value!.name;
-      boardSaveWeatherData.country = currentWeather.value!.sys!.country;
-      boardSaveWeatherData.currentTemp = currentWeather.value!.main!.temp?.toStringAsFixed(1);
-      boardSaveWeatherData.feelsTemp = currentWeather.value!.main!.feels_like?.toStringAsFixed(1);
-      boardSaveWeatherData.humidity = currentWeather.value!.main!.humidity.toString();
-      boardSaveWeatherData.icon = currentWeather.value!.weather![0].icon;
-      boardSaveWeatherData.lat = currentWeather.value!.coord!.lat.toString();
-      boardSaveWeatherData.location = localName.value;
-      boardSaveWeatherData.lon = currentWeather.value!.coord!.lon.toString();
-      boardSaveWeatherData.speed = currentWeather.value!.wind!.speed.toString();
-      boardSaveWeatherData.tempMax = currentWeather.value!.main!.temp_max?.toStringAsFixed(1);
-      boardSaveWeatherData.tempMin = currentWeather.value!.main!.temp_min?.toStringAsFixed(1);
+      boardSaveWeatherData.city = currentWeather!.name;
+      boardSaveWeatherData.country = currentWeather.sys!.country;
+      boardSaveWeatherData.currentTemp = currentWeather.main!.temp?.toStringAsFixed(1);
+      boardSaveWeatherData.feelsTemp = currentWeather.main!.feels_like?.toStringAsFixed(1);
+      boardSaveWeatherData.humidity = currentWeather.main!.humidity.toString();
+      boardSaveWeatherData.icon = currentWeather.weather![0].icon;
+      boardSaveWeatherData.lat = currentWeather.coord!.lat.toString();
+      boardSaveWeatherData.lon = currentWeather.coord!.lon.toString();
+      boardSaveWeatherData.speed = currentWeather.wind!.speed.toString();
+      boardSaveWeatherData.tempMax = currentWeather.main!.temp_max?.toStringAsFixed(1);
+      boardSaveWeatherData.tempMin = currentWeather.main!.temp_min?.toStringAsFixed(1);
+      boardSaveWeatherData.location = Get.find<WeatherCntr>().currentLocation.value!.name;
       // boardSaveWeatherData.thumbnailPath = res2.secureUrl;
       // boardSaveWeatherData.videoPath = res.secureUrl;
-      boardSaveWeatherData.weatherInfo = currentWeather.value!.weather![0].description;
+      boardSaveWeatherData.weatherInfo = currentWeather.weather![0].description;
       boardSaveData.boardMastInVo = boardSaveMainData;
       boardSaveData.boardWeatherVo = boardSaveWeatherData;
       Lo.g("Root upload() videoFilePath : ${widget.videoFile.path}");
-      Lo.g("Root upload() videoFilePath : ${widget.videoFile.path}");
-      Lo.g("Root upload() videoFilePath : ${widget.videoFile.path}");
-      Lo.g("Root upload() videoFilePath : ${widget.videoFile.path}");
+
       Utils.alert('임시 등록되었습니다! 잠시후 정상 게시됩니다!');
       Future.delayed(const Duration(milliseconds: 500), () {
-        isUploading.value = false;
         Get.back();
       });
-      // return;
-      // {asset_id: 589dcec7931c12efb379ea632472b541, public_id: VID_2024-03-26_09-53-54-688112223_euuauj, created_at: 2024-03-26 12:54:04.000Z, url: http://res.cloudinary.com/dfbxar2j5/video/upload/v1711457644/VID_2024-03-26_09-53-54-688112223_euuauj.mp4, secure_url: https://res.cloudinary.com/dfbxar2j5/video/upload/v1711457644/VID_2024-03-26_09-53-54-688112223_euuauj.mp4, original_filename: VID_2024-03-26 09-53-54-688112223, tags: [], context: {}, data: {asset_id: 589dcec7931c12efb379ea632472b541, public_id: VID_2024-03-26_09-53-54-688112223_euuauj, version: 1711457644, version_id: 399c18d5612ddbc8dba302632442ea62, signature: f6b7e4ec4e869f18d4112882bdf5d37aba8d582d, width: 640, height: 1136, format: mp4, resource_type: video, created_at: 2024-03-26T12:54:04Z, tags: [], pages: 0, bytes: 1612764, type: upload, etag: 116c06206b2f85fb10ca3fdfdfbe273e, placeholder: false, url: http://res.cloudinary.com/dfbxar2j5/video/upload/v1711457644/VID_2024-03-26_09-53-54-6881
     } catch (e) {
       debugPrint(e.toString());
-      // debugPrint(e.request.toString());
       isUploading.value = false;
       uploadingPercentage1.value = 0.0;
       uploadingPercentage2.value = 0.0;
     }
   }
-  // Cloudinary에 동영상 업로드 Vo
-  //{asset_id: 9d5df6f19ad1a256301c40bb3c346cad,
-  // public_id: VID_2024-03-26_07-49-12-268456455_heecms,
-  // created_at: 2024-03-26 10:49:21.000Z,
-  //url: http://res.cloudinary.com/dfbxar2j5/video/upload/v1711450161/VID_2024-03-26_07-49-12-268456455_heecms.mp4,
-  //secure_url: https://res.cloudinary.com/dfbxar2j5/video/upload/v1711450161/VID_2024-03-26_07-49-12-268456455_heecms.mp4,
-  //original_filename: VID_2024-03-26 07-49-12-268456455,
-  //tags: [],
-  //context: {},
-  // data:
-  //{asset_id: 9d5df6f19ad1a256301c40bb3c346cad,
-  // public_id: VID_2024-03-26_07-49-12-268456455_heecms,
-  //version: 1711450161,
-  //version_id: 414b6929cdf6492fd5488edb175a0aed,
-  //signature: 6f740755d45e05ed94c5b38a469f20426ab1a50a,
-  //width: 640, height: 1136, format: mp4,
-  // resource_type: video,
-  // created_at: 2024-03-26T10:49:21Z, tags: [],
-  //pages: 0, bytes: 1523141, type: upload, etag:
-  // f85b125536e887b2c67f2c4192e95f8e,
-  // placeholder: false, url: http://res.cloudinary.com/dfbxar2j5/video/upload/v1711450161/VID_2024-03-26_07-49-12-2684
 
-  // 비디오 파일 압축 및 썸네일 생성
-  Future<void> compressVideo() async {
-    try {
-      isCompress.value = false;
-      log(widget.videoFile.path);
-      final List list;
-      list = await Future.wait([
-        VideoCompress.compressVideo(
-          widget.videoFile.path,
-          quality: VideoQuality.LowQuality,
-          deleteOrigin: false,
-          includeAudio: true,
-        ),
-        VideoCompress.getFileThumbnail(widget.videoFile.path, quality: 50),
-      ]);
-      pickedFile = list[0];
-      thumbnailFile = list[1].path;
-      isCompress.value = true;
-    } catch (e) {
-      Lo.g('비디오 압축 에러 : $e');
-      VideoCompress.cancelCompression();
-      isCompress.value = false;
+  void cancle() {
+    if (isUploading.value == true) {
+      return;
     }
-  }
-
-  // 비디오 파일 압축 삭제
-  Future<void> removeVideo() async {
-    await VideoCompress.deleteAllCache();
-
-    Lo.g('비디오 파일 압축 삭제');
+    Utils.showConfirmDialog('나가기', '영상이 삭제됩니다. 나가겠습니까?', BackButtonBehavior.none, confirm: () async {
+      Lo.g('cancel');
+      isCancle = true;
+      Navigator.of(context).pop();
+    }, cancel: () async {
+      Lo.g('cancel');
+    }, backgroundReturn: () {});
   }
 
   @override
   void dispose() {
     _videoController.dispose();
     VideoCompress.cancelCompression();
+
     super.dispose();
-    Get.find<RootCntr>().goTimer(widget.videoFile, boardSaveData);
+    //실제 Root 페이지 에서 동영상 업로드 처리
+    if (!isCancle) {
+      Get.find<RootCntr>().goTimer(widget.videoFile, boardSaveData);
+    }
   }
 
   @override
@@ -258,289 +156,270 @@ class _VideoRegPageState extends State<VideoRegPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       resizeToAvoidBottomInset: false,
-      // appBar: AppBar(
-      //     backgroundColor: Colors.white, centerTitle: false, forceMaterialTransparency: false, elevation: 0, scrolledUnderElevation: 0),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Gap(30),
-                    Container(
-                      height: 300,
-                      width: double.infinity,
-                      alignment: Alignment.center,
-                      child: Stack(
+      body: PopScope(
+        canPop: false,
+        onPopInvoked: (didPop) {
+          //didPop == true , 뒤로가기 제스쳐가 감지되면 호출 된다.
+          lo.g("isCancle : $isCancle , didPop : $didPop");
+          if (!didPop && isCancle == false) {
+            cancle();
+            return;
+          }
+        },
+        child: SafeArea(
+          child: Stack(
+            children: [
+              SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Gap(50),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          AspectRatio(
-                            aspectRatio: 9 / 16,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(15),
-                              child: GestureDetector(
-                                  onTap: () {
-                                    Navigator.push<_PlayerVideoAndPopPage>(
-                                      context,
-                                      MaterialPageRoute<_PlayerVideoAndPopPage>(
-                                        builder: (BuildContext context) => _PlayerVideoAndPopPage(),
-                                      ),
-                                    );
-                                  },
-                                  child: VideoPlayer(_videoController)),
+                          Container(
+                            height: 300,
+                            alignment: Alignment.center,
+                            child: Stack(
+                              children: [
+                                AspectRatio(
+                                  aspectRatio: 9 / 16,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(15),
+                                    child: GestureDetector(
+                                        onTap: () {
+                                          Navigator.push<_PlayerVideoAndPopPage>(
+                                            context,
+                                            MaterialPageRoute<_PlayerVideoAndPopPage>(
+                                              builder: (BuildContext context) => _PlayerVideoAndPopPage(),
+                                            ),
+                                          );
+                                        },
+                                        //  child: Container(color: Colors.red)),
+                                        child: VideoPlayer(_videoController)),
+                                  ),
+                                ),
+                                const Positioned(right: 5, bottom: 5, child: Icon(Icons.zoom_in, size: 30, color: Colors.white)),
+                              ],
                             ),
                           ),
-                          const Positioned(right: 5, bottom: 5, child: Icon(Icons.zoom_in, size: 30, color: Colors.white))
-                        ],
-                      ),
-                    ),
-                    const Gap(20),
-                    HashTagTextField(
-                      controller: hashTagController,
-                      basicStyle: const TextStyle(fontSize: 15, color: Colors.black, decorationThickness: 0),
-                      decoratedStyle: const TextStyle(fontSize: 15, color: Colors.blue),
-                      keyboardType: TextInputType.multiline,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
-                        hintText: "내용을 입력해주세요! #태그 #태그2 #태그3",
-                        //   hintStyle: TextStyle(fontSize: 15, color: Colors.grey),
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(5),
-                            borderSide: const BorderSide(color: Color.fromARGB(255, 59, 104, 81), width: 1.0)),
-                      ),
-
-                      /// Called when detection (word starts with #, or # and @) is being typed
-                      onDetectionTyped: (text) {
-                        print(text);
-                      },
-
-                      /// Called when detection is fully typed
-                      onDetectionFinished: () {
-                        print("detection finished");
-                      },
-                    ),
-                    const Gap(10),
-                    // const Row(
-                    //   mainAxisAlignment: MainAxisAlignment.end,
-                    //   children: [
-                    //     Text('# 태그 사용가능.', style: TextStyle(fontSize: 14, color: Colors.black87)),
-                    //   ],
-                    // ),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100]!,
-                        border: Border.all(color: Colors.grey[300]!),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.location_on, color: Colors.red, size: 20),
-                              ValueListenableBuilder<String?>(
-                                  valueListenable: localName,
-                                  builder: (context, value, child) {
-                                    if (value == null || value == '') {
-                                      return const Text(
-                                        '현재위치 가져오는중..',
-                                      );
-                                    }
-                                    return GestureDetector(
-                                      onTap: () => getCurrentLocation(),
-                                      child: Text(
-                                        value.toString(),
-                                        style: const TextStyle(fontSize: 14, color: Colors.black),
-                                      ),
-                                    );
-                                  }),
-                            ],
-                          ),
-                          const Gap(10),
-                          Row(
-                            children: [
-                              ValueListenableBuilder<CurrentWeather?>(
-                                valueListenable: currentWeather,
-                                builder: (context, value, child) {
-                                  if (value == null) {
-                                    return const SizedBox(
-                                        height: 40,
-                                        child: Center(
-                                          child: Text(
-                                            '  날씨정보 가져오는중..',
-                                            textAlign: TextAlign.left,
-                                          ),
-                                        ));
-                                  }
-                                  return GestureDetector(
-                                    onTap: () => getWeather(),
+                          const Gap(5),
+                          Expanded(
+                            child: Container(
+                              alignment: Alignment.topLeft,
+                              // height: 300,
+                              // width: MediaQuery.of(context).size.width * 0.5 - 50,
+                              // alignment: Alignment.center,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(15),
+                                // color: Colors.purple[50],
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // const Text('현재 위치', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87)),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 7),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(5),
+                                    ),
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.start,
                                       children: [
-                                        const Gap(5),
-                                        //Text(value.weather![0].description.toString()),
-                                        Text(OpenWheatherRepo().weatherDescKo[value.weather![0].id]),
-                                        const Text(
-                                          ' · ',
-                                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                                        ),
-                                        Text(
-                                          '${value.main!.temp!.toStringAsFixed(1)}°',
-                                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-                                        ),
-                                        SizedBox(
-                                          width: 50,
-                                          height: 50,
-                                          child: Image.network(
-                                            // 'http://openweathermap.org/img/wn/${value.weather![0].icon}@2x.png',
-                                            'http://openweathermap.org/img/w/${value.weather![0].icon}.png',
-                                            scale: 1,
-                                            fit: BoxFit.contain,
-                                            alignment: Alignment.centerLeft,
-                                          ),
-                                        ),
+                                        Container(
+                                            padding: const EdgeInsets.all(2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.green.withOpacity(0.9),
+                                              borderRadius: BorderRadius.circular(5),
+                                            ),
+                                            child: const Icon(Icons.location_on, color: Colors.white, size: 15)),
+                                        const SizedBox(width: 5),
+                                        Text(Get.find<WeatherCntr>().currentLocation.value!.name,
+                                            style: const TextStyle(fontSize: 16, color: Colors.black, fontWeight: FontWeight.bold)),
                                       ],
                                     ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                          ValueListenableBuilder<bool>(
-                              valueListenable: isCompress,
-                              builder: (context, value, child) {
-                                if (!value) {
-                                  return const Text(
-                                    '영상 압축중..',
-                                  );
-                                }
-                                return Row(
-                                  children: [
-                                    Text(
-                                      "재생시간 : ${(_videoController.value.duration.toString().split('.').first).split(':')[1]}:${(_videoController.value.duration.toString().split('.').first).split(':')[2]}",
-                                      style: const TextStyle(fontSize: 14, color: Colors.black),
-                                    ),
-                                    const Gap(20),
-                                    GestureDetector(
-                                      onTap: () => compressVideo(),
-                                      child: const Text(
-                                        "압축완료",
-                                        textAlign: TextAlign.left,
-                                        style: TextStyle(fontSize: 14, color: Colors.black),
+                                  ),
+                                  Row(
+                                    children: [
+                                      Text('${Get.find<WeatherCntr>().currentWeather.value!.main!.temp!.toStringAsFixed(1)}°C',
+                                          style: const TextStyle(fontSize: 16, color: Colors.black)),
+                                      CachedNetworkImage(
+                                        cacheKey: Get.find<WeatherCntr>().currentWeather.value?.weather![0].icon ?? '10n',
+                                        width: 50,
+                                        height: 50,
+                                        imageUrl:
+                                            'http://openweathermap.org/img/wn/${Get.find<WeatherCntr>().currentWeather.value?.weather![0].icon ?? '10n'}@2x.png',
+                                        imageBuilder: (context, imageProvider) => Container(
+                                          decoration: BoxDecoration(
+                                            image: DecorationImage(
+                                                image: imageProvider,
+                                                fit: BoxFit.cover,
+                                                colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn)),
+                                          ),
+                                        ),
+                                        placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 1, color: Colors.white),
+                                        errorWidget: (context, url, error) => const Icon(Icons.error),
                                       ),
-                                    ),
-                                  ],
-                                );
-                              }),
+                                    ],
+                                  ),
+                                  Text(
+                                    Get.find<WeatherCntr>().currentWeather.value!.weather![0].description!,
+                                    style: const TextStyle(fontSize: 16, color: Colors.black),
+                                    overflow: TextOverflow.clip,
+                                  ),
+                                  const Gap(6),
+                                  Text(
+                                    '미세: ${Get.find<WeatherCntr>().mistViewData.value!.mist10Grade!.toString()}',
+                                    style: const TextStyle(fontWeight: FontWeight.w400, fontSize: 14, color: Colors.black87),
+                                  ),
+                                  Text('초미세: ${Get.find<WeatherCntr>().mistViewData.value!.mist25Grade!.toString()}',
+                                      style: const TextStyle(fontWeight: FontWeight.w400, fontSize: 14, color: Colors.black87)),
+                                ],
+                              ),
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                    const Gap(20),
-                  ],
+                      const Gap(20),
+                      HashTagTextField(
+                        controller: hashTagController,
+                        basicStyle: const TextStyle(fontSize: 15, color: Colors.black, decorationThickness: 0),
+                        decoratedStyle: const TextStyle(fontSize: 15, color: Colors.blue),
+                        keyboardType: TextInputType.multiline,
+                        maxLines: 4,
+                        decoration: InputDecoration(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
+                          hintText: "내용을 입력해주세요! #태그 #태그2 #태그3",
+                          //   hintStyle: TextStyle(fontSize: 15, color: Colors.grey),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(5),
+                              borderSide: const BorderSide(color: Color.fromARGB(255, 59, 104, 81), width: 1.0)),
+                        ),
+                        onDetectionTyped: (text) {
+                          print(text);
+                        },
+                        onDetectionFinished: () {
+                          print("detection finished");
+                        },
+                      ),
+                      const Gap(10),
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text('# 태그 사용가능.', style: TextStyle(fontSize: 14, color: Colors.black87)),
+                        ],
+                      ),
+                      const Gap(20),
+                      const Gap(10),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            ValueListenableBuilder<double>(
-                valueListenable: uploadingPercentage1,
-                builder: (context, value, child) {
-                  return Stack(
-                    children: [
-                      Container(
-                        height: 5,
-                        width: MediaQuery.of(context).size.width,
-                        color: Colors.grey[200],
-                      ),
-                      Container(
-                        height: 5,
-                        width: MediaQuery.of(context).size.width * (value / 100),
-                        color: const Color(0xFFEA3799),
-                      ),
-                    ],
-                  );
-                }),
-            ValueListenableBuilder<double>(
-                valueListenable: uploadingPercentage2,
-                builder: (context, value, child) {
-                  return Stack(
-                    children: [
-                      Container(
-                        height: 5,
-                        width: MediaQuery.of(context).size.width,
-                        color: Colors.grey[200],
-                      ),
-                      Container(
-                        height: 5,
-                        width: MediaQuery.of(context).size.width * (value / 100),
-                        color: const Color.fromARGB(255, 34, 39, 133),
-                      ),
-                    ],
-                  );
-                }),
-            ValueListenableBuilder<bool>(
-                valueListenable: isUploading,
-                builder: (context, value, child) {
-                  return CustomIndicatorOffstage(isLoading: !value, color: const Color(0xFFEA3799), opacity: 0.5);
-                }),
-            Positioned(
-                top: 5,
-                right: 5,
-                child: IconButton(
-                  icon: Icon(Icons.close),
-                  onPressed: () => Navigator.of(context).pop(),
-                )),
-          ],
+              ValueListenableBuilder<double>(
+                  valueListenable: uploadingPercentage1,
+                  builder: (context, value, child) {
+                    return Stack(
+                      children: [
+                        Container(
+                          height: 5,
+                          width: MediaQuery.of(context).size.width,
+                          color: Colors.grey[200],
+                        ),
+                        Container(
+                          height: 5,
+                          width: MediaQuery.of(context).size.width * (value / 100),
+                          color: const Color(0xFFEA3799),
+                        ),
+                      ],
+                    );
+                  }),
+              ValueListenableBuilder<double>(
+                  valueListenable: uploadingPercentage2,
+                  builder: (context, value, child) {
+                    return Stack(
+                      children: [
+                        Container(
+                          height: 5,
+                          width: MediaQuery.of(context).size.width,
+                          color: Colors.grey[200],
+                        ),
+                        Container(
+                          height: 5,
+                          width: MediaQuery.of(context).size.width * (value / 100),
+                          color: const Color.fromARGB(255, 34, 39, 133),
+                        ),
+                      ],
+                    );
+                  }),
+              ValueListenableBuilder<bool>(
+                  valueListenable: isUploading,
+                  builder: (context, value, child) {
+                    return CustomIndicatorOffstage(isLoading: !value, color: const Color(0xFFEA3799), opacity: 0.5);
+                  }),
+              Positioned(
+                  top: 5,
+                  right: 5,
+                  child: IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => cancle(),
+                  )),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: Container(
-            padding: const EdgeInsets.only(left: 16, right: 16, top: 5, bottom: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    hashTagController.text = hashTagController.text + ' #';
-                  },
-                  clipBehavior: Clip.none,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    elevation: 1.5,
-                    minimumSize: const Size(0, 0),
-                    backgroundColor: Colors.grey[200],
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                    ),
-                  ),
-                  child: const Text(
-                    '# 태그추가',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 14,
-                    ),
+          padding: const EdgeInsets.only(left: 16, right: 16, top: 5, bottom: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  hashTagController.text = hashTagController.text + ' #';
+                },
+                clipBehavior: Clip.none,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  elevation: 1.5,
+                  minimumSize: const Size(0, 0),
+                  backgroundColor: Colors.grey[200],
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
                   ),
                 ),
-                const Spacer(),
-                ValueListenableBuilder<bool>(
-                  valueListenable: isUploading,
-                  builder: (context, value, child) {
-                    return CustomButton(
-                        text: !value ? '등록하기' : '처리중..',
-                        type: 'L',
-                        // isEnable: !value,
-                        widthValue: 120,
-                        heightValue: 50,
-                        onPressed: () => !value ? upload() : Utils.alert('처리중입니다..'));
-                  },
+                child: const Text(
+                  '# 태그추가',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 14,
+                  ),
                 ),
-              ],
-            )),
+              ),
+              const Spacer(),
+              ValueListenableBuilder<bool>(
+                valueListenable: isUploading,
+                builder: (context, value, child) {
+                  return CustomButton(
+                      text: !value ? '등록하기' : '처리중..',
+                      type: 'L',
+                      // isEnable: !value,
+                      widthValue: 120,
+                      heightValue: 50,
+                      onPressed: () => !value ? upload() : Utils.alert('처리중입니다..'));
+                },
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

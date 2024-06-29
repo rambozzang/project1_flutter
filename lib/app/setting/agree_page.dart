@@ -40,7 +40,7 @@ class _AgreePageState extends State<AgreePage> {
       dataCtrl.sink.add(ResStream.loading());
       BoardRepo repo = BoardRepo();
 
-      ResData resData = await repo.searchOriginList('FAQ', 'ALL', page, pageSzie);
+      ResData resData = await repo.searchOriginList('AGRE', 'SVCE', page, pageSzie);
 
       if (resData.code != '00') {
         Utils.alert(resData.msg.toString());

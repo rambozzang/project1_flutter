@@ -31,7 +31,7 @@ class LoadingIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.theme;
     return Container(
-      padding: EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         horizontal: 30,
         vertical: 40,
       ),

@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloudflare/cloudflare.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:gap/gap.dart';
@@ -9,22 +11,28 @@ import 'package:get/get.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/myinfo/widget/image_avatar.dart';
+import 'package:project1/app/weather/widgets/customShimmer.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/board/data/cust_count_data.dart';
+import 'package:project1/repo/chatting/chat_repo.dart';
+import 'package:project1/repo/chatting/data/update_data.dart';
+import 'package:project1/repo/cloudflare/cloudflare_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
-import 'package:project1/repo/cust/data/cust_update_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
+import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:project1/widget/custom_button.dart';
+import 'package:project1/widget/custom_indicator_offstage.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:http/http.dart' as http;
 
 // 사진촬영
 // https://dariadobszai.medium.com/set-profile-photo-with-flutter-bloc-or-how-to-bloc-backward-9fb16faa56ed
@@ -36,7 +44,7 @@ class MyPage extends StatefulWidget {
   State<MyPage> createState() => _MyPageState();
 }
 
-class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
+class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
   final ValueNotifier<List<String>> urls = ValueNotifier<List<String>>([]);
 
   @override
@@ -49,21 +57,36 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
   // 3가지 갯수 가져오기
   StreamController<ResStream<CustCountData>> myCountCntr = StreamController();
 
+  ScrollController mainScrollController = ScrollController();
+
   // 내게시물 리스트 가져오기
   int myboardPageNum = 0;
-  int myboardageSize = 5000;
+  int myboardageSize = 10;
+  List<BoardWeatherListData> myboardlist = [];
   StreamController<ResStream<List<BoardWeatherListData>>> myVideoListCntr = BehaviorSubject();
+  ScrollController myboardScrollCtrl = ScrollController();
+  bool isMyBoardLastPage = false;
+  final ValueNotifier<bool> isMyBoardMoreLoading = ValueNotifier<bool>(false);
 
   // 팔로워 리스트 가져오기
   int followboardPageNum = 0;
-  int followboardageSize = 5000;
+  int followboardageSize = 10;
+  List<BoardWeatherListData> followboardlist = [];
   StreamController<ResStream<List<BoardWeatherListData>>> followVideoListCntr = BehaviorSubject();
+  ScrollController followboardScrollCtrl = ScrollController();
+  bool isFollowLastPage = false;
+  final ValueNotifier<bool> isFollowMoreLoading = ValueNotifier<bool>(false);
 
   // 관심태그 리스트 가져오기
   StreamController<ResStream<List<String>>> tagStream = StreamController();
 
   // 관심태그 추가
   TextEditingController tagController = TextEditingController();
+
+  //
+  final ValueNotifier<bool> isLoading = ValueNotifier<bool>(false);
+
+  late TabController tabController;
 
   FocusNode textFocus = FocusNode();
   bool _keyboardVisible = false;
@@ -72,8 +95,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
   void initState() {
     super.initState();
     getCountData();
-    getMyBoard();
-    getFollowBoard();
+    getInitMyBoard();
+    getInitFollowBoard();
     getTag();
     textFocus.addListener(() {
       if (textFocus.hasFocus) {
@@ -82,19 +105,58 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
         RootCntr.to.bottomBarStreamController.sink.add(true);
       }
     });
+    tabController = TabController(vsync: this, length: 2);
+
+    mainScrollController.addListener(() {
+      RootCntr.to.changeScrollListner(mainScrollController);
+      if (mainScrollController.position.pixels == mainScrollController.position.maxScrollExtent) {
+        if (!isMyBoardLastPage && tabController.index == 0) {
+          myboardPageNum++;
+          isMyBoardMoreLoading.value = true;
+          getMyBoard(myboardPageNum);
+        }
+        if (!isFollowLastPage && tabController.index == 1) {
+          followboardPageNum++;
+          isFollowMoreLoading.value = true;
+          getFollowBoard(followboardPageNum);
+        }
+      }
+    });
+
+    // mainScrollController.addListener(() {
+    //   if (myboardScrollCtrl.position.pixels == myboardScrollCtrl.position.maxScrollExtent) {
+    //     if (!isMyBoardLastPage) {
+    //       myboardPageNum++;
+    //       isMyBoardMoreLoading.value = true;
+    //       getMyBoard(myboardPageNum);
+    //     }
+    //   }
+    // });
+
+    // mainScrollController.addListener(() {
+    //   if (followboardScrollCtrl.position.pixels == followboardScrollCtrl.position.maxScrollExtent) {
+    //     if (!isFollowLastPage) {
+    //       followboardPageNum++;
+    //       isFollowMoreLoading.value = true;
+    //       getFollowBoard(followboardPageNum);
+    //     }
+    //   }
+    // });
   }
 
   Future<void> getCountData() async {
     try {
-      //  myCountCntr.sink.add(ResStream.loading());
+      myCountCntr.sink.add(ResStream.loading());
       BoardRepo repo = BoardRepo();
       ResData res = await repo.getCustCount(Get.find<AuthCntr>().resLoginData.value.custId.toString());
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         return;
       }
-      print(res.data);
       CustCountData data = CustCountData.fromMap(res.data);
+
+      Get.find<AuthCntr>().resLoginData.value.custData = data.custInfo;
+
       myCountCntr.sink.add(ResStream.completed(data));
     } catch (e) {
       Utils.alert(e.toString());
@@ -102,27 +164,51 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
     }
   }
 
-  Future<void> getMyBoard() async {
+  Future<void> getInitMyBoard() async {
+    myboardPageNum = 0;
+    getMyBoard(myboardPageNum);
+  }
+
+  Future<void> getMyBoard(int page) async {
     try {
-      myVideoListCntr.sink.add(ResStream.loading());
+      if (page == 0) {
+        myVideoListCntr.sink.add(ResStream.loading());
+        myboardlist.clear();
+      }
       BoardRepo repo = BoardRepo();
       ResData res = await repo.getMyBoard(Get.find<AuthCntr>().resLoginData.value.custId.toString(), myboardPageNum, myboardageSize);
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
+        isMyBoardLastPage = true;
         return;
       }
       print(res.data);
       List<BoardWeatherListData> list = ((res.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
-      myVideoListCntr.sink.add(ResStream.completed(list));
+      myboardlist.addAll(list);
+
+      if (list.length < myboardageSize) {
+        isMyBoardLastPage = true;
+      }
+      isMyBoardMoreLoading.value = false;
+
+      myVideoListCntr.sink.add(ResStream.completed(myboardlist));
     } catch (e) {
       Utils.alert(e.toString());
       myVideoListCntr.sink.add(ResStream.error(e.toString()));
     }
   }
 
-  Future<void> getFollowBoard() async {
+  Future<void> getInitFollowBoard() async {
+    followboardPageNum = 0;
+    getFollowBoard(followboardPageNum);
+  }
+
+  Future<void> getFollowBoard(int page) async {
     try {
-      followVideoListCntr.sink.add(ResStream.loading());
+      if (page == 0) {
+        followVideoListCntr.sink.add(ResStream.loading());
+        followboardlist.clear();
+      }
       BoardRepo repo = BoardRepo();
       ResData res =
           await repo.getFollowBoard(Get.find<AuthCntr>().resLoginData.value.custId.toString(), followboardPageNum, followboardageSize);
@@ -132,7 +218,14 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
       }
       print(res.data);
       List<BoardWeatherListData> list = ((res.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
-      followVideoListCntr.sink.add(ResStream.completed(list));
+      followboardlist.addAll(list);
+
+      if (list.length < followboardageSize) {
+        isFollowLastPage = true;
+      }
+      isFollowMoreLoading.value = false;
+
+      followVideoListCntr.sink.add(ResStream.completed(followboardlist));
     } catch (e) {
       Utils.alert(e.toString());
       followVideoListCntr.sink.add(ResStream.error(e.toString()));
@@ -141,47 +234,102 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
 
   //이미지를 가져오는 함수
   Future getImage(ImageSource imageSource) async {
-    //pickedFile에 ImagePicker로 가져온 이미지가 담긴다.
-    final XFile? pickedFile = await picker.pickImage(source: imageSource);
-    if (pickedFile != null) {
-      _image = XFile(pickedFile.path); //가져온 이미지를 _image에 저장
+    isLoading.value = true;
 
-      CroppedFile? croppedFile = await ImageCropper().cropImage(
-        sourcePath: pickedFile.path,
-        aspectRatioPresets: [
-          CropAspectRatioPreset.square,
-          CropAspectRatioPreset.ratio3x2,
-          CropAspectRatioPreset.original,
-          CropAspectRatioPreset.ratio4x3,
-          CropAspectRatioPreset.ratio16x9
-        ],
-        uiSettings: [
-          AndroidUiSettings(
-              toolbarTitle: 'Cropper',
-              toolbarColor: Colors.deepOrange,
+    try {
+      //pickedFile에 ImagePicker로 가져온 이미지가 담긴다.
+      final XFile? pickedFile = await picker.pickImage(source: imageSource);
+      if (pickedFile != null) {
+        _image = XFile(pickedFile.path); //가져온 이미지를 _image에 저장
+
+        CroppedFile? croppedFile = await ImageCropper().cropImage(
+          sourcePath: pickedFile.path,
+          compressFormat: ImageCompressFormat.jpg,
+          compressQuality: 80,
+          uiSettings: [
+            AndroidUiSettings(
+              toolbarTitle: '사진 편집기',
+              toolbarColor: const Color(0xFF262B49),
               toolbarWidgetColor: Colors.white,
               initAspectRatio: CropAspectRatioPreset.original,
-              lockAspectRatio: false),
-          IOSUiSettings(
-            title: 'Cropper',
-          ),
-          WebUiSettings(
-            context: context,
-          ),
-        ],
-      );
+              lockAspectRatio: false,
+              aspectRatioPresets: [
+                CropAspectRatioPreset.square,
+                CropAspectRatioPreset.ratio3x2,
+                CropAspectRatioPreset.original,
+                CropAspectRatioPreset.ratio4x3,
+                CropAspectRatioPreset.ratio16x9
+              ],
+            ),
+            IOSUiSettings(
+              title: '사진 편집기',
+              aspectRatioPresets: [
+                CropAspectRatioPreset.square,
+                CropAspectRatioPreset.ratio3x2,
+                CropAspectRatioPreset.original,
+                CropAspectRatioPreset.ratio4x3,
+                CropAspectRatioPreset.ratio16x9
+              ],
+            ),
+            WebUiSettings(
+              context: context,
+            ),
+          ],
+        );
 
-      if (croppedFile != null) {
-        _image = XFile(croppedFile.path);
+        if (croppedFile != null) {
+          _image = XFile(croppedFile.path);
+        }
+
+        // File aa = await CompressAndGetFile(croppedFile!.path);
+
+        File aa = File(croppedFile!.path);
+
+        // 1. 파일 업로드
+        final String resthumbnail = await uploadImage(aa);
+
+        AuthCntr.to.resLoginData.value.profilePath = resthumbnail;
+
+        CustRepo repo = CustRepo();
+        ResData res = await repo.modiProfilePath(AuthCntr.to.resLoginData.value.custId.toString(), resthumbnail);
+        if (res.code != '00') {
+          Utils.alert(res.msg.toString());
+          isLoading.value = false;
+          return;
+        }
+        isLoading.value = false;
+        getCountData();
+
+        // chatting 서버 이미지도 변경한다.
+        ChatRepo chatRepo = ChatRepo();
+        ChatUpdateData chatUpdateData = ChatUpdateData();
+        chatUpdateData.firstName = AuthCntr.to.resLoginData.value.nickNm;
+        chatUpdateData.uid = AuthCntr.to.resLoginData.value.chatId.toString();
+        chatUpdateData.imageUrl = resthumbnail;
+        chatRepo.updateUserino(chatUpdateData);
+
+        Utils.alert('프로필 사진이 변경되었습니다.');
+      } else {
+        isLoading.value = false;
       }
-
-      File aa = await CompressAndGetFile(croppedFile!.path);
-      // TODO 파입업로드 후 고객정보 수정
-      // 파일업로드후 save() 함수 호출
-      //AuthCntr.to.resLoginData.value.profilePath = aa.path;
-      Utils.alertIcon('파일업로드 개발중....', icontype: 'E');
-      print(aa.lengthSync());
+    } catch (e) {
+      Utils.alert(e.toString());
+      isLoading.value = false;
     }
+  }
+
+  // 이미지 서버에 저장
+  Future<String> uploadImage(File uploadFile) async {
+    // 썸네일 업로드
+    CloudflareRepo cloudflare = CloudflareRepo();
+    await cloudflare.init();
+    CloudflareHTTPResponse<CloudflareImage?>? resthumbnail = await cloudflare.imageFileUpload(uploadFile);
+    if (resthumbnail?.isSuccessful == false) {
+      Utils.alert('썸네일 업로드에 실패했습니다.');
+      return Future.error('썸네일 업로드에 실패했습니다.');
+    }
+    Lo.g('썸네일 : ${resthumbnail?.body.toString()}');
+    return resthumbnail!.body!.variants[0].toString();
   }
 
   Future<File> CompressAndGetFile(String path) async {
@@ -190,7 +338,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
     XFile? compressFile = await FlutterImageCompress.compressAndGetFile(
       path,
       "${tmpDir.absolute.path}/$targetName.jpg",
-      quality: 88,
+      quality: 70,
       rotate: 180,
     );
     // print(file.lengthSync());
@@ -205,7 +353,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
     // if (result.status == ShareResultStatus.success) {
     //     print('Thank you for sharing the picture!');
     // }
-    final result = await Share.shareWithResult('check out my website https://example.com');
+    // final result = await Share.shareWithResult('check out my website https://example.com');
+    final result = await Share.share('check out my website https://example.com');
 
     if (result.status == ShareResultStatus.success) {
       print('Thank you for sharing my website!');
@@ -213,34 +362,38 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
   }
 
   // 프로필 사진 업데이트
-  Future<void> save() async {
-    try {
-      CustRepo repo = CustRepo();
-      CustUpdataData data = CustUpdataData();
-      data.custId = AuthCntr.to.resLoginData.value.custId.toString();
-      data.profilePath = AuthCntr.to.resLoginData.value.profilePath.toString();
-      ResData res = await repo.updateCust(data);
-      if (res.code != '00') {
-        Utils.alert(res.msg.toString());
-        return;
-      }
-      Utils.alert('수정되었습니다.');
-    } catch (e) {
-      Utils.alert(e.toString());
-    }
-  }
+  // Future<void> save() async {
+  //   try {
+  //     CustRepo repo = CustRepo();
+  //     CustUpdataData data = CustUpdataData();
+  //     data.custId = AuthCntr.to.resLoginData.value.custId.toString();
+  //     data.profilePath = AuthCntr.to.resLoginData.value.profilePath.toString();
+  //     ResData res = await repo.updateCust(data);
+  //     if (res.code != '00') {
+  //       Utils.alert(res.msg.toString());
+  //       return;
+  //     }
+  //     Utils.alert('수정되었습니다.');
+  //   } catch (e) {
+  //     Utils.alert(e.toString());
+  //   }
+  // }
 
+  List<String> _taglist = [];
   // 관심태그 삭제
   Future<void> removeTag(String tagNm) async {
     try {
       CustRepo repo = CustRepo();
+      _taglist.remove(tagNm);
+      tagStream.sink.add(ResStream.completed(_taglist));
+
       ResData res = await repo.deleteTag(AuthCntr.to.resLoginData.value.custId.toString(), tagNm);
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         return;
       }
       // Utils.alert('삭제되었습니다.');
-      getTag();
+      //  getTag();
     } catch (e) {
       Utils.alert(e.toString());
     }
@@ -250,13 +403,16 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
   Future<void> addTag(String tagNm) async {
     try {
       CustRepo repo = CustRepo();
+      _taglist.add(tagNm);
+      // Utils.alert('추가되었습니다.');
+      tagStream.sink.add(ResStream.completed(_taglist));
       ResData res = await repo.saveTag(AuthCntr.to.resLoginData.value.custId.toString(), tagNm);
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         return;
       }
-      // Utils.alert('추가되었습니다.');
-      getTag();
+
+      //   getTag();
     } catch (e) {
       Utils.alert(e.toString());
     }
@@ -271,9 +427,9 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
         Utils.alert(res.msg.toString());
         return;
       }
-      List<String> _list = (res.data as List).map((e) => e['tagNm'].toString()).toList();
+      _taglist = (res.data as List).map((e) => e['tagNm'].toString()).toList();
 
-      tagStream.sink.add(ResStream.completed(_list));
+      tagStream.sink.add(ResStream.completed(_taglist));
     } catch (e) {
       Utils.alert(e.toString());
       // myCountCntr.sink.add(ResStream.error(e.toString()));
@@ -285,6 +441,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
     myCountCntr.close();
     myVideoListCntr.close();
     followVideoListCntr.close();
+    tabController.dispose();
 
     super.dispose();
   }
@@ -297,34 +454,43 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
       child: Scaffold(
         resizeToAvoidBottomInset: true,
         appBar: _appBar(),
-        body: RefreshIndicator.adaptive(
-          notificationPredicate: (notification) {
-            if (notification is OverscrollNotification || Platform.isIOS) {
-              return notification.depth == 2;
-            }
-            return notification.depth == 0;
-          },
-          onRefresh: () async {
-            // 3가지 갯수 가져오기
-            getCountData();
-            getMyBoard();
-            getFollowBoard();
-            getTag();
-          },
-          child: NestedScrollView(
-            controller: RootCntr.to.hideButtonController2,
-            headerSliverBuilder: (context, innerBoxIsScrolled) {
-              return [
-                SliverList(delegate: SliverChildListDelegate([_info(), _buttons(), _buildFavoriteTag()])),
-              ];
-            },
-            body: Column(
-              children: [
-                _tabs(),
-                _tabBarView(),
-              ],
+        body: Stack(
+          children: [
+            RefreshIndicator.adaptive(
+              notificationPredicate: (notification) {
+                if (notification is OverscrollNotification || Platform.isIOS) {
+                  return notification.depth == 2;
+                }
+                return notification.depth == 0;
+              },
+              onRefresh: () async {
+                // 3가지 갯수 가져오기
+                getCountData();
+                getInitMyBoard();
+                getInitFollowBoard();
+                getTag();
+              },
+              child: NestedScrollView(
+                controller: mainScrollController,
+                headerSliverBuilder: (context, innerBoxIsScrolled) {
+                  return [
+                    SliverList(delegate: SliverChildListDelegate([_info(), _buildFavoriteTag()])),
+                  ];
+                },
+                body: Column(
+                  children: [
+                    _tabs(),
+                    _tabBarView(),
+                  ],
+                ),
+              ),
             ),
-          ),
+            ValueListenableBuilder<bool>(
+                valueListenable: isLoading,
+                builder: (context, value, child) {
+                  return CustomIndicatorOffstage(isLoading: !value, color: const Color(0xFFEA3799), opacity: 0.5);
+                })
+          ],
         ),
       ),
     );
@@ -333,13 +499,90 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
   Widget _info() {
     return Container(
       margin: const EdgeInsets.all(10.0),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        shape: BoxShape.rectangle,
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(10.0),
+      child: Utils.commonStreamBody<CustCountData>(
+        myCountCntr,
+        _builtCount,
+        getCountData,
+        loadingWidget: loadingWidget(),
       ),
-      child: Utils.commonStreamBody<CustCountData>(myCountCntr, _builtCount, getCountData),
+    );
+  }
+
+  Widget loadingWidget() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Expanded(
+          flex: 1,
+          child: SizedBox(
+            height: 65.0,
+            width: 35,
+            child: ClipOval(
+              child: CustomShimmer(
+                height: 40.0,
+                width: 40,
+                // borderRadius: BorderRadius.circular(16.0),
+              ),
+            ),
+          ),
+        ),
+        const Gap(15),
+        Expanded(
+          flex: 3,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Gap(10),
+                  CustomShimmer(
+                    height: 47.0,
+                    width: 47,
+                    borderRadius: BorderRadius.circular(7.0),
+                  ),
+                  const Gap(10),
+                  CustomShimmer(
+                    height: 47.0,
+                    width: 47,
+                    borderRadius: BorderRadius.circular(7.0),
+                  ),
+                  const Gap(10),
+                  CustomShimmer(
+                    height: 47.0,
+                    width: 47,
+                    borderRadius: BorderRadius.circular(7.0),
+                  ),
+                  const Gap(10),
+                  CustomShimmer(
+                    height: 47.0,
+                    width: 47,
+                    borderRadius: BorderRadius.circular(7.0),
+                  ),
+                ],
+              ),
+              const Gap(10),
+              CustomShimmer(
+                height: 20.0,
+                width: 70,
+                borderRadius: BorderRadius.circular(16.0),
+              ),
+              const Gap(10),
+              CustomShimmer(
+                height: 20.0,
+                width: 260,
+                borderRadius: BorderRadius.circular(16.0),
+              ),
+              const Gap(10),
+              CustomShimmer(
+                height: 20.0,
+                width: 180,
+                borderRadius: BorderRadius.circular(16.0),
+              ),
+              const Gap(10),
+            ],
+          ),
+        )
+      ],
     );
   }
 
@@ -355,11 +598,11 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
             children: [
               const Text('관심태그', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
               const Spacer(),
-              const Text('*위치기반과 관심사를 기준으로 리스트구성.', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 10, color: Colors.grey)),
+              const Text('*리스트 구성 기준.', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12, color: Colors.black54)),
               const Gap(10),
               SizedBox(
-                height: 20,
-                width: 20,
+                height: 25,
+                width: 45,
                 child: IconButton(
                     padding: const EdgeInsets.all(0),
                     constraints: const BoxConstraints(),
@@ -379,7 +622,30 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
               ),
             ],
           ),
-          const Gap(4),
+          const Gap(10),
+          RichText(
+            text: const TextSpan(
+              text: '관심 있는 ',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.black54,
+                fontWeight: FontWeight.w500,
+              ),
+              children: <TextSpan>[
+                TextSpan(
+                  text: '"학교, 지하철역, 골프장, 등산장소 , 캠핑장 , 유원지"',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.black),
+                ),
+                TextSpan(
+                  text: '를 자유롭게 지정해 주시면 해당 영상이 리스트에 구성됩니다.',
+                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14, color: Colors.black54),
+                ),
+              ],
+            ),
+//            "관심 있는 학교, 지하철역, 골프장, 등산장소 , 캠핑장 , 유원지 를 자유롭게 지정해 주시면 해당 영상이 리스트에 구성됩니다.",
+            // style: TextStyle(fontSize: 13, color: Colors.black54
+          ),
+          const Gap(10),
           StreamBuilder<ResStream<List<String>>>(
               stream: tagStream.stream,
               builder: (context, snapshot) {
@@ -439,24 +705,6 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
                     ),
                   );
                 }
-                // return Wrap(
-                //   spacing: 6.0,
-                //   runSpacing: 6.0,
-                //   direction: Axis.horizontal,
-                //   crossAxisAlignment: WrapCrossAlignment.start,
-                //   verticalDirection: VerticalDirection.down,
-                //   runAlignment: WrapAlignment.start,
-                //   alignment: WrapAlignment.start,
-                //   children: <Widget>[
-                //     buildChip('#홍제역'),
-                //     buildChip('#광화문'),
-                //     buildChip('#여의도'),
-                //     buildChip('#강남역'),
-                //     buildChip('#삼성역'),
-                //     buildChip('#마포'),
-                //     buildChip('#선릉'),
-                //   ],
-                // );
               }),
           // const Gap(10),
         ],
@@ -467,17 +715,19 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
   Widget _builtCount(CustCountData data) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.all(15.0),
+          padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 30),
           child: GestureDetector(
               onTap: () => getImage(ImageSource.gallery),
-              child: ImageAvatar(width: 70, url: AuthCntr.to.resLoginData.value.profilePath!, type: AvatarType.MYSTORY)),
+              child:
+                  Obx(() => ImageAvatar(width: 70, url: Get.find<AuthCntr>().resLoginData.value.profilePath!, type: AvatarType.MYSTORY))),
         ),
         Expanded(
           flex: 3,
           child: Padding(
-            padding: const EdgeInsets.all(10.0),
+            padding: const EdgeInsets.all(5.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -485,53 +735,78 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.all(6.0),
-                      child: MyPageInfo(
-                        count: data.boardCnt!.toInt(),
-                        label: '게시물',
-                        onTap: () => Get.toNamed('/MainView1/0/${null}'), //Get.toNamed('/MainView1
-                      ),
+                    MyPageInfo(
+                      count: data.boardCnt!.toInt(),
+                      label: '게시물',
+                      onTap: () =>
+                          Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/0/${null}'), //Get.toNamed('/MainView1
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(6.0),
-                      child: MyPageInfo(
-                        count: data.likeCnt!.toInt(),
-                        label: '좋아요',
-                        onTap: () => Get.toNamed('/MainView1/1/${null}'),
-                      ),
+                    MyPageInfo(
+                      count: data.likeCnt!.toInt(),
+                      label: '좋아요',
+                      onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/1/${null}'),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(6.0),
-                      child: MyPageInfo(
-                        count: data.followCnt!.toInt(),
-                        label: '팔로워',
-                        onTap: () => Get.toNamed('/MainView1/2/${null}'),
-                      ),
+                    MyPageInfo(
+                      count: data.followCnt!.toInt(),
+                      label: '팔로워',
+                      onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/2/${null}'),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(6.0),
-                      child: MyPageInfo(
-                        count: data.followerCnt!.toInt(),
-                        label: '팔로잉',
-                        onTap: () => Get.toNamed('/MainView1/3/${null}'),
-                      ),
+                    MyPageInfo(
+                      count: data.followerCnt!.toInt(),
+                      label: '팔로잉',
+                      onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/3/${null}'),
                     ),
                   ],
                 ),
-                // const Gap(10),
+                const Gap(15),
                 data.custInfo!.selfId.toString() == 'null'
-                    ? const SizedBox()
+                    ? const Text(
+                        '@자신만의ID',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                      )
                     : Text(
                         '@${data.custInfo!.selfId.toString()}',
                         style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
                       ),
                 data.custInfo!.selfId.toString() == 'null'
-                    ? const SizedBox()
+                    ? const Text(
+                        '자신 소개 내용을 만들어주세요.\n아래 프로필 수정 버튼을 클릭해주세요!',
+                        style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+                      )
                     : Text(
                         data.custInfo!.selfIntro.toString(),
                         style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
                       ),
+                const Gap(5),
+                SizedBox(
+                  height: 25,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          // backgroundColor: Colors.red,
+                        ),
+                        onPressed: () => Get.toNamed('/MyinfoModifyPage')!.then((value) => value == true ? getCountData() : null),
+                        child: const Row(
+                          children: [
+                            Text(
+                              '프로필 수정',
+                              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14.0, color: Colors.black),
+                            ),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              size: 16.0,
+                              color: Colors.purple,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -573,10 +848,10 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
 
   Widget _tabBarView() {
     return Expanded(
-      child: TabBarView(children: [
+      child: TabBarView(controller: tabController, children: [
         //_myFeeds(),
-        Utils.commonStreamList<BoardWeatherListData>(myVideoListCntr, _myFeeds, getMyBoard),
-        Utils.commonStreamList<BoardWeatherListData>(followVideoListCntr, _followFeeds, getFollowBoard),
+        Utils.commonStreamList<BoardWeatherListData>(myVideoListCntr, _myFeeds, getInitMyBoard),
+        Utils.commonStreamList<BoardWeatherListData>(followVideoListCntr, _followFeeds, getInitFollowBoard),
         // _followFeeds(),
       ]),
     );
@@ -587,7 +862,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
       padding: const EdgeInsets.all(8.0),
       child: list.length > 0
           ? GridView.builder(
-              shrinkWrap: true,
+              shrinkWrap: false,
+              // controller: myboardScrollCtrl,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3, //1 개의 행에 보여줄 item 개수
@@ -598,31 +874,73 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
               itemCount: list.length,
               itemBuilder: (context, index) => GestureDetector(
                 onTap: () {
-                  Get.toNamed('/VideoMyinfoListPage', arguments: list[index]);
+                  Get.toNamed('/VideoMyinfoListPage', arguments: {
+                    'datatype': 'MYFEED',
+                    'custId': Get.find<AuthCntr>().resLoginData.value.custId.toString(),
+                    'boardId': list[index].boardId.toString()
+                  });
                 },
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.blue,
+                    color: Colors.grey[300],
                     borderRadius: BorderRadius.circular(10.0),
                     image: DecorationImage(
                       image: CachedNetworkImageProvider(list[index].thumbnailPath!),
                       fit: BoxFit.cover,
                     ),
                   ),
-                  child: const Align(
-                    alignment: Alignment.bottomRight,
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.play_arrow_outlined,
-                          color: Colors.white,
+                  child: Stack(
+                    children: [
+                      Align(
+                        alignment: Alignment.bottomRight,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 5),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.play_arrow_outlined,
+                                    color: Colors.white,
+                                    size: 17,
+                                  ),
+                                  const Gap(5),
+                                  Text(
+                                    list[index].likeCnt.toString(),
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 5),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.favorite,
+                                    color: Colors.white,
+                                    size: 17,
+                                  ),
+                                  const Gap(5),
+                                  Text(
+                                    list[index].likeCnt.toString(),
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          '12,000',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
+                      ),
+                      list[index].hideYn == 'Y'
+                          ? const Positioned(
+                              top: 10,
+                              left: 10,
+                              child: Icon(Icons.lock, color: Colors.red, size: 20),
+                            )
+                          : const SizedBox.shrink(),
+                    ],
                   ),
                 ),
               ),
@@ -638,25 +956,90 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
           crossAxisCount: 3,
           mainAxisSpacing: 4,
           crossAxisSpacing: 4,
+          // controller: followboardScrollCtrl,
+          // physics: const NeverScrollableScrollPhysics(),
           // gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 1.0, mainAxisSpacing: 1.0),
           itemCount: list.length,
           itemBuilder: (context, index) => GestureDetector(
-                onTap: () {
-                  Get.toNamed('/VideoMyinfoListPage', arguments: list[index]);
-                },
-                child: Container(
-                    color: Colors.grey.shade300,
-                    height: (index % 5 + 1) * 60,
-                    child: CachedNetworkImage(
-                      imageUrl: list[index].thumbnailPath!,
-                      fit: BoxFit.cover,
-                    )),
-              )),
+              onTap: () {
+                Get.toNamed('/VideoMyinfoListPage', arguments: {
+                  'datatype': 'FOLLOW',
+                  'custId': Get.find<AuthCntr>().resLoginData.value.custId.toString(),
+                  'boardId': list[index].boardId.toString()
+                });
+              },
+              child: Container(
+                height: (index % 5 + 1) * 60,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10.0),
+                  image: DecorationImage(
+                    image: CachedNetworkImageProvider(
+                      list[index].thumbnailPath!,
+                    ),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    Align(
+                      alignment: Alignment.bottomRight,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 5),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.play_arrow_outlined,
+                                  color: Colors.white,
+                                  size: 17,
+                                ),
+                                const Gap(5),
+                                Text(
+                                  list[index].likeCnt.toString(),
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 5),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.favorite,
+                                  color: Colors.white,
+                                  size: 17,
+                                ),
+                                const Gap(5),
+                                Text(
+                                  list[index].likeCnt.toString(),
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: Text(
+                        list[index].nickNm.toString(),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    )
+                  ],
+                ),
+              ))),
     );
   }
 
   Widget _tabs() {
-    return const TabBar(indicatorColor: Colors.black, tabs: [
+    return TabBar(controller: tabController, indicatorColor: Colors.black, tabs: const [
       Tab(
         // child: Icon(Icons.grid_on),
         child: Row(
@@ -675,7 +1058,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
           children: [
             Icon(Icons.person_pin),
             Gap(10),
-            Text('팔로우'),
+            Text('팔로잉게시물'),
           ],
         ),
       ),
@@ -704,7 +1087,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
                       ));
             },
             child: Text(
-              AuthCntr.to.resLoginData.value.custNm.toString(),
+              AuthCntr.to.resLoginData.value.nickNm.toString(),
               style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
             ),
           ),
@@ -843,7 +1226,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin {
     return SizedBox(
         height: 40,
         child: Chip(
-          elevation: 10,
+          elevation: 0,
           padding: EdgeInsets.zero,
           backgroundColor: const Color.fromARGB(255, 140, 131, 221), // Color.fromARGB(255, 76, 70, 124),
           shape: RoundedRectangleBorder(
@@ -897,14 +1280,14 @@ class MyPageInfo extends StatelessWidget {
     //       minimumSize: Size.zero, padding: EdgeInsets.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap, elevation: 8),
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-        minimumSize: Size.zero,
+        minimumSize: const Size(50, 40),
         //   backgroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 1, horizontal: 6),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         visualDensity: const VisualDensity(horizontal: 0, vertical: 0),
-        elevation: 0.2,
+        elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-        backgroundColor: Colors.grey.shade100,
+        backgroundColor: Colors.grey.shade50,
       ),
       onPressed: onTap,
       child: Column(
@@ -918,60 +1301,6 @@ class MyPageInfo extends StatelessWidget {
             style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: Colors.black54),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class DraggablePage extends StatefulWidget {
-  const DraggablePage({super.key});
-
-  @override
-  State<DraggablePage> createState() => _DraggablePageState();
-}
-
-class _DraggablePageState extends State<DraggablePage> {
-  DraggableScrollableController draggableScrollableController = DraggableScrollableController();
-  bool isChecked = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      maxChildSize: 0.8,
-      minChildSize: 0.2,
-      controller: draggableScrollableController,
-      builder: (BuildContext context, ScrollController scrollController) => Scaffold(
-        appBar: AppBar(
-          title: ScrollConfiguration(
-            behavior: const ScrollBehavior(),
-            child: SingleChildScrollView(controller: scrollController, child: const Text('Draggable scrollable sheet example')),
-          ),
-          backgroundColor: Colors.teal,
-        ),
-        body: Center(
-          child: Column(
-            children: <Widget>[
-              Row(
-                children: [
-                  const Text('Are you sure?'),
-                  Checkbox(
-                      value: isChecked,
-                      onChanged: (bool? value) {
-                        setState(() {
-                          isChecked = value!;
-                        });
-                      })
-                ],
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: const Text('Back'),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

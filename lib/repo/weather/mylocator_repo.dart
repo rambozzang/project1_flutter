@@ -13,7 +13,7 @@ class MyLocatorRepo {
 
   Future<Position?> getCurrentLocation() async {
     try {
-      return await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.best, timeLimit: const Duration(seconds: 5));
+      return await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.best, timeLimit: const Duration(seconds: 2));
     } catch (e) {
       return await Geolocator.getLastKnownPosition();
     }
@@ -53,7 +53,7 @@ class MyLocatorRepo {
         return ResData.fromJson(jsonEncode({'code': response.statusCode, 'message': response.statusMessage}));
       }
     } on DioException catch (e) {
-      return dioException(e);
+      return AuthDio.instance.dioException(e);
     } finally {}
   }
 

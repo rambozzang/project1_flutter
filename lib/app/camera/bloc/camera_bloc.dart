@@ -9,6 +9,7 @@ import 'package:project1/app/camera/enums/color_constant.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/camera/utils/permission_utils.dart';
 import 'package:project1/repo/weather/data/current_weather.dart';
+import 'package:project1/utils/log_utils.dart';
 part 'camera_event.dart';
 
 // A BLoC class that handles camera-related operations
@@ -16,7 +17,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   //....... Dependencies ..............
   final CameraUtils cameraUtils;
   final PermissionUtils permissionUtils;
-  final CurrentWeather? currentWeather;
+  // final CurrentWeather? currentWeather;
   final int limitSec = 2;
 
   //....... Internal variables ........
@@ -37,7 +38,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   }
 
   //....... Constructor ........
-  CameraBloc({required this.cameraUtils, required this.permissionUtils, this.currentWeather}) : super(CameraInitial()) {
+  CameraBloc({required this.cameraUtils, required this.permissionUtils}) : super(CameraInitial()) {
     on<CameraReset>(_onCameraReset);
     on<CameraInitialize>(_onCameraInitialize);
     on<CameraSwitch>(_onCameraSwitch);
@@ -181,6 +182,13 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
   // Check and ask for camera permission and initialize camera
   Future<void> _checkPermissionAndInitializeCamera() async {
+    // lo.g("await permissionUtils.getCameraAndMicrophonePermissionStatus() :")
+
+    var aa = await permissionUtils.getCameraAndMicrophonePermissionStatus();
+    var bb = await permissionUtils.askForPermission();
+
+    lo.g("message : $aa $bb");
+
     if (await permissionUtils.getCameraAndMicrophonePermissionStatus()) {
       await _initializeCamera();
     } else {

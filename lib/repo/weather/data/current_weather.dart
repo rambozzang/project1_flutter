@@ -25,6 +25,40 @@ import 'package:project1/repo/weather/data/Sys.dart';
 import 'package:project1/repo/weather/data/Weather.dart';
 import 'package:project1/repo/weather/data/Wind.dart';
 
+// 아래 형식으로 데이터가 들어옴 오류가 나오는 형싱
+//  getCurrentWeather e =>type 'int' is not a subtype of type 'String?'
+//  {
+//      coord: {lon: 126.9443, lat: 37.5887},
+//      weather: [{id: 800, main: Clear, description: 맑음, icon: 01d}]
+//      base: "stations",
+//      main: {temp: 31.1, feels_like: 31.85, temp_min: 26.73, temp_max: 33.69, pressure: 1002, humidity: 45},
+//      visibility: 10000,
+//      wind: {speed: 5.14, deg: 270},
+//      clouds: {all: 0},
+//      dt: 1718949477,
+//      sys: {type: 1, id: 8105, country: KR, sunrise: 1718914267, sunset: 1718967409},
+//      timezone: 32400,
+//      id: 1835848,
+//      name: "Seoul",
+//      cod: 20
+
+// 아래는 정상
+// {
+//        coord: {lon: 126.9845, lat: 37.5793},
+//        weather: [{id: 800, main: Clear, description: 맑음, icon: 01d}]
+//        base: "stations",
+//        main: {temp: 29.17, feels_like: 30.86, temp_min: 25.75, temp_max: 33.71, pressure: 1002, humidity: 57},
+//        visibility: 10000,
+//        wind: {speed: 4.12, deg: 280},
+//        clouds: {all: 0},
+//        dt: 1718954826,
+//        sys: {type: 1, id: 8105, country: KR, sunrise: 1718914259, sunset: 1718967398},
+//        timezone: 32400,
+//        id: 1835848,
+//        name: "Seoul",
+//        cod: 200
+//   }
+
 class CurrentWeather {
   Coord? coord;
   List<Weather>? weather;

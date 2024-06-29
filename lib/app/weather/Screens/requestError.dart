@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:material_floating_search_bar_2/material_floating_search_bar_2.dart';
 import 'package:project1/app/weather/theme/colors.dart';
-import 'package:provider/provider.dart';
+import 'package:project1/app/weather/provider/weather_cntr.dart';
 
-import '../provider/weatherProvider.dart';
 import '../theme/textStyle.dart';
 
 class RequestErrorDisplay extends StatelessWidget {
@@ -19,46 +19,46 @@ class RequestErrorDisplay extends StatelessWidget {
         children: [
           ConstrainedBox(
             constraints: BoxConstraints(
-              maxWidth: MediaQuery.sizeOf(context).width,
-              minWidth: 100,
+              maxWidth: MediaQuery.sizeOf(context).width * 0.4,
+              minWidth: 70,
               maxHeight: MediaQuery.sizeOf(context).height / 3,
             ),
             child: Image.asset('assets/images/requestError.png'),
           ),
           Center(
             child: Text(
-              'Request Error',
+              '검색시 오류가 발생했습니다.',
               style: boldText.copyWith(color: primaryBlue),
             ),
           ),
           const SizedBox(height: 4.0),
           Center(
             child: Text(
-              'Request error, please check your internet connection',
-              style: mediumText.copyWith(color: Colors.grey.shade700),
+              ' Error, 잠시 후 다시 시도해주세요.',
+              style: mediumText.copyWith(color: Colors.grey.shade600),
               textAlign: TextAlign.center,
             ),
           ),
           const SizedBox(height: 16.0),
-          Consumer<WeatherProvider>(builder: (context, weatherProv, _) {
+          GetBuilder<WeatherCntr>(builder: (weatherProv) {
             return SizedBox(
               width: MediaQuery.sizeOf(context).width / 2,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryBlue,
                   textStyle: mediumText,
-                  padding: const EdgeInsets.all(12.0),
+                  padding: const EdgeInsets.all(7.0),
                   shape: StadiumBorder(),
                 ),
-                child: Text('Return Home'),
-                onPressed: weatherProv.isLoading
+                onPressed: weatherProv.isLoading.value
                     ? null
                     : () async {
-                        await weatherProv.getWeatherData(
-                          context,
-                          notify: true,
-                        );
+                        await weatherProv.getWeatherData();
                       },
+                child: const Text(
+                  '다시 요청',
+                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
             );
           }),
@@ -87,14 +87,14 @@ class SearchErrorDisplay extends StatelessWidget {
           ConstrainedBox(
             constraints: BoxConstraints(
               maxWidth: MediaQuery.sizeOf(context).width,
-              minWidth: 100,
+              minWidth: 70,
               maxHeight: MediaQuery.sizeOf(context).height / 3,
             ),
             child: Image.asset('assets/images/searchError.png'),
           ),
           Center(
             child: Text(
-              'Search Error',
+              '검색시 오류가 발생했습니다.',
               style: boldText.copyWith(color: primaryBlue),
             ),
           ),
@@ -107,24 +107,21 @@ class SearchErrorDisplay extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16.0),
-          Consumer<WeatherProvider>(builder: (context, weatherProv, _) {
+          GetBuilder<WeatherCntr>(builder: (weatherProv) {
             return SizedBox(
               width: MediaQuery.sizeOf(context).width / 2,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryBlue,
                   textStyle: mediumText,
-                  padding: const EdgeInsets.all(12.0),
+                  padding: const EdgeInsets.all(7.0),
                   shape: StadiumBorder(),
                 ),
-                child: Text('Return Home'),
-                onPressed: weatherProv.isLoading
+                child: Text('날씨 홈으로'),
+                onPressed: weatherProv.isLoading.value
                     ? null
                     : () async {
-                        await weatherProv.getWeatherData(
-                          context,
-                          notify: true,
-                        );
+                        await weatherProv.getWeatherData();
                       },
               ),
             );

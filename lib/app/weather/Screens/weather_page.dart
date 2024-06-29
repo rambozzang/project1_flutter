@@ -5,21 +5,17 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:material_floating_search_bar_2/material_floating_search_bar_2.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/admob/full_width_banner_ad.dart';
 import 'package:project1/app/weather/Screens/kakao_searchbar.dart';
 import 'package:project1/app/weather/Screens/locationError.dart';
-import 'package:project1/app/weather/widgets/CustomSearchBar.dart';
-import 'package:project1/app/webview/weather_webvide.dart';
+import 'package:project1/app/webview/weather_webview.dart';
+import 'package:project1/app/weather/provider/weather_cntr.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
+import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:provider/provider.dart';
 
-import '../provider/weatherProvider.dart';
-import '../theme/colors.dart';
 import '../theme/textStyle.dart';
 import '../widgets/WeatherInfoHeader.dart';
 import '../widgets/mainWeatherDetail.dart';
@@ -42,7 +38,14 @@ class _WeatherPageState extends State<WeatherPage> with TickerProviderStateMixin
   @override
   void initState() {
     super.initState();
-    requestWeather();
+    weatherInfoCheck();
+  }
+
+  Future<void> weatherInfoCheck() async {
+    if (Get.find<WeatherCntr>().currentWeather.value?.main?.temp == null) {
+      // await Provider.of<WeatherProvider>(context, listen: false).getWeatherData(context);
+      // Get.find<WeatherCntr>().getWeatherData();
+    }
   }
 
   int _getRandomInt(int min, int max) {
@@ -51,43 +54,53 @@ class _WeatherPageState extends State<WeatherPage> with TickerProviderStateMixin
   }
 
   Future<void> requestWeather() async {
-    await Provider.of<WeatherProvider>(context, listen: false).getWeatherData(context);
+    // await Provider.of<WeatherProvider>(context, listen: false).getWeatherData(context);
+    Get.find<WeatherCntr>().getWeatherData();
   }
 
   @override
   Widget build(BuildContext context) {
+    // WeatherCntr weatherProv = Get.find<WeatherCntr>();
+
     return Scaffold(
-      backgroundColor: Colors.black87,
+      backgroundColor: const Color(0xFF262B49),
       appBar: AppBar(
         automaticallyImplyLeading: false,
         forceMaterialTransparency: true,
         backgroundColor: Colors.transparent,
         title: WeatherInfoHeader(),
       ),
-      body: Consumer<WeatherProvider>(
-        builder: (context, weatherProv, _) {
-          if (!weatherProv.isLoading && !weatherProv.isLocationserviceEnabled) return const LocationServiceErrorDisplay();
+      body: RefreshIndicator(onRefresh: () async {
+        await requestWeather();
+      }, child: GetBuilder<WeatherCntr>(
+        builder: (weatherProv) {
+          Lo.g('weatherProv.isLoading.value : ${weatherProv.isLoading.value}');
 
-          if (!weatherProv.isLoading &&
+          if (!weatherProv.isLoading.value && !weatherProv.isLocationserviceEnabled.value) return const LocationServiceErrorDisplay();
+
+          if (!weatherProv.isLoading.value &&
               weatherProv.locationPermission != LocationPermission.always &&
               weatherProv.locationPermission != LocationPermission.whileInUse) {
             return const LocationPermissionErrorDisplay();
           }
 
-          if (weatherProv.isRequestError) return const RequestErrorDisplay();
+          if (weatherProv.isRequestError.value) return const RequestErrorDisplay();
 
-          if (weatherProv.isSearchError) return SearchErrorDisplay(fsc: fsc);
+          if (weatherProv.isSearchError.value) return SearchErrorDisplay(fsc: fsc);
 
-          if (weatherProv.isLoading) return Center(child: Utils.progressbar());
+          if (weatherProv.isLoading.value) return Center(child: Utils.progressbar());
 
           return Stack(
             children: [
               ListView(
                 controller: RootCntr.to.hideButtonController5,
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.all(12.0).copyWith(
-                  top: kToolbarHeight + MediaQuery.viewPaddingOf(context).top + 24.0,
+                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 24.0).copyWith(
+                  top: kToolbarHeight + 15,
                 ),
+                // padding: const EdgeInsets.all(12.0).copyWith(
+                //   top: kToolbarHeight + MediaQuery.viewPaddingOf(context).top + 24.0,
+                // ),
                 children: [
                   // WeatherInfoHeader(),
                   Row(
@@ -115,23 +128,7 @@ class _WeatherPageState extends State<WeatherPage> with TickerProviderStateMixin
                               child: Row(
                                 children: [
                                   Text(
-                                    'CCTV 보기 ',
-                                    style: semiboldText.copyWith(fontSize: 9.0),
-                                  ),
-                                  const Icon(Icons.arrow_forward_ios, size: 10.0, color: Colors.amber),
-                                ],
-                              ),
-                            ),
-                            const Gap(15),
-                            TextButton(
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.all(0.0),
-                              ),
-                              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => KakaoSearchPage())),
-                              child: Row(
-                                children: [
-                                  Text(
-                                    '카카오 검색 ',
+                                    '지도,CCTV 보기 ',
                                     style: semiboldText.copyWith(fontSize: 9.0),
                                   ),
                                   const Icon(Icons.arrow_forward_ios, size: 10.0, color: Colors.amber),
@@ -155,7 +152,7 @@ class _WeatherPageState extends State<WeatherPage> with TickerProviderStateMixin
                   MainWeatherInfo(),
                   const SizedBox(height: 16.0),
                   MainWeatherDetail(),
-                  const SizedBox(height: 24.0),
+                  const SizedBox(height: 16.0),
 
                   // 24시간 예보 / 24HourForecast
                   TwentyFourHourForecast(),
@@ -166,7 +163,7 @@ class _WeatherPageState extends State<WeatherPage> with TickerProviderStateMixin
                   const SizedBox(height: 28.0),
                   const SizedBox(
                       height: 458.0,
-                      child: WeatherWebVidew(
+                      child: WeatherWebView(
                         isBackBtn: false,
                       )),
                   TextButton(
@@ -174,7 +171,7 @@ class _WeatherPageState extends State<WeatherPage> with TickerProviderStateMixin
                       padding: const EdgeInsets.all(0.0),
                       // backgroundColor: primaryBlue,
                     ),
-                    onPressed: () => Get.toNamed('/WeatherWebVidew'),
+                    onPressed: () => Get.toNamed('/WeatherWebView'),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
@@ -182,6 +179,7 @@ class _WeatherPageState extends State<WeatherPage> with TickerProviderStateMixin
                           '위성사진 전체보기 ',
                           style: semiboldText.copyWith(fontSize: 11.0),
                         ),
+                        const Gap(5),
                         const Icon(Icons.arrow_forward_ios, size: 10.0, color: Colors.amber),
                       ],
                     ),
@@ -196,7 +194,7 @@ class _WeatherPageState extends State<WeatherPage> with TickerProviderStateMixin
             ],
           );
         },
-      ),
+      )),
     );
   }
 }

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_floating_search_bar_2/material_floating_search_bar_2.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:project1/app/weather/provider/weatherProvider.dart';
 import 'package:project1/app/weather/theme/colors.dart';
+import 'package:project1/app/weather/provider/weather_cntr.dart';
 import 'package:provider/provider.dart';
 
 class CustomSearchBar extends StatefulWidget {
@@ -50,7 +52,8 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
       onQueryChanged: (query) {},
       onSubmitted: (query) async {
         widget.fsc.close();
-        await Provider.of<WeatherProvider>(context, listen: false).searchWeather(query);
+        // await Provider.of<WeatherProvider>(context, listen: false).searchWeather(query);
+        // await Get.find<WeatherCntr>().searchWeather(query);
       },
       transition: CircularFloatingSearchBarTransition(),
       automaticallyImplyBackButton: false,
@@ -95,7 +98,7 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
                   onTap: () async {
                     widget.fsc.query = data;
                     widget.fsc.close();
-                    await Provider.of<WeatherProvider>(context, listen: false).searchWeather(data);
+                    // await Provider.of<WeatherProvider>(context, listen: false).searchWeather(data);
                   },
                   child: Container(
                     padding: const EdgeInsets.all(12.0),

@@ -22,7 +22,6 @@ import 'dart:convert' as convert;
 // https://www.utic.go.kr/guide/newUtisDataWrite.do
 class CctvRepo {
   var distance = Distance();
-  final dio = authDio();
 
   Future<List<CctvResData>> fetchCctv(LatLng southWest, LatLng northEast, double lat, double lng) async {
     List<CctvResData> cctvs = [];
@@ -81,14 +80,13 @@ class CctvRepo {
 
   // 서울 시내 cctv
   Future<ResData> fetchCctvSeoul(CctvSeoulReqData req) async {
+    final dio = await AuthDio.instance.getDio();
     try {
       var url = '${UrlConfig.baseURL}/cctv/list';
       Response response = await dio.post(url, data: req.toMap());
-      return dioResponse(response);
+      return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
-      return dioException(e);
+      return AuthDio.instance.dioException(e);
     } finally {}
   }
-              
-  
 }

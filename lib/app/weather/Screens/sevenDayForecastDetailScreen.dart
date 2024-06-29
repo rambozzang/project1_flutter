@@ -5,11 +5,9 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:project1/app/weather/helper/extensions.dart';
-import 'package:project1/app/weather/provider/weatherProvider.dart';
 import 'package:project1/app/weather/theme/colors.dart';
+import 'package:project1/app/weather/provider/weather_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
-import 'package:provider/provider.dart';
 
 import '../helper/utils.dart';
 import '../models/dailyWeather.dart';
@@ -75,11 +73,15 @@ class _SevenDayForecastDetailState extends State<SevenDayForecastDetail> {
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
-      body: Consumer<WeatherProvider>(
-        builder: (context, weatherProv, _) {
+      body: GetBuilder<WeatherCntr>(
+        builder: (weatherProv) {
           DailyWeather _selectedWeather = weatherProv.dailyWeather[_selectedIndex];
           //           final minTemp = weatherProv.isCelsius ? weather.tempMin.toStringAsFixed(0) : weather.tempMin.toFahrenheit().toStringAsFixed(0);
           // final maxTemp = weatherProv.isCelsius ? weather.tempMax.toStringAsFixed(0) : weather.tempMax.toFahrenheit().toStringAsFixed(0);
+
+          if (weatherProv.dailyWeather == null || weatherProv.dailyWeather.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
           return ListView(
             physics: const BouncingScrollPhysics(),
@@ -154,9 +156,10 @@ class _SevenDayForecastDetailState extends State<SevenDayForecastDetail> {
                                   alignment: Alignment.centerLeft,
                                   fit: BoxFit.scaleDown,
                                   child: Text(
-                                    weatherProv.isCelsius
-                                        ? '${weather.tempMax.toStringAsFixed(0)}°/${weather.tempMin.toStringAsFixed(0)}°'
-                                        : '${weather.tempMax.toFahrenheit().toStringAsFixed(0)}°/${weather.tempMin.toFahrenheit().toStringAsFixed(0)}°',
+                                    '${weather.tempMax.toStringAsFixed(0)}°/${weather.tempMin.toStringAsFixed(0)}°',
+                                    // weatherProv.isCelsius
+                                    //     ? '${weather.tempMax.toStringAsFixed(0)}°/${weather.tempMin.toStringAsFixed(0)}°'
+                                    //     : '${weather.tempMax.toFahrenheit().toStringAsFixed(0)}°/${weather.tempMin.toFahrenheit().toStringAsFixed(0)}°',
                                     style: regularText,
                                   ),
                                 ),
@@ -196,9 +199,10 @@ class _SevenDayForecastDetailState extends State<SevenDayForecastDetail> {
                           maxLines: 1,
                         ),
                         Text(
-                          weatherProv.isCelsius
-                              ? '${_selectedWeather.tempMax.toStringAsFixed(0)}°/${_selectedWeather.tempMin.toStringAsFixed(0)}°'
-                              : '${_selectedWeather.tempMax.toFahrenheit().toStringAsFixed(0)}°/${_selectedWeather.tempMin.toFahrenheit().toStringAsFixed(0)}°',
+                          '${_selectedWeather.tempMax.toStringAsFixed(0)}°/${_selectedWeather.tempMin.toStringAsFixed(0)}°',
+                          // weatherProv.isCelsius
+                          //     ? '${_selectedWeather.tempMax.toStringAsFixed(0)}°/${_selectedWeather.tempMin.toStringAsFixed(0)}°'
+                          //     : '${_selectedWeather.tempMax.toFahrenheit().toStringAsFixed(0)}°/${_selectedWeather.tempMin.toFahrenheit().toStringAsFixed(0)}°',
                           style: boldText.copyWith(fontSize: 48.0, height: 1.15),
                         ),
                         Text(
@@ -333,9 +337,7 @@ class _SevenDayForecastDetailState extends State<SevenDayForecastDetail> {
                             PhosphorIconsRegular.thermometerSimple,
                             color: Colors.white,
                           ),
-                          data: weatherProv.isCelsius
-                              ? '${_selectedWeather.tempMorning.toStringAsFixed(1)}°'
-                              : '${_selectedWeather.tempMorning.toFahrenheit().toStringAsFixed(1)}°',
+                          data: '${_selectedWeather.tempMorning.toStringAsFixed(1)}°',
                         ),
                         _ForecastDetailInfoTile(
                           title: '현재 온도',
@@ -343,9 +345,7 @@ class _SevenDayForecastDetailState extends State<SevenDayForecastDetail> {
                             PhosphorIconsRegular.thermometerSimple,
                             color: Colors.white,
                           ),
-                          data: weatherProv.isCelsius
-                              ? '${_selectedWeather.tempDay.toStringAsFixed(1)}°'
-                              : '${_selectedWeather.tempDay.toFahrenheit().toStringAsFixed(1)}°',
+                          data: '${_selectedWeather.tempDay.toStringAsFixed(1)}°',
                         ),
                         _ForecastDetailInfoTile(
                           title: '저녁 온도',
@@ -353,9 +353,7 @@ class _SevenDayForecastDetailState extends State<SevenDayForecastDetail> {
                             PhosphorIconsRegular.thermometerSimple,
                             color: Colors.white,
                           ),
-                          data: weatherProv.isCelsius
-                              ? '${_selectedWeather.tempEvening.toStringAsFixed(1)}°'
-                              : '${_selectedWeather.tempEvening.toFahrenheit().toStringAsFixed(1)}°',
+                          data: '${_selectedWeather.tempEvening.toStringAsFixed(1)}°',
                         ),
                         _ForecastDetailInfoTile(
                           title: '밤 온도',
@@ -363,9 +361,7 @@ class _SevenDayForecastDetailState extends State<SevenDayForecastDetail> {
                             PhosphorIconsRegular.thermometerSimple,
                             color: Colors.white,
                           ),
-                          data: weatherProv.isCelsius
-                              ? '${_selectedWeather.tempNight.toStringAsFixed(1)}°'
-                              : '${_selectedWeather.tempNight.toFahrenheit().toStringAsFixed(1)}°',
+                          data: '${_selectedWeather.tempNight.toStringAsFixed(1)}°',
                         ),
                       ],
                     ),

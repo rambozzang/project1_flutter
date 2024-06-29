@@ -176,13 +176,13 @@ class CloudflareRepo {
   }
 
   Future<ResData> save(CloudflareReqSaveData data) async {
-    final dio = authDio();
+    final dio = await AuthDio.instance.getDio();
     try {
       var url = '${UrlConfig.baseURL}/cloudflare/save';
       Response response = await dio.post(url, data: data.toJson());
-      return dioResponse(response);
+      return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
-      return dioException(e);
+      return AuthDio.instance.dioException(e);
     } finally {}
   }
 }

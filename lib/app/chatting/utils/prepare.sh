@@ -23,11 +23,15 @@ psql -U $user -h $hostname -p $port -d $database -f ./sql/02_database_trigger.sq
 psql -U $user -h $hostname -p $port -d $database -f ./sql/03_database_policy.sql
 psql -U $user -h $hostname -p $port -d $database -f ./sql/04_storage.sql
 
+cd ./example/utils/
+./prepare.sh -h "your-postgres-host" -p your-postgres-port -d "your-postgres-database-name" -U "your-postgres-user"
 
-PGPASSWORD=GsH1yDz1ZytaChAS psql -h aws-0-ap-northeast-2.pooler.supabase.com -p 6543 -d postgres -U postgres.wtyeuynrapbgtpquxxfm -f ./sql/01_database_schema.sql        
-PGPASSWORD=GsH1yDz1ZytaChAS psql -h aws-0-ap-northeast-2.pooler.supabase.com -p 6543 -d postgres -U postgres.wtyeuynrapbgtpquxxfm -f ./sql/02_database_trigger.sql        
-PGPASSWORD=GsH1yDz1ZytaChAS psql -h aws-0-ap-northeast-2.pooler.supabase.com -p 6543 -d postgres -U postgres.wtyeuynrapbgtpquxxfm -f ./sql/03_database_policy.sql        
-PGPASSWORD=GsH1yDz1ZytaChAS psql -h aws-0-ap-northeast-2.pooler.supabase.com -p 6543 -d postgres -U postgres.wtyeuynrapbgtpquxxfm -f ./sql/04_storage.sql       
+PGPASSWORD=x2pqx8mjEDO5387C psql -h aws-0-ap-northeast-2.pooler.supabase.com -p 6543 -d postgres -U postgres.tnxglgjtuhrxxokpxphr -f ./lib/app/chatting/utils/sql/01_database_schema.sql        
+PGPASSWORD=x2pqx8mjEDO5387C psql -h aws-0-ap-northeast-2.pooler.supabase.com -p 6543 -d postgres -U postgres.tnxglgjtuhrxxokpxphr -f ./lib/app/chatting/utils/sql/02_database_trigger.sql        
+PGPASSWORD=x2pqx8mjEDO5387C psql -h aws-0-ap-northeast-2.pooler.supabase.com -p 6543 -d postgres -U postgres.tnxglgjtuhrxxokpxphr -f ./lib/app/chatting/utils/sql/03_database_policy.sql        
+PGPASSWORD=x2pqx8mjEDO5387C psql -h aws-0-ap-northeast-2.pooler.supabase.com -p 6543 -d postgres -U postgres.tnxglgjtuhrxxokpxphr -f ./lib/app/chatting/utils/sql/04_storage.sql       
 
+
+PGPASSWORD=x2pqx8mjEDO5387C psql -h aws-0-ap-northeast-2.pooler.supabase.com -p 6543 -d postgres -U postgres.tnxglgjtuhrxxokpxphr -f ./lib/app/chatting/utils/sql/02_database_trigger.sql        
 
 psql -h aws-0-ap-northeast-2.pooler.supabase.com -p 6543 -d postgres -U postgres.wtyeuynrapbgtpquxxfm -f ./sql/01_database_schema.sql

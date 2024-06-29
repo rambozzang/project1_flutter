@@ -14,9 +14,10 @@ mixin SecureStorage {
   );
 
   // 사용자 ID 저장(수정)
-  Future<void> saveCustId(String custId) async {
+  Future<bool> saveCustId(String custId) async {
     debugPrint("[Storage Action] : saveCustId('$custId')");
     await storage.write(key: "CUST_ID", value: custId);
+    return true;
   }
 
   // 사용자 ID 조회

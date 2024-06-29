@@ -4,6 +4,7 @@ import 'package:project1/repo/cctv/data/cctv_res_data.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:video_player/video_player.dart';
 
+// 서울 시내
 class CctvPageBottomSheet {
   Future<void> open(
     BuildContext context,
@@ -48,7 +49,7 @@ class _CctvPageState extends State<CctvPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    String url = cctvResData.cctvurl.toString().replaceAll('http://', 'https://');
+    String url = cctvResData.cctvurl.toString();
     lo.g(url);
     _controller = VideoPlayerController.networkUrl(Uri.parse(url))
       ..initialize().then((_) {
@@ -75,10 +76,11 @@ class _CctvPageState extends State<CctvPage> {
         child: Padding(
       padding: MediaQuery.of(context).viewInsets,
       child: SizedBox(
-        height: 380,
+        height: 430,
         child: Column(children: [
           Container(
             ///height: 45,
+            padding: EdgeInsets.only(left: 5, bottom: 10, right: 5),
             decoration: const BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.only(topLeft: Radius.circular(10.0), topRight: Radius.circular(10.0)),
@@ -101,6 +103,7 @@ class _CctvPageState extends State<CctvPage> {
                       _controller,
                       key: GlobalKey(),
                     )),
+                const Align(alignment: Alignment.centerLeft, child: Text("『국가교통정보센터(UTIC)』제공 "))
                 //  TextButton(onPressed: () => _controller.play(), child: const Text('Play')),
               ],
             ),

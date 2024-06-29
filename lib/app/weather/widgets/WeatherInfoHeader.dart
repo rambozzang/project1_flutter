@@ -1,11 +1,13 @@
 import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import 'package:intl/intl.dart';
 import 'package:project1/app/weather/provider/weatherProvider.dart';
 import 'package:project1/app/weather/theme/colors.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
 import 'package:project1/app/weather/widgets/customShimmer.dart';
+import 'package:project1/app/weather/provider/weather_cntr.dart';
 import 'package:provider/provider.dart';
 
 class WeatherInfoHeader extends StatelessWidget {
@@ -13,12 +15,12 @@ class WeatherInfoHeader extends StatelessWidget {
   static const double boxHeight = 40.0;
   @override
   Widget build(BuildContext context) {
-    return Consumer<WeatherProvider>(
-      builder: (context, weatherProv, _) {
+    return GetBuilder<WeatherCntr>(
+      builder: (weatherProv) {
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            weatherProv.isLoading
+            weatherProv.isLoading.value
                 ? const SizedBox.shrink()
                 : Expanded(
                     child: Column(
@@ -28,11 +30,11 @@ class WeatherInfoHeader extends StatelessWidget {
                           child: RichText(
                             textAlign: TextAlign.start,
                             text: TextSpan(
-                              text: '${weatherProv.weather.city}, ',
+                              text: '${weatherProv.weather.value!.city}, ',
                               style: semiboldText,
                               children: [
                                 TextSpan(
-                                  text: Country.tryParse(weatherProv.weather.countryCode)?.name,
+                                  text: Country.tryParse(weatherProv.weather.value!.countryCode!)?.name,
                                   style: regularText.copyWith(fontSize: 18.0),
                                 ),
                               ],

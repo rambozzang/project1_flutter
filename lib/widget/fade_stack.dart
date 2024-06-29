@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:project1/utils/log_utils.dart';
 
 class FadeIndexedStack extends StatefulWidget {
   final int index;
@@ -21,13 +22,13 @@ class _FadeIndexedStackState extends State<FadeIndexedStack> with TickerProvider
   late final AnimationController _slideController;
   late final Animation<Offset> _animation;
 
-  final Duration _fadeDuration = const Duration(milliseconds: 400);
+  final Duration _fadeDuration = const Duration(milliseconds: 320);
   final Duration _slideDuration = const Duration(milliseconds: 250);
 
   @override
   void didUpdateWidget(FadeIndexedStack oldWidget) {
     if (widget.index != oldWidget.index) {
-      _fadeController.forward(from: 0.2);
+      _fadeController.forward(from: 0.15);
       _slideController.forward(from: 0.0);
     }
     super.didUpdateWidget(oldWidget);
@@ -43,7 +44,7 @@ class _FadeIndexedStackState extends State<FadeIndexedStack> with TickerProvider
     )..forward();
 
     _animation = Tween<Offset>(
-      begin: const Offset(-0.02, 0.0),
+      begin: const Offset(-0.015, 0.0),
       end: const Offset(0.0, 0.0),
     ).animate(CurvedAnimation(
       parent: _slideController,
@@ -62,15 +63,17 @@ class _FadeIndexedStackState extends State<FadeIndexedStack> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
+    log("FadeIndexedStack build");
     return SlideTransition(
       position: _animation,
-      child: FadeTransition(
-        opacity: _fadeController,
-        child: IndexedStack(
-          index: widget.index,
-          children: widget.children,
-        ),
+      // child: FadeTransition(
+      //   alwaysIncludeSemantics: true,
+      //   opacity: _fadeController,
+      child: IndexedStack(
+        index: widget.index,
+        children: widget.children,
       ),
+      //   ),
     );
   }
 }

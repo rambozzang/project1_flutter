@@ -61,26 +61,6 @@ class _NotiPageState extends State<NotiPage> with AutomaticKeepAliveClientMixin 
     });
   }
 
-  // Future<void> getMoreData(int _page) async {
-  //   isMoreLoading.value = true;
-  //   BoardRepo repo = BoardRepo();
-  //   ResData resData = await repo.searchOriginList('NOTI', 'NOTI', _page, pageSzie);
-
-  //   if (resData.code != '00') {
-  //     isMoreLoading.value = false;
-  //     return;
-  //   }
-  //   List<BoardDetailData> _list = ((resData.data['list']) as List).map((data) => BoardDetailData.fromMap(data)).toList();
-
-  //   PagingData pageData = PagingData.fromMap(resData.data['pageData']);
-  //   page = pageData.currPageNum!;
-  //   isLastPage.value = pageData.last!;
-
-  //   boardList.addAll(_list);
-  //   isMoreLoading.value = false;
-  //   listCtrl.sink.add(ResStream.completed(boardList, message: '조회가 완료되었습니다.'));
-  // }
-
   Future<void> getDataInit() async => getData(0);
 
   Future<void> getData(int _page) async {
@@ -91,7 +71,7 @@ class _NotiPageState extends State<NotiPage> with AutomaticKeepAliveClientMixin 
     }
     try {
       BoardRepo repo = BoardRepo();
-      ResData resData = await repo.searchOriginList('NOTI', 'NOTI', _page, pageSzie);
+      ResData resData = await repo.searchOriginList(ptupDsc, ptupTrgtDsc, _page, pageSzie);
 
       if (resData.code != '00') {
         Utils.alert(resData.msg.toString());

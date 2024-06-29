@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_supabase_chat_core/flutter_supabase_chat_core.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/alram/alram_page.dart';
@@ -11,9 +13,12 @@ import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/camera/page/camera_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/camera/utils/permission_utils.dart';
-import 'package:project1/app/list/cntr/video_list_cntr.dart';
-import 'package:project1/app/list/video_list_page.dart';
 import 'package:project1/app/myinfo/myinfo_page.dart';
+import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
+import 'package:project1/app/videolist/cntr/video_list_cntr2.dart';
+import 'package:project1/app/videolist/video_list_page.dart';
+import 'package:project1/app/myinfo/myinfo_page_new.dart';
+import 'package:project1/app/videolist/video_list_page2.dart';
 import 'package:project1/app/weather/Screens/weather_page.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
@@ -49,9 +54,12 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    initializeTimer();
+    Get.put(VideoListCntr());
+    // Get.put(VideoListCntr2());
+    // initializeTimer();
 
-    mainlist = [const VideoListPage(), const WeatherPage(), const SizedBox(), const SizedBox(), const SizedBox()];
+    // const WeatherPage(),
+    mainlist = [const VideoListPage(), const WeatherPage(), const SizedBox.shrink(), const SizedBox.shrink(), const SizedBox.shrink()];
 
     bottomItemList = [
       bottomItem(Icons.home, '홈'),
@@ -62,36 +70,57 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
       bottomItem(Icons.person, '내정보'),
     ];
     // getData();
-  }
-
-  void initializeTimer() {
-    if (rootTimer != null) rootTimer.cancel();
-
-    // rootTimer = Timer(Duration(seconds: timerSeconds), () { //테스트 코드
-    rootTimer = Timer(Duration(minutes: timerMinute), () {
-      // Utils.alert('30분동안 움직이 없어 로그아웃됩니다.');
-      Get.offAllNamed('/CoLogOutPage');
+    // 3초후 실행
+    Future.delayed(const Duration(seconds: 3), () {
+      NotiShow();
     });
   }
 
-  // 사용자 상호작용을 처리하는 메서드
-  void handleUserInteraction([_]) {
-    if (!rootTimer.isActive) {
-      // 이미 타이머가 종료되었으면 무시
-      return;
-    }
-    rootTimer.cancel();
-    initializeTimer();
+  NotiShow() {
+    BotToast.showNotification(
+      title: (cancel) => const Text('SkySnap', style: TextStyle(color: Colors.white)),
+      subtitle: (cancel) => const Text('방갑습니다. 공공의 목적으로 많은 이용 부탁드립니다.', style: TextStyle(color: Colors.white)),
+      leading: (cancel) => const Icon(Icons.notifications),
+      trailing: (cancel) => IconButton(
+        icon: const Icon(
+          Icons.close,
+          color: Colors.white,
+        ),
+        onPressed: cancel,
+      ),
+      backgroundColor: Color.fromARGB(255, 67, 102, 120),
+      duration: const Duration(seconds: 405),
+      align: Alignment.bottomCenter,
+    );
   }
+
+  // void initializeTimer() {
+  //   if (rootTimer != null) rootTimer.cancel();
+
+  //   // rootTimer = Timer(Duration(seconds: timerSeconds), () { //테스트 코드
+  //   rootTimer = Timer(Duration(minutes: timerMinute), () {
+  //     // Utils.alert('30분동안 움직이 없어 로그아웃됩니다.');
+  //     // Get.offAllNamed('/CoLogOutPage');
+  //   });
+  // }
+
+  // // 사용자 상호작용을 처리하는 메서드
+  // void handleUserInteraction([_]) {
+  //   if (!rootTimer.isActive) {
+  //     // 이미 타이머가 종료되었으면 무시
+  //     return;
+  //   }
+  //   rootTimer.cancel();
+  //   initializeTimer();
+  // }
 
   DateTime? currentBackPressTime = null;
 
   //뒤로가기 로직(핸드폰 뒤로가기 버튼 클릭시)
   Future<void> onGoBack(didPop) async {
-    lo.g('mounted : ${mounted} ');
-    lo.g('context.mounted : ${context.mounted} ');
+    lo.g('didPop : ${didPop} ');
 
-    // if (!context.mounted) return;
+    if (didPop) return;
 
     DateTime now = DateTime.now();
     if (currentBackPressTime == null || now.difference(currentBackPressTime!) > const Duration(milliseconds: 2000)) {
@@ -111,13 +140,15 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Listener(
-      behavior: HitTestBehavior.translucent,
-      onPointerDown: handleUserInteraction,
-      onPointerMove: handleUserInteraction,
-      onPointerUp: handleUserInteraction,
+    log("rootpage ");
+    // return Listener(
+    //   behavior: HitTestBehavior.translucent,
+    //   onPointerDown: handleUserInteraction,
+    //   onPointerMove: handleUserInteraction,
+    //   onPointerUp: handleUserInteraction,
+    return UserOnlineStateObserver(
       child: Scaffold(
-        // backgroundColor: Colors.transparent,
+        backgroundColor: Colors.transparent, //  Color(0xFF262B49),
         extendBodyBehindAppBar: true,
         resizeToAvoidBottomInset: true,
         body: Stack(
@@ -139,11 +170,22 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
                       if (RootCntr.to.isFileUploading.value == UploadingType.UPLOADING) ...[
                         Column(
                           children: [
-                            Utils.progressUpload(size: 20),
+                            Utils.progressUpload(size: 25),
                             const Gap(5),
-                            const Text(
-                              "Uploading..",
-                              style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                            Container(
+                              color: Colors.black,
+                              padding: const EdgeInsets.all(3),
+                              child: const Center(
+                                child: Row(
+                                  children: [
+                                    // Icon(Icons.check, color: Colors.yellow, size: 20),
+                                    Text(
+                                      "Uploading..",
+                                      style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             )
                           ],
                         )
@@ -151,6 +193,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
                       if (RootCntr.to.isFileUploading.value == UploadingType.SUCCESS) ...[
                         Container(
                           color: Colors.black,
+                          padding: const EdgeInsets.all(5),
                           child: const Center(
                             child: Row(
                               children: [
@@ -217,6 +260,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
 
         floatingActionButton: Obx(() => HideBottomBar(childWdiget: makeBottomItem())),
         // bottomNavigationBar: Obx(() => HideBottomBar(children: makeBottomItem())),
+        // ),
       ),
     );
   }
@@ -226,11 +270,8 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
       MaterialPageRoute(
         builder: (context) => BlocProvider(
           create: (context) {
-            return CameraBloc(
-              cameraUtils: CameraUtils(),
-              permissionUtils: PermissionUtils(),
-              currentWeather: Get.find<VideoListCntr>().currentWeather.value,
-            )..add(const CameraInitialize(recordingLimit: 15));
+            return CameraBloc(cameraUtils: CameraUtils(), permissionUtils: PermissionUtils())
+              ..add(const CameraInitialize(recordingLimit: 15));
           },
           child: const CameraPage(),
         ),
@@ -244,6 +285,11 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     //   mainlist[1] = const WeatherPage();
     //   // mainlist[1] = const SearchPage();
     // }
+
+    if (index == 1) {
+      mainlist[1] = const WeatherPage();
+    }
+
     // 가운데 + 키 눌렀을대 카메라로 이동
     if (index == 2) {
       goRecord();
@@ -305,69 +351,6 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   }
 
   Widget centerEventContainer() {
-    return Align(
-      alignment: Alignment.center,
-      child: Container(
-        height: 200,
-        width: 200,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              height: 170,
-              width: 200,
-              child: const Center(child: Text('이미지 영역')),
-              decoration: BoxDecoration(
-                color: Colors.red[400],
-                borderRadius: BorderRadius.circular(5),
-              ),
-            ),
-            Container(
-              height: 25,
-              width: 200,
-              color: Colors.white10,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 24,
-                        child: Checkbox(
-                          side: const BorderSide(color: Colors.black),
-                          value: true,
-                          onChanged: null,
-                        ),
-                      ),
-                      Text(
-                        '하루동안 열지않기',
-                        textAlign: TextAlign.start,
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  SizedBox(
-                    width: 24,
-                    child: IconButton(
-                      padding: EdgeInsets.zero,
-                      onPressed: () {
-                        isEventBox.value = false;
-                      },
-                      icon: const Icon(
-                        Icons.close,
-                        color: Colors.black,
-                        size: 18,
-                      ),
-                    ),
-                  )
-                ],
-              ),
-            )
-          ],
-        ),
-      ),
-    );
+    return Container();
   }
 }

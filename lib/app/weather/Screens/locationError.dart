@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:get/get.dart';
 import 'package:project1/app/weather/theme/colors.dart';
+import 'package:project1/app/weather/provider/weather_cntr.dart';
 import 'package:provider/provider.dart';
 
 import '../provider/weatherProvider.dart';
@@ -13,7 +15,7 @@ class LocationPermissionErrorDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<WeatherProvider>(builder: (context, weatherProv, _) {
+    return GetBuilder<WeatherCntr>(builder: (weatherProv) {
       return Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
@@ -54,9 +56,9 @@ class LocationPermissionErrorDisplay extends StatelessWidget {
                       backgroundColor: primaryBlue,
                       textStyle: mediumText,
                       padding: const EdgeInsets.all(12.0),
-                      shape: StadiumBorder(),
+                      shape: const StadiumBorder(),
                     ),
-                    child: weatherProv.isLoading
+                    child: weatherProv.isLoading.value
                         ? const SizedBox(
                             width: 16.0,
                             height: 16.0,
@@ -68,13 +70,13 @@ class LocationPermissionErrorDisplay extends StatelessWidget {
                         : Text(
                             weatherProv.locationPermission == LocationPermission.deniedForever ? 'Open App Settings' : 'Request Permission',
                           ),
-                    onPressed: weatherProv.isLoading
+                    onPressed: weatherProv.isLoading.value
                         ? null
                         : () async {
                             if (weatherProv.locationPermission == LocationPermission.deniedForever) {
                               await Geolocator.openAppSettings();
                             } else {
-                              weatherProv.getWeatherData(context, notify: true);
+                              weatherProv.getWeatherData();
                             }
                           },
                   ),
@@ -82,8 +84,8 @@ class LocationPermissionErrorDisplay extends StatelessWidget {
                   if (weatherProv.locationPermission == LocationPermission.deniedForever)
                     TextButton(
                       style: TextButton.styleFrom(foregroundColor: primaryBlue),
-                      child: Text('Restart'),
-                      onPressed: weatherProv.isLoading ? null : () => weatherProv.getWeatherData(context, notify: true),
+                      child: const Text('Restart'),
+                      onPressed: weatherProv.isLoading.value ? null : () => weatherProv.getWeatherData(),
                     )
                 ],
               ),
@@ -112,7 +114,8 @@ class _LocationServiceErrorDisplayState extends State<LocationServiceErrorDispla
     serviceStatusStream.onData((ServiceStatus status) {
       if (status == ServiceStatus.enabled) {
         print('enabled');
-        Provider.of<WeatherProvider>(context, listen: false).getWeatherData(context);
+        // Provider.of<WeatherProvider>(context, listen: false).getWeatherData(context);
+        //  Get.find<WeatherCntr>().getWeatherData();
       }
     });
   }
@@ -154,25 +157,44 @@ class _LocationServiceErrorDisplayState extends State<LocationServiceErrorDispla
             ),
           ),
           const SizedBox(height: 16.0),
-          Consumer<WeatherProvider>(builder: (context, weatherProv, _) {
-            return SizedBox(
-              width: MediaQuery.sizeOf(context).width / 2,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryBlue,
-                  textStyle: mediumText,
-                  padding: const EdgeInsets.all(12.0),
-                  shape: StadiumBorder(),
-                ),
-                child: Text('Turn On Service'),
-                onPressed: () async {
-                  await Geolocator.openLocationSettings();
-                },
+
+          SizedBox(
+            width: MediaQuery.sizeOf(context).width / 2,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryBlue,
+                textStyle: mediumText,
+                padding: const EdgeInsets.all(12.0),
+                shape: const StadiumBorder(),
               ),
-            );
-          }),
+              child: const Text('Turn On Service'),
+              onPressed: () async {
+                await Geolocator.openLocationSettings();
+              },
+            ),
+          )
+
+          // Consumer<WeatherProvider>(builder: (context, weatherProv, _) {
+          //   return SizedBox(
+          //     width: MediaQuery.sizeOf(context).width / 2,
+          //     child: ElevatedButton(
+          //       style: ElevatedButton.styleFrom(
+          //         backgroundColor: primaryBlue,
+          //         textStyle: mediumText,
+          //         padding: const EdgeInsets.all(12.0),
+          //         shape: StadiumBorder(),
+          //       ),
+          //       child: Text('Turn On Service'),
+          //       onPressed: () async {
+          //         await Geolocator.openLocationSettings();
+          //       },
+          //     ),
+          //   );
+          // }),
         ],
       ),
     );
   }
 }
+
+// Get.find<WeatherCntr>()
