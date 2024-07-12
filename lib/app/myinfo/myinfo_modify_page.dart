@@ -69,7 +69,7 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
       data.nickNm = nickNmController.text;
       data.custNm = custNmController.text;
       data.selfIntro = selfIntroController.text;
-      data.selfId = selfIdController.text;
+      // data.selfId = selfIdController.text;
 
       ResData res = await repo.updateCust(data);
       if (res.code != '00') {
@@ -124,7 +124,7 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
     nickNmController.text = data.nickNm ?? '';
     custNmController.text = data.custNm ?? '';
     selfIntroController.text = data.selfIntro ?? '';
-    selfIdController.text = data.selfId ?? '';
+    // selfIdController.text = data.selfId ?? '';
 
     return Column(
       children: [
@@ -208,46 +208,46 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
             ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 15.0),
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 0),
-            padding: const EdgeInsets.only(top: 5),
-            height: 54,
-            child: TextFormField(
-              controller: selfIdController,
-              // focusNode: textFocus,
-              maxLines: 1,
-              // cursorHeight: 12,
-              style: const TextStyle(decorationThickness: 0), // 한글밑줄제거
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                filled: true,
-                fillColor: Colors.grey[100],
-                // suffixIcon: const Icon(Icons.search, color: Colors.grey),
-                enabledBorder: OutlineInputBorder(
-                  // width: 0.0 produces a thin "hairline" border
-                  borderSide: const BorderSide(color: Colors.grey, width: 0.2),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-                border: OutlineInputBorder(
-                  // width: 0.0 produces a thin "hairline" border
-                  //  borderSide: const BorderSide(color: Colors.grey, width: 0.1),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.grey, width: 0.2),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-                label: const Text("사용할 @ID를 입력해주세요"),
-                labelStyle: const TextStyle(color: Colors.black38),
-              ),
-              onFieldSubmitted: (text) {
-                // Perform search
-              },
-            ),
-          ),
-        ),
+        // Padding(
+        //   padding: const EdgeInsets.symmetric(vertical: 15.0),
+        //   child: Container(
+        //     margin: const EdgeInsets.symmetric(horizontal: 0),
+        //     padding: const EdgeInsets.only(top: 5),
+        //     height: 54,
+        //     child: TextFormField(
+        //       controller: selfIdController,
+        //       // focusNode: textFocus,
+        //       maxLines: 1,
+        //       // cursorHeight: 12,
+        //       style: const TextStyle(decorationThickness: 0), // 한글밑줄제거
+        //       decoration: InputDecoration(
+        //         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        //         filled: true,
+        //         fillColor: Colors.grey[100],
+        //         // suffixIcon: const Icon(Icons.search, color: Colors.grey),
+        //         enabledBorder: OutlineInputBorder(
+        //           // width: 0.0 produces a thin "hairline" border
+        //           borderSide: const BorderSide(color: Colors.grey, width: 0.2),
+        //           borderRadius: BorderRadius.circular(2),
+        //         ),
+        //         border: OutlineInputBorder(
+        //           // width: 0.0 produces a thin "hairline" border
+        //           //  borderSide: const BorderSide(color: Colors.grey, width: 0.1),
+        //           borderRadius: BorderRadius.circular(2),
+        //         ),
+        //         focusedBorder: OutlineInputBorder(
+        //           borderSide: const BorderSide(color: Colors.grey, width: 0.2),
+        //           borderRadius: BorderRadius.circular(2),
+        //         ),
+        //         label: const Text("사용할 @ID를 입력해주세요"),
+        //         labelStyle: const TextStyle(color: Colors.black38),
+        //       ),
+        //       onFieldSubmitted: (text) {
+        //         // Perform search
+        //       },
+        //     ),
+        //   ),
+        // ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 15.0),
           child: Container(

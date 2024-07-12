@@ -1,6 +1,7 @@
 //import 'package:cached_video_player_plus/cached_video_player_plus.dart';
 
 import 'dart:io';
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -13,6 +14,7 @@ import 'package:project1/app/auth/cntr/auth_cntr.dart';
 
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/app/videocomment/comment_page.dart';
+import 'package:project1/app/videolist/video_sigo_page.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -57,7 +59,9 @@ class VideoScreenPageState extends State<VideoScreenPage> {
 
   double bottomHeight = Platform.isIOS ? 92.0 : 80.0;
 
-  bool isUpdateCount = false;
+  // 운영계에서 true로 변경
+  bool isUpdateCount = true;
+  int loadingImageIndex = 0;
 
   @override
   void initState() {
@@ -65,36 +69,40 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     initiliazeVideo();
 
     isFollowed.value = widget.data.followYn.toString();
+    loadingImageIndex = Random().nextInt(6);
   }
 
   Future<void> initiliazeVideo() async {
     if (initialized) {
       return;
     }
+    final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
+    final lastModified = _formatHttpDate(sevenDaysAgo);
+
     try {
       Stopwatch stopwatch = Stopwatch()..start();
-      lo.g('@@@  VideoScreenPageState initiliazeVideo() ${widget.data.boardId} : 1.Start ');
+      lo.g('@@@  VideoScreenPageState initiliazeVideo() ${widget.index} : ${widget.data.boardId} : 1.Start ');
       String finalUrl = widget.data.videoPath.toString();
 
       _controller = VideoPlayerController.networkUrl(Uri.parse(finalUrl),
           httpHeaders: {
             'Connection': 'keep-alive',
             'Cache-Control': 'max-age=604800',
+            'Etg': widget.data.boardId.toString(),
+            'Last-Modified': lastModified,
           },
           formatHint: VideoFormat.hls)
         ..initialize().then((_) {
           if (mounted) {
             stopwatch.stop();
-            lo.g('@@@  VideoScreenPageState initiliazeVideo() ${widget.data.boardId} : 2.Mounted =>. ${stopwatch.elapsed}');
+            lo.g(
+                '@@@  VideoScreenPageState initiliazeVideo() ${widget.index} : ${widget.data.boardId} : 2.Mounted =>. ${stopwatch.elapsed}');
             setState(() {
               _controller.setLooping(true);
               _controller.pause();
               initialized = true;
             });
-            Get.find<VideoListCntr>().onPageMounted(widget.data.boardId!);
-            if (isPlay.value) {
-              updateCount();
-            }
+            //   Get.find<VideoListCntr>().onPageMounted(widget.data.boardId!);
           }
         });
 
@@ -103,10 +111,26 @@ class VideoScreenPageState extends State<VideoScreenPage> {
         int max = _controller.value.duration.inSeconds;
         position = _controller.value.position;
         progress.value = (position.inSeconds / max * 100).isNaN ? 0 : position.inSeconds / max * 100;
+        if (isPlay.value) {
+          updateCount();
+        }
       });
     } catch (e) {
-      lo.g('======>>>>>> DefaultCacheManager().getSingleFile error : $e');
+      lo.g('@@@  VideoScreenPageState initiliazeVideo() ${widget.index} : ${widget.data.boardId} : error : $e');
     } finally {}
+  }
+
+  String _formatHttpDate(DateTime date) {
+    // Format the date as per HTTP-date format defined in RFC7231
+    // Example: Tue, 15 Nov 1994 08:12:31 GMT
+    final weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final weekDay = weekDays[date.weekday - 1];
+    final month = months[date.month - 1];
+    return '$weekDay, ${date.day.toString().padLeft(2, '0')} $month ${date.year} '
+        '${date.hour.toString().padLeft(2, '0')}:'
+        '${date.minute.toString().padLeft(2, '0')}:'
+        '${date.second.toString().padLeft(2, '0')} GMT';
   }
 
   // 조회수 증가
@@ -174,8 +198,10 @@ class VideoScreenPageState extends State<VideoScreenPage> {
 
   @override
   void dispose() {
+    lo.g('@@@  VideoScreenPageState initiliazeVideo() ${widget.index} : ${widget.data.boardId} : 3.dispose ');
     initialized = false;
     _controller.removeListener(() {});
+    _controller.pause();
     _controller.dispose();
 
     super.dispose();
@@ -188,43 +214,43 @@ class VideoScreenPageState extends State<VideoScreenPage> {
       resizeToAvoidBottomInset: true,
       extendBodyBehindAppBar: true,
       extendBody: true,
-      body: VisibilityDetector(
-        onVisibilityChanged: (info) {
-          initPlay = false;
-          if (info.visibleFraction > 0.4) {
-            if (initialized) {
-              _controller.play();
+      body: Stack(
+        children: [
+          GestureDetector(
+            onTap: () {
+              initPlay = true;
+              if (_controller.value.isPlaying) {
+                _controller.pause();
+              } else {
+                _controller.play();
+              }
+            },
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              switchInCurve: Curves.easeIn,
+              switchOutCurve: Curves.ease,
+              child: initialized == false
+                  ? buildLoading()
+                  : VisibilityDetector(
+                      onVisibilityChanged: (info) {
+                        initPlay = false;
+                        if (info.visibleFraction > 0.2) {
+                          if (initialized) {
+                            _controller.play();
 
-              Get.find<VideoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
-            }
-          } else if (info.visibleFraction < 0.4) {
-            // } else {
-            if (initialized) {
-              _controller.pause();
-              _controller.seekTo(Duration.zero);
-              Get.find<VideoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
-            }
-          }
-        },
-        key: _key,
-        child: Stack(
-          children: [
-            GestureDetector(
-              onTap: () {
-                initPlay = true;
-                if (_controller.value.isPlaying) {
-                  _controller.pause();
-                } else {
-                  _controller.play();
-                }
-              },
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                switchInCurve: Curves.fastOutSlowIn,
-                switchOutCurve: Curves.fastLinearToSlowEaseIn,
-                child: initialized == false
-                    ? buildLoading()
-                    : SizedBox.expand(
+                            Get.find<VideoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
+                          }
+                        } else if (info.visibleFraction < 0.4) {
+                          // } else {
+                          if (initialized) {
+                            _controller.pause();
+                            _controller.seekTo(Duration.zero);
+                            Get.find<VideoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
+                          }
+                        }
+                      },
+                      key: _key,
+                      child: SizedBox.expand(
                         child: FittedBox(
                           fit: BoxFit.cover,
                           child: SizedBox(
@@ -234,44 +260,87 @@ class VideoScreenPageState extends State<VideoScreenPage> {
                           ),
                         ),
                       ),
+                    ),
+            ),
+          ),
+          // 중앙 play 버튼
+          buildCenterPlayButton(),
+          // 사운드 on/off 버튼
+          buildSoundButton(),
+          // 하단 컨텐츠
+          buildBottomContent(),
+          // 오른쪽 메뉴바
+          buildRightMenuBar(),
+          // 재생 progressbar
+          buildPlayProgress(),
+          // Center(
+          //   child: Text(widget.data.boardId.toString(),
+          //       style: const TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.bold)),
+          // )
+          Positioned(
+            bottom: (MediaQuery.of(context).size.height - 12) * .5,
+            right: 26,
+            child: GestureDetector(
+              onTap: () => SigoPageSheet().open(context, widget.data.boardId.toString()),
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(Icons.warning, color: Colors.white),
+                  const Gap(5),
+                  Text(
+                    '신고',
+                    style: TextStyle(color: Colors.white, fontSize: 9),
+                  )
+                ],
               ),
             ),
-            // 중앙 play 버튼
-            buildCenterPlayButton(),
-            // 사운드 on/off 버튼
-            buildSoundButton(),
-            // 하단 컨텐츠
-            buildBottomContent(),
-            // 오른쪽 메뉴바
-            buildRightMenuBar(),
-            // 재생 progressbar
-            buildPlayProgress(),
-            // Center(
-            //   child: Text(widget.data.boardId.toString(),
-            //       style: const TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.bold)),
-            // )
-          ],
-        ),
+          )
+        ],
       ),
     );
   }
 
   Widget buildLoading() {
-    // return const Center(
-    //   child: CircularProgressIndicator(
-    //     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-    //   ),
-    // );
     return SizedBox.expand(
-      //   child: BackdropFilter(
-      // filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-      child: CachedNetworkImage(
-        // cacheKey: widget.data.boardId.toString(),
-        imageUrl: widget.data.thumbnailPath.toString(),
-        fit: BoxFit.cover,
-        placeholder: (context, url) => SizedBox(width: 60, height: 60, child: Utils.progressbar(color: Colors.white)),
+      child: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: ExactAssetImage(
+              'assets/images/$loadingImageIndex.jpg',
+            ),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 25.0),
+          child: Stack(
+            children: [
+              // Positioned.fill(
+              //   child: CachedNetworkImage(
+              //      cacheKey: widget.data.boardId.toString(),
+              //     imageUrl: widget.data.thumbnailPath.toString(),
+              //     fit: BoxFit.cover,
+              //     placeholder: (context, url) => SizedBox(width: 60, height: 60, child: Utils.progressbar(color: Colors.white)),
+              //   ),
+              // ),
+              // Positioned.fill(
+
+              //   child: Image.asset(
+              //     'assets/images/girl-6356393_640.jpg',
+              //     fit: BoxFit.cover,
+              //     filterQuality: FilterQuality.high,
+              //   ),
+              // ),
+              Positioned(
+                  top: MediaQuery.of(context).size.height * 0.5,
+                  left: 10,
+                  right: 10,
+                  child: const Center(child: Text(" ", style: TextStyle(color: Colors.white, fontSize: 9))))
+            ],
+          ),
+        ),
       ),
-      // ),
     );
   }
 
@@ -390,14 +459,10 @@ class VideoScreenPageState extends State<VideoScreenPage> {
           Row(
             children: [
               Text(
-                '${widget.data.crtDtm.toString().split(':')[0].replaceAll('-', '/')} ${widget.data.crtDtm.toString().split(':')[1]}',
+                '${widget.data.crtDtm.toString().split(':')[0].replaceAll('-', '/')}:${widget.data.crtDtm.toString().split(':')[1]}',
                 style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
               ),
               const SizedBox(width: 20, height: 13, child: VerticalDivider(thickness: 1, color: Colors.white)),
-              // Text(
-              //   '${widget.data.weatherInfo?.split('.')[0]} ${widget.data.currentTemp}°',
-              //   style: const TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w700),
-              // ),
               SizedBox(
                 height: 30,
                 width: 30,
@@ -440,7 +505,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
               SizedBox(
                 width: MediaQuery.of(context).size.width * 0.75,
                 child: TextScroll(
-                  '${locationNm.toString()} ${widget.data.distance!.toStringAsFixed(1)}km ',
+                  '${locationNm.toString()} - 나와의거리${widget.data.distance!.toStringAsFixed(1)}km',
                   mode: TextScrollMode.endless,
                   numberOfReps: 20000,
                   fadedBorder: true,
@@ -502,55 +567,58 @@ class VideoScreenPageState extends State<VideoScreenPage> {
       right: 10,
       child: Column(
         children: [
-          LikeButton(
-            size: 27,
-            circleColor: const CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
-            bubblesColor: const BubblesColor(
-              dotPrimaryColor: Color(0xff33b5e5),
-              dotSecondaryColor: Color(0xff0099cc),
+          IgnorePointer(
+            ignoring: widget.data.custId.toString() == AuthCntr.to.custId.value.toString() ? true : false,
+            child: LikeButton(
+              size: 27,
+              circleColor: const CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
+              bubblesColor: const BubblesColor(
+                dotPrimaryColor: Color(0xff33b5e5),
+                dotSecondaryColor: Color(0xff0099cc),
+              ),
+              isLiked: widget.data.likeYn.toString().contains('Y') ? true : false,
+              likeBuilder: (bool isLiked) {
+                return Icon(
+                  isLiked ? Icons.favorite : Icons.favorite_border,
+                  color: isLiked ? Colors.redAccent : Colors.white,
+                  size: 27,
+                );
+              },
+              onTap: (isLiked) {
+                if (isLiked) {
+                  likeCancle();
+                } else {
+                  like();
+                }
+                return Future.value(!isLiked);
+              },
+              animationDuration: const Duration(milliseconds: 1500),
+              likeCount: widget.data.likeCnt,
+              likeCountPadding: const EdgeInsets.only(top: 5, right: 15, left: 15),
+              countPostion: CountPostion.bottom,
+              countBuilder: (int? count, bool isLiked, String text) {
+                Color color = isLiked ? Colors.redAccent : Colors.white;
+                Widget result;
+                if (count == 0) {
+                  result = Text(
+                    "Love",
+                    style: TextStyle(color: color),
+                  );
+                } else {
+                  result = SizedBox(
+                    width: 30,
+                    height: 18,
+                    // color: Colors.red,
+                    child: Text(
+                      text,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                  );
+                }
+                return result;
+              },
             ),
-            isLiked: widget.data.likeYn.toString().contains('Y') ? true : false,
-            likeBuilder: (bool isLiked) {
-              return Icon(
-                isLiked ? Icons.favorite : Icons.favorite_border,
-                color: isLiked ? Colors.redAccent : Colors.white,
-                size: 27,
-              );
-            },
-            onTap: (isLiked) {
-              if (isLiked) {
-                likeCancle();
-              } else {
-                like();
-              }
-              return Future.value(!isLiked);
-            },
-            animationDuration: const Duration(milliseconds: 1500),
-            likeCount: widget.data.likeCnt,
-            likeCountPadding: const EdgeInsets.only(top: 5, right: 15, left: 15),
-            countPostion: CountPostion.bottom,
-            countBuilder: (int? count, bool isLiked, String text) {
-              Color color = isLiked ? Colors.redAccent : Colors.white;
-              Widget result;
-              if (count == 0) {
-                result = Text(
-                  "Love",
-                  style: TextStyle(color: color),
-                );
-              } else {
-                result = SizedBox(
-                  width: 30,
-                  height: 18,
-                  // color: Colors.red,
-                  child: Text(
-                    text,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                  ),
-                );
-              }
-              return result;
-            },
           ),
           const Gap(10),
           SizedBox(
@@ -581,22 +649,21 @@ class VideoScreenPageState extends State<VideoScreenPage> {
             widget.data.viewCnt.toString(),
             style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
           ),
-          const Gap(3),
+          // IconButton(
+          //     icon: const Icon(Icons.report_gmailerrorred, color: Colors.white),
+          //     onPressed: () => SigoPageSheet().open(context, widget.data.boardId.toString())),
+          const Gap(10),
           // const Text(
           //   '조회수',
           //   style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w400),
           // ),
 
-          const Gap(40),
+          // const Gap(40),
           // IconButton(
           //   icon: const Icon(Icons.send, color: Colors.white),
           //   onPressed: () => share(),
           // ),
-          // const Gap(5),
-          // IconButton(
-          //   icon: const Icon(Icons.more_vert, color: Colors.white),
-          //   onPressed: () => Get.toNamed('/MyinfoPage'),
-          // ),
+          const Gap(5),
         ],
       ),
     );
@@ -645,32 +712,27 @@ class VideoScreenPageState extends State<VideoScreenPage> {
       bottom: 0,
       left: 1,
       right: 1,
+      // child: VideoProgressIndicator(
+      //   _controller!,
+      //   allowScrubbing: true,
+      //   colors: VideoProgressColors(playedColor: Colors.red, bufferedColor: Colors.grey, backgroundColor: Colors.white.withOpacity(0.5)),
+      // ),
       child: ValueListenableBuilder<double>(
-          valueListenable: progress,
-          builder: (context, value, child) {
-            return Stack(
-              children: [
-                Container(height: 2, color: Colors.grey, width: MediaQuery.of(context).size.width),
-                AnimatedContainer(
-                  duration: Duration(milliseconds: value == 0.0 ? 50 : 1000),
-                  height: 2,
-                  width: (MediaQuery.of(context).size.width) * ((value + (value * 0.1)) / 100),
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(4),
-                      // color: const Color.fromRGBO(215, 215, 215, 1),
-                      // color: const Color.fromRGBO(215, 215, 215, 1),
-                      //color: const Color.fromARGB(255, 110, 186, 111),
-                      // color: const Color.fromARGB(255, 38, 162, 40),
-                      // color: const Color.fromARGB(255, 34, 112, 26),
-                      color: Colors.red
-                      // color: Color.fromARGB(255, 13, 104, 43),
-                      ),
-                ),
-              ],
-            );
-          }),
-      // child:
-      //     VideoProgressIndicator(_controller, allowScrubbing: true),
+        valueListenable: progress,
+        builder: (context, value, child) {
+          return Stack(
+            children: [
+              Container(height: 2.5, color: Colors.grey, width: MediaQuery.of(context).size.width),
+              AnimatedContainer(
+                duration: Duration(milliseconds: value == 0.0 ? 50 : 1000),
+                height: 2.5,
+                width: (MediaQuery.of(context).size.width) * ((value + (value * 0.1)) / 100),
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(4), color: Colors.red),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 

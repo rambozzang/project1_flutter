@@ -1,15 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
-import 'package:project1/app/weather/provider/weatherProvider.dart';
-import 'package:project1/app/weather/provider/weather_cntr.dart';
-import 'package:project1/utils/log_utils.dart';
+import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:provider/provider.dart';
-import 'package:video_compress/video_compress.dart';
 
 class WeatherWebView extends StatefulWidget {
   const WeatherWebView({super.key, required this.isBackBtn});
@@ -38,8 +32,6 @@ class _WeatherWebViewState extends State<WeatherWebView> with AutomaticKeepAlive
       iframeAllow: "camera; microphone",
       iframeAllowFullscreen: true);
 
-  PullToRefreshController? pullToRefreshController;
-
   String openUrl = 'https://earth.nullschool.net/#current/wind/surface/level/orthographic=127.20,36.33,2780/loc=';
 
   // String openUrl = 'https://www.windy.com/ko/-%EB%A9%94%EB%89%B4/menu?radar,38.197,127.389,8,m:eHyajGV';
@@ -51,7 +43,7 @@ class _WeatherWebViewState extends State<WeatherWebView> with AutomaticKeepAlive
     // double lat = Get.arguments['lat'].toDouble();
     // openUrl = 'https://www.weather.go.kr/wgis-nuri/html/map.html?location=${lon},${lat}&zoom=10';
     // openUrl = 'https://earth.nullschool.net/#current/wind/surface/level/orthographic=127.20,36.33,2780/loc=${lon},${lat}';
-    Lo.g('openUrl $openUrl ');
+
     androidCheck();
   }
 
@@ -64,19 +56,22 @@ class _WeatherWebViewState extends State<WeatherWebView> with AutomaticKeepAlive
   @override
   void dispose() {
     // webViewController.
+    // webViewController?.dispose();
+
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
         backgroundColor: const Color(0xFF262B49), // Colors.black54,
         body: Stack(
           children: [
             GetBuilder<WeatherCntr>(builder: (weatherProv) {
-              openUrl = '$openUrl${weatherProv.weather.value?.long},${weatherProv.weather.value?.lat}';
-              Lo.g('openUrl2 :  $openUrl ');
-              if (weatherProv.weather.value?.long == null) {
+              openUrl =
+                  '$openUrl${weatherProv.currentLocation.value?.latLng.longitude},${weatherProv.currentLocation.value?.latLng.latitude}';
+              if (weatherProv.currentLocation.value?.latLng.longitude == null) {
                 return Center(child: Utils.progressbar(color: Colors.white));
               }
 
@@ -88,15 +83,10 @@ class _WeatherWebViewState extends State<WeatherWebView> with AutomaticKeepAlive
                   webViewController = controller;
                 },
                 onLoadStart: (controller, url) {
-                  print('onLoadStart $url');
                   Utils.progressbar();
                 },
-                onLoadStop: (controller, url) {
-                  print('onLoadStop $url');
-                },
-                onConsoleMessage: (controller, consoleMessage) {
-                  print('consoleMessage $consoleMessage');
-                },
+                onLoadStop: (controller, url) {},
+                onConsoleMessage: (controller, consoleMessage) {},
               );
             }),
             widget.isBackBtn

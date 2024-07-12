@@ -175,7 +175,7 @@ class _MyFollowingListPageState extends State<MyFollowingListPage> {
                             child: Row(
                               children: [
                                 const Icon(
-                                  Icons.play_arrow_outlined,
+                                  Icons.favorite,
                                   color: Colors.white,
                                   size: 17,
                                 ),
@@ -192,7 +192,7 @@ class _MyFollowingListPageState extends State<MyFollowingListPage> {
                             child: Row(
                               children: [
                                 const Icon(
-                                  Icons.favorite,
+                                  Icons.play_arrow_outlined,
                                   color: Colors.white,
                                   size: 17,
                                 ),

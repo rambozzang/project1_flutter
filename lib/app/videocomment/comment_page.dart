@@ -27,14 +27,6 @@ class CommentPage {
     BuildContext context,
     String boardId,
   ) async {
-    // showBottomSheet(
-    //   context: context,
-    //   backgroundColor: Colors.transparent,
-    //   builder: (BuildContext context) {
-    //     return CommentsPage2(contextParent: context, boardId: boardId);
-    //   },
-    // );
-
     showModalBottomSheet(
       isScrollControlled: true,
       context: context,
@@ -298,7 +290,7 @@ class _CommentsPageState extends State<CommentsPage> {
                 style: const TextStyle(color: Colors.white, decorationThickness: 0),
                 onSubmitted: (value) => saveComment(),
                 decoration: const InputDecoration(
-                  hintText: '댓글 좀...',
+                  hintText: '댓글 ...',
                   hintStyle: TextStyle(color: Colors.white),
 
                   prefixIconConstraints: BoxConstraints(minWidth: 27, maxHeight: 27),

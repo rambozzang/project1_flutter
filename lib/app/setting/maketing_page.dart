@@ -40,7 +40,7 @@ class _PrivecyPageState extends State<MaketingPage> {
       dataCtrl.sink.add(ResStream.loading());
       BoardRepo repo = BoardRepo();
 
-      ResData resData = await repo.searchOriginList(ptupDsc, ptupTrgtDsc, page, pageSzie);
+      ResData resData = await repo.searchOriginList(ptupDsc, ptupTrgtDsc, page, pageSzie, topYn);
 
       if (resData.code != '00') {
         Utils.alert(resData.msg.toString());
@@ -138,7 +138,7 @@ class _PrivecyPageState extends State<MaketingPage> {
         // ),
         Text(
           "${data.contents}",
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w300),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
         ),
       ],
     );

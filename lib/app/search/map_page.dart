@@ -10,7 +10,9 @@ import 'package:latlong2/latlong.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/search/cctv_page.dart';
 import 'package:project1/app/search/cntr/map_cntr.dart';
-import 'package:project1/app/weather/provider/weather_cntr.dart';
+import 'package:project1/app/search/map_search_page.dart';
+import 'package:project1/app/weather/cntr/weather_cntr.dart';
+import 'package:project1/app/weather/models/geocode.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/cctv/cctv_repo.dart';
@@ -74,6 +76,42 @@ class _MapPageState extends State<MapPage> {
       });
   }
 
+  Future<void> locationUpdate(GeocodeData geocodeData) async {
+    lo.g('geocodeData.latLng.latitude: ${geocodeData.latLng.latitude}');
+
+    NaverMapController mapController = Get.find<MapCntr>().mapController;
+
+    NLatLng currentCoord = NLatLng(geocodeData.latLng.latitude, geocodeData.latLng.longitude);
+    final locationOverlay = mapController.getLocationOverlay();
+    const iconImage = NOverlayImage.fromAssetImage('assets/images/map/default_pin.png');
+    locationOverlay
+      ..setIcon(iconImage)
+      ..setIconSize(const Size.fromRadius(40))
+      ..setCircleRadius(100.0)
+      ..setCircleColor(Colors.grey.withOpacity(0.17))
+      ..setPosition(currentCoord)
+      ..setIsVisible(true);
+
+    final cameraUpdate = NCameraUpdate.withParams(target: currentCoord)
+      ..setAnimation(animation: NCameraAnimation.linear, duration: const Duration(milliseconds: 500)); // 2초는 너무 길 수도 있어요.
+    await mapController.updateCamera(cameraUpdate);
+
+    final marker = NMarker(
+      id: geocodeData.latLng.longitude.toString(),
+      position: NLatLng(double.parse(geocodeData.latLng.latitude.toString()), double.parse(geocodeData.latLng.longitude.toString())),
+      icon: iconImage,
+      size: const Size(25, 25),
+      captionOffset: 10,
+      caption: NOverlayCaption(text: geocodeData.name.toString()),
+    );
+    mapController.addOverlay(marker);
+    final onMarkerInfoWindow = NInfoWindow.onMarker(offsetX: 10, id: marker.info.id, text: geocodeData.name);
+
+    marker.openInfoWindow(onMarkerInfoWindow);
+
+    buildMarker(context);
+  }
+
   @override
   void dispose() {
     if (initialized) {
@@ -87,36 +125,40 @@ class _MapPageState extends State<MapPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+        resizeToAvoidBottomInset: false,
         body: Obx(
-      () => Get.find<MapCntr>().isInit.value
-          ? Stack(
-              children: [
-                NaverMap(
-                  options: NaverMapViewOptions(
-                    locationButtonEnable: true,
-                    initialCameraPosition: NCameraPosition(
-                        target: NLatLng(Get.find<WeatherCntr>().currentLocation.value!.latLng.latitude,
-                            Get.find<WeatherCntr>().currentLocation!.value!.latLng.longitude),
-                        zoom: 13,
-                        bearing: 0,
-                        tilt: 0),
-                  ),
-                  onMapReady: (controller) {
-                    print("네이버 맵 로딩됨!");
-                    Get.find<MapCntr>().mapController = controller;
-                    // 파란색 점으로 현재위치 표시
-                    Get.find<MapCntr>().mapController.setLocationTrackingMode(NLocationTrackingMode.noFollow);
+          () => Get.find<MapCntr>().isInit.value
+              ? Stack(
+                  children: [
+                    NaverMap(
+                      options: NaverMapViewOptions(
+                        locationButtonEnable: true,
+                        initialCameraPosition: NCameraPosition(
+                            target: NLatLng(Get.find<WeatherCntr>().currentLocation.value!.latLng.latitude,
+                                Get.find<WeatherCntr>().currentLocation!.value!.latLng.longitude),
+                            zoom: 13,
+                            bearing: 0,
+                            tilt: 0),
+                      ),
+                      onMapReady: (controller) {
+                        print("네이버 맵 로딩됨!");
 
-                    Get.find<MapCntr>().getLocation();
-                    buildMarker(context);
-                  },
-                ),
-                buildTop(),
-                buildBottom()
-              ],
-            )
-          : const Center(child: CircularProgressIndicator()),
-    ));
+                        Get.find<MapCntr>().mapController = controller;
+
+                        // 파란색 점으로 현재위치 표시
+                        Get.find<MapCntr>().mapController.setLocationTrackingMode(NLocationTrackingMode.noFollow);
+
+                        Get.find<MapCntr>().getLocation();
+                        buildMarker(context);
+                      },
+                    ),
+                    //   buildTop(),
+                    buildBottom(),
+                    MapSearchPage(onSelectClick: locationUpdate),
+                  ],
+                )
+              : const Center(child: CircularProgressIndicator()),
+        ));
   }
 
   // 상단 앱바
@@ -198,49 +240,49 @@ class _MapPageState extends State<MapPage> {
   Widget buildBottom() {
     return Positioned(
         bottom: 40,
-        right: 10,
+        right: 16,
         child: Column(
           children: [
+            // ElevatedButton(
+            //   style: ElevatedButton.styleFrom(
+            //       padding: const EdgeInsets.all(1),
+            //       minimumSize: const Size(50, 30),
+            //       backgroundColor: Colors.white,
+            //       elevation: 5,
+            //       shadowColor: Colors.grey,
+            //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5))),
+            //   onPressed: () => Get.find<MapCntr>().getLocation(),
+            //   child: const Text("현재위치", style: TextStyle(color: Colors.black, fontSize: 12)),
+            // ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(1),
-                  minimumSize: const Size(50, 30),
-                  backgroundColor: Colors.white,
-                  elevation: 5,
-                  shadowColor: Colors.grey,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5))),
-              onPressed: () => Get.find<MapCntr>().getLocation(),
-              child: const Text("현재위치", style: TextStyle(color: Colors.black, fontSize: 12)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(0),
-                  minimumSize: const Size(50, 30),
+                  padding: const EdgeInsets.all(5),
+                  minimumSize: const Size(70, 40),
                   backgroundColor: Colors.white,
                   elevation: 5,
                   shadowColor: Colors.grey,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5))),
               onPressed: () => buildMarker(context),
-              child: const Text("마커", style: TextStyle(color: Colors.black, fontSize: 12)),
+              child: const Text("근처영상보기", style: TextStyle(color: Colors.black, fontSize: 12)),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(0),
-                  minimumSize: const Size(50, 30),
-                  backgroundColor: Colors.white,
-                  elevation: 5,
-                  shadowColor: Colors.grey,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5))),
-              onPressed: () => getCctv(),
-              child: const Text("CCTV", style: TextStyle(color: Colors.black, fontSize: 12)),
-            ),
+            // ElevatedButton(
+            //   style: ElevatedButton.styleFrom(
+            //       padding: const EdgeInsets.all(0),
+            //       minimumSize: const Size(50, 30),
+            //       backgroundColor: Colors.white,
+            //       elevation: 5,
+            //       shadowColor: Colors.grey,
+            //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5))),
+            //   onPressed: () => getCctv(),
+            //   child: const Text("CCTV", style: TextStyle(color: Colors.black, fontSize: 12)),
+            // ),
           ],
         ));
   }
 
   // 일반 동영상 마커 생성 하기
   Future<void> buildMarker(BuildContext context) async {
-    Size size = const Size(40, 40);
+    Size size = const Size(45, 60);
 
     // 마커 리스트
     // TODO : 지도 가운데를 기준으로 다시 가져오는 방법 찾기
@@ -259,7 +301,8 @@ class _MapPageState extends State<MapPage> {
     _list.forEach((element) async {
       // final NOverlayImage icon = await buildMarket(size, element, context);
       // NOverlayImage icon = const NOverlayImage.fromAssetImage('assets/images/map/blue_pin.png');
-      final request = await http.get(Uri.parse(element.profilePath.toString()));
+      // final request = await http.get(Uri.parse(element.profilePath.toString()));
+      final request = await http.get(Uri.parse(element.thumbnailPath.toString()));
       final icon = await NOverlayImage.fromByteArray(request.bodyBytes);
 
       final marker = NMarker(
@@ -271,8 +314,8 @@ class _MapPageState extends State<MapPage> {
         caption: NOverlayCaption(text: element.nickNm.toString()),
       );
       Get.find<MapCntr>().mapController.addOverlay(marker);
-      final onMarkerInfoWindow = NInfoWindow.onMarker(
-          offsetX: 10, id: marker.info.id, text: "[${element.nickNm}·${Utils.timeage(element.crtDtm.toString())}]\n${element.contents}");
+      final onMarkerInfoWindow =
+          NInfoWindow.onMarker(offsetX: 0, id: marker.info.id, text: "${element.nickNm}·${Utils.timeage(element.crtDtm.toString())}");
 
       marker.openInfoWindow(onMarkerInfoWindow);
       marker.setOnTapListener((overlay) async {
@@ -341,7 +384,7 @@ class _MapPageState extends State<MapPage> {
     //     size: size,
     //     captionOffset: 0,
     //   );
-    //   Get.find<MapCntr>().mapController.addOverlay(marker2);
+    //   mapController.addOverlay(marker2);
     //   final onMarkerInfoWindow = NInfoWindow.onMarker(id: marker2.info.id, text: "${element.cctvname}°");
     //   marker2.openInfoWindow(onMarkerInfoWindow);
     //   marker2.setOnTapListener((overlay) async {
@@ -494,6 +537,7 @@ class _MapPageState extends State<MapPage> {
                                 borderRadius: BorderRadius.circular(5),
                               ),
                               child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Container(
                                       padding: const EdgeInsets.all(4),
@@ -514,7 +558,8 @@ class _MapPageState extends State<MapPage> {
                             Row(
                               children: [
                                 Text('${data.currentTemp.toString()}°C',
-                                    overflow: TextOverflow.clip, style: const TextStyle(fontSize: 13, color: Colors.black)),
+                                    overflow: TextOverflow.clip,
+                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black)),
                                 CachedNetworkImage(
                                   width: 50,
                                   height: 50,
@@ -534,31 +579,52 @@ class _MapPageState extends State<MapPage> {
                             ),
                             Text(
                               data.weatherInfo.toString(),
-                              style: const TextStyle(fontSize: 13, color: Colors.black),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black),
                               overflow: TextOverflow.clip,
                             ),
                             const Gap(6),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  '미세    :',
-                                  style: TextStyle(fontSize: 15, color: Colors.black87),
-                                ),
-                                const Gap(10),
-                                Text(Get.find<WeatherCntr>().mistViewData.value!.mist10Grade!.toString(),
-                                    style: const TextStyle(fontSize: 15, color: Colors.black)),
-                              ],
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                const Text('초미세 :', style: TextStyle(fontSize: 15, color: Colors.black87)),
-                                const Gap(10),
-                                Text(Get.find<WeatherCntr>().mistViewData.value!.mist25Grade!.toString(),
-                                    style: const TextStyle(fontSize: 15, color: Colors.black)),
-                              ],
-                            ),
+                            Get.find<WeatherCntr>().mistViewData.value!.mist10Grade.toString() == 'null' ||
+                                    Get.find<WeatherCntr>().mistViewData.value!.mist25Grade.toString() == null
+                                ? const SizedBox()
+                                : RichText(
+                                    text: TextSpan(
+                                      text: '미세',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      children: <TextSpan>[
+                                        buildTextMist(Get.find<WeatherCntr>().mistViewData.value!.mist10Grade.toString()),
+                                        const TextSpan(
+                                          text: ' 초미세',
+                                          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: Colors.black),
+                                        ),
+                                        buildTextMist(Get.find<WeatherCntr>().mistViewData.value!.mist25Grade.toString()),
+                                      ],
+                                    ),
+                                  ),
+                            // Row(
+                            //   mainAxisAlignment: MainAxisAlignment.start,
+                            //   children: [
+                            //     const Text(
+                            //       '미세    :',
+                            //       style: TextStyle(fontSize: 15, color: Colors.black87),
+                            //     ),
+                            //     const Gap(10),
+                            //     Text(Get.find<WeatherCntr>().mistViewData.value!.mist10Grade!.toString(),
+                            //         style: const TextStyle(fontSize: 15, color: Colors.black)),
+                            //   ],
+                            // ),
+                            // Row(
+                            //   mainAxisAlignment: MainAxisAlignment.start,
+                            //   children: [
+                            //     const Text('초미세 :', style: TextStyle(fontSize: 15, color: Colors.black87)),
+                            //     const Gap(10),
+                            //     Text(Get.find<WeatherCntr>().mistViewData.value!.mist25Grade!.toString(),
+                            //         style: const TextStyle(fontSize: 15, color: Colors.black)),
+                            //   ],
+                            // ),
                           ],
                         ),
                       ),
@@ -569,7 +635,7 @@ class _MapPageState extends State<MapPage> {
                 Container(
                   height: 80,
                   padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 5),
-                  alignment: Alignment.centerLeft,
+                  alignment: Alignment.topLeft,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(5),
                     border: Border.all(color: Colors.grey.withOpacity(0.2)),
@@ -594,5 +660,41 @@ class _MapPageState extends State<MapPage> {
     //   initialized = false;
     //   videoCntroller.dispose();
     // });
+  }
+
+  TextSpan buildTextMist(String mist) {
+    /*
+      if (value >= 0 && value <= 30) {
+      return '좋음';
+    } else if (value >= 31 && value <= 80) {
+      return '보통';
+    } else if (value >= 81 && value <= 150) {
+      return '나쁨';
+    } else {
+      return '매우나쁨';
+    }
+    */
+    Color color = Colors.blue;
+    switch (mist) {
+      case '좋음':
+        color = Colors.blue;
+        break;
+      case '보통':
+        color = Colors.green;
+        break;
+      case '나쁨':
+        color = Colors.orange;
+        break;
+      case '매우나쁨':
+        color = Colors.red;
+        break;
+      default:
+        color = Colors.blue;
+    }
+
+    return TextSpan(
+      text: mist,
+      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: color),
+    );
   }
 }

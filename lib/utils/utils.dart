@@ -1,10 +1,15 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:giffy_dialog/giffy_dialog.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:project1/repo/common/res_stream.dart';
@@ -14,8 +19,99 @@ import 'package:project1/widget/error_page.dart';
 import 'package:project1/widget/no_data_widget.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+import 'package:url_launcher/url_launcher.dart';
+
 abstract class Utils {
   Utils._();
+
+  static void appUpdateAlert(BuildContext context, String storeUrl) {
+    showDialog(
+      context: context,
+      // barrierDismissible: false,
+      builder: (BuildContext context) {
+        return GiffyDialog.image(
+          elevation: 5,
+          Image.asset(
+            'assets/images/app_update.png',
+            height: 200,
+            fit: BoxFit.cover,
+          ),
+          title: const Text(
+            '최신 버전 업데이트',
+            textAlign: TextAlign.center,
+          ),
+          content: Text(
+            Platform.isIOS ? '최신 버전이 있습니다. 앱스토어로 이동합니다.' : '최신 버전이 있습니다.\n플레이스토어로 이동합니다.',
+            textAlign: TextAlign.center,
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            TextButton(
+              onPressed: () {
+                launchUrl(Uri.parse(storeUrl));
+                //   Future.delayed(const Duration(milliseconds: 1000), () async {
+                //     if (Platform.isIOS) {
+                //       exit(0);
+                //     } else {
+                //       SystemNavigator.pop();
+                //     }
+                //   });
+              },
+              child: const Text(
+                '확 인',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  static void bottomNotiAlert(BuildContext context, String title, String content) {
+    showModalBottomSheet(
+      context: context,
+      clipBehavior: Clip.antiAlias,
+      isScrollControlled: true,
+      // isDismissible: false,
+      // enableDrag: false,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(32),
+        ),
+      ),
+      builder: (BuildContext context) {
+        return GiffyBottomSheet.image(
+          Image.asset(
+            'assets/images/1.jpg',
+            height: 200,
+            fit: BoxFit.cover,
+          ),
+          title: Text(
+            title,
+            textAlign: TextAlign.center,
+          ),
+          content: Text(
+            content,
+            textAlign: TextAlign.center,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'CANCEL'),
+              child: const Text('CANCEL'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'OK'),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   static void alert(String msg) {
     BotToast.showCustomText(
@@ -249,7 +345,7 @@ abstract class Utils {
                 children: [
                   Text(
                     title.toString(),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.black,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -259,7 +355,7 @@ abstract class Utils {
                     const Gap(10),
                     Text(
                       subtitle.toString(),
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.black,
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
@@ -306,12 +402,17 @@ abstract class Utils {
   }
 
   static Widget progressbar({double? size, Color? color}) {
+    // return Center(
+    //   child: LoadingAnimationWidget.threeRotatingDots(
+    //     color: color ?? Colors.pink,
+    //     size: size ?? 40,
+    //   ),
+    // );
     return Center(
-      child: LoadingAnimationWidget.threeRotatingDots(
-        color: color ?? Colors.pink,
-        size: size ?? 40,
-      ),
-    );
+        child: LoadingAnimationWidget.fourRotatingDots(
+      color: const Color.fromARGB(255, 173, 32, 79),
+      size: size ?? 40,
+    ));
   }
 
   static Widget progressUpload({double? size}) {
@@ -402,40 +503,45 @@ abstract class Utils {
     );
   }
 
-  static Widget commonStreamList<T>(StreamController stream, Widget Function(List<T>) buildBody, Function()? onRetryPressed) {
+  static Widget commonStreamList<T>(StreamController stream, Widget Function(List<T>) buildBody, Function()? onRetryPressed,
+      {Widget? noDataWidget, Widget? loadingWidget, Widget? errorWidget}) {
     return StreamBuilder<ResStream<List<T>>>(
       stream: stream.stream as Stream<ResStream<List<T>>>?,
       builder: (BuildContext context, AsyncSnapshot<ResStream<List<T>>> snapshot) {
         if (snapshot.hasData) {
           switch (snapshot.data?.status) {
             case Status.LOADING:
-              return Center(
-                  child: Padding(
-                padding: const EdgeInsets.all(68.0),
-                child: Utils.progressbar(),
-              ));
+              return loadingWidget ??
+                  Center(
+                      child: Padding(
+                    padding: const EdgeInsets.all(68.0),
+                    child: Utils.progressbar(),
+                  ));
             case Status.COMPLETED:
               var list = snapshot.data!.data;
-              return list!.isEmpty ? const NoDataWidget() : buildBody(list);
+              return list!.isEmpty ? (noDataWidget ?? const NoDataWidget()) : buildBody(list);
             case Status.ERROR:
-              return ErrorPage(
-                errorMessage: snapshot.data!.message ?? '',
-                onRetryPressed: onRetryPressed,
-              );
+              return errorWidget ??
+                  ErrorPage(
+                    errorMessage: snapshot.data!.message ?? '',
+                    onRetryPressed: onRetryPressed,
+                  );
             case null:
-              return const SizedBox(
-                width: 200,
-                height: 300,
-                child: Text("조회 중 오류가 발생했습니다."),
-              );
+              return errorWidget ??
+                  const SizedBox(
+                    width: 200,
+                    height: 300,
+                    child: Text("조회 중 오류가 발생했습니다."),
+                  );
           }
         }
-        return const Center(
-          child: Padding(
-            padding: EdgeInsets.all(48.0),
-            child: Text("조회 된 데이터가 없습니다."),
-          ),
-        );
+        return noDataWidget ??
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(48.0),
+                child: Text("조회 된 데이터가 없습니다."),
+              ),
+            );
       },
     );
   }
@@ -456,17 +562,19 @@ abstract class Utils {
                   ));
             case Status.COMPLETED:
               var result = snapshot.data!.data;
-              return result == null ? const NoDataWidget() : buildBody(result);
+              return result == null ? (noDataWidget ?? const NoDataWidget()) : buildBody(result);
             case Status.ERROR:
-              return ErrorPage(
-                errorMessage: snapshot.data!.message ?? '',
-                onRetryPressed: onRetryPressed,
-              );
+              return errorWidget ??
+                  ErrorPage(
+                    errorMessage: snapshot.data!.message ?? '',
+                    onRetryPressed: onRetryPressed,
+                  );
             case null:
-              return ErrorPage(
-                errorMessage: snapshot.data!.message ?? '',
-                onRetryPressed: onRetryPressed,
-              );
+              return errorWidget ??
+                  ErrorPage(
+                    errorMessage: snapshot.data!.message ?? '',
+                    onRetryPressed: onRetryPressed,
+                  );
           }
         }
         return noDataWidget ??

@@ -6,7 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
-import 'package:project1/app/weather/provider/weather_cntr.dart';
+import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -46,6 +46,7 @@ class VideoMyinfoListCntr extends GetxController {
 
   var isloading = true.obs;
 
+  int preLoadingCount = 3;
   @override
   void onInit() {
     super.onInit();
@@ -54,25 +55,17 @@ class VideoMyinfoListCntr extends GetxController {
 
   Future<void> getData() async {
     try {
-      lo.g('00000');
       list = [];
       BoardWeatherListData boarIdData = BoardWeatherListData();
-      lo.g('11111111');
-
       videoMyListCntr.sink.add(ResStream.loading());
-      lo.g('2222222');
       // 위치 좌표 가져오기
       // MyLocatorRepo myLocatorRepo = MyLocatorRepo();
       //  position = await myLocatorRepo.getCurrentLocation();
 
       BoardRepo boardRepo = BoardRepo();
-      lo.g('3333333333');
       late ResData resListData;
-
-      lo.g('getData(): datatype : ' + datatype);
-      lo.g('getData(): boardId : ' + boardId);
-
       // boardId가 있으면 해당 게시물만 가져오기
+
       if (datatype == 'ONE') {
         resListData = await boardRepo.getBoardByBoardId(boardId);
         if (resListData.code != '00') {
@@ -140,20 +133,9 @@ class VideoMyinfoListCntr extends GetxController {
       }
 
       list.addAll(_list);
-
-      // videoListCntr.sink.add(ResStream.completed(list));
-      List<BoardWeatherListData> initList = list.sublist(0, list.length > 1 ? 2 : 1);
-      lo.g("initList.length : ${initList.length}");
-
-      videoMyListCntr.sink.add(ResStream.completed(initList));
-      Future.delayed(const Duration(milliseconds: 1000), () {
-        // 1번째 비디오를 플레이 화면에 바로 노출하도록 나머지 스트림 전송
-        videoMyListCntr.sink.add(ResStream.completed(list));
-      });
-
-      //Utils.alert('날씨 가져오기 성공');
+      videoMyListCntr.sink.add(ResStream.completed(list));
     } catch (e) {
-      Lo.g('getDate() error : ' + e.toString());
+      Lo.g('getDate() error : $e');
       videoMyListCntr.sink.add(ResStream.error(e.toString()));
     }
   }
@@ -164,7 +146,7 @@ class VideoMyinfoListCntr extends GetxController {
     // index:    , length : 15 =>  3 > 10 false;
     // pagesize
 
-    bool isBottom = index > length - 7;
+    bool isBottom = index > length - (preLoadingCount + 1);
     isBottom = length < pagesize ? false : isBottom;
     // false 이면 바로 리턴 (더이상 데이터가 없음)
     if (!isBottom) {

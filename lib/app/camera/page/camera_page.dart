@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui';
 
@@ -6,6 +7,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/camera/bloc/camera_state.dart';
@@ -14,6 +16,7 @@ import 'package:project1/app/camera/page/video_reg_page.dart';
 import 'package:project1/app/camera/page/widgets/animated_bar.dart';
 import 'package:project1/app/camera/utils/screenshot_utils.dart';
 import 'package:project1/app/camera/utils/zoom_widget.dart';
+import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -67,10 +70,12 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
       cameraBloc.add(CameraDisable());
     }
     if (state == AppLifecycleState.resumed) {
-      if (isThisPageVisibe) {
-        // Enable the camera when the app is resumed and this page is visible
-        cameraBloc.add(CameraEnable());
-      }
+      lo.g("AppLifecycleState.resumed 1");
+      // if (isThisPageVisibe) {
+      // Enable the camera when the app is resumed and this page is visible
+      lo.g("AppLifecycleState.resumed 2");
+      cameraBloc.add(CameraEnable());
+      // }
     }
   }
 
@@ -175,6 +180,24 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
       return;
     }
     cameraBloc.add(CameraRecordingStop());
+  }
+
+  Future getImage(ImageSource imageSource) async {
+    try {
+      //pickedFile에 ImagePicker로 가져온 이미지가 담긴다.
+      final XFile? pickedFile = await ImagePicker().pickVideo(source: imageSource);
+      if (pickedFile != null) {
+        Navigator.of(
+          context,
+        ).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => VideoRegPage(videoFile: File(pickedFile.path)),
+          ),
+        );
+      }
+    } catch (e) {
+      Utils.alert(e.toString());
+    }
   }
 
   Widget _cameraBlocBuilder(BuildContext context, CameraState state) {
@@ -305,6 +328,16 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                   ),
                 ),
               ),
+              Positioned(
+                  left: 15,
+                  top: MediaQuery.of(context).padding.top + 20,
+                  child: GestureDetector(
+                    onTap: () => getImage(ImageSource.gallery),
+                    child: const Text(
+                      "갤러리",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ))
             ],
           ),
         ),

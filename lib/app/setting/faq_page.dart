@@ -54,8 +54,8 @@ class _FaqPageState extends State<FaqPage> {
   final ValueNotifier<List<String>> badgeSelectedList = ValueNotifier<List<String>>(['']);
 //   final ValueNotifier<List<String>> badgeSelectedList = ValueNotifier(<String>[]);
 
-  String ptupDsc = 'FAQ';
-  String ptupTrgtDsc = '';
+  String typeCd = 'FAQ';
+  String typeDtCd = 'ALL';
   String topYn = 'N';
 
   int page = 0;
@@ -89,7 +89,7 @@ class _FaqPageState extends State<FaqPage> {
     try {
       BoardRepo repo = BoardRepo();
 
-      ResData resData = await repo.searchOriginList('FAQ', 'ALL', page, pageSzie);
+      ResData resData = await repo.searchOriginList(typeCd, typeDtCd, page, pageSzie, topYn);
 
       if (resData.code != '00') {
         Utils.alert(resData.msg.toString());
@@ -119,7 +119,7 @@ class _FaqPageState extends State<FaqPage> {
       listCtrl.sink.add(ResStream.loading());
       BoardRepo repo = BoardRepo();
 
-      ResData resData = await repo.searchOriginList('FAQ', '', page, pageSzie);
+      ResData resData = await repo.searchOriginList(typeCd, typeDtCd, page, pageSzie, topYn);
 
       if (resData.code != '00') {
         Utils.alert(resData.msg.toString());

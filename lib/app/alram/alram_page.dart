@@ -1,13 +1,18 @@
 import 'dart:async';
+import 'dart:io';
 
-import 'package:bot_toast/bot_toast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
-import 'package:project1/app/chatting/main.dart';
 import 'package:project1/app/chatting/chat_main_page.dart';
+import 'package:project1/repo/weather_gogo/gpt_api.dart';
+import 'package:project1/repo/weather_gogo/models/response/fct/fct_model.dart';
+import 'package:project1/repo/weather_gogo/models/response/super_fct/super_fct_model.dart';
+import 'package:project1/repo/weather_gogo/models/response/super_nct/super_nct_model.dart';
+import 'package:project1/repo/weather_gogo/weather_gogo_repo.dart';
 import 'package:project1/repo/alram/alram_repo.dart';
 import 'package:project1/repo/alram/data/alram_req_data.dart';
 import 'package:project1/repo/alram/data/alram_res_data.dart';
@@ -16,7 +21,9 @@ import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
+import 'package:project1/widget/custom_tabbarview.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AlramPage extends StatefulWidget {
   const AlramPage({super.key});
@@ -114,6 +121,39 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
     super.dispose();
   }
 
+  aa() async {
+    await Supabase.instance.client.auth.signOut();
+    // try {
+    //   final response = await Supabase.instance.client.auth.signUp(
+    //     email: 'codelabtiger@gmail.com',
+    //     password: 'Y2NNh0bsOCMyzXbKQXnnjdCHDI62',
+    //   );
+    //   lo.g(response.toString());
+    // } catch (e) {
+    //   lo.g(e.toString());
+    //   AuthException exception = e as AuthException;
+    //   lo.g(exception.statusCode!.toString());
+    //   // 이미 가입자 고객인 경우
+    //   if (exception.statusCode == '422') {
+    //     // 로그인해서 chatid를 가져와서 리턴
+    //     AuthResponse authRes = await Supabase.instance.client.auth.signInWithPassword(
+    //       email: 'codelabtiger@gmail.com',
+    //       password: 'Y2NNh0bsOCMyzXbKQXnnjdCHDI62',
+    //     );
+    //     lo.g(authRes.session!.user.id.toString());
+    //   }
+    // }
+
+    // WeatherGogoRepo repo = WeatherGogoRepo();
+    // List<ItemSuperFct> list = await repo.getSuperFctListJson(isLog: true);
+    // List<ItemSuperNct> list = await repo.getYesterDayJson(isLog: true);
+
+    // list 출력
+    // list.forEach((data) => data.category == 'T1H' ? lo.g('${data.baseDate!} ${data.baseTime!}=>${data.obsrValue!}') : null);
+
+    // lo.g(list.toString());
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -121,25 +161,58 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
       length: 2,
       initialIndex: 0,
       child: Scaffold(
+        resizeToAvoidBottomInset: true,
         appBar: AppBar(
-          automaticallyImplyLeading: false,
           forceMaterialTransparency: true,
-          centerTitle: false,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          automaticallyImplyLeading: false,
           title: const Text('알람'),
+          centerTitle: false,
           actions: [
-            // IconButton(
-            //   onPressed: () => NotiShow(),
-            //   icon: const Icon(Icons.chat_bubble_outline),
-            // ),
+            IconButton(
+              onPressed: () => aa(),
+              icon: const Icon(Icons.chat_bubble_outline),
+            ),
             IconButton(
               onPressed: () => tabController.index == 0 ? getDataInit() : chatMainPageKey.currentState?.initSupaBaseSession(),
               icon: const Icon(Icons.refresh_outlined),
             ),
           ],
         ),
-        backgroundColor: Colors.white,
-        body: Column(
-          children: [_tabs(), _tabBarView()],
+        body: Stack(
+          children: [
+            RefreshIndicator.adaptive(
+              notificationPredicate: (notification) {
+                if (notification is OverscrollNotification || Platform.isIOS) {
+                  return notification.depth == 2;
+                }
+                return notification.depth == 0;
+              },
+              onRefresh: () async {
+                // 3가지 갯수 가져오기
+              },
+              child: NestedScrollView(
+                // controller: mainScrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                headerSliverBuilder: (context, innerBoxIsScrolled) {
+                  return [
+                    SliverList(
+                      delegate: SliverChildListDelegate(
+                        [],
+                      ),
+                    ),
+                  ];
+                },
+                body: Column(
+                  children: [
+                    _tabs(),
+                    _tabBarView(),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -174,7 +247,7 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
 
   Widget _tabBarView() {
     return Expanded(
-      child: TabBarView(controller: tabController, children: [
+      child: TabBarView(controller: tabController, physics: const AlwaysScrollableScrollPhysics(), children: [
         buildAlramWidget(),
         ChatMainApp(
           key: chatMainPageKey,
@@ -192,8 +265,8 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
     return RefreshIndicator(
       onRefresh: () async => await getData(0),
       child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
         controller: scrollCtrl,
+        // physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 12.0),
         child: Column(children: [
           // const Gap(24),
@@ -219,11 +292,10 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
   Widget buildList(List<AlramResData> list) {
     return Column(
       children: [
-        const Gap(15),
         ListView.builder(
           shrinkWrap: true,
           itemCount: list.length,
-          physics: const BouncingScrollPhysics(),
+          physics: const AlwaysScrollableScrollPhysics(),
           itemBuilder: (BuildContext context, int index) {
             return buildItem(list[index]);
           },
@@ -318,10 +390,7 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
                         ),
                         const Gap(5),
                         data.boardId != null
-                            ?
-                            // 이쁜 게시물확인 버튼 만들어주세요.
-
-                            SizedBox(
+                            ? SizedBox(
                                 width: 20,
                                 height: 25,
                                 child: TextButton(
@@ -359,7 +428,7 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
                             ),
                             onPressed: () => Get.toNamed('/OtherInfoPage/${data.senderCustId}'),
                             child: Text(
-                              '@${data.senderNickNm == null ? data.senderCustNm.toString() : data.senderNickNm.toString()}',
+                              data.senderNickNm == null ? data.senderCustNm.toString() : data.senderNickNm.toString(),
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14.0,
@@ -418,6 +487,73 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
           ),
         ),
       ],
+    );
+  }
+}
+
+class TabBarDelegate extends SliverPersistentHeaderDelegate {
+  List<Widget> tabNames;
+  TabController tabController;
+
+  TabBarDelegate(this.tabNames, this.tabController);
+
+  @override
+  double get maxExtent => 49;
+
+  @override
+  double get minExtent => 48;
+
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 0.0),
+      // width: double.infinity,
+      color: Colors.white,
+      child: TabBar(
+        labelPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0.0),
+        tabAlignment: TabAlignment.start,
+        labelColor: Colors.black,
+        labelStyle: const TextStyle(
+          fontFamily: "NotoSansKR",
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+        ),
+        padding: const EdgeInsets.all(0.0),
+        indicatorColor: Colors.transparent,
+        dividerColor: Colors.grey[300],
+        // unselectedLabelStyle: TextStyle(
+        //   fontSize: 13,
+        //   color: Colors.grey[100],
+        //   fontFamily: "NotoSansKR",
+        // ),
+        // unselectedLabelColor: Colors.white,
+        indicatorSize: TabBarIndicatorSize.label,
+        //indicatorColor: Colors.white,
+        indicator: UnderlineTabIndicator(
+          borderSide: BorderSide(color: Colors.grey.shade600, width: 3.0),
+        ),
+        controller: tabController,
+        isScrollable: true,
+        tabs: [...List.generate(tabNames.length, (i) => getTabButton(tabNames[i]))],
+        // tabs: [],
+      ),
+    );
+  }
+
+  Widget getTabButton(Widget title) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+      child: Tab(
+        height: 45,
+        child: title,
+        // child: Text(title, style: const TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold)),
+      ),
     );
   }
 }

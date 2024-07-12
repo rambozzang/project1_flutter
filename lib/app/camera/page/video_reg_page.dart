@@ -7,7 +7,9 @@ import 'package:gap/gap.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:hashtagable_v3/hashtagable.dart';
-import 'package:project1/app/weather/provider/weather_cntr.dart';
+import 'package:project1/app/weather/cntr/weather_cntr.dart';
+import 'package:project1/app/weather/models/geocode.dart';
+import 'package:project1/app/weather/models/oneCallCurrentWeather.dart';
 import 'package:project1/repo/board/data/board_save_data.dart';
 import 'package:project1/repo/board/data/board_save_main_data.dart';
 import 'package:project1/repo/board/data/board_save_weather_data.dart';
@@ -16,6 +18,7 @@ import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_button.dart';
+import 'package:project1/widget/custom_checkbox.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
 import 'package:video_compress/video_compress.dart';
 import 'package:video_player/video_player.dart';
@@ -29,7 +32,7 @@ class VideoRegPage extends StatefulWidget {
   State<VideoRegPage> createState() => _VideoRegPageState();
 }
 
-class _VideoRegPageState extends State<VideoRegPage> {
+class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderStateMixin {
   late VideoPlayerController _videoController;
   final TextEditingController hashTagController = TextEditingController();
 
@@ -52,33 +55,70 @@ class _VideoRegPageState extends State<VideoRegPage> {
   BoardSaveData boardSaveData = BoardSaveData();
 
   bool isCancle = false;
+  Duration durationOfVideo = Duration.zero;
+  bool initVideo = false;
+  String hideYn = 'N';
+
+  bool _checked = false;
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
     // currentWeather.value = widget.currentWeather;
 
-    _videoController = VideoPlayerController.file(widget.videoFile);
-
     initializeVideo();
 
     getDate();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOut,
+      ),
+    );
+  }
+
+  void _toggleCheckbox() {
+    setState(() {
+      _checked = !_checked;
+      hideYn = _checked ? 'Y' : 'N';
+      if (_checked) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    });
   }
 
   void initializeVideo() async {
-    await _videoController.initialize();
-    _videoController.setLooping(true);
-    _videoController.play();
+    _videoController = VideoPlayerController.file(widget.videoFile);
+    await _videoController.initialize().then((a) {
+      setState(() {});
+      _videoController.setLooping(true);
+      _videoController.play();
+      initVideo = true;
+      durationOfVideo = _videoController.value.duration;
+    });
   }
 
   Future<void> getDate() async {
     try {
-      await Get.find<WeatherCntr>().getWeatherData();
+      await Get.find<WeatherCntr>().getWeatherDataOnlyCurrentWeather();
     } catch (e) {}
   }
 
   // 파일 업로드
   Future<void> upload() async {
+    if (Get.find<WeatherCntr>().isLoading.value) {
+      Utils.alert("현지 위치정보 수신중입니다. 수신완료 후 다시 시도해주세요.");
+      return;
+    }
     isUploading.value = true;
 
     try {
@@ -90,31 +130,43 @@ class _VideoRegPageState extends State<VideoRegPage> {
       boardSaveMainData.subject = '';
       boardSaveMainData.typeCd = 'V';
       boardSaveMainData.typeDtCd = 'V';
+      boardSaveMainData.hideYn = hideYn;
 
-      CurrentWeather? currentWeather = Get.find<WeatherCntr>().currentWeather.value;
+      OneCallCurrentWeather? currentWeather = Get.find<WeatherCntr>().oneCallCurrentWeather.value;
+      GeocodeData geocodeData = Get.find<WeatherCntr>().currentLocation.value!;
 
       BoardSaveWeatherData boardSaveWeatherData = BoardSaveWeatherData();
       boardSaveWeatherData.boardId = 0;
-      boardSaveWeatherData.city = currentWeather!.name;
-      boardSaveWeatherData.country = currentWeather.sys!.country;
-      boardSaveWeatherData.currentTemp = currentWeather.main!.temp?.toStringAsFixed(1);
-      boardSaveWeatherData.feelsTemp = currentWeather.main!.feels_like?.toStringAsFixed(1);
-      boardSaveWeatherData.humidity = currentWeather.main!.humidity.toString();
+
+      boardSaveWeatherData.city = '';
+      boardSaveWeatherData.country = ''!;
+
+      boardSaveWeatherData.currentTemp = currentWeather!.temp?.toStringAsFixed(1);
+      boardSaveWeatherData.feelsTemp = currentWeather!.feels_like?.toStringAsFixed(1);
+      boardSaveWeatherData.humidity = currentWeather!.humidity.toString();
       boardSaveWeatherData.icon = currentWeather.weather![0].icon;
-      boardSaveWeatherData.lat = currentWeather.coord!.lat.toString();
-      boardSaveWeatherData.lon = currentWeather.coord!.lon.toString();
-      boardSaveWeatherData.speed = currentWeather.wind!.speed.toString();
-      boardSaveWeatherData.tempMax = currentWeather.main!.temp_max?.toStringAsFixed(1);
-      boardSaveWeatherData.tempMin = currentWeather.main!.temp_min?.toStringAsFixed(1);
+      boardSaveWeatherData.lat = geocodeData.latLng.latitude.toString();
+      boardSaveWeatherData.lon = geocodeData.latLng.longitude.toString();
+      boardSaveWeatherData.speed = currentWeather.wind_speed.toString();
+
+      boardSaveWeatherData.tempMax = ''; // currentWeather.main!.temp_max?.toStringAsFixed(1);
+      boardSaveWeatherData.tempMin = ''; // currentWeather.main!.temp_min?.toStringAsFixed(1);
+
       boardSaveWeatherData.location = Get.find<WeatherCntr>().currentLocation.value!.name;
       // boardSaveWeatherData.thumbnailPath = res2.secureUrl;
       // boardSaveWeatherData.videoPath = res.secureUrl;
       boardSaveWeatherData.weatherInfo = currentWeather.weather![0].description;
       boardSaveData.boardMastInVo = boardSaveMainData;
       boardSaveData.boardWeatherVo = boardSaveWeatherData;
+      boardSaveWeatherData.mist10 = Get.find<WeatherCntr>().mistViewData.value!.mist10Grade.toString();
+      boardSaveWeatherData.mist25 = Get.find<WeatherCntr>().mistViewData.value!.mist25Grade.toString();
       Lo.g("Root upload() videoFilePath : ${widget.videoFile.path}");
+      if (hideYn == "Y") {
+        Utils.alert('숨기기 상태로 등록중 입니다!');
+      } else {
+        Utils.alert('업로드중 입니다! 잠시후 정상 게시됩니다!');
+      }
 
-      Utils.alert('임시 등록되었습니다! 잠시후 정상 게시됩니다!');
       Future.delayed(const Duration(milliseconds: 500), () {
         Get.back();
       });
@@ -142,7 +194,6 @@ class _VideoRegPageState extends State<VideoRegPage> {
   @override
   void dispose() {
     _videoController.dispose();
-    VideoCompress.cancelCompression();
 
     super.dispose();
     //실제 Root 페이지 에서 동영상 업로드 처리
@@ -182,112 +233,147 @@ class _VideoRegPageState extends State<VideoRegPage> {
                         mainAxisAlignment: MainAxisAlignment.start,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            height: 300,
-                            alignment: Alignment.center,
-                            child: Stack(
-                              children: [
-                                AspectRatio(
-                                  aspectRatio: 9 / 16,
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(15),
-                                    child: GestureDetector(
-                                        onTap: () {
-                                          Navigator.push<_PlayerVideoAndPopPage>(
-                                            context,
-                                            MaterialPageRoute<_PlayerVideoAndPopPage>(
-                                              builder: (BuildContext context) => _PlayerVideoAndPopPage(),
-                                            ),
-                                          );
-                                        },
-                                        //  child: Container(color: Colors.red)),
-                                        child: VideoPlayer(_videoController)),
-                                  ),
-                                ),
-                                const Positioned(right: 5, bottom: 5, child: Icon(Icons.zoom_in, size: 30, color: Colors.white)),
-                              ],
-                            ),
-                          ),
-                          const Gap(5),
-                          Expanded(
-                            child: Container(
-                              alignment: Alignment.topLeft,
-                              // height: 300,
-                              // width: MediaQuery.of(context).size.width * 0.5 - 50,
-                              // alignment: Alignment.center,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(15),
-                                // color: Colors.purple[50],
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // const Text('현재 위치', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87)),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 7),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(5),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                            padding: const EdgeInsets.all(2),
-                                            decoration: BoxDecoration(
-                                              color: Colors.green.withOpacity(0.9),
-                                              borderRadius: BorderRadius.circular(5),
-                                            ),
-                                            child: const Icon(Icons.location_on, color: Colors.white, size: 15)),
-                                        const SizedBox(width: 5),
-                                        Text(Get.find<WeatherCntr>().currentLocation.value!.name,
-                                            style: const TextStyle(fontSize: 16, color: Colors.black, fontWeight: FontWeight.bold)),
-                                      ],
-                                    ),
-                                  ),
-                                  Row(
+                          !initVideo
+                              ? Container(
+                                  height: 300,
+                                  width: MediaQuery.of(context).size.width * 0.5 - 50,
+                                  alignment: Alignment.center,
+                                  child: const CircularProgressIndicator())
+                              : Container(
+                                  height: 300,
+                                  alignment: Alignment.center,
+                                  child: Stack(
                                     children: [
-                                      Text('${Get.find<WeatherCntr>().currentWeather.value!.main!.temp!.toStringAsFixed(1)}°C',
-                                          style: const TextStyle(fontSize: 16, color: Colors.black)),
-                                      CachedNetworkImage(
-                                        cacheKey: Get.find<WeatherCntr>().currentWeather.value?.weather![0].icon ?? '10n',
-                                        width: 50,
-                                        height: 50,
-                                        imageUrl:
-                                            'http://openweathermap.org/img/wn/${Get.find<WeatherCntr>().currentWeather.value?.weather![0].icon ?? '10n'}@2x.png',
-                                        imageBuilder: (context, imageProvider) => Container(
-                                          decoration: BoxDecoration(
-                                            image: DecorationImage(
-                                                image: imageProvider,
-                                                fit: BoxFit.cover,
-                                                colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn)),
-                                          ),
+                                      AspectRatio(
+                                        aspectRatio: 9 / 16,
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(15),
+                                          child: GestureDetector(
+                                              onTap: () {
+                                                Navigator.push<_PlayerVideoAndPopPage>(
+                                                  context,
+                                                  MaterialPageRoute<_PlayerVideoAndPopPage>(
+                                                    builder: (BuildContext context) =>
+                                                        _PlayerVideoAndPopPage(videoPlayerController: _videoController),
+                                                  ),
+                                                );
+                                              },
+                                              //  child: Container(color: Colors.red)),
+                                              child: VideoPlayer(_videoController)),
                                         ),
-                                        placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 1, color: Colors.white),
-                                        errorWidget: (context, url, error) => const Icon(Icons.error),
                                       ),
+                                      const Positioned(left: 5, bottom: 5, child: Icon(Icons.zoom_in, size: 30, color: Colors.white)),
+                                      Positioned(
+                                        right: 5,
+                                        bottom: 5,
+                                        // ignore: unnecessary_string_interpolations
+                                        child: Text('${formatMilliseconds(durationOfVideo.inMilliseconds)}',
+                                            style: const TextStyle(fontSize: 12, color: Colors.white)),
+                                      )
                                     ],
                                   ),
-                                  Text(
-                                    Get.find<WeatherCntr>().currentWeather.value!.weather![0].description!,
-                                    style: const TextStyle(fontSize: 16, color: Colors.black),
-                                    overflow: TextOverflow.clip,
-                                  ),
-                                  const Gap(6),
-                                  Text(
-                                    '미세: ${Get.find<WeatherCntr>().mistViewData.value!.mist10Grade!.toString()}',
-                                    style: const TextStyle(fontWeight: FontWeight.w400, fontSize: 14, color: Colors.black87),
-                                  ),
-                                  Text('초미세: ${Get.find<WeatherCntr>().mistViewData.value!.mist25Grade!.toString()}',
-                                      style: const TextStyle(fontWeight: FontWeight.w400, fontSize: 14, color: Colors.black87)),
-                                ],
-                              ),
-                            ),
+                                ),
+                          const Gap(5),
+                          Expanded(
+                            child: GetBuilder<WeatherCntr>(builder: (weatherCntr) {
+                              if (weatherCntr.isLoading.value) {
+                                return Container(padding: const EdgeInsets.only(top: 40), child: Utils.progressbar());
+                              }
+                              return Container(
+                                alignment: Alignment.topLeft,
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 7),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(5),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                              padding: const EdgeInsets.all(2),
+                                              decoration: BoxDecoration(
+                                                color: Colors.green.withOpacity(0.9),
+                                                borderRadius: BorderRadius.circular(5),
+                                              ),
+                                              child: const Icon(Icons.location_on, color: Colors.white, size: 15)),
+                                          const SizedBox(width: 5),
+                                          Text(weatherCntr.currentLocation.value!.name,
+                                              style: const TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold)),
+                                        ],
+                                      ),
+                                    ),
+                                    Row(
+                                      children: [
+                                        Text('${weatherCntr.oneCallCurrentWeather.value!.temp!.toStringAsFixed(1)}°C',
+                                            style: const TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold)),
+                                        CachedNetworkImage(
+                                          cacheKey: weatherCntr.oneCallCurrentWeather.value?.weather![0].icon ?? '10n',
+                                          width: 50,
+                                          height: 50,
+                                          imageUrl:
+                                              'http://openweathermap.org/img/wn/${weatherCntr.oneCallCurrentWeather.value?.weather![0].icon ?? '10n'}@2x.png',
+                                          imageBuilder: (context, imageProvider) => Container(
+                                            decoration: BoxDecoration(
+                                              image: DecorationImage(
+                                                  image: imageProvider,
+                                                  fit: BoxFit.cover,
+                                                  colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn)),
+                                            ),
+                                          ),
+                                          placeholder: (context, url) =>
+                                              const CircularProgressIndicator(strokeWidth: 1, color: Colors.white),
+                                          errorWidget: (context, url, error) => const Icon(Icons.error),
+                                        ),
+                                      ],
+                                    ),
+                                    Text(
+                                      weatherCntr.oneCallCurrentWeather.value!.weather![0].description!,
+                                      style: const TextStyle(fontSize: 15, color: Colors.black),
+                                      overflow: TextOverflow.clip,
+                                    ),
+                                    const Gap(6),
+                                    weatherCntr.mistViewData.value!.mist10Grade.toString() == 'null'
+                                        ? const Text('미세먼지 정보가 없습니다.', style: TextStyle(fontSize: 13, color: Colors.black87))
+                                        : RichText(
+                                            text: TextSpan(
+                                              text: '미세',
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                color: Colors.black,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              children: <TextSpan>[
+                                                buildTextMist(weatherCntr.mistViewData.value!.mist10Grade.toString()),
+                                                const TextSpan(
+                                                  text: ' 초미세',
+                                                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: Colors.black),
+                                                ),
+                                                buildTextMist(weatherCntr.mistViewData.value!.mist25Grade.toString()),
+                                              ],
+                                            ),
+                                          ),
+                                  ],
+                                ),
+                              );
+                            }),
                           ),
                         ],
                       ),
-                      const Gap(20),
+                      // const Gap(20),
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text('# 태그 사용가능', style: TextStyle(fontSize: 14, color: Colors.black87)),
+                        ],
+                      ),
                       HashTagTextField(
                         controller: hashTagController,
                         basicStyle: const TextStyle(fontSize: 15, color: Colors.black, decorationThickness: 0),
@@ -296,7 +382,7 @@ class _VideoRegPageState extends State<VideoRegPage> {
                         maxLines: 4,
                         decoration: InputDecoration(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
-                          hintText: "내용을 입력해주세요! #태그 #태그2 #태그3",
+                          hintText: "내용을 입력해주세요! #태그1 #태그2 #태그3",
                           //   hintStyle: TextStyle(fontSize: 15, color: Colors.grey),
                           border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(5),
@@ -310,14 +396,74 @@ class _VideoRegPageState extends State<VideoRegPage> {
                         },
                       ),
                       const Gap(10),
-                      const Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Text('# 태그 사용가능.', style: TextStyle(fontSize: 14, color: Colors.black87)),
-                        ],
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // CheckBoxRounded(
+                            //   onTap: (bool? value) {
+                            //     log("message 1: $value");
+                            //     hideYn = value! ? 'Y' : 'N';
+                            //     log("message 2: $hideYn");
+                            //   },
+                            //   size: 20,
+                            //   uncheckedWidget: const Icon(Icons.panorama_fish_eye, size: 18),
+                            //   animationDuration: const Duration(milliseconds: 150),
+                            // ),
+                            GestureDetector(
+                              onTap: _toggleCheckbox,
+                              child: ScaleTransition(
+                                scale: _scaleAnimation,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.rectangle,
+                                    color: _checked ? Colors.green : Colors.black,
+                                  ),
+                                  width: 20.0,
+                                  height: 20.0,
+                                  child: _checked
+                                      ? const Icon(Icons.check, color: Colors.white)
+                                      : const Icon(Icons.check_box_outline_blank, size: 19.5, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                            const Gap(3),
+                            const Text(
+                              "숨기기로 등록하기",
+                              style: TextStyle(fontSize: 13, color: Colors.black87, fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
                       ),
-                      const Gap(20),
-                      const Gap(10),
+                      const Gap(30),
+                      const Tooltip(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 25,
+                        ),
+                        padding: EdgeInsets.all(15),
+                        message: "음악 저작권자의 허락 없이 동영상에 음악을 사용하면 법적 책임을 지실 수 있습니다.\n\n" +
+                            "1.동영상에 사용된 음악이 저작권자의 허락을 받은 음원인지 확인해야 합니다.\n" +
+                            "2.무료 이용이 가능한 저작권 free 음원을 사용하시는 것을 권장드립니다.\n" +
+                            "3.만약 저작권자의 허락 없이 음악을 사용하셨다면 동영상 게시가 제한될 수 있습니다.",
+                        triggerMode: TooltipTriggerMode.tap,
+                        showDuration: Duration(seconds: 10),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info, color: Colors.black, size: 20),
+                            Text(
+                              '영상에 음악이 포함될 경우 저작권 과금.',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontSize: 12.0,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Gap(50),
                     ],
                   ),
                 ),
@@ -423,6 +569,57 @@ class _VideoRegPageState extends State<VideoRegPage> {
       ),
     );
   }
+
+  String formatMilliseconds(int milliseconds) {
+    // Convert milliseconds to total seconds
+    int totalSeconds = (milliseconds / 1000).floor();
+
+    // Calculate minutes and remaining seconds
+    int minutes = (totalSeconds / 60).floor();
+    int seconds = totalSeconds % 60;
+
+    // Format minutes and seconds with leading zeros if necessary
+    String formattedMinutes = minutes.toString().padLeft(2, '0');
+    String formattedSeconds = seconds.toString().padLeft(2, '0');
+
+    return '$formattedMinutes:$formattedSeconds';
+  }
+
+  TextSpan buildTextMist(String mist) {
+    /*
+      if (value >= 0 && value <= 30) {
+      return '좋음';
+    } else if (value >= 31 && value <= 80) {
+      return '보통';
+    } else if (value >= 81 && value <= 150) {
+      return '나쁨';
+    } else {
+      return '매우나쁨';
+    }
+    */
+    Color color = Colors.blue;
+    switch (mist) {
+      case '좋음':
+        color = Colors.blue;
+        break;
+      case '보통':
+        color = Colors.green;
+        break;
+      case '나쁨':
+        color = Colors.orange;
+        break;
+      case '매우나쁨':
+        color = Colors.red;
+        break;
+      default:
+        color = Colors.blue;
+    }
+
+    return TextSpan(
+      text: mist,
+      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: color),
+    );
+  }
 }
 
 class TotalData {
@@ -431,50 +628,54 @@ class TotalData {
 }
 
 class _PlayerVideoAndPopPage extends StatefulWidget {
+  final VideoPlayerController videoPlayerController;
+
+  const _PlayerVideoAndPopPage({super.key, required this.videoPlayerController});
   @override
   _PlayerVideoAndPopPageState createState() => _PlayerVideoAndPopPageState();
 }
 
 class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage> {
-  late VideoPlayerController _videoPlayerController;
   bool startedPlaying = false;
 
   @override
   void initState() {
     super.initState();
-
-    _videoPlayerController = VideoPlayerController.asset('assets/Butterfly-209.mp4');
-    _videoPlayerController.addListener(() {
-      if (startedPlaying && !_videoPlayerController.value.isPlaying) {
-        Navigator.pop(context);
-      }
-    });
   }
 
   @override
   void dispose() {
-    _videoPlayerController.dispose();
+    // 아래코드를 살리면 원복 컨트롤러도 같이 종료됨
+    // widget.videoPlayerController.dispose();
     super.dispose();
   }
 
   Future<bool> started() async {
-    await _videoPlayerController.initialize();
-    await _videoPlayerController.play();
+    await widget.videoPlayerController.initialize();
+    await widget.videoPlayerController.play();
     startedPlaying = true;
     return true;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      child: Center(
+    return Scaffold(
+      appBar: AppBar(
+        titleSpacing: 0,
+        title: const Text(
+          '동영상 재생',
+          style: TextStyle(fontSize: 16),
+        ),
+        automaticallyImplyLeading: true,
+      ),
+      body: Center(
         child: FutureBuilder<bool>(
           future: started(),
           builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
             if (snapshot.data ?? false) {
               return AspectRatio(
-                aspectRatio: _videoPlayerController.value.aspectRatio,
-                child: VideoPlayer(_videoPlayerController),
+                aspectRatio: widget.videoPlayerController.value.aspectRatio,
+                child: VideoPlayer(widget.videoPlayerController),
               );
             } else {
               return const Text('waiting for video to load');

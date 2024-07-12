@@ -1,16 +1,12 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/cust_data.dart';
 import 'package:project1/root/board_list_page.dart';
-import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/root/follow_list_page.dart';
 import 'package:project1/root/following_list_page.dart';
 import 'package:project1/root/like_list_page.dart';
@@ -39,10 +35,12 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
   late String searchWord;
   late String tabPage;
   final ValueNotifier<String> nickNm = ValueNotifier<String>('');
+  late TabController tabController;
 
   @override
   void initState() {
-    RootCntr.to.tabController = TabController(vsync: this, length: tabNames.length, animationDuration: const Duration(milliseconds: 130));
+    super.initState();
+    tabController = TabController(vsync: this, length: tabNames.length, animationDuration: const Duration(milliseconds: 130));
     Lo.g("1widget.searchWord : ${Get.parameters['searchWord']}");
     Lo.g("1widget.tabPage : ${Get.parameters['tabPage']}");
     Lo.g("1widget.custId 1: ${Get.parameters['custId']}");
@@ -56,15 +54,19 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
       LikeListPage(custId: custId),
       FollowListPage(custId: custId),
       FollowingListPage(custId: custId),
-      // TestLinkPage(key: const ValueKey(1)),
     ];
 
-    super.initState();
     getUserData(custId);
   }
 
   Future<void> getUserData(String custId) async {
     try {
+      // 본인 체크
+      if (AuthCntr.to.custId.value == custId) {
+        nickNm.value = AuthCntr.to.resLoginData.value.nickNm.toString();
+        return;
+      }
+
       CustRepo repo = CustRepo();
       ResData res = await repo.getCustInfo(custId.toString());
       if (res.code != '00') {
@@ -82,7 +84,7 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
 
   @override
   void didChangeDependencies() {
-    RootCntr.to.tabController.index = int.parse(Get.parameters['tabPage'].toString());
+    tabController.index = int.parse(Get.parameters['tabPage'].toString());
     super.didChangeDependencies();
   }
 
@@ -122,9 +124,9 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
   }
 
   Widget bodyWidget() {
-    return Material(
-      color: Colors.white,
-      child: SafeArea(
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
         child: DefaultTabController(
           length: tabNames.length,
           child: NestedScrollView(
@@ -145,16 +147,8 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
                   centerTitle: false,
                   backgroundColor: Colors.white,
                   title: Row(
-                    // crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // SvgPicture.asset(
-                      //   'assets/appicon.svg',
-                      //   width: 30,
-                      // ),
-                      // SizedBox(
-                      //   width: 10,
-                      // ),
                       ValueListenableBuilder<String?>(
                           valueListenable: nickNm,
                           builder: (context, value, child) {
@@ -175,16 +169,15 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
                 // 변경사항
                 SliverOverlapAbsorber(
                   handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-                  sliver: SliverPersistentHeader(pinned: true, delegate: TabBarDelegate(tabNames)),
+                  sliver: SliverPersistentHeader(pinned: true, delegate: TabBarDelegate(tabNames, tabController)),
                 ),
               ];
             },
             body: Column(
               children: [
-                // SizedBox(height: 48),
                 Expanded(
                   child: TabBarView(
-                    controller: RootCntr.to.tabController,
+                    controller: tabController,
                     physics: const CustomTabBarViewScrollPhysics(),
                     children: [...tabBodys],
                   ),
@@ -200,8 +193,9 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
 
 class TabBarDelegate extends SliverPersistentHeaderDelegate {
   List<String> tabNames;
+  TabController tabController;
 
-  TabBarDelegate(this.tabNames);
+  TabBarDelegate(this.tabNames, this.tabController);
 
   @override
   double get maxExtent => 49;
@@ -243,7 +237,7 @@ class TabBarDelegate extends SliverPersistentHeaderDelegate {
         indicator: UnderlineTabIndicator(
           borderSide: BorderSide(color: Colors.grey.shade600, width: 3.0),
         ),
-        controller: RootCntr.to.tabController,
+        controller: tabController,
         isScrollable: true,
         tabs: [...List.generate(tabNames.length, (i) => getTabButton(tabNames[i]))],
       ),

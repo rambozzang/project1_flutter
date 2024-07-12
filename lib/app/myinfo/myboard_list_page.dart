@@ -176,7 +176,7 @@ class _MyboardListPageState extends State<MyboardListPage> {
                           child: Row(
                             children: [
                               const Icon(
-                                Icons.play_arrow_outlined,
+                                Icons.favorite,
                                 color: Colors.white,
                                 size: 17,
                               ),
@@ -193,7 +193,7 @@ class _MyboardListPageState extends State<MyboardListPage> {
                           child: Row(
                             children: [
                               const Icon(
-                                Icons.favorite,
+                                Icons.play_arrow_outlined,
                                 color: Colors.white,
                                 size: 17,
                               ),

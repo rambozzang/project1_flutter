@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:comment_sheet/comment_sheet.dart';
 import 'package:flutter/material.dart';
@@ -39,6 +40,10 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
     custId = Get.arguments['custId'];
     boardId = Get.arguments['boardId'];
     searchWord = Get.arguments['searchWord'] ?? "";
+
+    if (datatype == 'ONE' && (boardId == '' || boardId == 'null' || boardId == null)) {
+      Get.back();
+    }
     Get.put(VideoMyinfoListCntr(datatype, custId, boardId, searchWord));
   }
 
@@ -46,6 +51,7 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
   void dispose() {
     _controller.dispose();
     scrollController.dispose();
+
     super.dispose();
   }
 
@@ -65,7 +71,10 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
           child: Stack(
             children: [
               Utils.commonStreamList<BoardWeatherListData>(
-                  Get.find<VideoMyinfoListCntr>().videoMyListCntr, buildVideoBody, Get.find<VideoMyinfoListCntr>().getData),
+                Get.find<VideoMyinfoListCntr>().videoMyListCntr,
+                buildVideoBody,
+                Get.find<VideoMyinfoListCntr>().getData,
+              ),
               // buildLocalName(),
               // buildTemp(),
               // buildRecodeBtn(),
@@ -76,6 +85,26 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
             ],
           ),
         ));
+  }
+
+  // 전체 하면을 차지하면서 이미지를 보여주는 위젯
+  Widget buildLoading() {
+    return SizedBox.expand(
+      child: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: ExactAssetImage(
+              'assets/images/2.jpg',
+            ),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 40.0, sigmaY: 45.0),
+          child: const Center(child: Text(" ", style: TextStyle(color: Colors.white, fontSize: 9))),
+        ),
+      ),
+    );
   }
 
   Widget buildCloseButton() {
@@ -96,7 +125,7 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
   Widget buildVideoBody(List<BoardWeatherListData> data) {
     return PreloadPageView.builder(
         controller: _controller,
-        preloadPagesCount: 10,
+        preloadPagesCount: Get.find<VideoMyinfoListCntr>().preLoadingCount,
         scrollDirection: Axis.vertical,
         itemCount: data.length,
         physics: const AlwaysScrollableScrollPhysics(),

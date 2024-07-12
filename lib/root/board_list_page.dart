@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
-import 'package:project1/app/weather/provider/weather_cntr.dart';
+import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -35,10 +35,12 @@ class BoardListPageState extends State<BoardListPage> with AutomaticKeepAliveCli
 
   // 팔로워 리스트 가져오기
   int boardPageNum = 0;
-  int boardageSize = 5000;
+  int boardageSize = 15;
   StreamController<ResStream<List<BoardWeatherListData>>> followVideoListCntr = BehaviorSubject();
   late String? searchWord;
   late String custId;
+
+  late List<BoardWeatherListData> list;
 
   @override
   void initState() {
@@ -55,12 +57,26 @@ class BoardListPageState extends State<BoardListPage> with AutomaticKeepAliveCli
 
       getFollowBoard();
     }
+
+    scrollController.addListener(() {
+      if (scrollController.position.pixels == scrollController.position.maxScrollExtent) {
+        boardPageNum++;
+        if (searchWord != 'null' && searchWord != "") {
+          getSearchBoard(searchWord.toString());
+        } else {
+          getFollowBoard();
+        }
+      }
+    });
   }
 
   // 검색어로 조회
   Future<void> getSearchBoard(String searchWord) async {
     try {
-      followVideoListCntr.sink.add(ResStream.loading());
+      if (boardPageNum == 0) {
+        followVideoListCntr.sink.add(ResStream.loading());
+      }
+
       BoardRepo repo = BoardRepo();
 
       ResData res = await repo.getSearchBoard(Get.find<WeatherCntr>().positionData.latitude.toString(),
@@ -71,7 +87,11 @@ class BoardListPageState extends State<BoardListPage> with AutomaticKeepAliveCli
         return;
       }
 
-      List<BoardWeatherListData> list = ((res.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
+      if (boardPageNum == 0) {
+        list = ((res.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
+      } else {
+        list.addAll(((res.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList());
+      }
 
       followVideoListCntr.sink.add(ResStream.completed(list));
     } catch (e) {
@@ -82,15 +102,21 @@ class BoardListPageState extends State<BoardListPage> with AutomaticKeepAliveCli
 
   Future<void> getFollowBoard() async {
     try {
-      followVideoListCntr.sink.add(ResStream.loading());
+      if (boardPageNum == 0) {
+        followVideoListCntr.sink.add(ResStream.loading());
+      }
       BoardRepo repo = BoardRepo();
       ResData res = await repo.getMyBoard(widget.custId.toString(), boardPageNum, boardageSize);
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         return;
       }
-      print(res.data);
-      List<BoardWeatherListData> list = ((res.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
+
+      if (boardPageNum == 0) {
+        list = ((res.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
+      } else {
+        list.addAll(((res.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList());
+      }
       followVideoListCntr.sink.add(ResStream.completed(list));
     } catch (e) {
       Utils.alert(e.toString());
@@ -169,12 +195,21 @@ class BoardListPageState extends State<BoardListPage> with AutomaticKeepAliveCli
         itemCount: list.length,
         itemBuilder: (context, index) => GestureDetector(
           onTap: () {
-            Get.toNamed('/VideoMyinfoListPage', arguments: {
-              'datatype': 'SEARCHLIST',
-              'custId': Get.find<AuthCntr>().resLoginData.value.custId.toString(),
-              'boardId': list[index].boardId.toString(),
-              'searchWord': widget.searchWord.toString()
-            });
+            if (widget.searchWord == '' || widget.searchWord == null || widget.searchWord == 'null') {
+              Get.toNamed('/VideoMyinfoListPage', arguments: {
+                'datatype': 'MYFEED',
+                'custId': Get.find<AuthCntr>().resLoginData.value.custId.toString(),
+                'boardId': list[index].boardId.toString(),
+                'searchWord': ''
+              });
+            } else {
+              Get.toNamed('/VideoMyinfoListPage', arguments: {
+                'datatype': 'SEARCHLIST',
+                'custId': Get.find<AuthCntr>().resLoginData.value.custId.toString(),
+                'boardId': list[index].boardId.toString(),
+                'searchWord': widget.searchWord.toString()
+              });
+            }
           },
           child: Container(
             // height: 100, //(index % 5 + 1) * 60,
@@ -206,10 +241,28 @@ class BoardListPageState extends State<BoardListPage> with AutomaticKeepAliveCli
                     ),
                     Positioned(
                       bottom: 5,
+                      left: 5,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.favorite, color: Colors.white, size: 15),
+                          Text(' ${list[index].likeCnt.toString()}',
+                              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w400)),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 5,
                       right: 5,
-                      child: Text('조회수:${list[index].viewCnt.toString()}',
+                      child: Text('조회수 ${list[index].viewCnt.toString()}',
                           style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w400)),
-                    )
+                    ),
+                    list[index].hideYn == 'Y'
+                        ? const Positioned(
+                            top: 10,
+                            left: 10,
+                            child: Icon(Icons.lock, color: Colors.red, size: 20),
+                          )
+                        : const SizedBox.shrink(),
                   ],
                 ),
                 Container(

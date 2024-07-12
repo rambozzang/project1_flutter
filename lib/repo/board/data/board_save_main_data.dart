@@ -9,6 +9,7 @@ class BoardSaveMainData {
   String? subject;
   String? contents;
   String? depthNo;
+  String? hideYn;
   BoardSaveMainData({
     this.typeCd,
     this.typeDtCd,
@@ -17,6 +18,7 @@ class BoardSaveMainData {
     this.subject,
     this.contents,
     this.depthNo,
+    this.hideYn,
   });
 
   BoardSaveMainData copyWith({
@@ -27,6 +29,7 @@ class BoardSaveMainData {
     String? subject,
     String? contents,
     String? depthNo,
+    String? hideYn,
   }) {
     return BoardSaveMainData(
       typeCd: typeCd ?? this.typeCd,
@@ -36,6 +39,7 @@ class BoardSaveMainData {
       subject: subject ?? this.subject,
       contents: contents ?? this.contents,
       depthNo: depthNo ?? this.depthNo,
+      hideYn: hideYn ?? this.hideYn,
     );
   }
 
@@ -48,6 +52,7 @@ class BoardSaveMainData {
       'subject': subject,
       'contents': contents,
       'depthNo': depthNo,
+      'hideYn': hideYn,
     };
   }
 
@@ -60,6 +65,7 @@ class BoardSaveMainData {
       subject: map['subject'] != null ? map['subject'] as String : null,
       contents: map['contents'] != null ? map['contents'] as String : null,
       depthNo: map['depthNo'] != null ? map['depthNo'] as String : null,
+      hideYn: map['hideYn'] != null ? map['hideYn'] as String : null,
     );
   }
 
@@ -69,7 +75,7 @@ class BoardSaveMainData {
 
   @override
   String toString() {
-    return 'BoardSaveMainData(typeCd: $typeCd, typeDtCd: $typeDtCd, notiStAt: $notiStAt, notiEdAt: $notiEdAt, subject: $subject, contents: $contents, depthNo: $depthNo)';
+    return 'BoardSaveMainData(typeCd: $typeCd, typeDtCd: $typeDtCd, notiStAt: $notiStAt, notiEdAt: $notiEdAt, subject: $subject, contents: $contents, depthNo: $depthNo, hideYn: $hideYn)';
   }
 
   @override
@@ -82,7 +88,8 @@ class BoardSaveMainData {
         other.notiEdAt == notiEdAt &&
         other.subject == subject &&
         other.contents == contents &&
-        other.depthNo == depthNo;
+        other.depthNo == depthNo &&
+        other.hideYn == hideYn;
   }
 
   @override
@@ -93,6 +100,7 @@ class BoardSaveMainData {
         notiEdAt.hashCode ^
         subject.hashCode ^
         contents.hashCode ^
-        depthNo.hashCode;
+        depthNo.hashCode ^
+        hideYn.hashCode;
   }
 }

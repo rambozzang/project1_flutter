@@ -109,8 +109,6 @@ PODS:
     - OrderedSet (~> 5.0)
   - flutter_local_notifications (0.0.1):
     - Flutter
-  - flutter_native_image (0.0.1):
-    - Flutter
   - flutter_native_splash (0.0.1):
     - Flutter
   - flutter_naver_login (0.0.1):
@@ -180,8 +178,6 @@ PODS:
   - image_cropper (0.0.4):
     - Flutter
     - TOCropViewController (~> 2.7.4)
-  - image_editor_common (1.0.0):
-    - Flutter
   - image_picker_ios (0.0.1):
     - Flutter
   - kakao_flutter_sdk_common (1.9.2):
@@ -213,18 +209,17 @@ PODS:
   - open_filex (0.0.2):
     - Flutter
   - OrderedSet (5.0.0)
+  - package_info_plus (0.4.5):
+    - Flutter
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
   - permission_handler_apple (9.3.0):
     - Flutter
-  - photo_gallery (0.0.1):
-    - Flutter
-  - photo_manager (2.0.0):
-    - Flutter
-    - FlutterMacOS
   - PromisesObjC (2.4.0)
   - RecaptchaInterop (100.0.0)
+  - rive_common (0.0.1):
+    - Flutter
   - SDWebImage (5.19.2):
     - SDWebImage/Core (= 5.19.2)
   - SDWebImage/Core (5.19.2)
@@ -264,7 +259,6 @@ DEPENDENCIES:
   - flutter_image_compress_common (from `.symlinks/plugins/flutter_image_compress_common/ios`)
   - flutter_inappwebview_ios (from `.symlinks/plugins/flutter_inappwebview_ios/ios`)
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
-  - flutter_native_image (from `.symlinks/plugins/flutter_native_image/ios`)
   - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
   - flutter_naver_login (from `.symlinks/plugins/flutter_naver_login/ios`)
   - flutter_naver_map (from `.symlinks/plugins/flutter_naver_map/ios`)
@@ -274,15 +268,14 @@ DEPENDENCIES:
   - google_mobile_ads (from `.symlinks/plugins/google_mobile_ads/ios`)
   - google_sign_in_ios (from `.symlinks/plugins/google_sign_in_ios/darwin`)
   - image_cropper (from `.symlinks/plugins/image_cropper/ios`)
-  - image_editor_common (from `.symlinks/plugins/image_editor_common/ios`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - kakao_flutter_sdk_common (from `.symlinks/plugins/kakao_flutter_sdk_common/ios`)
   - naveridlogin-sdk-ios
   - open_filex (from `.symlinks/plugins/open_filex/ios`)
+  - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
-  - photo_gallery (from `.symlinks/plugins/photo_gallery/ios`)
-  - photo_manager (from `.symlinks/plugins/photo_manager/ios`)
+  - rive_common (from `.symlinks/plugins/rive_common/ios`)
   - share_plus (from `.symlinks/plugins/share_plus/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sqflite (from `.symlinks/plugins/sqflite/darwin`)
@@ -349,8 +342,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_inappwebview_ios/ios"
   flutter_local_notifications:
     :path: ".symlinks/plugins/flutter_local_notifications/ios"
-  flutter_native_image:
-    :path: ".symlinks/plugins/flutter_native_image/ios"
   flutter_native_splash:
     :path: ".symlinks/plugins/flutter_native_splash/ios"
   flutter_naver_login:
@@ -367,22 +358,20 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/google_sign_in_ios/darwin"
   image_cropper:
     :path: ".symlinks/plugins/image_cropper/ios"
-  image_editor_common:
-    :path: ".symlinks/plugins/image_editor_common/ios"
   image_picker_ios:
     :path: ".symlinks/plugins/image_picker_ios/ios"
   kakao_flutter_sdk_common:
     :path: ".symlinks/plugins/kakao_flutter_sdk_common/ios"
   open_filex:
     :path: ".symlinks/plugins/open_filex/ios"
+  package_info_plus:
+    :path: ".symlinks/plugins/package_info_plus/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
-  photo_gallery:
-    :path: ".symlinks/plugins/photo_gallery/ios"
-  photo_manager:
-    :path: ".symlinks/plugins/photo_manager/ios"
+  rive_common:
+    :path: ".symlinks/plugins/rive_common/ios"
   share_plus:
     :path: ".symlinks/plugins/share_plus/ios"
   shared_preferences_foundation:
@@ -421,7 +410,6 @@ SPEC CHECKSUMS:
   flutter_image_compress_common: ec1d45c362c9d30a3f6a0426c297f47c52007e3e
   flutter_inappwebview_ios: 97215cf7d4677db55df76782dbd2930c5e1c1ea0
   flutter_local_notifications: 4cde75091f6327eb8517fa068a0a5950212d2086
-  flutter_native_image: 9c0b7451838484458e5b0fae007b86a4c2d4bdfe
   flutter_native_splash: edf599c81f74d093a4daf8e17bd7a018854bc778
   flutter_naver_login: 1dbf6d21aae5235cdf76a28ac79cf6871899282f
   flutter_naver_map: b18663bc83c2caaab484c58dccf239a87ebbed1b
@@ -437,7 +425,6 @@ SPEC CHECKSUMS:
   GTMAppAuth: f69bd07d68cd3b766125f7e072c45d7340dea0de
   GTMSessionFetcher: 8000756fc1c19d2e5697b90311f7832d2e33f6cd
   image_cropper: 37d40f62177c101ff4c164906d259ea2c3aa70cf
-  image_editor_common: d6f6644ae4a6de80481e89fe6d0a8c49e30b4b43
   image_picker_ios: c560581cceedb403a6ff17f2f816d7fea1421fc1
   kakao_flutter_sdk_common: 049c9341e325da17ac75751a35646dbbcfa06891
   libwebp: 1786c9f4ff8a279e4dac1e8f385004d5fc253009
@@ -448,12 +435,12 @@ SPEC CHECKSUMS:
   NMapsMap: a5b909a31b6f3d27a670f6eb2ddc913c38975474
   open_filex: 6e26e659846ec990262224a12ef1c528bb4edbe4
   OrderedSet: aaeb196f7fef5a9edf55d89760da9176ad40b93c
+  package_info_plus: 58f0028419748fad15bf008b270aaa8e54380b1c
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
   permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
-  photo_gallery: 9f95e57747cd22c10676ece3660d1ffe6c603ee5
-  photo_manager: ff695c7a1dd5bc379974953a2b5c0a293f7c4c8a
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   RecaptchaInterop: 7d1a4a01a6b2cb1610a47ef3f85f0c411434cb21
+  rive_common: cbbac3192af00d7341f19dae2f26298e9e37d99e
   SDWebImage: dfe95b2466a9823cf9f0c6d01217c06550d7b29a
   SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
   share_plus: 8875f4f2500512ea181eef553c3e27dba5135aad

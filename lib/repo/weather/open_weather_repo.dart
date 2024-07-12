@@ -15,6 +15,7 @@ class OpenWheatherRepo {
   Future<ResData> getWeather(LatLng position) async {
     lo.g('OpenWheatherRepo : getWeather() 1');
     final dio = await AuthDio.instance.getNoAuthDio();
+    // final dio = await AuthDio.instance.getNoAuthCathDio(cachehour: 1);
     try {
       // final dio = Dio();
       lo.g('OpenWheatherRepo : getWeather() 2');
@@ -56,16 +57,27 @@ class OpenWheatherRepo {
   }
 
   Future<ResData> getDailyWeather(LatLng position) async {
+    // final dio = await AuthDio.instance.getNoAuthCathDio(cachehour: 1);
     final dio = await AuthDio.instance.getNoAuthDio();
     try {
-      Response response = await dio.get(OpenWeatherApiConfig.oneCallUrl, queryParameters: {
-        'lang': 'kr',
-        'lat': position.latitude,
-        'lon': position.longitude,
-        'units': 'metric',
-        'exclude': 'minutely,current',
-        'appid': OpenWeatherApiConfig.apiKey,
-      });
+      Response response = await dio.get(
+        OpenWeatherApiConfig.oneCallUrl,
+        queryParameters: {
+          'lang': 'kr',
+          'lat': position.latitude,
+          'lon': position.longitude,
+          'units': 'metric',
+          'exclude': 'minutely,alerts', //제외 정보
+          'appid': OpenWeatherApiConfig.apiKey,
+        },
+        options: Options(
+          responseType: ResponseType.json,
+          headers: {
+            'Cache-Control': 'max-age=604800',
+            'Etg': '${position.latitude}${position.longitude}',
+          },
+        ),
+      );
 
       log(response.toString());
       if (response.statusCode == 200) {

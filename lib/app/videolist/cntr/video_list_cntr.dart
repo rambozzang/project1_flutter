@@ -1,19 +1,13 @@
 import 'dart:async';
-import 'dart:isolate';
 
-import 'package:flutter/foundation.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'package:project1/app/weather/provider/weather_cntr.dart';
+import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
-import 'package:project1/repo/weather/mylocator_repo.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:rxdart/subjects.dart';
-import 'package:video_player/video_player.dart';
 
 // class VideoListBinding implements Bindings {
 //   @override
@@ -35,8 +29,9 @@ class VideoListCntr extends GetxController {
   int pagesize = 15;
   var soundOff = false.obs;
   int playAtFirst = 0;
-  int preLoadingNum = 2;
+
   var isLoadingMore = true.obs;
+  int preLoadingCount = 3;
 
   //현재 영상의 index값 저장
   var currentIndex = 0.obs;
@@ -46,6 +41,8 @@ class VideoListCntr extends GetxController {
   // StreamController<List<int>> mountedListCntr = StreamController<List<int>>.broadcast();
   RxList<int> mountedList = <int>[].obs;
 
+  var searchType = 'TOTAL'.obs;
+
   @override
   void onInit() {
     super.onInit();
@@ -54,14 +51,23 @@ class VideoListCntr extends GetxController {
 
   void onPageMounted(int boardId) {
     mountedList.add(boardId);
-
     log("mountedList : ${mountedList.toString()}");
-
-    // mountedListCntr.sink.add(mountedList);
     update();
   }
 
-  Future<void> getData() async {
+  void swichSearchType(String type) {
+    searchType.value = type;
+    pageNum = 0;
+    getDataProcess();
+  }
+
+  getData() {
+    pageNum = 0;
+    searchType.value = 'TOTAL';
+    getDataProcess();
+  }
+
+  Future<void> getDataProcess() async {
     log("getData() : ");
     try {
       videoListCntr.sink.add(ResStream.loading());
@@ -84,7 +90,19 @@ class VideoListCntr extends GetxController {
 
       // 비디오 리스트 가져오기
       BoardRepo boardRepo = BoardRepo();
-      ResData resListData = await boardRepo.searchBoardBylatlon(lat.toString(), lon.toString(), pageNum, pagesize);
+      // ResData resListData = await boardRepo.searchBoardBylatlon(lat.toString(), lon.toString(), pageNum, pagesize);
+      late ResData resListData;
+      if ('TOTAL'.contains(searchType.value)) {
+        resListData = await boardRepo.getTotalBoardList(lat.toString(), lon.toString(), pageNum, pagesize);
+      } else if ('LOCAL'.contains(searchType.value)) {
+        resListData = await boardRepo.getLocalBoardList(lat.toString(), lon.toString(), pageNum, pagesize);
+      } else if ('TAG'.contains(searchType.value)) {
+        resListData = await boardRepo.getTagBoardList(lat.toString(), lon.toString(), pageNum, pagesize);
+      } else if ('DIST'.contains(searchType.value)) {
+        resListData = await boardRepo.getDistinceBoardList(lat.toString(), lon.toString(), pageNum, pagesize);
+      } else {
+        resListData = await boardRepo.getTotalBoardList(lat.toString(), lon.toString(), pageNum, pagesize);
+      }
 
       if (resListData.code != '00') {
         Utils.alert(resListData.msg.toString());
@@ -102,19 +120,12 @@ class VideoListCntr extends GetxController {
         return;
       }
 
-      List<BoardWeatherListData> initList = list.sublist(0, list.length > 1 ? 3 : 1);
-      lo.g("initList.length : ${initList.length}");
+      videoListCntr.sink.add(ResStream.completed(list));
 
-      videoListCntr.sink.add(ResStream.completed(initList));
-      Future.delayed(const Duration(milliseconds: 500), () {
-        // 1번째 비디오를 플레이 화면에 바로 노출하도록 나머지 스트림 전송
-        videoListCntr.sink.add(ResStream.completed(list));
-      });
-
-      // 리스트가 다 구성이 끝나면 날씨 데이터 가져온다.
-      Future.delayed(const Duration(milliseconds: 3000), () async {
+      // 날씨 정보가 없을때만 다시 가져온다.  - 최초시만 가져온다.
+      if (Get.find<WeatherCntr>().oneCallCurrentWeather.value?.dt == null) {
         Get.find<WeatherCntr>().getWeatherData();
-      });
+      }
     } catch (e) {
       Lo.g('getDate() error : $e');
       videoListCntr.sink.add(ResStream.error(e.toString()));
@@ -127,7 +138,7 @@ class VideoListCntr extends GetxController {
   // 참고 싸이트 : https://github.com/octomato/preload_page_view/issues/43
   Future<void> getMoreData(int index, int length) async {
     try {
-      bool isBottom = index >= list.length - 6;
+      bool isBottom = index >= list.length - (preLoadingCount + 1);
       isBottom = length < pagesize ? false : isBottom;
       // if (isBottom && !postCubit.state.hasReachedMax && !postCubit.state.isLoading) {
       //    getAllPost();
@@ -146,7 +157,19 @@ class VideoListCntr extends GetxController {
       String lon = currentLocation?.longitude.toString() ?? '';
 
       BoardRepo boardRepo = BoardRepo();
-      ResData resListData = await boardRepo.searchBoardBylatlon(lat.toString(), lon.toString(), pageNum, pagesize);
+      // ResData resListData = await boardRepo.searchBoardBylatlon(lat.toString(), lon.toString(), pageNum, pagesize);
+      late ResData resListData;
+      if ('TOTAL'.contains(searchType.value)) {
+        resListData = await boardRepo.getTotalBoardList(lat.toString(), lon.toString(), pageNum, pagesize);
+      } else if ('LOCAL'.contains(searchType.value)) {
+        resListData = await boardRepo.getLocalBoardList(lat.toString(), lon.toString(), pageNum, pagesize);
+      } else if ('TAG'.contains(searchType.value)) {
+        resListData = await boardRepo.getTagBoardList(lat.toString(), lon.toString(), pageNum, pagesize);
+      } else if ('DIST'.contains(searchType.value)) {
+        resListData = await boardRepo.getDistinceBoardList(lat.toString(), lon.toString(), pageNum, pagesize);
+      } else {
+        resListData = await boardRepo.getTotalBoardList(lat.toString(), lon.toString(), pageNum, pagesize);
+      }
 
       if (resListData.code != '00') {
         Utils.alert(resListData.msg.toString());

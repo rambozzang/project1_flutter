@@ -22,6 +22,8 @@ class BoardSaveWeatherData {
   String? speed;
   String? country;
   String? city;
+  String? mist10;
+  String? mist25;
   BoardSaveWeatherData({
     this.boardId,
     this.lat,
@@ -41,6 +43,8 @@ class BoardSaveWeatherData {
     this.speed,
     this.country,
     this.city,
+    this.mist10,
+    this.mist25,
   });
 
   BoardSaveWeatherData copyWith({
@@ -62,6 +66,8 @@ class BoardSaveWeatherData {
     String? speed,
     String? country,
     String? city,
+    String? mist10,
+    String? mist25,
   }) {
     return BoardSaveWeatherData(
       boardId: boardId ?? this.boardId,
@@ -82,6 +88,8 @@ class BoardSaveWeatherData {
       speed: speed ?? this.speed,
       country: country ?? this.country,
       city: city ?? this.city,
+      mist10: mist10 ?? this.mist10,
+      mist25: mist25 ?? this.mist25,
     );
   }
 
@@ -105,6 +113,8 @@ class BoardSaveWeatherData {
       'speed': speed,
       'country': country,
       'city': city,
+      'mist10': mist10,
+      'mist25': mist25,
     };
   }
 
@@ -128,6 +138,8 @@ class BoardSaveWeatherData {
       speed: map['speed'] != null ? map['speed'] as String : null,
       country: map['country'] != null ? map['country'] as String : null,
       city: map['city'] != null ? map['city'] as String : null,
+      mist10: map['mist10'] != null ? map['mist10'] as String : null,
+      mist25: map['mist25'] != null ? map['mist25'] as String : null,
     );
   }
 
@@ -137,7 +149,7 @@ class BoardSaveWeatherData {
 
   @override
   String toString() {
-    return 'BoardSaveWeatherData(boardId: $boardId, lat: $lat, lon: $lon, location: $location, weatherInfo: $weatherInfo, videoPath: $videoPath, videoId: $videoId, thumbnailPath: $thumbnailPath, thumbnailId: $thumbnailId, icon: $icon, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, country: $country, city: $city)';
+    return 'BoardSaveWeatherData(boardId: $boardId, lat: $lat, lon: $lon, location: $location, weatherInfo: $weatherInfo, videoPath: $videoPath, videoId: $videoId, thumbnailPath: $thumbnailPath, thumbnailId: $thumbnailId, icon: $icon, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, country: $country, city: $city, mist10: $mist10, mist25: $mist25)';
   }
 
   @override
@@ -161,7 +173,9 @@ class BoardSaveWeatherData {
         other.humidity == humidity &&
         other.speed == speed &&
         other.country == country &&
-        other.city == city;
+        other.city == city &&
+        other.mist10 == mist10 &&
+        other.mist25 == mist25;
   }
 
   @override
@@ -183,6 +197,8 @@ class BoardSaveWeatherData {
         humidity.hashCode ^
         speed.hashCode ^
         country.hashCode ^
-        city.hashCode;
+        city.hashCode ^
+        mist10.hashCode ^
+        mist25.hashCode;
   }
 }

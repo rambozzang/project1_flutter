@@ -19,6 +19,36 @@ class MyLocatorRepo {
     }
   }
 
+  // 네이버로 변경 해야지
+  // https://velog.io/@sonagidev/Flutter-%EC%9C%84%EC%B9%98-%EC%A0%95%EB%B3%B4%EB%A5%BC-%EB%B0%9B%EC%95%84%EC%84%9C-%EC%8B%9C-%EA%B5%AC-%EB%A5%BC-%ED%99%94%EB%A9%B4%EC%97%90-%EB%9D%84%EC%9A%B0%EA%B8%B0
+  // Future<List> fetchData() async {
+  //   Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+  //   //현재위치를 position이라는 변수로 저장
+  //   String lat = position.latitude.toString();
+  //   String lon = position.longitude.toString();
+  //   //위도와 경도를 나눠서 변수 선언
+  //   print(lat);
+  //   print(lon);
+  //   // 잘 나오는지 확인!
+  //   Map<String, String> headerss = {
+  //     "X-NCP-APIGW-API-KEY-ID": "Client ID", // 개인 클라이언트 아이디
+  //     "X-NCP-APIGW-API-KEY": "Client secret" // 개인 시크릿 키
+  //   };
+  //   Response response = await get(Uri.parse(//이 부분이 코딩셰프님 영상과 차이가 있다. 플러터 버젼업이 되면서 이 메소드를 써야 제대로 uri를 인식한다.
+  //           "https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/gc?request=coordsToaddr&coords=${lon},${lat}&sourcecrs=epsg:4326&output=json"),
+  //       headers: headerss);
+  //   // 미리 만들어둔 headers map을 헤더에 넣어준다.
+  //   String jsonData = response.body;
+  //   //response에서 body부분만 받아주는 변수 만들어주공~
+  //   print(jsonData); // 확인한번하고
+  //   var myJson_gu = jsonDecode(jsonData)["results"][1]['region']['area2']['name'];
+  //   var myJson_si = jsonDecode(jsonData)["results"][1]['region']['area1']['name'];
+
+  //   List<String> gusi = [myJson_si, myJson_gu];
+
+  //   return gusi; //구랑 시를 받아서 gusi라는 귀여운 이름으로 받는다...?
+  // }
+
   Future<ResData> getLocationName(Position position) async {
     final dio = Dio(BaseOptions(
         headers: {'Content-Type': 'application/json', 'accept': 'application/json'},

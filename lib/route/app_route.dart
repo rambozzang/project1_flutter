@@ -1,27 +1,23 @@
 import 'package:get/get.dart';
 import 'package:project1/app/%08join/join_page.dart';
 import 'package:project1/app/auth/auth_page.dart';
-import 'package:project1/app/auth/cntr/auth_cntr.dart';
-import 'package:project1/app/chatting/chat_room_page.dart';
-import 'package:project1/app/chatting/main.dart';
 import 'package:project1/app/chatting/repo/suba_test_page.dart';
 import 'package:project1/app/chatting/chat_main_page.dart';
 import 'package:project1/app/myinfo/myinfo_page.dart';
+import 'package:project1/app/setting/alram_setting_page.dart';
 import 'package:project1/app/setting/maketing_page.dart';
-import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
-import 'package:project1/app/videomylist/cntr/video_myinfo_list_cntr.dart';
-import 'package:project1/app/videolist/video_list_page.dart';
+import 'package:project1/app/favoriteArea/cntr/favo_area_cntr.dart';
+import 'package:project1/app/favoriteArea/favorite_area_page.dart';
+import 'package:project1/app/test/weather_compare_page.dart';
 import 'package:project1/app/camera/page/test.dart';
 import 'package:project1/app/videomylist/video_myinfo_list_page.dart';
-import 'package:project1/app/loading_page.dart';
 import 'package:project1/app/myinfo/myinfo_modify_page.dart';
-import 'package:project1/app/myinfo/myinfo_page_new.dart';
 import 'package:project1/app/myinfo/otherinfo_page.dart';
 import 'package:project1/app/onboarding/onboarding_page.dart';
 import 'package:project1/app/search/cntr/map_cntr.dart';
 import 'package:project1/app/search/map_page.dart';
 import 'package:project1/app/search/search_page.dart';
-import 'package:project1/app/setting/agree_page.dart';
+import 'package:project1/app/setting/service_page.dart';
 import 'package:project1/app/setting/faq_page.dart';
 import 'package:project1/app/setting/location_service_page.dart';
 import 'package:project1/app/setting/noti_page.dart';
@@ -30,11 +26,10 @@ import 'package:project1/app/setting/open_source_page.dart';
 import 'package:project1/app/setting/privecy_page.dart';
 import 'package:project1/app/setting/setting_page.dart';
 import 'package:project1/app/test/test_dio_page.dart';
-import 'package:project1/app/weather/Screens/sevenDayForecastDetailScreen.dart';
-import 'package:project1/app/weather/Screens/weather_page.dart';
+import 'package:project1/app/weather/page/sevenday_detail_page.dart';
+import 'package:project1/app/weather/page/weather_page.dart';
 import 'package:project1/app/webview/weather_webview.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
-import 'package:project1/root/follow_list_page.dart';
 import 'package:project1/root/main_view1.dart';
 import 'package:project1/root/root_page.dart';
 
@@ -141,8 +136,8 @@ abstract class AppPages {
     ),
 
     GetPage(
-      name: '/AgreePage',
-      page: () => const AgreePage(),
+      name: '/ServicePage',
+      page: () => const ServicePage(),
       //  transition: Transition.downToUp,
     ),
     GetPage(
@@ -177,9 +172,8 @@ abstract class AppPages {
       // transition: Transition.downToUp,
     ),
     GetPage(
-      name: '/SevenDayForecastDetail/:initialIndex',
-      page: () => const SevenDayForecastDetail(),
-
+      name: '/SevendayDetailPage/:initialIndex',
+      page: () => const SevendayDetailPage(),
       // transition: Transition.downToUp,
     ),
     GetPage(
@@ -199,15 +193,22 @@ abstract class AppPages {
       page: () => const ChatMainApp(),
       // transition: Transition.downToUp,
     ),
-    // GetPage(
-    //   name: '/ChatPage',
-    //   page: () => const ChatPage(),
-    //   // transition: Transition.downToUp,
-    // ),
-    // GetPage(
-    //   name: '/LoadingPage',
-    //   page: () => const LoadingPage(),
-    //   // transition: Transition.downToUp,
-    // ),
+    GetPage(
+      name: '/FavoriteAreaPage',
+      page: () => const FavoriteAreaPage(),
+      binding: FavoAreaBinding(),
+      // transition: Transition.downToUp,
+    ),
+
+    GetPage(
+      name: '/AlramSettingPage',
+      page: () => const AlramSettingPage(),
+      // transition: Transition.downToUp,
+    ),
+    GetPage(
+      name: '/WeatherComparePage',
+      page: () => const WeatherComparePage(),
+      // transition: Transition.downToUp,
+    ),
   ];
 }

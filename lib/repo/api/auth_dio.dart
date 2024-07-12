@@ -46,10 +46,7 @@ class AuthDio {
       maxStale: const Duration(days: 7),
       hitCacheOnErrorExcept: [401, 404],
       keyBuilder: CacheOptions.defaultCacheKeyBuilder,
-      // keyBuilder: (request) {
-      //   return request.uri.toString();
-      // },
-      // allowPostMethod: true,
+      allowPostMethod: true,
     );
     _isInitialized = true;
   }
@@ -90,7 +87,7 @@ class AuthDio {
     return dio;
   }
 
-  Future<Dio> getNoAuthDio() async {
+  Future<Dio> getNoAuthDio({debug = true}) async {
     // await ensureInitialized();
 
     final dio = Dio(BaseOptions(
@@ -100,15 +97,52 @@ class AuthDio {
 
     dio.interceptors.clear();
     // dio.interceptors.add(DioCacheInterceptor(options: customCacheOptions));
-    dio.interceptors.add(PrettyDioLogger(
-      requestHeader: true,
-      requestBody: true,
-      responseBody: true,
-      responseHeader: true,
-      error: true,
-      compact: true,
-      maxWidth: 120,
-    ));
+    if (debug == true) {
+      dio.interceptors.add(PrettyDioLogger(
+        requestHeader: true,
+        requestBody: true,
+        responseBody: true,
+        responseHeader: true,
+        error: true,
+        compact: true,
+        maxWidth: 120,
+      ));
+    }
+
+    return dio;
+  }
+
+  Future<Dio> getNoAuthCathDio({debug = true, cachehour = 4}) async {
+    await ensureInitialized();
+
+    final dio = Dio(BaseOptions(
+        headers: {'Content-Type': 'application/json', 'accept': 'application/json'},
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 60)));
+
+    customCacheOptions = CacheOptions(
+      store: cacheStore,
+      policy: CachePolicy.forceCache,
+      priority: CachePriority.high,
+      maxStale: Duration(hours: cachehour),
+      hitCacheOnErrorExcept: [401, 404],
+      keyBuilder: CacheOptions.defaultCacheKeyBuilder,
+      allowPostMethod: true,
+    );
+
+    dio.interceptors.clear();
+    dio.interceptors.add(DioCacheInterceptor(options: customCacheOptions));
+    if (debug == true) {
+      dio.interceptors.add(PrettyDioLogger(
+        requestHeader: true,
+        requestBody: true,
+        responseBody: true,
+        responseHeader: true,
+        error: true,
+        compact: true,
+        maxWidth: 120,
+      ));
+    }
 
     return dio;
   }

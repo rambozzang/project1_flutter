@@ -13,6 +13,7 @@ import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/chatting/chat_room_page.dart';
 import 'package:project1/app/myinfo/widget/image_avatar.dart';
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
+import 'package:project1/app/weather/widgets/customShimmer.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/board/data/cust_count_data.dart';
@@ -95,7 +96,6 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
     getCountData(custId!);
     getMyBoard(custId!);
     getFollowBoard(custId!);
-    getTag(custId!);
     textFocus.addListener(() {
       if (textFocus.hasFocus) {
         RootCntr.to.bottomBarStreamController.sink.add(false);
@@ -188,24 +188,6 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
     }
   }
 
-  // 관심태그 조회
-  Future<void> getTag(String custId) async {
-    try {
-      CustRepo repo = CustRepo();
-      ResData res = await repo.getTagList(custId.toString());
-      if (res.code != '00') {
-        Utils.alert(res.msg.toString());
-        return;
-      }
-      List<String> _list = (res.data as List).map((e) => e['tagNm'].toString()).toList();
-
-      tagStream.sink.add(ResStream.completed(_list));
-    } catch (e) {
-      Utils.alert(e.toString());
-      // myCountCntr.sink.add(ResStream.error(e.toString()));
-    }
-  }
-
   Future<void> addFollow(String cudtId) async {
     // 팔로우 추가
 
@@ -264,7 +246,6 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
             getCountData(custId!);
             getMyBoard(custId!);
             getFollowBoard(custId!);
-            getTag(custId!);
           },
           child: NestedScrollView(
             headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -301,11 +282,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
             CustData data = snapshot.data!.data!.custInfo!;
             lo.g("chatId : " + data.toString());
             lo.g(data.chatId.toString());
-            // if (data == null || data.chatId == null || data.chatId.toString() == 'null') {
-            //   return const SizedBox();
-            // }
-            String followyn = 'N';
-            //data.followYn.toString();
+            String followyn = data.followYn.toString();
 
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 60.0),
@@ -361,14 +338,14 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                                 id: data!.chatId.toString(), firstName: data!.nickNm.toString(), imageUrl: data!.profilePath.toString());
 
                             final room = await SupabaseChatCore.instance.createRoom(otherUser);
-
-                            await Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => ChatPage(
-                                  room: room,
-                                ),
-                              ),
-                            );
+                            Get.to(ChatPage(room: room));
+                            // await Navigator.of(context).push(
+                            //   MaterialPageRoute(
+                            //     builder: (context) => ChatPage(
+                            //       room: room,
+                            //     ),
+                            //   ),
+                            // );
                           },
                           suffixIcon: const Padding(
                             padding: EdgeInsets.only(left: 3.0),
@@ -401,89 +378,105 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
           border: Border.all(color: Colors.grey.shade300),
           borderRadius: BorderRadius.circular(10.0),
         ),
-        child: Utils.commonStreamBody<CustCountData>(myCountCntr, _builtCount, getInitCountData));
+        child: Utils.commonStreamBody<CustCountData>(
+          myCountCntr,
+          _builtCount,
+          getInitCountData,
+          loadingWidget: loadingWidget(),
+          noDataWidget: loadingWidget(),
+        ));
   }
 
-  Widget _buildFavoriteTag() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
+  Widget loadingWidget() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 1,
+          child: Container(
+            height: 65,
+            // width: 55,
+            margin: const EdgeInsets.only(left: 10),
+            decoration: BoxDecoration(
+              // color: Colors.transparent,
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(40),
+            ),
+            child: CustomShimmer(
+              height: 65.0,
+              // width: 55,
+              borderRadius: BorderRadius.circular(40.0),
+            ),
+          ),
+          // child: SizedBox(
+          //   height: 55.0,
+          //   width: 55,
+          //   child: ClipOval(
+          //     child: CustomShimmer(
+          //       height: 40.0,
+          //       width: 40,
+          //       // borderRadius: BorderRadius.circular(16.0),
+          //     ),
+          //   ),
+          // ),
+        ),
+        const Gap(15),
+        Expanded(
+          flex: 3,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('관심태그', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-              Spacer(),
-              Text('*위치기반과 관심사를 기준으로 리스트구성.', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 10, color: Colors.grey)),
-              Gap(10),
+              Row(
+                children: [
+                  const Gap(10),
+                  CustomShimmer(
+                    height: 47.0,
+                    width: 47,
+                    borderRadius: BorderRadius.circular(7.0),
+                  ),
+                  const Gap(10),
+                  CustomShimmer(
+                    height: 47.0,
+                    width: 47,
+                    borderRadius: BorderRadius.circular(7.0),
+                  ),
+                  const Gap(10),
+                  CustomShimmer(
+                    height: 47.0,
+                    width: 47,
+                    borderRadius: BorderRadius.circular(7.0),
+                  ),
+                  const Gap(10),
+                  CustomShimmer(
+                    height: 47.0,
+                    width: 47,
+                    borderRadius: BorderRadius.circular(7.0),
+                  ),
+                ],
+              ),
+              const Gap(10),
+              CustomShimmer(
+                height: 20.0,
+                width: 70,
+                borderRadius: BorderRadius.circular(16.0),
+              ),
+              const Gap(10),
+              CustomShimmer(
+                height: 20.0,
+                width: 260,
+                borderRadius: BorderRadius.circular(16.0),
+              ),
+              const Gap(10),
+              CustomShimmer(
+                height: 20.0,
+                width: 180,
+                borderRadius: BorderRadius.circular(16.0),
+              ),
+              const Gap(10),
             ],
           ),
-          const Gap(4),
-          StreamBuilder<ResStream<List<String>>>(
-              stream: tagStream.stream,
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  if (snapshot.data!.status == Status.COMPLETED) {
-                    List<String> list = snapshot.data!.data!;
-                    if (list.isEmpty) {
-                      return Container(
-                        padding: const EdgeInsets.all(20),
-                        alignment: Alignment.center,
-                        child: Text(
-                          '등록된 관심태그가 없습니다.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      );
-                    }
-                    return Wrap(
-                      spacing: 6.0,
-                      runSpacing: 6.0,
-                      direction: Axis.horizontal,
-                      crossAxisAlignment: WrapCrossAlignment.start,
-                      verticalDirection: VerticalDirection.down,
-                      runAlignment: WrapAlignment.start,
-                      alignment: WrapAlignment.start,
-                      children: list.map((e) => buildChip(e)).toList(),
-                    );
-                  } else {
-                    return Container(
-                      padding: const EdgeInsets.all(20),
-                      alignment: Alignment.center,
-                      child: Text(
-                        '등록된 관심태그가 없습니다.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    );
-                  }
-                } else {
-                  // getTag();
-                  return Container(
-                    padding: const EdgeInsets.all(20),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '등록된 관심태그가 없습니다.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  );
-                }
-              }),
-          // const Gap(10),
-        ],
-      ),
+        )
+      ],
     );
   }
 
@@ -492,11 +485,24 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
       padding: const EdgeInsets.all(10.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(15.0),
-            child: ImageAvatar(width: 70, url: data.custInfo!.profilePath.toString(), type: AvatarType.BASIC),
-          ),
+              padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 5.0),
+              child: Container(
+                  height: 70,
+                  width: 70,
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    // color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(25),
+                    image: DecorationImage(
+                      image: CachedNetworkImageProvider(data.custInfo!.profilePath.toString()),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  child:
+                      Get.find<AuthCntr>().resLoginData.value.profilePath == null ? const Icon(Icons.person, color: Colors.white) : null)),
           Expanded(
             flex: 3,
             child: Column(
@@ -540,11 +546,14 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                     ),
                   ],
                 ),
-                // const Gap(10),
-                data.custInfo!.selfId.toString() == 'null'
-                    ? const SizedBox()
+                const Gap(10),
+                data.custInfo!.custNm.toString() == 'null'
+                    ? const Text(
+                        '-',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                      )
                     : Text(
-                        data.custInfo!.selfId.toString() == 'null' ? '@ID없음' : '@${data.custInfo!.selfId}',
+                        data.custInfo!.custNm.toString(),
                         style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
                       ),
                 data.custInfo!.selfId.toString() == 'null'
@@ -575,7 +584,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
   Widget _myFeeds(List<BoardWeatherListData> list) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
-      child: list.length > 0
+      child: list.isNotEmpty
           ? GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -592,29 +601,68 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                       arguments: {'datatype': 'MYFEED', 'custId': custId, 'boardId': list[index].boardId.toString()});
                 },
                 child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.blue,
-                      borderRadius: BorderRadius.circular(10.0),
-                      image: DecorationImage(
-                        image: CachedNetworkImageProvider(list[index].thumbnailPath!),
-                        fit: BoxFit.cover,
-                      ),
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    borderRadius: BorderRadius.circular(10.0),
+                    image: DecorationImage(
+                      image: CachedNetworkImageProvider(list[index].thumbnailPath!),
+                      fit: BoxFit.cover,
                     ),
-                    child: const Align(
-                      alignment: Alignment.bottomRight,
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.play_arrow_outlined,
-                            color: Colors.white,
-                          ),
-                          Text(
-                            '12,000',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                          ),
-                        ],
+                  ),
+                  child: Stack(
+                    children: [
+                      Align(
+                        alignment: Alignment.bottomRight,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 5),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.favorite,
+                                    color: Colors.white,
+                                    size: 17,
+                                  ),
+                                  const Gap(5),
+                                  Text(
+                                    list[index].likeCnt.toString(),
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 5),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.play_arrow_outlined,
+                                    color: Colors.white,
+                                    size: 17,
+                                  ),
+                                  const Gap(5),
+                                  Text(
+                                    list[index].likeCnt.toString(),
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    )),
+                      list[index].hideYn == 'Y'
+                          ? const Positioned(
+                              top: 10,
+                              left: 10,
+                              child: Icon(Icons.lock, color: Colors.red, size: 20),
+                            )
+                          : const SizedBox.shrink(),
+                    ],
+                  ),
+                ),
               ),
             )
           : Utils.progressbar(),
@@ -636,12 +684,70 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                 arguments: {'datatype': 'FOLLOW', 'custId': custId, 'boardId': list[index].boardId.toString()});
           },
           child: Container(
-            color: Colors.grey.shade300,
             height: (index % 5 + 1) * 60,
-            child: CachedNetworkImage(
-              cacheKey: list[index].thumbnailPath!,
-              imageUrl: list[index].thumbnailPath!,
-              fit: BoxFit.cover,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(10.0),
+              image: DecorationImage(
+                image: CachedNetworkImageProvider(
+                  list[index].thumbnailPath!,
+                ),
+                fit: BoxFit.cover,
+              ),
+            ),
+            child: Stack(
+              children: [
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.favorite,
+                              color: Colors.white,
+                              size: 17,
+                            ),
+                            const Gap(5),
+                            Text(
+                              list[index].likeCnt.toString(),
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.play_arrow_outlined,
+                              color: Colors.white,
+                              size: 17,
+                            ),
+                            const Gap(5),
+                            Text(
+                              list[index].likeCnt.toString(),
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Text(
+                    list[index].nickNm.toString(),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                )
+              ],
             ),
           ),
         ),

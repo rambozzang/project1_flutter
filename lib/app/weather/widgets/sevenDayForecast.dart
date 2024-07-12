@@ -8,8 +8,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:project1/app/weather/helper/extensions.dart';
 import 'package:project1/app/weather/models/dailyWeather.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
-import 'package:project1/app/weather/widgets/customShimmer.dart';
-import 'package:project1/app/weather/provider/weather_cntr.dart';
+import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:supercharged/supercharged.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:syncfusion_flutter_gauges/gauges.dart';
@@ -17,10 +16,11 @@ import 'package:syncfusion_flutter_gauges/gauges.dart';
 import '../helper/utils.dart';
 
 class SevenDayForecast extends StatelessWidget {
-  int tempNum = 0;
+  const SevenDayForecast({super.key});
+
   @override
   Widget build(BuildContext context) {
-    tempNum = 0;
+    int tempNum = 0;
     return Container(
       color: const Color(0xFF262B49),
       child: Column(
@@ -51,7 +51,7 @@ class SevenDayForecast extends StatelessWidget {
                         padding: const EdgeInsets.all(0.0),
                         // backgroundColor: primaryBlue,
                       ),
-                      onPressed: () => Get.toNamed('/SevenDayForecastDetail/0'),
+                      onPressed: () => Get.toNamed('/SevendayDetailPage/0'),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -70,39 +70,12 @@ class SevenDayForecast extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8.0),
-          Container(
-            child: GetBuilder<WeatherCntr>(
-              builder: (weatherProv) {
-                if (weatherProv.isLoading.value) {
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    padding: EdgeInsets.zero,
-                    itemCount: 7,
-                    itemBuilder: (context, index) => CustomShimmer(
-                      height: 82.0,
-                      borderRadius: BorderRadius.circular(12.0),
-                    ),
-                  );
-                }
-                return ListView.builder(
-                  shrinkWrap: true,
-                  padding: EdgeInsets.zero,
-                  physics: const NeverScrollableScrollPhysics(),
-                  controller: ScrollController(),
-                  itemCount: weatherProv.dailyWeather.length,
-                  itemBuilder: (context, index) {
-                    return listDetail(index, weatherProv, context);
-                  },
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 25.0),
           GetBuilder<WeatherCntr>(builder: (weatherProv) {
-            if (weatherProv.isLoading.value) {
-              return SizedBox.shrink();
+            if (weatherProv.isLoading.value || weatherProv.dailyWeather.isEmpty) {
+              return const SizedBox(height: 1);
             }
             return SfCartesianChart(
+              key: UniqueKey(),
               backgroundColor: const Color(0xFF262B49), // Colors.black87,
               plotAreaBorderWidth: 0,
               enableAxisAnimation: false,
@@ -131,7 +104,8 @@ class SevenDayForecast extends StatelessWidget {
               // ),
               series: <RangeColumnSeries<DailyWeather, String>>[
                 RangeColumnSeries<DailyWeather, String>(
-                  name: '7일 예보 최고/최저온도',
+                  name: '주간 예보 최고/최저온도',
+
                   color: Colors.white,
                   dataLabelSettings: DataLabelSettings(
                     isVisible: true,
@@ -141,7 +115,7 @@ class SevenDayForecast extends StatelessWidget {
                     connectorLineSettings: const ConnectorLineSettings(
                       type: ConnectorType.curve,
                       color: Colors.red,
-                      width: 2,
+                      width: 4,
                     ),
                     builder: (dynamic data, dynamic point, dynamic series, int pointIndex, int seriesIndex) {
                       final DailyWeather weather = data;
@@ -159,8 +133,8 @@ class SevenDayForecast extends StatelessWidget {
 
                       return ttempNum % 2 == 0
                           ? SizedBox(
-                              height: 60,
-                              width: 30,
+                              height: 65,
+                              width: 40,
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
@@ -190,6 +164,34 @@ class SevenDayForecast extends StatelessWidget {
               ],
             );
           }),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: GetBuilder<WeatherCntr>(
+              builder: (weatherProv) {
+                if (weatherProv.isLoading.value) {
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.zero,
+                    itemCount: 7,
+                    itemBuilder: (context, index) => const SizedBox(
+                      height: 1,
+                    ),
+                  );
+                }
+                return ListView.builder(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.zero,
+                  physics: const NeverScrollableScrollPhysics(),
+                  controller: ScrollController(),
+                  itemCount: weatherProv.dailyWeather.length,
+                  itemBuilder: (context, index) {
+                    return listDetail(index, weatherProv, context);
+                  },
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 25.0),
         ],
       ),
     );
@@ -206,7 +208,7 @@ class SevenDayForecast extends StatelessWidget {
       color: index.isEven ? Colors.grey.withOpacity(0.1) : Colors.grey.withOpacity(0.2),
       child: InkWell(
         borderRadius: BorderRadius.circular(12.0),
-        onTap: () => Get.toNamed('/SevenDayForecastDetail/$index'),
+        onTap: () => Get.toNamed('/SevendayDetailPage/$index'),
         child: Container(
           // height: 82,
           decoration: BoxDecoration(
@@ -230,13 +232,13 @@ class SevenDayForecast extends StatelessWidget {
                         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.white),
                         maxLines: 1,
                       ),
-                      const SizedBox(width: 4.0),
+                      const SizedBox(height: 4.0),
                       Text(
-                        index == 0 ? '오늘' : DateFormat('EEEE', 'ko').format(weather.date),
+                        index == 0 ? '오늘' : DateFormat('EE', 'ko').format(weather.date),
                         style: const TextStyle(
-                          fontSize: 13,
+                          fontSize: 15,
                           color: Colors.white,
-                          fontWeight: FontWeight.w400,
+                          fontWeight: FontWeight.bold,
                         ),
                         maxLines: 1,
                       ),
@@ -262,7 +264,14 @@ class SevenDayForecast extends StatelessWidget {
                       // ),
                     ),
                     const SizedBox(height: 4.0),
-                    Text(weather.weatherCategory, style: TextStyle(color: Colors.white)),
+                    Text(weather.condition,
+                        overflow: TextOverflow.clip,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                        )),
+                    // Text(weather.weatherCategory, style: const TextStyle(color: Colors.white)),
+                    // Text(weather.condition, style: const TextStyle(color: Colors.white)),
                   ],
                 ),
               ),
@@ -283,15 +292,15 @@ class SevenDayForecast extends StatelessWidget {
                       showLabels: false,
                       showTicks: false,
                       showAxisTrack: true,
-                      majorTickStyle: LinearTickStyle(length: 0, color: Colors.white),
+                      majorTickStyle: const LinearTickStyle(length: 0, color: Colors.white),
                       ranges: [
                         LinearGaugeRange(
                           startValue: double.parse(minTemp),
                           endValue: double.parse(maxTemp),
                           position: LinearElementPosition.cross,
-                          color: Colors.red.shade700,
-                          startWidth: 6,
-                          endWidth: 6,
+                          color: Colors.blue,
+                          startWidth: 9,
+                          endWidth: 9,
                           edgeStyle: LinearEdgeStyle.bothCurve,
                         ),
                       ],

@@ -8,7 +8,6 @@ import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_supabase_chat_core/flutter_supabase_chat_core.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
@@ -16,9 +15,7 @@ import 'package:project1/utils/utils.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-import 'auth.dart';
 import 'chat_room_page.dart';
-import 'users.dart';
 import 'util.dart';
 
 class ChatMainApp extends StatefulWidget {
@@ -43,7 +40,9 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
 
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       _user = data.session?.user;
-      _userController.add(_user!);
+      if (_user != null) {
+        _userController.add(_user!);
+      }
     });
   }
 
@@ -51,7 +50,7 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
     try {
       // 1.세션이 존재하는지 체크 한다.
       _user = Supabase.instance.client.auth.currentUser;
-      lo.g('Supabase 세션에 회원 체크 : _user : ' + _user.toString());
+      lo.g('Supabase 세션에 회원 체크 : _user : $_user');
 
       if (_user != null) {
         await updateUserInfo(_user!.id);
@@ -60,11 +59,14 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
       }
 
       // 2.없으면 로그인을 시도한다.
+      lo.g("로그인 시도 1: ${Get.find<AuthCntr>().resLoginData.value.email} / ${Get.find<AuthCntr>().resLoginData.value.custId}");
       AuthResponse authRes = await Supabase.instance.client.auth.signInWithPassword(
         email: Get.find<AuthCntr>().resLoginData.value.email,
         password: Get.find<AuthCntr>().resLoginData.value.custId!,
       );
       _user = authRes.session?.user;
+      lo.g("로그인 시도 결과 : $_user");
+
       if (_user != null) {
         await updateUserInfo(_user!.id);
         _userController.add(_user!);
@@ -87,6 +89,33 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
     }
   }
 
+  Future<User> signUp() async {
+    lo.g("회원 가입 시도");
+
+    try {
+      var resLoginData = Get.find<AuthCntr>().resLoginData.value;
+
+      final response = await Supabase.instance.client.auth.signUp(
+        email: resLoginData.email,
+        password: resLoginData.custId!,
+      );
+      await updateUserInfo(response.user!.id);
+      return response.user!;
+    } catch (e) {
+      lo.g('error : $e');
+      lo.g('error : ${Get.find<AuthCntr>().resLoginData.value.email}');
+      lo.g('error : ${Get.find<AuthCntr>().resLoginData.value.custId}');
+      AuthResponse authRes = await Supabase.instance.client.auth.signInWithPassword(
+        email: Get.find<AuthCntr>().resLoginData.value.email,
+        password: Get.find<AuthCntr>().resLoginData.value.custId!,
+      );
+
+      _user = authRes.session?.user;
+      _userController.add(_user!);
+      return _user!;
+    }
+  }
+
   Future<void> updateUserInfo(String chatUid) async {
     try {
       var resLoginData = Get.find<AuthCntr>().resLoginData.value;
@@ -103,10 +132,14 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
         'custNm': resLoginData.custNm ?? '',
         'selfId': resLoginData.custData?.selfId ?? '',
       };
-
+      // supabase chat 서버에 회원정보 업데이트
       await SupabaseChatCore.instance
           .updateUser(types.User(id: chatUid, firstName: name, lastName: "", imageUrl: resLoginData.profilePath, metadata: metadata));
       _user = Supabase.instance.client.auth.currentUser;
+
+      // 우리 서버 ChatId 업데이트 처리
+      // CustRepo repo = CustRepo();
+      // repo.updateChatId(resLoginData.custId!, chatUid);
 
       if (_user != null) {
         _userController.add(_user!);
@@ -114,32 +147,6 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
       }
     } catch (e) {
       lo.g('updateUserInfo() error : $e');
-    }
-  }
-
-  Future<void> signUp() async {
-    try {
-      var resLoginData = Get.find<AuthCntr>().resLoginData.value;
-
-      final response = await Supabase.instance.client.auth.signUp(
-        email: resLoginData.email,
-        password: resLoginData.custId!,
-      );
-      await updateUserInfo(response.user!.id);
-    } catch (e) {
-      lo.g('error : $e');
-      lo.g('error : ${Get.find<AuthCntr>().resLoginData.value.email}');
-      lo.g('error : ${Get.find<AuthCntr>().resLoginData.value.custId}');
-      AuthResponse authRes = await Supabase.instance.client.auth.signInWithPassword(
-        email: Get.find<AuthCntr>().resLoginData.value.email,
-        password: Get.find<AuthCntr>().resLoginData.value.custId!,
-      );
-
-      _user = authRes.session?.user;
-      if (_user != null) {
-        _userController.add(_user!);
-        return;
-      }
     }
   }
 
@@ -262,6 +269,7 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     _userController.stream.listen((event) {
       lo.g('SupabaseChatCore.instance.rooms() > event : $event');
     });
@@ -273,96 +281,106 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
         },
         child: Column(
           children: [
-            StreamBuilder<User>(
-                stream: _userController.stream,
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Positioned(child: Text("Error", style: TextStyle(color: Colors.green, fontSize: 12))),
-                          Divider(
-                            height: 3,
-                            thickness: 3,
-                            color: Colors.red,
-                          ),
-                        ],
-                      ),
-                    );
-                  }
+            const Gap(10),
+            // StreamBuilder<User>(
+            //     stream: _userController.stream,
+            //     builder: (context, snapshot) {
+            //       if (snapshot.hasError) {
+            //         return const Padding(
+            //           padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            //           child: Column(
+            //             crossAxisAlignment: CrossAxisAlignment.end,
+            //             children: [
+            //               Positioned(child: Text("Error", style: TextStyle(color: Colors.green, fontSize: 12))),
+            //               Divider(
+            //                 height: 3,
+            //                 thickness: 3,
+            //                 color: Colors.red,
+            //               ),
+            //             ],
+            //           ),
+            //         );
+            //       }
 
-                  if (!snapshot.hasData) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      child: const Text('Loading...'),
-                    );
-                  }
-                  return const SizedBox(height: 16);
-                  // return const Padding(
-                  //   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  //   child: Column(
-                  //     crossAxisAlignment: CrossAxisAlignment.end,
-                  //     children: [
-                  //       Positioned(child: Text("Online", style: TextStyle(color: Colors.green, fontSize: 12))),
-                  //       Divider(
-                  //         height: 3,
-                  //         thickness: 3,
-                  //         color: Colors.green,
-                  //       ),
-                  //     ],
-                  //   ),
-                  // );
-                  // User data = snapshot.data!;
-                  // return Container(
-                  //   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  //   child: Row(
-                  //     children: [
-                  //       Text(
-                  //         data.email ?? '',
-                  //         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
-                  //       ),
-                  //       const Spacer(),
-                  //       IconButton(
-                  //         icon: const Icon(
-                  //           Icons.person,
-                  //         ),
-                  //         onPressed: _user == null
-                  //             ? null
-                  //             : () {
-                  //                 Navigator.of(context).push(
-                  //                   MaterialPageRoute(
-                  //                     fullscreenDialog: true,
-                  //                     builder: (context) => const UsersPage(),
-                  //                   ),
-                  //                 );
-                  //               },
-                  //       ),
-                  //       TextButton(
-                  //         onPressed: () => initSupaBaseSession(),
-                  //         child: const Icon(
-                  //           Icons.refresh,
-                  //           color: Colors.black,
-                  //         ),
-                  //       ),
-                  //     ],
-                  //   ),
-                  // );
-                }),
+            //       if (!snapshot.hasData) {
+            //         return Container(
+            //           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            //           child: const Text('Loading...'),
+            //         );
+            //       }
+            //       // return const SizedBox(height: 16);
+            //       return const Padding(
+            //         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            //         child: Column(
+            //           crossAxisAlignment: CrossAxisAlignment.end,
+            //           children: [
+            //             Positioned(child: Text("Online", style: TextStyle(color: Colors.green, fontSize: 12))),
+            //             Divider(
+            //               height: 3,
+            //               thickness: 3,
+            //               color: Colors.green,
+            //             ),
+            //           ],
+            //         ),
+            //       );
+            //       User data = snapshot.data!;
+            //       // return Container(
+            //       //   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            //       //   child: Row(
+            //       //     children: [
+            //       //       Text(
+            //       //         data.email ?? '',
+            //       //         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
+            //       //       ),
+            //       //       const Spacer(),
+            //       //       IconButton(
+            //       //         icon: const Icon(
+            //       //           Icons.person,
+            //       //         ),
+            //       //         onPressed: _user == null
+            //       //             ? null
+            //       //             : () {
+            //       //                 Navigator.of(context).push(
+            //       //                   MaterialPageRoute(
+            //       //                     fullscreenDialog: true,
+            //       //                     builder: (context) => const UsersPage(),
+            //       //                   ),
+            //       //                 );
+            //       //               },
+            //       //       ),
+            //       //       TextButton(
+            //       //         onPressed: () => initSupaBaseSession(),
+            //       //         child: const Icon(
+            //       //           Icons.refresh,
+            //       //           color: Colors.black,
+            //       //         ),
+            //       //       ),
+            //       //     ],
+            //       //   ),
+            //       // );
+            //     }),
             Expanded(
               child: StreamBuilder<List<types.Room>>(
-                stream: SupabaseChatCore.instance.rooms(),
+                stream: SupabaseChatCore.instance.rooms(orderByUpdatedAt: false),
                 // initialData: const [],
                 builder: (context, snapshot) {
                   lo.g('SupabaseChatCore.instance.rooms() > snapshot.data : ${snapshot.data}');
-                  if (!snapshot.hasData) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
                     return Container(
                       alignment: Alignment.center,
                       margin: const EdgeInsets.only(
                         bottom: 200,
                       ),
                       child: Utils.progressbar(),
+                    );
+                  }
+                  if (!snapshot.hasData) {
+                    return Container(
+                      alignment: Alignment.center,
+                      margin: const EdgeInsets.only(
+                        bottom: 200,
+                      ),
+                      child: const Text('대화 내용이 없습니다.'),
                     );
                   }
                   if (snapshot.data!.isEmpty) {
@@ -378,9 +396,9 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
                   return ListView.builder(
                     itemCount: snapshot.data!.length,
                     controller: RootCntr.to.hideButtonController4,
+                    physics: const AlwaysScrollableScrollPhysics(),
                     itemBuilder: (context, index) {
                       final room = snapshot.data![index];
-
                       // room.name이 null이면 대화방만 만들어 대화를 안한상태로 가비지 처리 해야함.
                       if (room.name == null) {
                         SupabaseChatCore.instance.deleteRoom(room.id);
@@ -448,12 +466,13 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
                 alignment: Alignment.centerLeft,
               ),
               onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    fullscreenDialog: true,
-                    builder: (context) => ChatPage(room: room),
-                  ),
-                );
+                Get.to(ChatPage(room: room));
+                // Navigator.of(context).push(
+                //   MaterialPageRoute(
+                //     fullscreenDialog: true,
+                //     builder: (context) => ChatPage(room: room),
+                //   ),
+                // );
               },
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,

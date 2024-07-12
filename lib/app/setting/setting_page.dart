@@ -1,16 +1,12 @@
 import 'dart:io';
 
 import 'package:babstrap_settings_screen/babstrap_settings_screen.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
-import 'package:project1/app/myinfo/myinfo_page_new.dart';
-import 'package:project1/app/myinfo/widget/image_avatar.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
@@ -154,6 +150,7 @@ class _SettingPageState extends State<SettingPage> {
                 SettingsItem(
                   onTap: () => Get.toNamed('/NotiPage'),
                   icons: Icons.exit_to_app_rounded,
+                  backgroundColor: Colors.white,
                   title: "공지사항",
                 ),
                 SettingsItem(
@@ -161,24 +158,22 @@ class _SettingPageState extends State<SettingPage> {
                   icons: CupertinoIcons.repeat,
                   title: "FAQ",
                 ),
-                // SettingsItem(
-                //   onTap: () => Get.toNamed('/FaqPage'),
-                //   icons: CupertinoIcons.arrow_turn_down_right,
-                //   title: "1대1 건의사항",
-                // ),
               ],
             ),
-
             SettingsGroup(
               settingsGroupTitle: "설정",
               settingsGroupTitleStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 16),
               items: [
                 SettingsItem(
-                  onTap: () => Get.toNamed('/MaketingPage'),
-                  icons: CupertinoIcons.pencil_outline,
-                  iconStyle: IconStyle(),
-                  title: '마케팅 수신 동의 설정',
-                  subtitle: "다양한 맴버 혜택을 담은 마케팅 정보를 SMS, 이메일, 앱 푸시로 보내드립니다.",
+                  onTap: () => Get.toNamed('/AlramSettingPage'),
+                  icons: CupertinoIcons.bell,
+                  iconStyle: IconStyle(
+                    iconsColor: Colors.white,
+                    withBackground: true,
+                    backgroundColor: Colors.indigo[300],
+                  ),
+                  title: '알림(PUSH) 설정',
+                  subtitle: "신규글 등록, 좋아요,댓글 알림을 수신합니다.",
                   titleMaxLine: 1,
                   subtitleMaxLine: 1,
                 ),
@@ -200,11 +195,26 @@ class _SettingPageState extends State<SettingPage> {
               ],
             ),
             buildAddmob(),
+            const Gap(30),
+
             SettingsGroup(
+              settingsGroupTitle: "개인정 동의 및 약관",
+              settingsGroupTitleStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 16),
               items: [
                 SettingsItem(
-                  onTap: () => Get.toNamed('/AgreePage'),
+                  onTap: () => Get.toNamed('/MaketingPage'),
+                  icons: CupertinoIcons.pencil_outline,
+                  backgroundColor: Colors.white,
+                  iconStyle: IconStyle(),
+                  title: '마케팅 수신 동의 설정',
+                  subtitle: "다양한 맴버 혜택을 담은 마케팅 정보를 SMS, 이메일, 앱 푸시로 보내드립니다.",
+                  titleMaxLine: 1,
+                  subtitleMaxLine: 1,
+                ),
+                SettingsItem(
+                  onTap: () => Get.toNamed('/ServicePage'),
                   icons: Icons.fingerprint,
+                  backgroundColor: Colors.white,
                   iconStyle: IconStyle(
                     iconsColor: Colors.white,
                     withBackground: true,
@@ -215,6 +225,7 @@ class _SettingPageState extends State<SettingPage> {
                 ),
                 SettingsItem(
                   onTap: () => Get.toNamed('/PrivecyPage'),
+                  backgroundColor: Colors.white,
                   icons: Icons.info_rounded,
                   iconStyle: IconStyle(
                     backgroundColor: Colors.purple,
@@ -231,7 +242,6 @@ class _SettingPageState extends State<SettingPage> {
                   title: '위치기반 서비스 이용약관',
                   subtitle: "위치기반 서비스 이용약관",
                 ),
-
                 SettingsItem(
                   onTap: () => Get.toNamed('/OpenSourcePage'),
                   icons: Icons.insert_chart,
@@ -242,15 +252,6 @@ class _SettingPageState extends State<SettingPage> {
                   subtitle: "라이센스 목록",
                 ),
                 SettingsItem(
-                  onTap: () => Get.toNamed('/OpenSourcePage'),
-                  icons: Icons.insert_chart,
-                  iconStyle: IconStyle(
-                    backgroundColor: Colors.deepOrange,
-                  ),
-                  title: '알림(PUSH) 수신동의',
-                  subtitle: "신규글 등록, 좋아요,댓글 알림을 수신합니다.",
-                ),
-                SettingsItem(
                   onTap: () => Get.toNamed('/TestDioPage'),
                   icons: CupertinoIcons.link_circle,
                   title: "TestDioPage",
@@ -259,18 +260,20 @@ class _SettingPageState extends State<SettingPage> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                // SettingsItem(
-                //   onTap: () => Get.toNamed('/FollowListPage'),
-                //   icons: CupertinoIcons.delete_solid,
-                //   title: "FollowListPage",
-                //   titleStyle: const TextStyle(
-                //     color: Colors.red,
-                //     fontWeight: FontWeight.bold,
-                //   ),
-                // ),
+                SettingsItem(
+                  onTap: () => Get.toNamed('/WeatherComparePage'),
+                  icons: CupertinoIcons.link_circle,
+                  title: "WeatherComparePage",
+                  titleStyle: const TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                //
               ],
             ),
             const Gap(20),
+
             buildCompany(),
             const Gap(100),
           ],
@@ -285,7 +288,7 @@ class _SettingPageState extends State<SettingPage> {
       child: Column(
         children: [
           const Text(
-            "CodeLabTiger\n서울시 서대문구 종로35길 125 TigerGroup (05510)  대표자 : tigerBk, 사업자등록번호 : 110-81-28774 ",
+            "코드랩타이거(CodeLabTiger)\n서울시 서대문구 종로35길 125 TigerGroup (05510)  대표자 : tigerBk, 사업자등록번호 : 770-50-01045",
             style: TextStyle(fontSize: 13, color: Colors.black54),
           ),
           const Gap(20),
@@ -306,7 +309,7 @@ class _SettingPageState extends State<SettingPage> {
                 bottom: 0,
                 child: Container(
                   color: Colors.white,
-                  child: Text(
+                  child: const Text(
                     "02-1588-1234",
                     style: TextStyle(fontSize: 15, color: Colors.black, fontWeight: FontWeight.bold),
                   ),

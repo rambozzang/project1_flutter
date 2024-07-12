@@ -28,7 +28,7 @@ class ChatRepo {
         return resData;
       }
       // supabase 회원가입
-      final response = await Supabase.instance.client.auth.signUp(
+      AuthResponse response = await Supabase.instance.client.auth.signUp(
         email: data.email,
         password: data.uid.toString(),
       );
@@ -45,7 +45,21 @@ class ChatRepo {
       log('Kakao supabase signUp Result : $e');
       Utils.alert(e.toString());
       resData.msg = e.toString();
+      AuthException exception = e as AuthException;
+      // 이미 가입자 고객인 경우
+      //if (exception.statusCode == '422') {
+      // 로그인해서 chatid를 가져와서 리턴
+      AuthResponse authRes = await Supabase.instance.client.auth.signInWithPassword(
+        email: data.email,
+        password: data.uid.toString(),
+      );
+
+      resData.code = '00';
+      resData.data = authRes.session?.user.id;
       return resData;
+      //    }
+
+      // return resData;
     }
   }
 

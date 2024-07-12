@@ -45,17 +45,17 @@ class _JoinPageState extends State<JoinPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // backgroundColor: const Color.fromARGB(255, 81, 139, 79),
-      //backgroundColor: Colors.black54,
+      //backgroundColor: const Color.fromARGB(255, 81, 139, 79),
+      backgroundColor: const Color(0xFF262B49),
       //  appBar: AppBar(title: const Text('Login')),
       body: Container(
         width: 400,
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/bg.jpg'),
-            fit: BoxFit.cover,
-          ),
-        ),
+        // decoration: const BoxDecoration(
+        //   image: DecorationImage(
+        //     image: AssetImage('assets/bg.jpg'),
+        //     fit: BoxFit.cover,
+        //   ),
+        // ),
         child: Stack(
           children: [
             Padding(
@@ -65,35 +65,24 @@ class _JoinPageState extends State<JoinPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Gap(85),
-                    Container(
-                      height: 110,
-                      width: 110,
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.white,
-                            offset: Offset(2, 3),
-                            blurRadius: 16.0,
-                          ),
-                        ],
+                    const Center(
+                        child: Text(
+                      'SKYSNAP',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
                       ),
-                      child: Center(
-                        child: Card(
-                          elevation: 18.0,
-                          clipBehavior: Clip.antiAlias,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Image.asset('assets/skysnap.png'),
+                    )
+                        // child: Card(
+                        //   elevation: 18.0,
+                        //   clipBehavior: Clip.antiAlias,
+                        //   shape: RoundedRectangleBorder(
+                        //     borderRadius: BorderRadius.circular(20),
+                        //   ),
+                        //   child: Image.asset('assets/skysnap.png'),
+                        // ),
                         ),
-                      ),
-                      // child: SizedBox.fromSize(
-                      //   size: const Size.fromRadius(38), // Image radius
-                      //   child: Image.asset("assets/skysnap.png", width: 400, height: 400),
-                      // ),
-                    ),
                     const Spacer(),
                     InkWell(
                       onTap: () async => signIn('kakao'),

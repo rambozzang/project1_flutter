@@ -16,6 +16,7 @@ class CustData {
   String? profilePath;
   String? accessToken;
   String? followYn;
+  String? alramYn;
   CustData({
     this.custId,
     this.nickNm,
@@ -31,6 +32,7 @@ class CustData {
     this.profilePath,
     this.accessToken,
     this.followYn,
+    this.alramYn,
   });
 
   CustData copyWith({
@@ -48,6 +50,7 @@ class CustData {
     String? profilePath,
     String? accessToken,
     String? followYn,
+    String? alramYn,
   }) {
     return CustData(
       custId: custId ?? this.custId,
@@ -64,6 +67,7 @@ class CustData {
       profilePath: profilePath ?? this.profilePath,
       accessToken: accessToken ?? this.accessToken,
       followYn: followYn ?? this.followYn,
+      alramYn: alramYn ?? this.alramYn,
     );
   }
 
@@ -83,6 +87,7 @@ class CustData {
       'profilePath': profilePath,
       'accessToken': accessToken,
       'followYn': followYn,
+      'alramYn': alramYn,
     };
   }
 
@@ -102,6 +107,7 @@ class CustData {
       profilePath: map['profilePath'] != null ? map['profilePath'] as String : null,
       accessToken: map['accessToken'] != null ? map['accessToken'] as String : null,
       followYn: map['followYn'] != null ? map['followYn'] as String : null,
+      alramYn: map['alramYn'] != null ? map['alramYn'] as String : null,
     );
   }
 
@@ -111,7 +117,7 @@ class CustData {
 
   @override
   String toString() {
-    return 'CustData(custId: $custId, nickNm: $nickNm, custNm: $custNm, selfIntro: $selfIntro, selfId: $selfId, email: $email, hpNo: $hpNo, birthday: $birthday, chatId: $chatId, fcmId: $fcmId, provider: $provider, profilePath: $profilePath, accessToken: $accessToken, followYn: $followYn)';
+    return 'CustData(custId: $custId, nickNm: $nickNm, custNm: $custNm, selfIntro: $selfIntro, selfId: $selfId, email: $email, hpNo: $hpNo, birthday: $birthday, chatId: $chatId, fcmId: $fcmId, provider: $provider, profilePath: $profilePath, accessToken: $accessToken, followYn: $followYn, alramYn: $alramYn)';
   }
 
   @override
@@ -131,7 +137,8 @@ class CustData {
         other.provider == provider &&
         other.profilePath == profilePath &&
         other.accessToken == accessToken &&
-        other.followYn == followYn;
+        other.followYn == followYn &&
+        other.alramYn == alramYn;
   }
 
   @override
@@ -149,6 +156,7 @@ class CustData {
         provider.hashCode ^
         profilePath.hashCode ^
         accessToken.hashCode ^
-        followYn.hashCode;
+        followYn.hashCode ^
+        alramYn.hashCode;
   }
 }

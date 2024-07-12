@@ -8,8 +8,6 @@ import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
-import 'package:project1/repo/alram/alram_repo.dart';
-import 'package:project1/repo/alram/data/alram_devy_data.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/follow_data.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -28,10 +26,9 @@ class FollowingListPage extends StatefulWidget {
   State<FollowingListPage> createState() => _FollowingListPageState();
 }
 
-class _FollowingListPageState extends State<FollowingListPage> {
-  // with AutomaticKeepAliveClientMixin {
-  // @override
-  // bool get wantKeepAlive => true;
+class _FollowingListPageState extends State<FollowingListPage> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
 
   ScrollController scrollController = ScrollController();
 
@@ -163,29 +160,6 @@ class _FollowingListPageState extends State<FollowingListPage> {
     }, backgroundReturn: () {});
   }
 
-  // 알람 거부/ 거부 해제 하기
-  void denyAlram(String cudtId, String denyYn) async {
-    try {
-      AlramRepo repo = AlramRepo();
-      AlramDenyData data = AlramDenyData();
-      data.denyCustId = cudtId;
-      data.denyType = 'P'; // 전체 ALL or 개별 P
-      data.denyYn = denyYn;
-
-      ResData res = await repo.denyAlram(data);
-      if (res.code == '00') {
-        listCntr.sink.add(ResStream.completed(followList));
-        if (denyYn == 'Y') {
-          BotToast.showText(text: '알람 거부 되었습니다.');
-        } else {
-          BotToast.showText(text: '알람 거부 해제 되었습니다.');
-        }
-      }
-    } catch (e) {
-      Utils.alert("알람 거부 실패");
-    }
-  }
-
   @override
   void dispose() {
     listCntr.close();
@@ -195,8 +169,8 @@ class _FollowingListPageState extends State<FollowingListPage> {
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       backgroundColor: Colors.white.withOpacity(.94),
       appBar: AppBar(
@@ -248,7 +222,7 @@ class _FollowingListPageState extends State<FollowingListPage> {
                                 onPressed: () => request(context),
                                 child: Text(val ? '끄기' : '껴기', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
                               ),
-                              // const Gap(5),
+                              // const Gap(15),
                               // const Icon(
                               //   Icons.arrow_forward_ios,
                               //   size: 19,
@@ -271,7 +245,8 @@ class _FollowingListPageState extends State<FollowingListPage> {
                       "내가 팔로우한 사람들",
                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
                     ),
-                    Utils.commonStreamList<FollowData>(listCntr, buildList, getInitFollowList)
+                    Utils.commonStreamList<FollowData>(listCntr, buildList, getInitFollowList),
+                    const Gap(200)
                   ],
                 ),
               ),
@@ -301,7 +276,7 @@ class _FollowingListPageState extends State<FollowingListPage> {
     if (data.followYn == 'Y') {
       btnName = "맞팔로우";
     } else {
-      btnName = "팔로우 취소";
+      btnName = "팔로우취소";
     }
 
     return InkWell(
@@ -315,6 +290,7 @@ class _FollowingListPageState extends State<FollowingListPage> {
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Container(
                 height: 45,
@@ -333,8 +309,8 @@ class _FollowingListPageState extends State<FollowingListPage> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${data.nickNm} ', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                Text('@${data.selfId ?? data.custNm}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
+                Text('${data.nickNm}', overflow: TextOverflow.clip, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                Text('${data.custNm}', overflow: TextOverflow.clip, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
               ],
             ),
             const Spacer(),
@@ -344,7 +320,7 @@ class _FollowingListPageState extends State<FollowingListPage> {
                 followCancle(data.custId.toString(), data.followYn.toString());
               },
               child: Container(
-                height: 30,
+                height: 40,
                 // width: 60,
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                 decoration: BoxDecoration(
@@ -357,13 +333,15 @@ class _FollowingListPageState extends State<FollowingListPage> {
                             fontSize: 12, fontWeight: FontWeight.normal, color: data.followYn == 'Y' ? Colors.white : Colors.black))),
               ),
             ),
+            const Gap(10),
             SizedBox(
-              width: 30,
+              width: 40,
               child: IconButton(
+                iconSize: 35,
                 onPressed: () => addAlram(data.custId.toString(), data.alramYn.toString() == 'Y' ? 'N' : 'Y'),
-                icon: Icon(Icons.alarm_add, color: data.alramYn.toString() == 'Y' ? Colors.deepOrange : Colors.grey.shade400),
+                icon: Icon(Icons.alarm_add, size: 30, color: data.alramYn.toString() == 'Y' ? Colors.deepOrange : Colors.grey.shade400),
               ),
-            )
+            ),
           ],
         ),
       ),

@@ -4,7 +4,6 @@ import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_update_data.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -130,20 +129,23 @@ class _VideoManagePageState extends State<VideoManagePage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const Text(
-                    '게시물 관리',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const Gap(10),
                   widget.hideYn == 'Y'
-                      ? const Text(
-                          '숨기기  게시물.',
-                          style: TextStyle(color: Colors.red, fontSize: 13),
+                      ? const Row(
+                          children: [
+                            Icon(Icons.lock, color: Colors.red, size: 20),
+                            Text(
+                              '숨기기 게시물',
+                              style: TextStyle(color: Colors.red, fontSize: 15),
+                            ),
+                          ],
                         )
-                      : const SizedBox.shrink(),
+                      : const Text(
+                          '게시물 관리',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                          ),
+                        ),
                   const Spacer(),
                   CustomButton(text: ' 수정 완료 ', type: 'XS', onPressed: () => save())
                 ],

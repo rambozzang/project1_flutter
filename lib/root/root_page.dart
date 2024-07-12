@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:app_version_update/app_version_update.dart';
 import 'package:bot_toast/bot_toast.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,22 +11,24 @@ import 'package:flutter_supabase_chat_core/flutter_supabase_chat_core.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/alram/alram_page.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/camera/page/camera_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/camera/utils/permission_utils.dart';
+import 'package:project1/app/chatting/chat_room_page.dart';
 import 'package:project1/app/myinfo/myinfo_page.dart';
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
-import 'package:project1/app/videolist/cntr/video_list_cntr2.dart';
 import 'package:project1/app/videolist/video_list_page.dart';
-import 'package:project1/app/myinfo/myinfo_page_new.dart';
-import 'package:project1/app/videolist/video_list_page2.dart';
-import 'package:project1/app/weather/Screens/weather_page.dart';
+import 'package:project1/app/weather/page/weather_page.dart';
+import 'package:project1/config/app_config.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/fade_stack.dart';
 import 'package:project1/widget/hide_bottombar.dart';
+
+import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 // ignore: must_be_immutable
 class RootPage extends StatefulWidget {
@@ -47,72 +51,49 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   Timer rootTimer = Timer.periodic(const Duration(seconds: 1), (timer) {});
 
   // bottom item list
-  late List<BottomNavigationBarItem> bottomItemList = [];
+  late List<BottomNavigationBarItem> bottomItemList = [
+    bottomItem(Icons.home, '홈'),
+    bottomItem(Icons.cloudy_snowing, '날씨'),
+    // bottomItem(Icons.cloud_queue, '날씨'),
+    bottomItem(Icons.add, '추가'),
+    bottomItem(Icons.favorite, '알람'),
+    bottomItem(Icons.person, '내정보'),
+  ];
   // body Widget List
-  late List<Widget> mainlist = [];
+  late List<Widget> mainlist = [
+    const VideoListPage(),
+    const WeatherPage(),
+    const SizedBox.shrink(),
+    const SizedBox.shrink(),
+    const SizedBox.shrink()
+  ];
 
   @override
   void initState() {
     super.initState();
     Get.put(VideoListCntr());
-    // Get.put(VideoListCntr2());
-    // initializeTimer();
+    checkAppVersion();
 
-    // const WeatherPage(),
-    mainlist = [const VideoListPage(), const WeatherPage(), const SizedBox.shrink(), const SizedBox.shrink(), const SizedBox.shrink()];
-
-    bottomItemList = [
-      bottomItem(Icons.home, '홈'),
-      bottomItem(Icons.cloudy_snowing, '날씨'),
-      // bottomItem(Icons.cloud_queue, '날씨'),
-      bottomItem(Icons.add, '추가'),
-      bottomItem(Icons.favorite, '알람'),
-      bottomItem(Icons.person, '내정보'),
-    ];
     // getData();
     // 3초후 실행
-    Future.delayed(const Duration(seconds: 3), () {
-      NotiShow();
+    // Future.delayed(const Duration(seconds: 3), () {
+    //   Utils.AppUpdateAlert(context);
+    //   // Utils.checkAppVersion();
+
+    //   Utils.bottomNotiAlert(context, '신기능 추가', '날씨 예보 비교 기능 추가되었습니다.');
+    // });
+  }
+
+  Future<void> checkAppVersion() async {
+    await AppVersionUpdate.checkForUpdates(appleId: AppConfig.appleId, playStoreId: AppConfig.playStoreId).then((data) async {
+      lo.g('checkAppVersion : ${data.storeUrl}');
+      lo.g('checkAppVersion : ${data.storeVersion}');
+
+      if (data.canUpdate!) {
+        Utils.appUpdateAlert(context, data.storeUrl.toString());
+      }
     });
   }
-
-  NotiShow() {
-    BotToast.showNotification(
-      title: (cancel) => const Text('SkySnap', style: TextStyle(color: Colors.white)),
-      subtitle: (cancel) => const Text('방갑습니다. 공공의 목적으로 많은 이용 부탁드립니다.', style: TextStyle(color: Colors.white)),
-      leading: (cancel) => const Icon(Icons.notifications),
-      trailing: (cancel) => IconButton(
-        icon: const Icon(
-          Icons.close,
-          color: Colors.white,
-        ),
-        onPressed: cancel,
-      ),
-      backgroundColor: Color.fromARGB(255, 67, 102, 120),
-      duration: const Duration(seconds: 405),
-      align: Alignment.bottomCenter,
-    );
-  }
-
-  // void initializeTimer() {
-  //   if (rootTimer != null) rootTimer.cancel();
-
-  //   // rootTimer = Timer(Duration(seconds: timerSeconds), () { //테스트 코드
-  //   rootTimer = Timer(Duration(minutes: timerMinute), () {
-  //     // Utils.alert('30분동안 움직이 없어 로그아웃됩니다.');
-  //     // Get.offAllNamed('/CoLogOutPage');
-  //   });
-  // }
-
-  // // 사용자 상호작용을 처리하는 메서드
-  // void handleUserInteraction([_]) {
-  //   if (!rootTimer.isActive) {
-  //     // 이미 타이머가 종료되었으면 무시
-  //     return;
-  //   }
-  //   rootTimer.cancel();
-  //   initializeTimer();
-  // }
 
   DateTime? currentBackPressTime = null;
 
@@ -286,9 +267,9 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     //   // mainlist[1] = const SearchPage();
     // }
 
-    if (index == 1) {
-      mainlist[1] = const WeatherPage();
-    }
+    // if (index == 1) {
+    //   mainlist[1] = const WeatherPage();
+    // }
 
     // 가운데 + 키 눌렀을대 카메라로 이동
     if (index == 2) {

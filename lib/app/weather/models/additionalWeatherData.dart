@@ -49,7 +49,7 @@ class AdditionalWeatherData {
   factory AdditionalWeatherData.fromMap(Map<String, dynamic> map) {
     return AdditionalWeatherData(
       precipitation: map['precipitation'] as String,
-      uvi: map['uvi'] as double,
+      uvi: map['uvi'].toDouble() as double,
       clouds: map['clouds'] as int,
     );
   }

@@ -60,13 +60,13 @@ class BoardRepo {
     } finally {}
   }
 
-  Future<ResData> searchOriginList(String typeCd, String typeDtCd, int pageNum, int pageSize) async {
+  Future<ResData> searchOriginList(String typeCd, String typeDtCd, int pageNum, int pageSize, String topYn) async {
     final dio = await AuthDio.instance.getDio();
     try {
       var url = '${UrlConfig.baseURL}/board/searchOriginList';
 
       Response response =
-          await dio.post(url, data: {'typeCd': typeCd, 'typeDtCd': typeDtCd, 'pageNum': pageNum, 'pageSize': pageSize, "topYn": "N"});
+          await dio.post(url, data: {'typeCd': typeCd, 'typeDtCd': typeDtCd, 'pageNum': pageNum, 'pageSize': pageSize, "topYn": topYn});
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);
@@ -89,7 +89,7 @@ class BoardRepo {
   Future<ResData> like(String boardId, String custId, String pushYn) async {
     final dio = await AuthDio.instance.getDio();
     try {
-      var url = '${UrlConfig.baseURL}/like/save?boardId=$boardId&custId=$custId%pushYn=$pushYn';
+      var url = '${UrlConfig.baseURL}/like/save?boardId=$boardId&custId=$custId&pushYn=$pushYn';
       Response response = await dio.post(url);
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
@@ -274,6 +274,70 @@ class BoardRepo {
     try {
       var url = '${UrlConfig.baseURL}/board/updateBoard';
       Response response = await dio.post(url, data: data.toJson());
+      return AuthDio.instance.dioResponse(response);
+    } on DioException catch (e) {
+      return AuthDio.instance.dioException(e);
+    } finally {}
+  }
+
+  //신고하기
+  Future<ResData> saveSingo(String boardId, String reason) async {
+    final dio = await AuthDio.instance.getDio();
+    try {
+      var url = '${UrlConfig.baseURL}/singo/save';
+      Response response = await dio.post(url, queryParameters: {'boardId': boardId, 'reason': reason});
+      return AuthDio.instance.dioResponse(response);
+    } on DioException catch (e) {
+      return AuthDio.instance.dioException(e);
+    } finally {}
+  }
+
+  // 거리 + 태그 + 관심지역 3개 쿼리를 유니온으로 데이터 조회
+  Future<ResData> getTotalBoardList(String lat, String lon, int pageNum, int pageSize) async {
+    final dio = await AuthDio.instance.getDio();
+    try {
+      var url = '${UrlConfig.baseURL}/board/getTotalBoardList';
+
+      Response response = await dio.post(url, data: {'lat': lat, 'lon': lon, 'pageNum': pageNum, 'pageSize': pageSize});
+      return AuthDio.instance.dioResponse(response);
+    } on DioException catch (e) {
+      return AuthDio.instance.dioException(e);
+    } finally {}
+  }
+
+  // 관심지역  쿼리로 데이터 조회
+  Future<ResData> getLocalBoardList(String lat, String lon, int pageNum, int pageSize) async {
+    final dio = await AuthDio.instance.getDio();
+    try {
+      var url = '${UrlConfig.baseURL}/board/getLocalBoardList';
+
+      Response response = await dio.post(url, data: {'lat': lat, 'lon': lon, 'pageNum': pageNum, 'pageSize': pageSize});
+      return AuthDio.instance.dioResponse(response);
+    } on DioException catch (e) {
+      return AuthDio.instance.dioException(e);
+    } finally {}
+  }
+
+  // 태그  쿼리로 데이터 조회
+  Future<ResData> getTagBoardList(String lat, String lon, int pageNum, int pageSize) async {
+    final dio = await AuthDio.instance.getDio();
+    try {
+      var url = '${UrlConfig.baseURL}/board/getTagBoardList';
+
+      Response response = await dio.post(url, data: {'lat': lat, 'lon': lon, 'pageNum': pageNum, 'pageSize': pageSize});
+      return AuthDio.instance.dioResponse(response);
+    } on DioException catch (e) {
+      return AuthDio.instance.dioException(e);
+    } finally {}
+  }
+
+  // 거리  쿼리로 데이터 조회
+  Future<ResData> getDistinceBoardList(String lat, String lon, int pageNum, int pageSize) async {
+    final dio = await AuthDio.instance.getDio();
+    try {
+      var url = '${UrlConfig.baseURL}/board/getDistinceBoardList';
+
+      Response response = await dio.post(url, data: {'lat': lat, 'lon': lon, 'pageNum': pageNum, 'pageSize': pageSize});
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);

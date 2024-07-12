@@ -15,7 +15,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:mime/mime.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/repo/alram/alram_repo.dart';
+import 'package:project1/repo/alram/data/chat_req_data.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -45,6 +47,14 @@ class _ChatPageState extends State<ChatPage> {
   void initState() {
     room = widget.room; // Get.arguments['room'];
     _chatController = SupabaseChatController(room: room);
+    for (var user in room.users) {
+      lo.g("user.id : ${user.id}");
+      if (user.id != AuthCntr.to.resLoginData.value.chatId) {
+        lo.g("user.id : ${user.id}");
+        AuthCntr.to.currentChatId = user.id;
+      }
+    }
+
     super.initState();
   }
 
@@ -197,9 +207,17 @@ class _ChatPageState extends State<ChatPage> {
     room.users.forEach((element) {
       if (element.id != SupabaseChatCore.instance.supabaseUser!.id) {
         String custId = element.metadata!['custId'];
+
         if (custId != '') {
+          lo.g("element.id : ${element.id}");
+
           AlramRepo alramRepo = AlramRepo();
-          alramRepo.pushByCustId(element.metadata!['custId']);
+          ChatReqData data = ChatReqData();
+          data.custId = element.metadata!['custId'];
+          data.alramContents = message.text;
+          data.alramCd = '07';
+
+          alramRepo.pushByCustId(data);
         }
       }
     });
@@ -221,6 +239,14 @@ class _ChatPageState extends State<ChatPage> {
     }, backgroundReturn: () {});
 
     // SupabaseChatCore.instance.deleteRoom(room.id);
+  }
+
+  @override
+  void dispose() {
+    // _chatController.dispose();
+
+    AuthCntr.to.currentChatId = "";
+    super.dispose();
   }
 
   @override

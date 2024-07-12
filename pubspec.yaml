@@ -48,8 +48,7 @@ dependencies:
   visibility_detector: ^0.4.0+2
   
   preload_page_view: ^0.2.0
-  marquee_widget: ^1.2.0
-  simple_chips_input: ^1.2.0
+
   flutter_cache_manager: ^3.3.2
   dio_cache_interceptor: ^3.5.0
   dio_cache_interceptor_hive_store: ^3.2.2
@@ -65,20 +64,19 @@ dependencies:
   like_button: ^2.0.5
   cached_network_image: ^3.3.1
   # video_thumbnail: ^0.5.3
-  photo_gallery: ^2.2.1
-  photo_manager: ^3.0.0
-  extended_image: ^8.2.0
+  # photo_gallery: ^2.2.1
+  # photo_manager: ^3.0.0
+  # extended_image: ^8.2.0
   intl: ^0.19.0
- 
   badges: ^3.1.2
 
-  image_editor: ^1.4.0
-  image: ^4.1.7
+  # image_editor: ^1.4.0
+  # image: ^4.1.7
   image_cropper: ^7.0.5
   flutter_image_compress: ^2.2.0
-  flutter_native_image: ^0.0.6+1
-  photo_view: ^0.15.0
-  simple_progress_indicators: ^0.2.0
+  # flutter_native_image: ^0.0.6+1
+  # photo_view: ^0.15.0
+  # simple_progress_indicators: ^0.2.0
   image_picker: ^1.0.7
   babstrap_settings_screen: ^0.1.6  
   chips_choice: ^3.0.1
@@ -90,7 +88,6 @@ dependencies:
   flutter_naver_map: ^1.2.2+flutter3.22
   latlong2: ^0.9.1
   xml2json: ^6.2.3
-  
   http: ^1.2.1
   lottie: ^3.1.2
 
@@ -115,7 +112,6 @@ dependencies:
   #cached_video_player_plus: ^3.0.1
   # google_mobile_ads: ^5.1.0
   flutter_inappwebview: ^6.0.0
-  webview_flutter_android: 3.16.1
   google_mobile_ads: ^5.1.0  
   # chatting 관련 패키지
   flutter_supabase_chat_core: ^0.10.0
@@ -127,22 +123,22 @@ dependencies:
   open_filex: ^4.4.0
   timeago: ^3.6.1
   flutter_native_splash: ^2.4.0
+  flutter_oss_licenses: ^3.0.2
+  freezed_annotation: ^2.4.2
+  json_annotation: ^4.7.0
+  xml: ^6.1.0
+  flutter_infinite_marquee: ^1.0.0
+  syncfusion_flutter_datagrid: ^26.1.40
+  giffy_dialog: ^2.1.0
+  app_version_update: ^5.0.1
+  flutter_gemini: ^2.0.4
+  flutter_dotenv: ^5.1.0
 
-
-
-  
-
-
+ 
   # better_player:
   #   git:
   #     url: 'https://github.com/Widnano/betterplayer.git'
   #     ref: 'dev/bgenidy/updatingpackagerefs'
-
-
-
-
-
- 
 
 dev_dependencies:
   flutter_lints: ^4.0.0
@@ -153,20 +149,17 @@ flutter:
   uses-material-design: true
   # To add assets to your application, add an assets section, like this:
   assets:
+     - skysnap_prod.env
      - assets/
      - assets/login/
      - assets/images/
-     - assets/images/onboarding/
      - assets/images/map/
-     - assets/images/weather/
-     - assets/images/rain-4996916_640.jpg
-     - assets/images/girl-6356393_640.jpg
      - assets/lottie/
 
 
 flutter_native_splash:
   color: "#262B49"
-  image: assets/skysnap.png
+  # image: assets/skysnap.png
   color_dark: "#262B49"
   image_dark: assets/skysnap.png
   android_12:

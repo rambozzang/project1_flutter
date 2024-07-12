@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:lottie/lottie.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
-import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
-import 'package:project1/app/weather/provider/weather_cntr.dart';
+import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
-import 'package:project1/utils/utils.dart';
-import 'package:project1/widget/play_lottie.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -23,13 +21,12 @@ class _AuthPageState extends State<AuthPage> {
   }
 
   Future<void> initS() async {
+    Stopwatch stopwatch = Stopwatch()..start();
     Get.find<WeatherCntr>().requestLocation().then((value) {
+      stopwatch.stop();
+      lo.g('@@@  auth page   =>. ${stopwatch.elapsed}');
       Get.offAllNamed('/rootPage');
     });
-
-    //Future.delayed(const Duration(milliseconds: 500), () {
-
-    // });
   }
 
   @override
@@ -46,14 +43,45 @@ class _AuthPageState extends State<AuthPage> {
             }
           }
 
-          return const Scaffold(
-            backgroundColor: Color(0xFF262B49),
+          return Scaffold(
+            backgroundColor: const Color(0xFF262B49),
             body: Center(
-              child: SizedBox(
-                // height: 105,
-                width: 125,
-                child: PlayLottie(lottie: 'assets/lottie/loading_weather.json'),
+              child: Stack(
+                children: [
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Lottie.asset(
+                          'assets/lottie/sun5.json',
+                          height: 50.0,
+                          width: 50.0,
+                        ),
+                        const Gap(1),
+                        const Text(
+                          "SkySnap",
+                          style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Positioned(
+                    bottom: 20,
+                    left: 20,
+                    right: 20,
+                    child: Center(
+                      child: Text(
+                        "CodeLabTiger",
+                        style: TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ),
+                ],
               ),
+              // child: Text(
+              //   'GPS ...',
+              //   style: TextStyle(color: Colors.white, fontSize: 11),
+              // ),
             ),
           );
         });

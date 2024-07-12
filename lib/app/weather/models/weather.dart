@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 
 class Weather {
-  final double? temp;
+  double? temp;
   final double? tempMax;
   final double? tempMin;
   final double? lat;
@@ -119,17 +119,17 @@ class Weather {
 
   factory Weather.fromMap(Map<String, dynamic> map) {
     return Weather(
-      temp: map['temp'] as double,
-      tempMax: map['tempMax'] as double,
-      tempMin: map['tempMin'] as double,
-      lat: map['lat'] as double,
-      long: map['long'] as double,
-      feelsLike: map['feelsLike'] as double,
+      temp: map['temp'].toDouble() as double,
+      tempMax: map['tempMax'].toDouble() as double,
+      tempMin: map['tempMin'].toDouble() as double,
+      lat: map['lat'].toDouble() as double,
+      long: map['long'].toDouble() as double,
+      feelsLike: map['feelsLike'].toDouble() as double,
       pressure: map['pressure'] as int,
       description: map['description'] as String,
       weatherCategory: map['weatherCategory'] as String,
       humidity: map['humidity'] as int,
-      windSpeed: map['windSpeed'] as double,
+      windSpeed: map['windSpeed'].toDouble() as double,
       city: map['city'] as String,
       countryCode: map['countryCode'] as String,
     );

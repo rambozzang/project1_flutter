@@ -122,14 +122,14 @@ class _UsersPageState extends State<UsersPage> {
     final navigator = Navigator.of(context);
     final room = await SupabaseChatCore.instance.createRoom(otherUser);
     navigator.pop();
-
-    await navigator.push(
-      MaterialPageRoute(
-        builder: (context) => ChatPage(
-          room: room,
-        ),
-      ),
-    );
+    Get.to(ChatPage(room: room));
+    // await navigator.push(
+    //   MaterialPageRoute(
+    //     builder: (context) => ChatPage(
+    //       room: room,
+    //     ),
+    //   ),
+    // );
   }
 
   @override

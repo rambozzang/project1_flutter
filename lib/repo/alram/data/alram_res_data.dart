@@ -8,7 +8,7 @@ class AlramResData {
   String? senderNickNm;
   String? receiverCustId;
   String? profilePath;
-  int? boardId;
+  String? boardId;
   String? alramCd;
   String? alramTitle;
   String? alramContents;
@@ -34,7 +34,7 @@ class AlramResData {
     String? senderNickNm,
     String? receiverCustId,
     String? profilePath,
-    int? boardId,
+    String? boardId,
     String? alramCd,
     String? alramTitle,
     String? alramContents,
@@ -79,7 +79,7 @@ class AlramResData {
       senderNickNm: map['senderNickNm'] != null ? map['senderNickNm'] as String : null,
       receiverCustId: map['receiverCustId'] != null ? map['receiverCustId'] as String : null,
       profilePath: map['profilePath'] != null ? map['profilePath'] as String : null,
-      boardId: map['boardId'] != null ? map['boardId'] as int : null,
+      boardId: map['boardId'] != null ? map['boardId'] as String : null,
       alramCd: map['alramCd'] != null ? map['alramCd'] as String : null,
       alramTitle: map['alramTitle'] != null ? map['alramTitle'] as String : null,
       alramContents: map['alramContents'] != null ? map['alramContents'] as String : null,

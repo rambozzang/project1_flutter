@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:project1/config/url_config.dart';
 import 'package:project1/repo/api/auth_dio.dart';
 import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/repo/cust/data/cust_tag_data.dart';
 import 'package:project1/repo/cust/data/cust_update_data.dart';
 import 'package:project1/repo/cust/data/google_join_data.dart';
 import 'package:project1/repo/cust/data/kakao_join_data.dart';
@@ -97,11 +98,11 @@ class CustRepo {
   }
 
   // Tag 저장
-  Future<ResData> saveTag(String custId, String tag) async {
+  Future<ResData> saveTag(CustTagData data) async {
     final dio = await AuthDio.instance.getDio(debug: true);
     try {
       var url = '${UrlConfig.baseURL}/tag/save';
-      Response response = await dio.post(url, data: {'custId': custId, 'tagNm': tag});
+      Response response = await dio.post(url, data: data.toMap());
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);
@@ -109,11 +110,11 @@ class CustRepo {
   }
 
   // Tag 삭제
-  Future<ResData> deleteTag(String custId, String tag) async {
+  Future<ResData> deleteTag(String custId, String tag, String tagType) async {
     final dio = await AuthDio.instance.getDio(debug: true);
     try {
       var url = '${UrlConfig.baseURL}/tag/delete';
-      Response response = await dio.post(url, data: {'custId': custId, 'tagNm': tag});
+      Response response = await dio.post(url, data: {'custId': custId, 'tagType': tagType, 'tagNm': tag});
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);
@@ -121,10 +122,10 @@ class CustRepo {
   }
 
   // Tag 조회
-  Future<ResData> getTagList(String custId) async {
+  Future<ResData> getTagList(String custId, String tagType) async {
     final dio = await AuthDio.instance.getDio(debug: true);
     try {
-      var url = '${UrlConfig.baseURL}/tag/getTagList?custId=$custId';
+      var url = '${UrlConfig.baseURL}/tag/getTagList?custId=$custId&tagType=$tagType';
       Response response = await dio.post(url);
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
@@ -138,6 +139,18 @@ class CustRepo {
     try {
       var url = '${UrlConfig.baseURL}/cust/modiProfilePath';
       Response response = await dio.post(url, data: {'custId': custId, 'profilePath': photoUrl});
+      return AuthDio.instance.dioResponse(response);
+    } on DioException catch (e) {
+      return AuthDio.instance.dioException(e);
+    } finally {}
+  }
+
+  // ChatID 업데이트 처리
+  Future<ResData> updateChatId(String custId, String chatId) async {
+    final dio = await AuthDio.instance.getDio(debug: true);
+    try {
+      var url = '${UrlConfig.baseURL}/cust/updateChatId?custId=$custId&chatId=$chatId';
+      Response response = await dio.post(url);
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);

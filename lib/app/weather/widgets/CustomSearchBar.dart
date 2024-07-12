@@ -3,9 +3,9 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_floating_search_bar_2/material_floating_search_bar_2.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:project1/app/weather/provider/weatherProvider.dart';
+import 'package:project1/app/weather/cntr/weatherProvider.dart';
 import 'package:project1/app/weather/theme/colors.dart';
-import 'package:project1/app/weather/provider/weather_cntr.dart';
+import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:provider/provider.dart';
 
 class CustomSearchBar extends StatefulWidget {

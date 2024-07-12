@@ -27,10 +27,9 @@ class FollowListPage extends StatefulWidget {
   State<FollowListPage> createState() => _FollowListPageState();
 }
 
-class _FollowListPageState extends State<FollowListPage> {
-  // with AutomaticKeepAliveClientMixin {
-  // @override
-  // bool get wantKeepAlive => true;
+class _FollowListPageState extends State<FollowListPage> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
 
   ScrollController scrollController = ScrollController();
 
@@ -108,24 +107,6 @@ class _FollowListPageState extends State<FollowListPage> {
     }, backgroundReturn: () {});
   }
 
-  // 알람 거부/ 거부 해제 하기
-  void denyAlram(String cudtId, String denyYn) async {
-    try {
-      AlramRepo repo = AlramRepo();
-      AlramDenyData data = AlramDenyData();
-      data.denyCustId = cudtId;
-      data.denyType = 'P'; // 전체 ALL or 개별 P
-      data.denyYn = denyYn;
-
-      ResData res = await repo.denyAlram(data);
-      if (res.code == '00') {
-        listCntr.sink.add(ResStream.completed(followList));
-      }
-    } catch (e) {
-      Utils.alert("알람 거부 실패");
-    }
-  }
-
   @override
   void dispose() {
     listCntr.close();
@@ -137,6 +118,7 @@ class _FollowListPageState extends State<FollowListPage> {
   @override
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       backgroundColor: Colors.white.withOpacity(.94),
       appBar: AppBar(
@@ -170,7 +152,8 @@ class _FollowListPageState extends State<FollowListPage> {
                   "나를 팔로우한 사람들",
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
                 ),
-                Utils.commonStreamList<FollowData>(listCntr, buildList, getInitFollowList)
+                Utils.commonStreamList<FollowData>(listCntr, buildList, getInitFollowList),
+                const Gap(200)
               ],
             ),
           ),
@@ -231,8 +214,8 @@ class _FollowListPageState extends State<FollowListPage> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${data.nickNm} ', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                Text('@${data.selfId ?? data.custNm}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
+                Text('${data.nickNm}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                Text('${data.custNm}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
               ],
             ),
             const Spacer(),
@@ -242,11 +225,11 @@ class _FollowListPageState extends State<FollowListPage> {
                 data.followYn == 'Y' ? followCancle(data.custId.toString(), data.followYn.toString()) : addFollow(data.custId.toString());
               },
               child: Container(
-                height: 30,
+                height: 40,
                 // width: 60,
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                 decoration: BoxDecoration(
-                  color: data.followYn == 'Y' ? Color.fromARGB(255, 21, 85, 169) : Colors.grey.shade300,
+                  color: data.followYn == 'Y' ? const Color.fromARGB(255, 21, 85, 169) : Colors.grey.shade300,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Center(

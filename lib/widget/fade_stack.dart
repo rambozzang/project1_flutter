@@ -63,7 +63,6 @@ class _FadeIndexedStackState extends State<FadeIndexedStack> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
-    log("FadeIndexedStack build");
     return SlideTransition(
       position: _animation,
       // child: FadeTransition(

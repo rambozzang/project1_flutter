@@ -12,14 +12,14 @@ class CustomBadge extends StatelessWidget {
   CustomBadge({super.key, required this.text, this.textColor, this.onPressed, this.widthValue, this.heightValue, this.bgColor});
 
   final Map<String, Map<String, Color>> colorMap = {
-    '팔로우': {'textColor': const Color(0xFF1A61CD), 'backgrㅗ우oundColor': const Color(0xFFE5E5E5)},
-    '': {'textColor': const Color(0xFF2AA100), 'backgroundColor': const Color(0xFFEFFAEA)},
-    '말소': {'textColor': const Color(0xFF4F4745), 'backgroundColor': const Color(0xFFE0D8D4)},
-    '맞팔로우': {'textColor': const Color(0xFFE23E28), 'backgroundColor': const Color(0xFFFFE8E4)},
-    '당일': {'textColor': const Color(0xFFffffff), 'backgroundColor': const Color(0xFFFF9900)},
-    '대표': {'textColor': const Color(0xFFFF9900), 'backgroundColor': const Color(0xFF4F4745)},
-    '관리자': {'textColor': const Color(0xFFffffff), 'backgroundColor': const Color(0xFF9E9693)},
-    '일반': {'textColor': const Color(0xFF9E9693), 'backgroundColor': const Color(0xFFE0D8D4)},
+    '1': {'textColor': const Color(0xFF1A61CD), 'backgrㅗ우oundColor': const Color(0xFFE5E5E5)},
+    '2': {'textColor': const Color(0xFF2AA100), 'backgroundColor': const Color(0xFFEFFAEA)},
+    '3': {'textColor': const Color(0xFF4F4745), 'backgroundColor': const Color(0xFFE0D8D4)},
+    '4': {'textColor': const Color(0xFFE23E28), 'backgroundColor': const Color(0xFFFFE8E4)},
+    '5': {'textColor': const Color(0xFFffffff), 'backgroundColor': const Color(0xFFFF9900)},
+    '6': {'textColor': const Color(0xFFFF9900), 'backgroundColor': const Color(0xFF4F4745)},
+    '7': {'textColor': const Color(0xFFffffff), 'backgroundColor': const Color(0xFF9E9693)},
+    '8': {'textColor': const Color(0xFF9E9693), 'backgroundColor': const Color(0xFFE0D8D4)},
   };
 
   @override

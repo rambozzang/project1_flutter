@@ -8,7 +8,7 @@ class CommRepo {
   Future<ResData> searchCode(CodeReq reqData) async {
     final dio = await AuthDio.instance.getDio();
     try {
-      var url = '${UrlConfig.baseURL}/auth/searchcommcode';
+      var url = '${UrlConfig.baseURL}/comm/searchcommcode';
       Response response = await dio.post(url, data: reqData.toJson());
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {

@@ -1,14 +1,17 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:get/get.dart';
+import 'package:project1/app/setting/open_source_detail_page.dart';
+import 'package:project1/oss_licenses.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_main_detail_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class OpenSourcePage extends StatefulWidget {
   const OpenSourcePage({super.key});
@@ -18,14 +21,12 @@ class OpenSourcePage extends StatefulWidget {
 }
 
 class _OpenSourcePageState extends State<OpenSourcePage> {
-  final formKey = GlobalKey<FormState>();
-
   final StreamController<ResStream<List<BoardDetailData>>> listCtrl = StreamController();
 
   List<BoardDetailData> boardList = [];
 
-  String ptupDsc = 'OPEN';
-  String ptupTrgtDsc = 'OPEN';
+  String typeCd = 'OPEN';
+  String typeDtCd = 'OPEN';
   int page = 0;
   int pageSzie = 2000;
   String topYn = 'N';
@@ -36,12 +37,46 @@ class _OpenSourcePageState extends State<OpenSourcePage> {
     getData();
   }
 
+  Future<List<Package>> loadLicenses() async {
+    try {
+      lo.g("111111");
+      // merging non-dart dependency list using LicenseRegistry.
+      final lm = <String, List<String>>{};
+      await for (var l in LicenseRegistry.licenses) {
+        for (var p in l.packages) {
+          final lp = lm.putIfAbsent(p, () => []);
+          lp.addAll(l.paragraphs.map((p) => p.text));
+        }
+      }
+      lo.g("2222");
+      final licenses = allDependencies.toList();
+      // for (var key in lm.keys) {
+      //   licenses.add(Package(
+      //     name: key,
+      //     description: '',
+      //     authors: [],
+      //     version: '',
+      //     license: lm[key]!.join('\n\n'),
+      //     isMarkdown: false,
+      //     isSdk: false,
+      //     dependencies: [],
+      //   ));
+      // }
+      lo.g("33333 : ${licenses.length}");
+      return licenses..sort((a, b) => a.name.compareTo(b.name));
+    } catch (e) {
+      lo.g(e.toString());
+      return [];
+    }
+  }
+
+  // final _licenses = loadLicenses();
+
   Future<void> getData() async {
     try {
-      listCtrl.sink.add(ResStream.loading());
+      // listCtrl.sink.add(ResStream.loading());
       BoardRepo repo = BoardRepo();
-
-      ResData resData = await repo.searchOriginList('FAQ', 'ALL', page, pageSzie);
+      ResData resData = await repo.searchOriginList(typeCd, typeDtCd, page, pageSzie, topYn);
 
       if (resData.code != '00') {
         Utils.alert(resData.msg.toString());
@@ -60,6 +95,7 @@ class _OpenSourcePageState extends State<OpenSourcePage> {
   @override
   void dispose() {
     listCtrl.close();
+
     super.dispose();
   }
 
@@ -78,44 +114,110 @@ class _OpenSourcePageState extends State<OpenSourcePage> {
       ),
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        physics: const AlwaysScrollableScrollPhysics(),
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const Gap(10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Gap(4),
-                // 공통 스트림 빌더
-                Utils.commonStreamList<BoardDetailData>(listCtrl, buildList, getData),
-                buildItem(BoardDetailData(subject: '이미지 출처: Freepik')),
-                //<a href="https://kr.freepik.com/free-vector/flat-design-illustration-customer-support_12982910.htm#query=%EA%B3%A0%EA%B0%9D%EC%84%BC%ED%84%B0&position=1&from_view=keyword&track=ais&uuid=aa7b7691-daa1-46c6-88d0-55653a755271">Freepik</a>
-                const Gap(200),
-              ],
-            ),
+          Utils.commonStreamList<BoardDetailData>(listCtrl, buildList, getData, noDataWidget: const SizedBox.shrink()),
+          FutureBuilder<List<Package>>(
+            future: loadLicenses(),
+            initialData: const [],
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return Center(
+                    child: Padding(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 200), child: Utils.progressbar()));
+              }
+              return buildPubDevList(snapshot.data!);
+            },
           ),
-          const Gap(300),
+          const Gap(30),
         ]),
       ),
     );
   }
 
+  // pub.dev 오픈 소스 리스트
+  Widget buildPubDevList(List<Package> list) {
+    return ListView.builder(
+      shrinkWrap: true,
+      itemCount: list.length,
+      padding: EdgeInsets.zero,
+      physics: const NeverScrollableScrollPhysics(),
+      itemBuilder: (BuildContext context, int index) {
+        return buildPubDevItem(list[index]);
+      },
+    );
+  }
+
+// 오픈 소스 리스트
+  Widget buildPubDevItem(Package package) {
+    return Column(
+      children: [
+        // Divider(
+        //   height: 1,
+        //   thickness: 1,
+        //   color: Colors.grey[300],
+        // ),
+        const Gap(2),
+        ElevatedButton(
+          clipBehavior: Clip.none,
+          style: ElevatedButton.styleFrom(
+            shadowColor: Colors.grey[50],
+            // fixedSize: Size(0, 0),
+            minimumSize: Size.zero, // Set this
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: const VisualDensity(horizontal: 0, vertical: 0),
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+            backgroundColor: Colors.grey[200],
+          ),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => OpenSourceDetailPage(package: package),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            //   crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${package.name} ${package.version}',
+                      // softWrap: true,
+                      overflow: TextOverflow.clip,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    const Gap(5),
+                    Text(
+                      package.description.isNotEmpty ? package.description : '',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+              // const Spacer(),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
 // 오픈 소스 리스트
   Widget buildList(List<BoardDetailData> list) {
-    return SizedBox(
-      width: double.infinity,
-      //   height: 322,
-      //padding: const EdgeInsets.all(20),
-      child: ListView.builder(
-        shrinkWrap: true,
-        itemCount: list.length,
-        physics: const BouncingScrollPhysics(),
-        itemBuilder: (BuildContext context, int index) {
-          return buildItem(list[index]);
-        },
-      ),
+    return ListView.builder(
+      shrinkWrap: true,
+      itemCount: list.length,
+      padding: EdgeInsets.zero,
+      physics: const NeverScrollableScrollPhysics(),
+      itemBuilder: (BuildContext context, int index) {
+        return buildItem(list[index]);
+      },
     );
   }
 
@@ -125,19 +227,19 @@ class _OpenSourcePageState extends State<OpenSourcePage> {
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Column(
         children: [
-          Divider(
-            height: 1,
-            thickness: 1,
-            color: Colors.grey[300],
-          ),
-          const Gap(10),
+          // Divider(
+          //   height: 1,
+          //   thickness: 1,
+          //   color: Colors.grey[300],
+          // ),
+          const Gap(2),
           ElevatedButton(
             clipBehavior: Clip.none,
             style: ElevatedButton.styleFrom(
               shadowColor: Colors.grey[50],
               // fixedSize: Size(0, 0),
               minimumSize: Size.zero, // Set this
-              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               visualDensity: const VisualDensity(horizontal: 0, vertical: 0),
               elevation: 0,
@@ -146,32 +248,30 @@ class _OpenSourcePageState extends State<OpenSourcePage> {
             ),
             onPressed: () => Lo.g('data.ptupSeq'),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               //   crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          data.subject.toString(),
-                          softWrap: true,
-                          overflow: TextOverflow.fade,
-                        ),
-                        const Gap(6),
-                      ],
-                    ),
-                    const Gap(10),
-                    Text(
-                      '출처 : Google inc.',
-                    ),
-                  ],
+                Flexible(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data.subject.toString(),
+                        // softWrap: true,
+                        overflow: TextOverflow.clip,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      const Gap(5),
+                      Text(
+                        data.contents.toString().substring(0, data.contents!.length > 30 ? 30 : data.contents!.length),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                      ),
+                    ],
+                  ),
                 ),
-                const Spacer(),
+                // const Spacer(),
+                const Icon(Icons.chevron_right),
               ],
             ),
           ),

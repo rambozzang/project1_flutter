@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:project1/app/weather/provider/weather_cntr.dart';
+import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:provider/provider.dart';
 
-import '../provider/weatherProvider.dart';
+import '../cntr/weatherProvider.dart';
 
 class LocationError extends StatefulWidget {
   @override

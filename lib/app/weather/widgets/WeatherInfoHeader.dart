@@ -1,56 +1,58 @@
-import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:intl/intl.dart';
-import 'package:project1/app/weather/provider/weatherProvider.dart';
-import 'package:project1/app/weather/theme/colors.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
-import 'package:project1/app/weather/widgets/customShimmer.dart';
-import 'package:project1/app/weather/provider/weather_cntr.dart';
-import 'package:provider/provider.dart';
+import 'package:project1/app/weather/cntr/weather_cntr.dart';
 
 class WeatherInfoHeader extends StatelessWidget {
   static const double boxWidth = 52.0;
   static const double boxHeight = 40.0;
+
+  const WeatherInfoHeader({super.key});
   @override
   Widget build(BuildContext context) {
     return GetBuilder<WeatherCntr>(
       builder: (weatherProv) {
+        if (weatherProv.currentLocation.value?.name == '') {
+          return const SizedBox(height: 1);
+        }
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            weatherProv.isLoading.value
-                ? const SizedBox.shrink()
-                : Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        FittedBox(
-                          child: RichText(
-                            textAlign: TextAlign.start,
-                            text: TextSpan(
-                              text: '${weatherProv.weather.value!.city}, ',
-                              style: semiboldText,
-                              children: [
-                                TextSpan(
-                                  text: Country.tryParse(weatherProv.weather.value!.countryCode!)?.name,
-                                  style: regularText.copyWith(fontSize: 18.0),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 4.0),
-                        FittedBox(
-                          child: Text(
-                            DateFormat('y/MM/dd E , a hh:mm ', 'ko').format(DateTime.now()),
-                            style: regularText.copyWith(color: Colors.grey.shade200),
-                          ),
-                        )
-                      ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FittedBox(
+                    // child: RichText(
+                    //   textAlign: TextAlign.start,
+                    //   text: TextSpan(
+                    //     text: '${weatherProv.weather.value!.city}, ',
+                    //     style: semiboldText,
+                    //     children: [
+                    //       TextSpan(
+                    //         text: Country.tryParse(weatherProv.weather.value!.countryCode!)?.name,
+                    //         style: regularText.copyWith(fontSize: 18.0),
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
+                    child: Text(
+                      '${weatherProv.currentLocation.value?.name}',
+                      style: semiboldText.copyWith(fontSize: 18.0),
                     ),
                   ),
+                  const SizedBox(height: 4.0),
+                  FittedBox(
+                    child: Text(
+                      DateFormat('y/MM/dd E , a hh:mm ', 'ko').format(DateTime.now()),
+                      style: regularText.copyWith(color: Colors.grey.shade200),
+                    ),
+                  )
+                ],
+              ),
+            ),
             const SizedBox(width: 8.0),
             // ClipRRect(
             //   borderRadius: BorderRadius.circular(12.0),

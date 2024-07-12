@@ -35,8 +35,8 @@ class _NotiPageState extends State<NotiPage> with AutomaticKeepAliveClientMixin 
 
   List<BoardDetailData> boardList = [];
 
-  String ptupDsc = 'NOTI';
-  String ptupTrgtDsc = 'NOTI';
+  String typeCd = 'NOTI';
+  String typeDtCd = 'NOTI';
 
   String topYn = 'N';
 
@@ -71,7 +71,7 @@ class _NotiPageState extends State<NotiPage> with AutomaticKeepAliveClientMixin 
     }
     try {
       BoardRepo repo = BoardRepo();
-      ResData resData = await repo.searchOriginList(ptupDsc, ptupTrgtDsc, _page, pageSzie);
+      ResData resData = await repo.searchOriginList(typeCd, typeDtCd, _page, pageSzie, topYn);
 
       if (resData.code != '00') {
         Utils.alert(resData.msg.toString());
@@ -98,6 +98,7 @@ class _NotiPageState extends State<NotiPage> with AutomaticKeepAliveClientMixin 
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       appBar: AppBar(
         forceMaterialTransparency: true,

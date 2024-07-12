@@ -1,16 +1,15 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloudflare/cloudflare.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
-import 'package:project1/app/myinfo/widget/image_avatar.dart';
 import 'package:project1/app/weather/widgets/customShimmer.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
@@ -21,18 +20,17 @@ import 'package:project1/repo/cloudflare/cloudflare_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
+import 'package:project1/repo/cust/data/cust_tag_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:project1/widget/custom_button.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:http/http.dart' as http;
 
 // 사진촬영
 // https://dariadobszai.medium.com/set-profile-photo-with-flutter-bloc-or-how-to-bloc-backward-9fb16faa56ed
@@ -50,7 +48,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
   @override
   bool get wantKeepAlive => true;
 
-  XFile? _image; //이미지를 담을 변수 선언
+  late XFile? _image; //이미지를 담을 변수 선언
   final ImagePicker picker = ImagePicker(); //ImagePicker 초기화
   // 상태유지
 
@@ -79,6 +77,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
 
   // 관심태그 리스트 가져오기
   StreamController<ResStream<List<String>>> tagStream = StreamController();
+  StreamController<ResStream<List<String>>> areaStream = StreamController();
 
   // 관심태그 추가
   TextEditingController tagController = TextEditingController();
@@ -89,7 +88,6 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
   late TabController tabController;
 
   FocusNode textFocus = FocusNode();
-  bool _keyboardVisible = false;
 
   @override
   void initState() {
@@ -98,6 +96,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     getInitMyBoard();
     getInitFollowBoard();
     getTag();
+    getLocalTag();
     textFocus.addListener(() {
       if (textFocus.hasFocus) {
         RootCntr.to.bottomBarStreamController.sink.add(false);
@@ -122,26 +121,6 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
         }
       }
     });
-
-    // mainScrollController.addListener(() {
-    //   if (myboardScrollCtrl.position.pixels == myboardScrollCtrl.position.maxScrollExtent) {
-    //     if (!isMyBoardLastPage) {
-    //       myboardPageNum++;
-    //       isMyBoardMoreLoading.value = true;
-    //       getMyBoard(myboardPageNum);
-    //     }
-    //   }
-    // });
-
-    // mainScrollController.addListener(() {
-    //   if (followboardScrollCtrl.position.pixels == followboardScrollCtrl.position.maxScrollExtent) {
-    //     if (!isFollowLastPage) {
-    //       followboardPageNum++;
-    //       isFollowMoreLoading.value = true;
-    //       getFollowBoard(followboardPageNum);
-    //     }
-    //   }
-    // });
   }
 
   Future<void> getCountData() async {
@@ -151,6 +130,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
       ResData res = await repo.getCustCount(Get.find<AuthCntr>().resLoginData.value.custId.toString());
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
+        myCountCntr.sink.add(ResStream.error(res.msg.toString()));
         return;
       }
       CustCountData data = CustCountData.fromMap(res.data);
@@ -179,7 +159,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
       ResData res = await repo.getMyBoard(Get.find<AuthCntr>().resLoginData.value.custId.toString(), myboardPageNum, myboardageSize);
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
-        isMyBoardLastPage = true;
+        // isMyBoardLastPage = true;
         return;
       }
       print(res.data);
@@ -332,21 +312,6 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     return resthumbnail!.body!.variants[0].toString();
   }
 
-  Future<File> CompressAndGetFile(String path) async {
-    var tmpDir = await getTemporaryDirectory();
-    var targetName = DateTime.now().millisecondsSinceEpoch;
-    XFile? compressFile = await FlutterImageCompress.compressAndGetFile(
-      path,
-      "${tmpDir.absolute.path}/$targetName.jpg",
-      quality: 70,
-      rotate: 180,
-    );
-    // print(file.lengthSync());
-    print(compressFile?.length());
-    final bytes = await File(compressFile!.path);
-    return bytes;
-  }
-
   Future<void> share() async {
     // final result = await Share.shareXFiles([XFile('${directory.path}/image.jpg')], text: 'Great picture');
 
@@ -361,36 +326,23 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     }
   }
 
-  // 프로필 사진 업데이트
-  // Future<void> save() async {
-  //   try {
-  //     CustRepo repo = CustRepo();
-  //     CustUpdataData data = CustUpdataData();
-  //     data.custId = AuthCntr.to.resLoginData.value.custId.toString();
-  //     data.profilePath = AuthCntr.to.resLoginData.value.profilePath.toString();
-  //     ResData res = await repo.updateCust(data);
-  //     if (res.code != '00') {
-  //       Utils.alert(res.msg.toString());
-  //       return;
-  //     }
-  //     Utils.alert('수정되었습니다.');
-  //   } catch (e) {
-  //     Utils.alert(e.toString());
-  //   }
-  // }
-
   List<String> _taglist = [];
   // 관심태그 삭제
-  Future<void> removeTag(String tagNm) async {
+  Future<void> removeTag(String tagNm, String tagType) async {
     try {
       CustRepo repo = CustRepo();
-      _taglist.remove(tagNm);
-      tagStream.sink.add(ResStream.completed(_taglist));
+      if (tagType == 'TAG') {
+        _taglist.remove(tagNm);
+        tagStream.sink.add(ResStream.completed(_taglist));
+      }
 
-      ResData res = await repo.deleteTag(AuthCntr.to.resLoginData.value.custId.toString(), tagNm);
+      ResData res = await repo.deleteTag(AuthCntr.to.resLoginData.value.custId.toString(), tagNm, tagType);
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         return;
+      }
+      if (tagType == 'LOCAL') {
+        getLocalTag();
       }
       // Utils.alert('삭제되었습니다.');
       //  getTag();
@@ -406,7 +358,13 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
       _taglist.add(tagNm);
       // Utils.alert('추가되었습니다.');
       tagStream.sink.add(ResStream.completed(_taglist));
-      ResData res = await repo.saveTag(AuthCntr.to.resLoginData.value.custId.toString(), tagNm);
+
+      CustTagData data = CustTagData();
+      data.custId = AuthCntr.to.resLoginData.value.custId.toString();
+      data.tagType = 'TAG';
+      data.tagNm = tagNm;
+
+      ResData res = await repo.saveTag(data);
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         return;
@@ -422,7 +380,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
   Future<void> getTag() async {
     try {
       CustRepo repo = CustRepo();
-      ResData res = await repo.getTagList(AuthCntr.to.resLoginData.value.custId.toString());
+
+      ResData res = await repo.getTagList(AuthCntr.to.resLoginData.value.custId.toString(), 'TAG');
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         return;
@@ -436,18 +395,40 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     }
   }
 
+  // 관심지역 조회
+  Future<void> getLocalTag() async {
+    try {
+      CustRepo repo = CustRepo();
+
+      ResData res = await repo.getTagList(AuthCntr.to.resLoginData.value.custId.toString(), 'LOCAL');
+      if (res.code != '00') {
+        Utils.alert(res.msg.toString());
+        return;
+      }
+
+      areaStream.sink.add(ResStream.completed((res.data as List).map((e) => e['tagNm'].toString()).toList()));
+    } catch (e) {
+      Utils.alert(e.toString());
+      // myCountCntr.sink.add(ResStream.error(e.toString()));
+    }
+  }
+
   @override
   void dispose() {
     myCountCntr.close();
     myVideoListCntr.close();
     followVideoListCntr.close();
     tabController.dispose();
+    areaStream.close();
+    tagStream.close();
+    textFocus.dispose();
 
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return DefaultTabController(
       length: 2,
       initialIndex: 0,
@@ -467,29 +448,51 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                 // 3가지 갯수 가져오기
                 getCountData();
                 getInitMyBoard();
+
                 getInitFollowBoard();
                 getTag();
+                getLocalTag();
               },
               child: NestedScrollView(
                 controller: mainScrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
                 headerSliverBuilder: (context, innerBoxIsScrolled) {
                   return [
-                    SliverList(delegate: SliverChildListDelegate([_info(), _buildFavoriteTag()])),
+                    SliverList(
+                      delegate: SliverChildListDelegate(
+                        [
+                          Column(children: [
+                            _info(),
+                            _buildFavoriteArea(),
+                            _buildFavoriteTag(),
+                          ]),
+                        ],
+                      ),
+                    ),
+                    SliverAppBar(
+                      backgroundColor: Colors.white,
+                      surfaceTintColor: Colors.white,
+                      pinned: true,
+                      primary: false, // no reserve space for status bar
+                      toolbarHeight: 0, // title height = 0
+                      bottom: _tabs(),
+                    )
                   ];
                 },
                 body: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    _tabs(),
                     _tabBarView(),
                   ],
                 ),
               ),
             ),
             ValueListenableBuilder<bool>(
-                valueListenable: isLoading,
-                builder: (context, value, child) {
-                  return CustomIndicatorOffstage(isLoading: !value, color: const Color(0xFFEA3799), opacity: 0.5);
-                })
+              valueListenable: isLoading,
+              builder: (context, value, child) {
+                return CustomIndicatorOffstage(isLoading: !value, color: const Color(0xFFEA3799), opacity: 0.5);
+              },
+            )
           ],
         ),
       ),
@@ -497,6 +500,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
   }
 
   Widget _info() {
+    // return loadingWidget();
     return Container(
       margin: const EdgeInsets.all(10.0),
       child: Utils.commonStreamBody<CustCountData>(
@@ -512,19 +516,34 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Expanded(
+        Expanded(
           flex: 1,
-          child: SizedBox(
-            height: 65.0,
-            width: 35,
-            child: ClipOval(
-              child: CustomShimmer(
-                height: 40.0,
-                width: 40,
-                // borderRadius: BorderRadius.circular(16.0),
-              ),
+          child: Container(
+            height: 65,
+            // width: 55,
+            margin: const EdgeInsets.only(left: 10),
+            decoration: BoxDecoration(
+              // color: Colors.transparent,
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(40),
+            ),
+            child: CustomShimmer(
+              height: 65.0,
+              // width: 55,
+              borderRadius: BorderRadius.circular(40.0),
             ),
           ),
+          // child: SizedBox(
+          //   height: 55.0,
+          //   width: 55,
+          //   child: ClipOval(
+          //     child: CustomShimmer(
+          //       height: 40.0,
+          //       width: 40,
+          //       // borderRadius: BorderRadius.circular(16.0),
+          //     ),
+          //   ),
+          // ),
         ),
         const Gap(15),
         Expanded(
@@ -586,8 +605,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     );
   }
 
-  Widget _buildFavoriteTag() {
-    return Padding(
+  Widget _buildFavoriteArea() {
+    return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -596,27 +615,25 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Text('관심태그', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+              const Text('관심지역', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
               const Spacer(),
               const Text('*리스트 구성 기준.', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12, color: Colors.black54)),
               const Gap(10),
               SizedBox(
-                height: 25,
-                width: 45,
+                height: 35,
+                width: 60,
                 child: IconButton(
                     padding: const EdgeInsets.all(0),
                     constraints: const BoxConstraints(),
                     style: ButtonStyle(
-                      shape: MaterialStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-                      padding: MaterialStateProperty.all(EdgeInsets.zero),
-                      backgroundColor: MaterialStateProperty.all(Colors.grey),
+                      shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                      padding: WidgetStateProperty.all(EdgeInsets.zero),
+                      backgroundColor: WidgetStateProperty.all(Colors.grey[500]),
                     ),
-                    onPressed: () {
-                      showProfileModifyModal();
-                    },
+                    onPressed: () async => await Get.toNamed('/FavoriteAreaPage')!.then((value) => getLocalTag()),
                     icon: const Icon(
                       Icons.add,
-                      size: 15,
+                      size: 20,
                       color: Colors.white,
                     )),
               ),
@@ -642,17 +659,170 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                 ),
               ],
             ),
+          ),
+          const Gap(10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: StreamBuilder<ResStream<List<String>>>(
+                stream: areaStream.stream,
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    if (snapshot.data!.status == Status.COMPLETED) {
+                      List<String> list = snapshot.data!.data!;
+                      if (list.isEmpty) {
+                        return Container(
+                          padding: const EdgeInsets.all(20),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '등록된 관심지역이 없습니다.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        );
+                      }
+                      return Wrap(
+                        spacing: 6.0,
+                        runSpacing: 6.0,
+                        direction: Axis.horizontal,
+                        crossAxisAlignment: WrapCrossAlignment.start,
+                        verticalDirection: VerticalDirection.down,
+                        runAlignment: WrapAlignment.start,
+                        alignment: WrapAlignment.start,
+                        children: list.map((e) => buildLocalChip(e)).toList(),
+                      );
+                    } else {
+                      return Container(
+                        padding: const EdgeInsets.all(20),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '등록된 관심지역이 없습니다.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      );
+                    }
+                  } else {
+                    // getTag();
+                    return Container(
+                      padding: const EdgeInsets.all(20),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '등록된 관심지역이 없습니다.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    );
+                  }
+                }),
+          ),
+          const Gap(10),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFavoriteTag() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Text('관심태그', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+              const Spacer(),
+              const Text('*리스트 구성 기준.', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12, color: Colors.black54)),
+              const Gap(10),
+              SizedBox(
+                height: 35,
+                width: 60,
+                child: IconButton(
+                    padding: const EdgeInsets.all(0),
+                    constraints: const BoxConstraints(),
+                    style: ButtonStyle(
+                      shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                      padding: WidgetStateProperty.all(EdgeInsets.zero),
+                      backgroundColor: WidgetStateProperty.all(Colors.grey[500]),
+                    ),
+                    onPressed: () {
+                      showProfileModifyModal();
+                    },
+                    icon: const Icon(
+                      Icons.add,
+                      size: 20,
+                      color: Colors.white,
+                    )),
+              ),
+            ],
+          ),
+          const Gap(10),
+          RichText(
+            text: const TextSpan(
+              text: '관심 있는 ',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.black54,
+                fontWeight: FontWeight.w500,
+              ),
+              children: <TextSpan>[
+                TextSpan(
+                  text: '"Tag"',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.black),
+                ),
+                TextSpan(
+                  text: '를 등록해 주시면 해당하는 영상이 리스트로 구성됩니다.',
+                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14, color: Colors.black54),
+                ),
+              ],
+            ),
 //            "관심 있는 학교, 지하철역, 골프장, 등산장소 , 캠핑장 , 유원지 를 자유롭게 지정해 주시면 해당 영상이 리스트에 구성됩니다.",
             // style: TextStyle(fontSize: 13, color: Colors.black54
           ),
           const Gap(10),
-          StreamBuilder<ResStream<List<String>>>(
-              stream: tagStream.stream,
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  if (snapshot.data!.status == Status.COMPLETED) {
-                    List<String> list = snapshot.data!.data!;
-                    if (list.isEmpty) {
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: StreamBuilder<ResStream<List<String>>>(
+                stream: tagStream.stream,
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    if (snapshot.data!.status == Status.COMPLETED) {
+                      List<String> list = snapshot.data!.data!;
+                      if (list.isEmpty) {
+                        return Container(
+                          padding: const EdgeInsets.all(20),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '등록된 관심태그가 없습니다.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        );
+                      }
+                      return Wrap(
+                        spacing: 6.0,
+                        runSpacing: 6.0,
+                        direction: Axis.horizontal,
+                        crossAxisAlignment: WrapCrossAlignment.start,
+                        verticalDirection: VerticalDirection.down,
+                        runAlignment: WrapAlignment.start,
+                        alignment: WrapAlignment.start,
+                        children: list.map((e) => buildTagChip(e)).toList(),
+                      );
+                    } else {
                       return Container(
                         padding: const EdgeInsets.all(20),
                         alignment: Alignment.center,
@@ -666,17 +836,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                         ),
                       );
                     }
-                    return Wrap(
-                      spacing: 6.0,
-                      runSpacing: 6.0,
-                      direction: Axis.horizontal,
-                      crossAxisAlignment: WrapCrossAlignment.start,
-                      verticalDirection: VerticalDirection.down,
-                      runAlignment: WrapAlignment.start,
-                      alignment: WrapAlignment.start,
-                      children: list.map((e) => buildChip(e)).toList(),
-                    );
                   } else {
+                    // getTag();
                     return Container(
                       padding: const EdgeInsets.all(20),
                       alignment: Alignment.center,
@@ -690,22 +851,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                       ),
                     );
                   }
-                } else {
-                  // getTag();
-                  return Container(
-                    padding: const EdgeInsets.all(20),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '등록된 관심태그가 없습니다.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  );
-                }
-              }),
+                }),
+          ),
           // const Gap(10),
         ],
       ),
@@ -718,11 +865,49 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 30),
+          padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 0),
           child: GestureDetector(
-              onTap: () => getImage(ImageSource.gallery),
-              child:
-                  Obx(() => ImageAvatar(width: 70, url: Get.find<AuthCntr>().resLoginData.value.profilePath!, type: AvatarType.MYSTORY))),
+            onTap: () => getImage(ImageSource.gallery),
+            // child: Obx(
+            //   () => ImageAvatar(width: 70, url: Get.find<AuthCntr>().resLoginData.value.profilePath!, type: AvatarType.MYSTORY),
+            child: Stack(
+              children: [
+                Obx(() => Container(
+                    height: 70,
+                    width: 70,
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      // color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(25),
+                      image: DecorationImage(
+                        image: CachedNetworkImageProvider(Get.find<AuthCntr>().resLoginData.value.profilePath.toString()),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    child: Get.find<AuthCntr>().resLoginData.value.profilePath == null
+                        ? const Icon(Icons.person, color: Colors.white)
+                        : null)),
+                Positioned(
+                  bottom: -4,
+                  right: -4,
+                  child: Container(
+                    height: 25,
+                    width: 25,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.black, width: 2),
+                    ),
+                    child: const Icon(
+                      Icons.add,
+                      size: 17,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
         Expanded(
           flex: 3,
@@ -759,16 +944,16 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                   ],
                 ),
                 const Gap(15),
-                data.custInfo!.selfId.toString() == 'null'
+                data.custInfo!.custNm.toString() == 'null'
                     ? const Text(
-                        '@자신만의ID',
+                        '-',
                         style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
                       )
                     : Text(
-                        '@${data.custInfo!.selfId.toString()}',
+                        data.custInfo!.custNm.toString(),
                         style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
                       ),
-                data.custInfo!.selfId.toString() == 'null'
+                data.custInfo!.selfIntro.toString() == 'null'
                     ? const Text(
                         '자신 소개 내용을 만들어주세요.\n아래 프로필 수정 버튼을 클릭해주세요!',
                         style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
@@ -860,7 +1045,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
   Widget _myFeeds(List<BoardWeatherListData> list) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
-      child: list.length > 0
+      child: list.isNotEmpty
           ? GridView.builder(
               shrinkWrap: false,
               // controller: myboardScrollCtrl,
@@ -901,7 +1086,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                               child: Row(
                                 children: [
                                   const Icon(
-                                    Icons.play_arrow_outlined,
+                                    Icons.favorite,
                                     color: Colors.white,
                                     size: 17,
                                   ),
@@ -918,7 +1103,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                               child: Row(
                                 children: [
                                   const Icon(
-                                    Icons.favorite,
+                                    Icons.play_arrow_outlined,
                                     color: Colors.white,
                                     size: 17,
                                   ),
@@ -992,7 +1177,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                             child: Row(
                               children: [
                                 const Icon(
-                                  Icons.play_arrow_outlined,
+                                  Icons.favorite,
                                   color: Colors.white,
                                   size: 17,
                                 ),
@@ -1009,7 +1194,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                             child: Row(
                               children: [
                                 const Icon(
-                                  Icons.favorite,
+                                  Icons.play_arrow_outlined,
                                   color: Colors.white,
                                   size: 17,
                                 ),
@@ -1038,7 +1223,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     );
   }
 
-  Widget _tabs() {
+  PreferredSizeWidget _tabs() {
     return TabBar(controller: tabController, indicatorColor: Colors.black, tabs: const [
       Tab(
         // child: Icon(Icons.grid_on),
@@ -1169,6 +1354,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                         focusNode: textFocus,
                         autofocus: true,
                         maxLines: 1,
+                        style: const TextStyle(decorationThickness: 0), // 한글밑줄제거
                         decoration: InputDecoration(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
                           filled: true,
@@ -1221,8 +1407,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     );
   }
 
-  // 최그
-  Widget buildChip(String label) {
+  // 태그
+  Widget buildTagChip(String label) {
     return SizedBox(
         height: 40,
         child: Chip(
@@ -1239,7 +1425,31 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
             style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
           ),
           labelPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-          onDeleted: () => removeTag(label),
+          onDeleted: () => removeTag(label, 'TAG'),
+          deleteButtonTooltipMessage: '삭제',
+          deleteIconColor: Colors.white60,
+        ));
+  }
+
+  // 지역
+  Widget buildLocalChip(String label) {
+    return SizedBox(
+        height: 40,
+        child: Chip(
+          elevation: 0,
+          padding: EdgeInsets.zero,
+          backgroundColor: const Color.fromARGB(255, 140, 131, 221), // Color.fromARGB(255, 76, 70, 124),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: const BorderSide(color: Colors.transparent),
+          ),
+          label: Text(
+            '  $label',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+          labelPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+          onDeleted: () => removeTag(label, 'LOCAL'),
           deleteButtonTooltipMessage: '삭제',
           deleteIconColor: Colors.white60,
         ));

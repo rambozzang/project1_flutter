@@ -2,21 +2,20 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cloudflare/cloudflare.dart';
-// import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
-import 'package:project1/app/weather/provider/weather_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_save_data.dart';
 import 'package:project1/repo/cloudflare/R2_repo.dart';
 import 'package:project1/repo/cloudflare/cloudflare_repo.dart';
 import 'package:project1/repo/cloudflare/data/cloudflare_req_save_data.dart';
-import 'package:project1/repo/cloudinary/cloudinary_page.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:video_compress/video_compress.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
 
 class RootCntrBinding extends Bindings {
   @override
@@ -56,7 +55,7 @@ class RootCntr extends GetxController {
   //날씨 메인
   ScrollController hideButtonController5 = ScrollController();
 
-  late TabController tabController;
+  // late TabController tabController;
 
   // 하단 바 숨기기 변수
   // RxDouble isVisible = 1.0.obs;
@@ -155,7 +154,7 @@ class RootCntr extends GetxController {
 
   void uploadR2Storage(File videoFile, BoardSaveData boardSaveData) async {
     isFileUploading.value = UploadingType.UPLOADING;
-    String today = Utils.getToday();
+
     try {
       // 비디오 파일 압축
       MediaInfo? pickedFile = await VideoCompress.compressVideo(
@@ -188,18 +187,10 @@ class RootCntr extends GetxController {
         compressClose();
         return;
       }
-      Lo.g('썸네일 : ${resthumbnail!.base.reasonPhrase.toString()}');
-      Lo.g('썸네일 : ${resthumbnail!.base.toString()}');
-      Lo.g('썸네일 : ${resthumbnail!.body?.id.toString()}');
-      Lo.g('썸네일 : ${resthumbnail.body?.filename.toString()}');
-      Lo.g('썸네일 : ${resthumbnail.body?.imageDeliveryId.toString()}');
-      Lo.g('썸네일 : ${resthumbnail.body?.imageDeliveryId.toString()}');
-
-      Lo.g('썸네일 : ${resthumbnail.body.toString()}');
 
       // 저장
       BoardRepo boardRepo = BoardRepo();
-      boardSaveData.boardWeatherVo?.thumbnailPath = resthumbnail.body?.variants[0].toString();
+      boardSaveData.boardWeatherVo?.thumbnailPath = resthumbnail!.body?.variants[0].toString();
       boardSaveData.boardWeatherVo?.thumbnailId = resthumbnail!.body?.id.toString();
       boardSaveData.boardWeatherVo?.videoPath = resVideoData.data.toString();
       boardSaveData.boardWeatherVo?.videoId = '';
@@ -228,7 +219,7 @@ class RootCntr extends GetxController {
         VideoCompress.cancelCompression();
       });
     } catch (e) {
-      lo.g("ERRRRRRR=> " + e.toString());
+      lo.g("ERRRRRRR=> $e");
       compressClose();
     }
   }
@@ -238,7 +229,6 @@ class RootCntr extends GetxController {
     isFileUploading.value = UploadingType.UPLOADING;
     CloudflareRepo cloudflare = CloudflareRepo();
     await cloudflare.init();
-    String today = Utils.getToday();
 
     try {
       MediaInfo? pickedFile = await VideoCompress.compressVideo(
@@ -258,29 +248,10 @@ class RootCntr extends GetxController {
       }
 
       File uploadVideoFile = File(pickedFile.path.toString());
-
       CloudflareHTTPResponse<CloudflareStreamVideo?>? videoRes = await cloudflare.videoStreamUpload(uploadVideoFile);
-
       CloudflareStreamVideo? video = videoRes?.body;
 
-      lo.g("영상업로드 업로드 결과 : ${videoRes!.body!.toString()}");
-
-      lo.g("영상업로드 업로드 결과 : ${videoRes.body!.id}");
-      lo.g("영상업로드 업로드 결과 : ${videoRes.body!.input}");
-      lo.g("영상업로드 업로드 결과 : ${videoRes.body!.preview}");
-      lo.g("영상업로드 업로드 결과 : ${videoRes.body!.size}");
-      lo.g("영상업로드 업로드 결과 : ${videoRes.body!.uploadExpiry}");
-      lo.g("영상업로드 업로드 결과 : ${videoRes.body!.customAccountSubdomainUrl}");
-      lo.g("영상업로드 업로드 결과 : ${videoRes.body!.animatedThumbnail}");
-      lo.g("영상업로드 업로드 결과 : ${videoRes.body!.meta.toString()}");
-
-      lo.g("영상업로드 업로드 결과 : ${videoRes.body!.preview}");
-      lo.g("영상업로드 업로드 결과 : ${videoRes.body!.thumbnail}");
-      lo.g("영상업로드 업로드 결과 : ${videoRes.body!.animatedThumbnail}");
-      lo.g("영상업로드 업로드 결과 : ${videoRes.body!.playback!.hls.toString()}");
-      lo.g("영상업로드 업로드 결과 : ${videoRes.body!.playback!.dash.toString()}");
-
-      if (videoRes?.isSuccessful == false || videoRes.body!.id == null) {
+      if (videoRes?.isSuccessful == false || videoRes!.body!.id == null) {
         // if (videoRes?.isSuccessful == false || thumbnailres?.isSuccessful == false) {
         Utils.alert('파일 업로드에 실패했습니다.');
         isFileUploading.value = UploadingType.FAIL;
@@ -288,11 +259,6 @@ class RootCntr extends GetxController {
         VideoCompress.cancelCompression();
         return;
       }
-      // mp4 파일 주소 가져오기
-      // CloudflareRepo repo = CloudflareRepo();
-      // var resMp4 = await repo.videoDownload(video!.id);
-      // Lo.g("resMp4 : " + resMp4.toString());
-
       CloudflareReqSaveData cloudSaveData = CloudflareReqSaveData();
       cloudSaveData.uid = video!.id;
       cloudSaveData.preview = video.preview;
@@ -302,7 +268,7 @@ class RootCntr extends GetxController {
       cloudSaveData.dash = video.playback!.dash.toString();
       cloudSaveData.hls = video.playback!.hls.toString();
       cloudSaveData.mp4 = ''; //resMp4['result']['default']['url'];
-      cloudSaveData.range = pickedFile?.duration!.toInt() ?? 0;
+      cloudSaveData.range = pickedFile.duration!.toInt() ?? 0;
       cloudSaveData.total = 0;
 
       ResData resCloudData = await cloudflare.save(cloudSaveData);
@@ -322,9 +288,13 @@ class RootCntr extends GetxController {
       BoardRepo boardRepo = BoardRepo();
       // boardSaveData.boardWeatherVo?.thumbnailPath = video.thumbnail;
       boardSaveData.boardWeatherVo?.thumbnailPath = video.animatedThumbnail;
-      boardSaveData.boardWeatherVo?.thumbnailId = video.id;
+      boardSaveData.boardWeatherVo?.thumbnailId = video.thumbnail;
       boardSaveData.boardWeatherVo?.videoPath = video.playback!.hls.toString();
       boardSaveData.boardWeatherVo?.videoId = video.id;
+      // m3u8 파일 다운 받아 내용 저장
+      // String m3u8 = await downloadAndSaveM3U8File(video.playback!.hls.toString(), video.id!);
+      // boardSaveData.boardWeatherVo?.thumbnailId = m3u8;
+
       ResData resData = await boardRepo.save(boardSaveData);
 
       if (resData.code != '00') {
@@ -350,11 +320,29 @@ class RootCntr extends GetxController {
         VideoCompress.cancelCompression();
       });
     } catch (e) {
-      //   lo.g(e.message);
       isFileUploading.value = UploadingType.FAIL;
       lo.g("ERRRRRRR=> " + e.toString());
       VideoCompress.deleteAllCache();
       VideoCompress.cancelCompression();
+    }
+  }
+
+  //m3u8 파일 다운로드받아 내용을 저장하려면 다음과 같이 작성하면 됩니다.
+  // 하지만 m3u8 파일은 cloudflare에서 동영상 파일이 얼로드 이후에 생성이 되어 배치로 받는 수 뿐이 없다.
+  Future<String> downloadAndSaveM3U8File(String url, String fileName) async {
+    final Directory directory = await getApplicationDocumentsDirectory();
+    final String filePath = '${directory.path}/$fileName';
+    lo.g("m3u8 : $url");
+    final http.Response response = await http.get(Uri.parse(url));
+
+    if (response.statusCode == 200) {
+      // Save to local file
+      final File file = File(filePath);
+      await file.writeAsBytes(response.bodyBytes);
+      final String fileContent = response.body;
+      return fileContent;
+    } else {
+      throw Exception('Failed to download m3u8 file : ${response.toString()}');
     }
   }
 
@@ -363,7 +351,6 @@ class RootCntr extends GetxController {
     Future.delayed(const Duration(microseconds: 300), () {
       // Cloudflare R2 파일 업로드
       // uploadR2Storage(videoFile, boardSaveData);
-
       // Cloudflare Stream 파일 업로드
       uploadCloudflare(videoFile, boardSaveData);
     });

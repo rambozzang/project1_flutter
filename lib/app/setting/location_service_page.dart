@@ -23,8 +23,8 @@ class _LocatinServicePageState extends State<LocatinServicePage> {
 
   List<BoardDetailData> boardList = [];
 
-  String ptupDsc = 'INDL';
-  String ptupTrgtDsc = 'INDL';
+  String typeCd = 'AGRE';
+  String typeDtCd = 'LOCT';
   int page = 0;
   int pageSzie = 20;
   String topYn = 'N';
@@ -40,7 +40,7 @@ class _LocatinServicePageState extends State<LocatinServicePage> {
       dataCtrl.sink.add(ResStream.loading());
       BoardRepo repo = BoardRepo();
 
-      ResData resData = await repo.searchOriginList('AGRE', 'LOCT', page, pageSzie);
+      ResData resData = await repo.searchOriginList(typeCd, typeDtCd, page, pageSzie, topYn);
 
       if (resData.code != '00') {
         Utils.alert(resData.msg.toString());
@@ -138,7 +138,7 @@ class _LocatinServicePageState extends State<LocatinServicePage> {
         // ),
         Text(
           "${data.contents}",
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w300),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
         ),
       ],
     );
