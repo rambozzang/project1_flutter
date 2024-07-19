@@ -22,6 +22,7 @@ import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/app/videolist/video_list_page.dart';
 import 'package:project1/app/weather/page/weather_page.dart';
 import 'package:project1/config/app_config.dart';
+import 'package:project1/firebase/firebase_service.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
@@ -74,6 +75,8 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     Get.put(VideoListCntr());
     checkAppVersion();
 
+    initFirebase();
+
     // getData();
     // 3초후 실행
     // Future.delayed(const Duration(seconds: 3), () {
@@ -82,6 +85,25 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
 
     //   Utils.bottomNotiAlert(context, '신기능 추가', '날씨 예보 비교 기능 추가되었습니다.');
     // });
+  }
+
+  Future<void> initFirebase() async {
+    if (Platform.isIOS) {
+      await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+    }
   }
 
   Future<void> checkAppVersion() async {
@@ -193,39 +215,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
                       ]
                     ],
                   )),
-            )
-
-            // RootCntr.to.isFileUploading.value == UploadingType.NONE
-            //     ? const SizedBox()
-            //     :  ( RootCntr.to.isFileUploading.value == UploadingType.UPLOADING
-            //        ? Positioned(
-            //           top: 90,
-            //           right: 20,
-            // child: Column(
-            //   children: [
-            //     Utils.progressUpload(size: 20),
-            //     const Gap(5),
-            //     const Text(
-            //       "Uploading..",
-            //       style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
-            //     )
-            //   ],
-            // ),)
-            //       : (RootCntr.to.isFileUploading.value == UploadingType.SUCCESS
-            //         ? Container(
-            //             color: Colors.black,
-            //             child: const Center(
-            //               child: Text(
-            //                 "임시 게시물이 정상 게시 되었습니다.",
-            //                 style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-            //               ),
-            //             ),
-            //           )
-            //         : const SizedBox(),)
-            //  : const SizedBox(),
-            //           ),
-            //)
-            ,
+            ),
             ValueListenableBuilder(
                 valueListenable: isEventBox,
                 builder: (BuildContext context, bool value, Widget? child) {
@@ -300,8 +290,8 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
 
   Widget makeBottomItem() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 0),
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 1),
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
       decoration: BoxDecoration(
         // color: Colors.grey.withOpacity(0.63),
         color: RootCntr.to.rootPageIndex.value == 0 ? Colors.white10.withOpacity(0.63) : Colors.grey[200]?.withOpacity(0.75),

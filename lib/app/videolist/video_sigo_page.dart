@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_comment_res_data.dart';
+import 'package:project1/repo/common/code_data.dart';
+import 'package:project1/repo/common/comm_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
@@ -17,6 +19,7 @@ class SigoPageSheet {
   Future<dynamic> open(
     BuildContext context,
     String boardId,
+    String crtCustId,
   ) async {
     showModalBottomSheet(
       isScrollControlled: true,
@@ -33,7 +36,13 @@ class SigoPageSheet {
           // padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
           padding: MediaQuery.of(context).viewInsets,
 
-          child: SizedBox(height: 290, child: SigoPage(contextParent: context, boardId: boardId)),
+          child: SizedBox(
+              height: 290,
+              child: SigoPage(
+                contextParent: context,
+                boardId: boardId,
+                crtCustId: crtCustId,
+              )),
         );
       },
     );
@@ -41,9 +50,10 @@ class SigoPageSheet {
 }
 
 class SigoPage extends StatefulWidget {
-  const SigoPage({super.key, required this.contextParent, required this.boardId});
+  const SigoPage({super.key, required this.contextParent, required this.boardId, required this.crtCustId});
   final BuildContext contextParent;
   final String boardId;
+  final String crtCustId;
 
   @override
   State<SigoPage> createState() => _SigoPageState();
@@ -55,6 +65,7 @@ class _SigoPageState extends State<SigoPage> {
   // 댓글 입력창
   TextEditingController replyController = TextEditingController();
   FocusNode replyFocusNode = FocusNode();
+  final StreamController<ResStream<List<CodeRes>>> streamController = StreamController();
 
   int pageNum = 0;
   int pageSize = 500;
@@ -63,26 +74,57 @@ class _SigoPageState extends State<SigoPage> {
   ValueNotifier<bool> isSend = ValueNotifier<bool>(false);
   bool isFirst = true;
 
-  String dropdownValue = '신고 사유 선택';
+  String dropdownValue = '01';
 
   @override
   void initState() {
     super.initState();
+    searchCode();
     replyController.clear();
     // 루트페이지 바텀바 숨김
     RootCntr.to.bottomBarStreamController.sink.add(false);
   }
 
-  Future<void> saveSigo() async {
-    if (dropdownValue == '신고 사유 선택') {
-      Utils.alert('신고 사유를 선택해주세요.');
-      return;
-    }
+  Future<void> searchCode() async {
+    try {
+      streamController.sink.add(ResStream.loading());
+      CommRepo repo = CommRepo();
+      CodeReq reqData = CodeReq();
+      reqData.pageNum = 0;
+      reqData.pageSize = 100;
+      reqData.grpCd = 'SINGGO';
+      reqData.code = '';
+      reqData.useYn = 'Y';
+      ResData res = await repo.searchCode(reqData);
 
+      if (res.code != '00') {
+        Utils.alert(res.msg.toString());
+        return;
+      }
+      List<CodeRes> list = (res.data as List)!.map<CodeRes>((e) => CodeRes.fromMap(e)).toList();
+
+      // alramlist.value = list.map((e) => e.codeNm!).toList();
+      streamController.sink.add(ResStream.completed(list));
+
+      lo.g('searchRecomWord : ${res.data}');
+    } catch (e) {
+      lo.g('error searchRecomWord : $e');
+    }
+  }
+
+  Future<void> saveSigo() async {
     try {
       BoardRepo repo = BoardRepo();
-      String reason = '($dropdownValue)${replyController.text}';
-      ResData res = await repo.saveSingo(widget.boardId.toString(), reason);
+
+      String reasonCd = '${dropdownValue}';
+      String reason = '${replyController.text}';
+
+      String boardId = widget.boardId.toString();
+
+      // dropdownValue 07 이면 사용자신고(거절) 이므로 boardID 대신 상대방 custId를 넘긴다.
+      boardId = dropdownValue == '07' ? widget.crtCustId : boardId;
+
+      ResData res = await repo.saveSingo(boardId, dropdownValue, reason);
       if (res.code == '00') {
         Utils.alert('신고가 완료되었습니다.');
         Navigator.pop(widget.contextParent);
@@ -139,9 +181,9 @@ class _SigoPageState extends State<SigoPage> {
           const Gap(10),
           Row(
             children: [
-              const Text(
-                '불법영상 신고 하기',
-                style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+              Text(
+                dropdownValue == '08' ? '사용자 차단 처리' : '불법영상 신고 하기',
+                style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
               ),
               const Spacer(),
               IconButton(
@@ -157,54 +199,76 @@ class _SigoPageState extends State<SigoPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
-                children: [
-                  Icon(
-                    Icons.warning,
-                    color: Colors.white,
-                    size: 25,
-                  ),
-                  const Gap(10),
-                  Text(
-                    '신고 사유 선택',
-                    style: TextStyle(color: Colors.white, fontSize: 14),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              DropdownButton<String>(
-                value: dropdownValue,
-                icon: const Icon(Icons.arrow_drop_down),
-                iconSize: 35,
-                elevation: 16,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-                // underline: Container(
-                //   height: 2,
-                //   color: Colors.deepPurpleAccent,
-                // ),
-                isExpanded: false,
-                onChanged: (String? newValue) {
-                  setState(() {
-                    dropdownValue = newValue!;
-                  });
-                },
-                dropdownColor: Colors.black,
-                items: <String>['신고 사유 선택', '욕설', '음란물', '폭력', '혐오', '정치', '거짓선동', '기타'].map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(
-                      value,
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
+              dropdownValue == '08'
+                  ? SizedBox.shrink()
+                  : const Row(
+                      children: [
+                        Icon(
+                          Icons.warning,
+                          color: Colors.white,
+                          size: 25,
+                        ),
+                        const Gap(10),
+                        Text(
+                          '신고 사유 선택',
+                          style: TextStyle(color: Colors.white, fontSize: 14),
+                        ),
+                      ],
                     ),
-                  );
-                }).toList(),
-              ),
+              const Spacer(),
+              StreamBuilder<ResStream<List<CodeRes>>>(
+                  stream: streamController.stream,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData && snapshot.data!.data != null) {
+                      var list = snapshot.data!.data as List<CodeRes>;
+                      return DropdownButton<String>(
+                        value: dropdownValue,
+                        icon: const Icon(Icons.arrow_drop_down),
+                        iconSize: 35,
+                        elevation: 16,
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        // underline: Container(
+                        //   height: 2,
+                        //   color: Colors.deepPurpleAccent,
+                        // ),
+                        isExpanded: false,
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            dropdownValue = newValue!;
+                          });
+                        },
+                        dropdownColor: Colors.black,
+                        items: list.map<DropdownMenuItem<String>>((CodeRes value) {
+                          return DropdownMenuItem<String>(
+                            value: value.code,
+                            child: Text(
+                              value.codeNm.toString(),
+                              style: const TextStyle(color: Colors.white, fontSize: 14),
+                            ),
+                          );
+                        }).toList(),
+                      );
+                    }
+                    return const SizedBox(width: 30, height: 30, child: CircularProgressIndicator());
+                  }),
             ],
           ),
           const Gap(5),
-          const Text(
-            '신고 사유 입력(선택)',
-            style: TextStyle(color: Colors.white, fontSize: 13),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                dropdownValue == '08' ? ' 게시물만 차단' : '신고 사유 입력(선택)',
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+              ),
+              dropdownValue == '07'
+                  ? const Text(
+                      ' 게시물 차단',
+                      style: TextStyle(color: Colors.yellow, fontSize: 13),
+                    )
+                  : const SizedBox.shrink()
+            ],
           ),
           const Gap(5),
           Container(

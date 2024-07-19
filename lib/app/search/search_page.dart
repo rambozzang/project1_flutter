@@ -1,5 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:chips_choice/chips_choice.dart';
+// import 'package:chips_choice/chips_choice.dart';
 import 'package:dio/dio.dart';
 
 import 'package:flutter/material.dart';
@@ -10,7 +10,6 @@ import 'package:project1/repo/common/code_data.dart';
 import 'package:project1/repo/common/comm_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/secure_storge.dart';
-import 'package:project1/repo/unsplash/get_image_bg_use_case.dart';
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
@@ -100,18 +99,6 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
   List<String> tags = [];
 
   late String value;
-
-  // Random User 생성 API
-  Future<List<C2Choice<String>>> getChoices() async {
-    String url = "https://randomuser.me/api/?inc=gender,name,nat,picture,email&results=25";
-    r.Response res = await Dio().get(url);
-    return C2Choice.listFrom<String, dynamic>(
-      source: res.data['results'],
-      value: (index, item) => item['email'],
-      label: (index, item) => item['name']['first'] + ' ' + item['name']['last'],
-      meta: (index, item) => item,
-    )..insert(0, const C2Choice<String>(value: 'all', label: 'All'));
-  }
 
   // 추천 검색어 조회
   Future<void> searchWord(String grpCd, ValueNotifier<List<String>> valueListenable) async {
@@ -207,17 +194,17 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
             const Gap(20),
             buildLastTop10(),
             const Gap(20),
-            buildCommon('추천 검색어', recoWordlist),
+            buildCommon('추천 검색어', 1, recoWordlist),
             const Gap(20),
-            buildCommon('급등 검색어', suddenlylist),
+            buildCommon('급등 검색어', 2, suddenlylist),
             const Gap(20),
-            buildCommon('지하철 검색어', subwaylist),
+            buildCommon('지하철 검색어', 3, subwaylist),
             const Gap(20),
-            buildCommon('학교 검색어', schoollist),
+            buildCommon('학교 검색어', 4, schoollist),
             const Gap(20),
-            buildCommon('캠핑장 검색어', campinglist),
+            buildCommon('캠핑장 검색어', 8, campinglist),
             const Gap(20),
-            buildCommon('골프 검색어', golflist),
+            buildCommon('골프 검색어', 6, golflist),
             const Gap(20),
             // buildCommon('추천 검색어', recoWordlist),
             // const Gap(20),
@@ -363,7 +350,7 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
     );
   }
 
-  Widget buildCommon(String title, valueListenable) {
+  Widget buildCommon(String title, int colorNo, valueListenable) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -418,7 +405,7 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
                     verticalDirection: VerticalDirection.down,
                     runAlignment: WrapAlignment.start,
                     alignment: WrapAlignment.start,
-                    children: value.map((e) => buildChip3(e)).toList(),
+                    children: value.map((e) => buildChip3(e, colorNo)).toList(),
                   );
                 }),
             // Using [extraOnToggle]
@@ -445,37 +432,39 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
               height: 33,
               width: 100,
               child: TextButton(
-                  style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(50, 30),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      alignment: Alignment.centerRight),
-                  onPressed: () {
-                    lastSearchWordList.value = [];
-                    removeAllSearchWord();
-                  },
-                  child: const Text(
-                    '지우기 ',
-                    style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.bold),
-                  )),
+                style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(50, 30),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    alignment: Alignment.centerRight),
+                onPressed: () {
+                  lastSearchWordList.value = [];
+                  removeAllSearchWord();
+                },
+                child: const Text(
+                  '지우기 ',
+                  style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.bold),
+                ),
+              ),
             ),
           ],
         ),
         const Gap(10),
         ValueListenableBuilder<List<String>>(
-            valueListenable: lastSearchWordList,
-            builder: (context, value, child) {
-              return Wrap(
-                spacing: 6.0,
-                runSpacing: 6.0,
-                direction: Axis.horizontal,
-                crossAxisAlignment: WrapCrossAlignment.start,
-                verticalDirection: VerticalDirection.down,
-                runAlignment: WrapAlignment.start,
-                alignment: WrapAlignment.start,
-                children: value.map((e) => buildChip(e)).toList(),
-              );
-            })
+          valueListenable: lastSearchWordList,
+          builder: (context, value, child) {
+            return Wrap(
+              spacing: 6.0,
+              runSpacing: 6.0,
+              direction: Axis.horizontal,
+              crossAxisAlignment: WrapCrossAlignment.start,
+              verticalDirection: VerticalDirection.down,
+              runAlignment: WrapAlignment.start,
+              alignment: WrapAlignment.start,
+              children: value.map((e) => buildChip(e)).toList(),
+            );
+          },
+        )
       ],
     );
   }
@@ -488,22 +477,6 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text("급등 검색어", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            // Text("지우기", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300))
-            // SizedBox(
-            //   height: 33,
-            //   width: 100,
-            //   child: TextButton(
-            //       style: TextButton.styleFrom(
-            //           padding: EdgeInsets.zero,
-            //           minimumSize: Size(50, 30),
-            //           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            //           alignment: Alignment.centerRight),
-            //       onPressed: () => Get.toNamed('/MapPage'),
-            //       child: const Text(
-            //         '지우기 ',
-            //         style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.bold),
-            //       )),
-            // ),
           ],
         ),
         const Gap(10),
@@ -558,11 +531,23 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
         ));
   }
 
-  Widget buildChip3(String label) {
+  Widget buildChip3(String label, int colorNo) {
+    final Map<int, Map<String, Color>> colorMap = {
+      1: {'textColor': const Color(0xFF1A61CD), 'backgroundColor': const Color(0xFFE5E5E5)},
+      2: {'textColor': const Color(0xFF2AA100), 'backgroundColor': const Color(0xFFEFFAEA)},
+      3: {'textColor': const Color(0xFF4F4745), 'backgroundColor': const Color(0xFFE0D8D4)},
+      4: {'textColor': const Color(0xFFE23E28), 'backgroundColor': const Color(0xFFFFE8E4)},
+      5: {'textColor': const Color(0xFFffffff), 'backgroundColor': const Color(0xFFFF9900)},
+      6: {'textColor': const Color(0xFFFF9900), 'backgroundColor': const Color(0xFF4F4745)},
+      7: {'textColor': const Color(0xFFffffff), 'backgroundColor': const Color(0xFF9E9693)},
+      8: {'textColor': const Color(0xFF9E9693), 'backgroundColor': const Color(0xFFE0D8D4)},
+    };
+
     return InkWell(
         onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/0/${Uri.encodeComponent(label)}'),
         child: Chip(
-          backgroundColor: Colors.indigo[300],
+          backgroundColor: const Color.fromARGB(
+              255, 81, 94, 165), //  const Color(0xFF262B49), // Colors.indigo[300], // colorMap[8]?['textColor'] ?? Colors.indigo[300],
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: const BorderSide(color: Colors.transparent),

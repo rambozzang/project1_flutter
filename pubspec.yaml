@@ -31,10 +31,10 @@ dependencies:
   uuid: ^4.3.3
   kakao_flutter_sdk: ^1.9.0
   flutter_naver_login: ^1.8.0
-  flutter_animate: ^4.5.0
+  #flutter_animate: ^4.5.0
   
   flutter_local_notifications: ^17.1.2
-  flutter_onboarding_slider: ^1.0.11
+  # flutter_onboarding_slider: ^1.0.11
   permission_handler: ^11.3.0
   
   # 동영상촬영 패키지
@@ -60,7 +60,7 @@ dependencies:
 
   video_compress: ^3.1.2
   hashtagable_v3: ^3.0.1
-  comment_sheet: ^0.0.1
+  # comment_sheet: ^0.0.1
   like_button: ^2.0.5
   cached_network_image: ^3.3.1
   # video_thumbnail: ^0.5.3
@@ -68,18 +68,18 @@ dependencies:
   # photo_manager: ^3.0.0
   # extended_image: ^8.2.0
   intl: ^0.19.0
-  badges: ^3.1.2
+  # badges: ^3.1.2
 
   # image_editor: ^1.4.0
   # image: ^4.1.7
   image_cropper: ^7.0.5
-  flutter_image_compress: ^2.2.0
+  # flutter_image_compress: ^2.2.0
   # flutter_native_image: ^0.0.6+1
   # photo_view: ^0.15.0
   # simple_progress_indicators: ^0.2.0
   image_picker: ^1.0.7
   babstrap_settings_screen: ^0.1.6  
-  chips_choice: ^3.0.1
+  # chips_choice: ^3.0.1
   rxdart: ^0.27.7
   share_plus: ^9.0.0
   flutter_staggered_grid_view: ^0.7.0
@@ -92,7 +92,7 @@ dependencies:
   lottie: ^3.1.2
 
  
-  font_awesome_flutter: ^10.7.0
+  # font_awesome_flutter: ^10.7.0
   aws_s3_upload_lite: ^0.0.8
   aws_signature_v4: ^0.6.0
   aws_common: ^0.7.0
@@ -127,12 +127,15 @@ dependencies:
   freezed_annotation: ^2.4.2
   json_annotation: ^4.7.0
   xml: ^6.1.0
-  flutter_infinite_marquee: ^1.0.0
+  # flutter_infinite_marquee: ^1.0.0
   syncfusion_flutter_datagrid: ^26.1.40
   giffy_dialog: ^2.1.0
   app_version_update: ^5.0.1
   flutter_gemini: ^2.0.4
   flutter_dotenv: ^5.1.0
+  flutter_markdown: ^0.7.3
+  syncfusion_flutter_sliders: ^26.1.41
+  sign_in_with_apple: ^6.1.1
 
  
   # better_player:
@@ -149,7 +152,6 @@ flutter:
   uses-material-design: true
   # To add assets to your application, add an assets section, like this:
   assets:
-     - skysnap_prod.env
      - assets/
      - assets/login/
      - assets/images/
@@ -159,14 +161,14 @@ flutter:
 
 flutter_native_splash:
   color: "#262B49"
-  # image: assets/skysnap.png
+  image: assets/play_store_512.png
   color_dark: "#262B49"
-  image_dark: assets/skysnap.png
+  image_dark: assets/play_store_512.png
   android_12:
-    image: assets/skysnap.png
+    image: assets/play_store_512.png
     color: "#262B49"
     icon_background_color: "#262B49"
-    image_dark: assets/skysnap.png
+    image_dark: assets/play_store_512.png
     icon_background_color_dark: "#121212"
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

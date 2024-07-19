@@ -31,7 +31,7 @@ class VideoListCntr extends GetxController {
   int playAtFirst = 0;
 
   var isLoadingMore = true.obs;
-  int preLoadingCount = 3;
+  int preLoadingCount = 8;
 
   //현재 영상의 index값 저장
   var currentIndex = 0.obs;
@@ -59,6 +59,7 @@ class VideoListCntr extends GetxController {
     searchType.value = type;
     pageNum = 0;
     getDataProcess();
+    update();
   }
 
   getData() {
@@ -120,7 +121,13 @@ class VideoListCntr extends GetxController {
         return;
       }
 
-      videoListCntr.sink.add(ResStream.completed(list));
+      List<BoardWeatherListData> initList = list.sublist(0, list.length > 1 ? 2 : 1);
+      videoListCntr.sink.add(ResStream.completed(initList));
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        // 1번째 비디오를 플레이 화면에 바로 노출하도록 나머지 스트림 전송
+        videoListCntr.sink.add(ResStream.completed(list));
+      });
+      // videoListCntr.sink.add(ResStream.completed(list));
 
       // 날씨 정보가 없을때만 다시 가져온다.  - 최초시만 가져온다.
       if (Get.find<WeatherCntr>().oneCallCurrentWeather.value?.dt == null) {

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:project1/app/webview/common_webview.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_main_detail_data.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -32,7 +33,7 @@ class _ServicePageState extends State<ServicePage> {
   @override
   initState() {
     super.initState();
-    getData();
+    //  getData();
   }
 
   Future<void> getData() async {
@@ -95,26 +96,30 @@ class _ServicePageState extends State<ServicePage> {
         elevation: 0,
       ),
       backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const Gap(10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Gap(4),
-                // 공통 스트림 빌더
-                Utils.commonStreamBody<BoardDetailData>(dataCtrl, buildBody, getData),
-                const Gap(200),
-              ],
-            ),
-          ),
-          const Gap(300),
-        ]),
+      body: const CommonWebView(
+        isBackBtn: false,
+        url: 'https://www.tigerbk.com/skysnap/service/',
       ),
+      // body: SingleChildScrollView(
+      //   physics: const BouncingScrollPhysics(),
+      //   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+      //     const Gap(10),
+      //     Padding(
+      //       padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      //       child: Column(
+      //         mainAxisAlignment: MainAxisAlignment.center,
+      //         crossAxisAlignment: CrossAxisAlignment.start,
+      //         children: [
+      //           const Gap(4),
+      //           // 공통 스트림 빌더
+      //           Utils.commonStreamBody<BoardDetailData>(dataCtrl, buildBody, getData),
+      //           const Gap(200),
+      //         ],
+      //       ),
+      //     ),
+      //     const Gap(300),
+      //   ]),
+      // ),
     );
   }
 

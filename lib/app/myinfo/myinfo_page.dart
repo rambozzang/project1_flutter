@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloudflare/cloudflare.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:gap/gap.dart';
@@ -108,18 +109,21 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
 
     mainScrollController.addListener(() {
       RootCntr.to.changeScrollListner(mainScrollController);
-      if (mainScrollController.position.pixels == mainScrollController.position.maxScrollExtent) {
-        if (!isMyBoardLastPage && tabController.index == 0) {
-          myboardPageNum++;
-          isMyBoardMoreLoading.value = true;
-          getMyBoard(myboardPageNum);
-        }
-        if (!isFollowLastPage && tabController.index == 1) {
-          followboardPageNum++;
-          isFollowMoreLoading.value = true;
-          getFollowBoard(followboardPageNum);
-        }
-      }
+
+      // lo.g(
+      //     'ttps://www.tigerbk.com/api/board/getMyBoard?custId=352348794 : ${mainScrollController.position.pixels} ${mainScrollController.position.maxScrollExtent} ${tabController.index} ${isMyBoardLastPage}');
+      // if (mainScrollController.position.pixels == mainScrollController.position.maxScrollExtent) {
+      //   if (!isMyBoardLastPage && tabController.index == 0) {
+      //     myboardPageNum++;
+      //     isMyBoardMoreLoading.value = true;
+      //     getMyBoard(myboardPageNum);
+      //   }
+      //   if (!isFollowLastPage && tabController.index == 1) {
+      //     followboardPageNum++;
+      //     isFollowMoreLoading.value = true;
+      //     getFollowBoard(followboardPageNum);
+      //   }
+      // }
     });
   }
 
@@ -146,6 +150,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
 
   Future<void> getInitMyBoard() async {
     myboardPageNum = 0;
+    isMyBoardLastPage = false;
     getMyBoard(myboardPageNum);
   }
 
@@ -180,6 +185,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
 
   Future<void> getInitFollowBoard() async {
     followboardPageNum = 0;
+    isFollowLastPage = false;
     getFollowBoard(followboardPageNum);
   }
 
@@ -219,6 +225,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     try {
       //pickedFile에 ImagePicker로 가져온 이미지가 담긴다.
       final XFile? pickedFile = await picker.pickImage(source: imageSource);
+      lo.g('pickedFile :  $pickedFile');
       if (pickedFile != null) {
         _image = XFile(pickedFile.path); //가져온 이미지를 _image에 저장
 
@@ -429,71 +436,95 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return DefaultTabController(
-      length: 2,
-      initialIndex: 0,
-      child: Scaffold(
-        resizeToAvoidBottomInset: true,
-        appBar: _appBar(),
-        body: Stack(
-          children: [
-            RefreshIndicator.adaptive(
-              notificationPredicate: (notification) {
-                if (notification is OverscrollNotification || Platform.isIOS) {
-                  return notification.depth == 2;
-                }
-                return notification.depth == 0;
-              },
-              onRefresh: () async {
-                // 3가지 갯수 가져오기
-                getCountData();
-                getInitMyBoard();
+    return NotificationListener<UserScrollNotification>(
+      onNotification: (notification) {
+        lo.g('4444=> ${notification.direction} == ${notification.depth}');
+        if (notification.depth >= 2) {
+          // if (notification.direction == ScrollDirection.reverse) {
+          lo.g('4444=> ${notification.metrics.pixels} == ${notification.metrics.maxScrollExtent}');
 
-                getInitFollowBoard();
-                getTag();
-                getLocalTag();
-              },
-              child: NestedScrollView(
-                controller: mainScrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
-                headerSliverBuilder: (context, innerBoxIsScrolled) {
-                  return [
-                    SliverList(
-                      delegate: SliverChildListDelegate(
-                        [
-                          Column(children: [
-                            _info(),
-                            _buildFavoriteArea(),
-                            _buildFavoriteTag(),
-                          ]),
-                        ],
-                      ),
-                    ),
-                    SliverAppBar(
-                      backgroundColor: Colors.white,
-                      surfaceTintColor: Colors.white,
-                      pinned: true,
-                      primary: false, // no reserve space for status bar
-                      toolbarHeight: 0, // title height = 0
-                      bottom: _tabs(),
-                    )
-                  ];
+          if (notification.metrics.pixels == notification.metrics.maxScrollExtent) {
+            if (!isMyBoardLastPage && tabController.index == 0) {
+              myboardPageNum++;
+              isMyBoardMoreLoading.value = true;
+              getMyBoard(myboardPageNum);
+            }
+            if (!isFollowLastPage && tabController.index == 1) {
+              followboardPageNum++;
+              isFollowMoreLoading.value = true;
+              getFollowBoard(followboardPageNum);
+            }
+          }
+          // }
+        }
+        return true;
+      },
+      child: DefaultTabController(
+        length: 2,
+        initialIndex: 0,
+        child: Scaffold(
+          resizeToAvoidBottomInset: true,
+          appBar: _appBar(),
+          body: Stack(
+            children: [
+              RefreshIndicator.adaptive(
+                notificationPredicate: (notification) {
+                  if (notification is OverscrollNotification || Platform.isIOS) {
+                    return notification.depth == 2;
+                  }
+                  return notification.depth == 0;
                 },
-                body: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _tabBarView(),
-                  ],
+                onRefresh: () async {
+                  // 3가지 갯수 가져오기
+                  getCountData();
+                  getInitMyBoard();
+
+                  getInitFollowBoard();
+                  getTag();
+                  getLocalTag();
+                },
+                child: NestedScrollView(
+                  controller: mainScrollController,
+                  physics: const BouncingScrollPhysics(),
+                  headerSliverBuilder: (context, innerBoxIsScrolled) {
+                    return [
+                      SliverList(
+                        delegate: SliverChildListDelegate(
+                          [
+                            Column(children: [
+                              _info(),
+                              _buildFavoriteArea(),
+                              _buildFavoriteTag(),
+                            ]),
+                          ],
+                        ),
+                      ),
+                      SliverAppBar(
+                        backgroundColor: Colors.white,
+                        surfaceTintColor: Colors.white,
+                        pinned: true,
+                        primary: false, // no reserve space for status bar
+                        toolbarHeight: 0, // title height = 0
+                        bottom: _tabs(),
+                      )
+                    ];
+                  },
+                  body: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _tabBarView(),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            ValueListenableBuilder<bool>(
-              valueListenable: isLoading,
-              builder: (context, value, child) {
-                return CustomIndicatorOffstage(isLoading: !value, color: const Color(0xFFEA3799), opacity: 0.5);
-              },
-            )
-          ],
+              ValueListenableBuilder<bool>(
+                valueListenable: isLoading,
+                builder: (context, value, child) {
+                  return CustomIndicatorOffstage(isLoading: !value, color: const Color(0xFFEA3799), opacity: 0.5);
+                },
+              )
+            ],
+          ),
         ),
       ),
     );
@@ -1048,6 +1079,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
       child: list.isNotEmpty
           ? GridView.builder(
               shrinkWrap: false,
+
               // controller: myboardScrollCtrl,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -1271,10 +1303,10 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                         height: 400,
                       ));
             },
-            child: Text(
-              AuthCntr.to.resLoginData.value.nickNm.toString(),
-              style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
-            ),
+            child: Obx(() => Text(
+                  Get.find<AuthCntr>().resLoginData.value.nickNm.toString(),
+                  style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                )),
           ),
           IconButton(
             onPressed: () => Get.toNamed('/SettingPage'),

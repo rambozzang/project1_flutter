@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:project1/app/%08join/join_page.dart';
+import 'package:project1/app/auth/agree_pagge.dart';
 import 'package:project1/app/auth/auth_page.dart';
 import 'package:project1/app/chatting/repo/suba_test_page.dart';
 import 'package:project1/app/chatting/chat_main_page.dart';
@@ -9,11 +10,9 @@ import 'package:project1/app/setting/maketing_page.dart';
 import 'package:project1/app/favoriteArea/cntr/favo_area_cntr.dart';
 import 'package:project1/app/favoriteArea/favorite_area_page.dart';
 import 'package:project1/app/test/weather_compare_page.dart';
-import 'package:project1/app/camera/page/test.dart';
 import 'package:project1/app/videomylist/video_myinfo_list_page.dart';
 import 'package:project1/app/myinfo/myinfo_modify_page.dart';
 import 'package:project1/app/myinfo/otherinfo_page.dart';
-import 'package:project1/app/onboarding/onboarding_page.dart';
 import 'package:project1/app/search/cntr/map_cntr.dart';
 import 'package:project1/app/search/map_page.dart';
 import 'package:project1/app/search/search_page.dart';
@@ -39,11 +38,6 @@ abstract class AppPages {
   static const INITIAL = '/AuthPage';
 
   static final routes = [
-    GetPage(
-      name: '/OnboardingPage',
-      page: () => const OnboardingPage(),
-      transition: Transition.downToUp,
-    ),
     GetPage(
       name: '/AuthPage',
       page: () => const AuthPage(),
@@ -84,11 +78,7 @@ abstract class AppPages {
       page: () => const MyPage(),
       //  transition: Transition.downToUp,
     ),
-    GetPage(
-      name: '/TestPage',
-      page: () => const TestPage(),
-      //  transition: Transition.downToUp,
-    ),
+
     GetPage(
       name: '/SettingPage',
       page: () => const SettingPage(),
@@ -208,6 +198,11 @@ abstract class AppPages {
     GetPage(
       name: '/WeatherComparePage',
       page: () => const WeatherComparePage(),
+      // transition: Transition.downToUp,
+    ),
+    GetPage(
+      name: '/AgreePage/:custId',
+      page: () => AgreePage(),
       // transition: Transition.downToUp,
     ),
   ];

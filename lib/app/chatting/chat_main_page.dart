@@ -47,6 +47,9 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
   }
 
   Future<void> initSupaBaseSession() async {
+    setState(
+      () {},
+    );
     try {
       // 1.세션이 존재하는지 체크 한다.
       _user = Supabase.instance.client.auth.currentUser;
@@ -270,9 +273,9 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    _userController.stream.listen((event) {
-      lo.g('SupabaseChatCore.instance.rooms() > event : $event');
-    });
+    // _userController.stream.listen((event) {
+    //   lo.g(' ._userController() > event : $event');
+    // });
 
     return Scaffold(
       body: RefreshIndicator(
@@ -365,15 +368,16 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
                 // initialData: const [],
                 builder: (context, snapshot) {
                   lo.g('SupabaseChatCore.instance.rooms() > snapshot.data : ${snapshot.data}');
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Container(
-                      alignment: Alignment.center,
-                      margin: const EdgeInsets.only(
-                        bottom: 200,
-                      ),
-                      child: Utils.progressbar(),
-                    );
-                  }
+                  lo.g('SupabaseChatCore.instance.rooms() > snapshot.data : ${snapshot.connectionState}');
+                  // if (snapshot.connectionState == ConnectionState.waiting) {
+                  //   return Container(
+                  //     alignment: Alignment.center,
+                  //     margin: const EdgeInsets.only(
+                  //       bottom: 200,
+                  //     ),
+                  //     child: Utils.progressbar(),
+                  //   );
+                  // }
                   if (!snapshot.hasData) {
                     return Container(
                       alignment: Alignment.center,

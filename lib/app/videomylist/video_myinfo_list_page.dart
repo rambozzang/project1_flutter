@@ -1,11 +1,7 @@
-import 'dart:async';
 import 'dart:ui';
 
-import 'package:comment_sheet/comment_sheet.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
-import 'package:geolocator/geolocator.dart';
 
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:project1/app/videomylist/Video_myScreen_page.dart';

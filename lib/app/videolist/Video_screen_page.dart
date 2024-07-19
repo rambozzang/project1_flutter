@@ -25,6 +25,7 @@ import 'package:text_scroll/text_scroll.dart';
 
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:http/http.dart' as http;
 
 // video_player 오류  https://github.com/flutter/flutter/issues/61309 , https://github.com/flutter/flutter/issues/25558
 class VideoScreenPage extends StatefulWidget {
@@ -76,27 +77,51 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     if (initialized) {
       return;
     }
+    // https://customer-r151saam0lb88khc.cloudflarestream.com/854ec7a9a60b43e7b5a7ac79ea09577d/manifest/video.m3u8
+    // https://customer-r151saam0lb88khc.cloudflarestream.com/854ec7a9a60b43e7b5a7ac79ea09577d/manifest/video.mpd
+
+    //  Ios : m3u8
+    String finalUrl = widget.data.videoPath.toString();
+    VideoFormat format = VideoFormat.hls;
+
+    if (Platform.isAndroid) {
+      // 안드로이드면 대쉬 사용
+      finalUrl = widget.data.videoPath.toString().replaceAll('m3u8', 'mpd');
+      format = VideoFormat.dash;
+    }
+
     final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
     final lastModified = _formatHttpDate(sevenDaysAgo);
 
     try {
+      // final response = await http.head(Uri.parse(finalUrl));
+      // final cfRay = response.headers['cf-ray'];
+      // if (cfRay != null) {
+      //   // CF-RAY 헤더의 형식: <식별자>-<데이터센터코드>
+      //   final datacenterCode = cfRay.split('-').last;
+      //   lo.g('Cloudflare datacenter code: $datacenterCode');
+      // }
+
       Stopwatch stopwatch = Stopwatch()..start();
-      lo.g('@@@  VideoScreenPageState initiliazeVideo() ${widget.index} : ${widget.data.boardId} : 1.Start ');
-      String finalUrl = widget.data.videoPath.toString();
+      lo.g(
+          '@@@  VideoScreenPage init(${Get.find<VideoListCntr>().currentIndex.value}) ${widget.index} : ${widget.data.boardId} : 1.Start ');
 
       _controller = VideoPlayerController.networkUrl(Uri.parse(finalUrl),
           httpHeaders: {
             'Connection': 'keep-alive',
-            'Cache-Control': 'max-age=604800',
+            'Cache-Control': 'max-age=3600, stale-while-revalidate=86400',
             'Etg': widget.data.boardId.toString(),
             'Last-Modified': lastModified,
+            'If-None-Match': widget.data.boardId.toString(),
+            'If-Modified-Since': lastModified,
+            'Vary': 'Accept-Encoding, User-Agent',
           },
-          formatHint: VideoFormat.hls)
+          formatHint: format)
         ..initialize().then((_) {
           if (mounted) {
             stopwatch.stop();
             lo.g(
-                '@@@  VideoScreenPageState initiliazeVideo() ${widget.index} : ${widget.data.boardId} : 2.Mounted =>. ${stopwatch.elapsed}');
+                '@@@  VideoScreenPage init(${Get.find<VideoListCntr>().currentIndex.value}) ${widget.index} : ${widget.data.boardId} : 2.Mounted =>. ${stopwatch.elapsed}');
             setState(() {
               _controller.setLooping(true);
               _controller.pause();
@@ -116,7 +141,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
         }
       });
     } catch (e) {
-      lo.g('@@@  VideoScreenPageState initiliazeVideo() ${widget.index} : ${widget.data.boardId} : error : $e');
+      lo.g('@@@  VideoScreenPage init() ${widget.index} : ${widget.data.boardId} : error : $e');
     } finally {}
   }
 
@@ -198,7 +223,8 @@ class VideoScreenPageState extends State<VideoScreenPage> {
 
   @override
   void dispose() {
-    lo.g('@@@  VideoScreenPageState initiliazeVideo() ${widget.index} : ${widget.data.boardId} : 3.dispose ');
+    // lo.g(
+    // '@@@  VideoScreenPage init(${Get.find<VideoListCntr>().currentIndex.value}) ${widget.index} : ${widget.data.boardId} : 3.dispose ');
     initialized = false;
     _controller.removeListener(() {});
     _controller.pause();
@@ -234,13 +260,13 @@ class VideoScreenPageState extends State<VideoScreenPage> {
                   : VisibilityDetector(
                       onVisibilityChanged: (info) {
                         initPlay = false;
-                        if (info.visibleFraction > 0.2) {
+                        if (info.visibleFraction > 0.1) {
                           if (initialized) {
                             _controller.play();
 
                             Get.find<VideoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
                           }
-                        } else if (info.visibleFraction < 0.4) {
+                        } else if (info.visibleFraction < 0.3) {
                           // } else {
                           if (initialized) {
                             _controller.pause();
@@ -279,9 +305,13 @@ class VideoScreenPageState extends State<VideoScreenPage> {
           // )
           Positioned(
             bottom: (MediaQuery.of(context).size.height - 12) * .5,
-            right: 26,
+            right: 12,
             child: GestureDetector(
-              onTap: () => SigoPageSheet().open(context, widget.data.boardId.toString()),
+              onTap: () => SigoPageSheet().open(
+                context,
+                widget.data.boardId.toString(),
+                Get.find<VideoListCntr>().list[widget.index].custId.toString(),
+              ),
               child: const Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -306,6 +336,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
       child: Container(
         decoration: BoxDecoration(
           image: DecorationImage(
+            //  image: CachedNetworkImageProvider(widget.data.thumbnailPath.toString()),
             image: ExactAssetImage(
               'assets/images/$loadingImageIndex.jpg',
             ),
@@ -313,32 +344,8 @@ class VideoScreenPageState extends State<VideoScreenPage> {
           ),
         ),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 25.0),
-          child: Stack(
-            children: [
-              // Positioned.fill(
-              //   child: CachedNetworkImage(
-              //      cacheKey: widget.data.boardId.toString(),
-              //     imageUrl: widget.data.thumbnailPath.toString(),
-              //     fit: BoxFit.cover,
-              //     placeholder: (context, url) => SizedBox(width: 60, height: 60, child: Utils.progressbar(color: Colors.white)),
-              //   ),
-              // ),
-              // Positioned.fill(
-
-              //   child: Image.asset(
-              //     'assets/images/girl-6356393_640.jpg',
-              //     fit: BoxFit.cover,
-              //     filterQuality: FilterQuality.high,
-              //   ),
-              // ),
-              Positioned(
-                  top: MediaQuery.of(context).size.height * 0.5,
-                  left: 10,
-                  right: 10,
-                  child: const Center(child: Text(" ", style: TextStyle(color: Colors.white, fontSize: 9))))
-            ],
-          ),
+          filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
+          child: const Text("", style: TextStyle(color: Colors.white, fontSize: 9)),
         ),
       ),
     );
@@ -351,12 +358,111 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     //     '${widget.data.location.toString().split(' ')[0]} ${widget.data.location.toString().split(' ')[1]} ${widget.data.location.toString().split(' ')[2]}';
     return Positioned(
       bottom: bottomHeight,
-      right: 20,
-      left: 20,
+      left: 10,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const Gap(5),
+          Row(
+            children: [
+              Text(
+                '${widget.data.crtDtm.toString().split(':')[0].replaceAll('-', '/')}:${widget.data.crtDtm.toString().split(':')[1]}',
+                style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(width: 20, height: 13, child: VerticalDivider(thickness: 1, color: Colors.white)),
+              SizedBox(
+                height: 30,
+                width: 30,
+                child: CachedNetworkImage(
+                  width: 50,
+                  height: 50,
+                  imageUrl: 'http://openweathermap.org/img/wn/${widget.data.icon}@2x.png',
+                  imageBuilder: (context, imageProvider) => Container(
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                          image: imageProvider,
+                          fit: BoxFit.cover,
+                          colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn)),
+                    ),
+                  ),
+                  placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 0.6, color: Colors.white),
+                  errorWidget: (context, url, error) => const Icon(Icons.error),
+                ),
+              ),
+              SizedBox(
+                width: MediaQuery.of(context).size.width * 0.35,
+                child: TextScroll(
+                  '${widget.data.weatherInfo?.split('.')[0]} ${widget.data.currentTemp}°',
+                  mode: TextScrollMode.endless,
+                  numberOfReps: 20000,
+                  fadedBorder: true,
+                  delayBefore: const Duration(milliseconds: 4000),
+                  pauseBetween: const Duration(milliseconds: 2000),
+                  velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
+                  style: const TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w700),
+                  textAlign: TextAlign.right,
+                  selectable: true,
+                ),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              const Icon(Icons.location_on, color: Colors.white, size: 16),
+              SizedBox(
+                width: MediaQuery.of(context).size.width * 0.75,
+                child: TextScroll(
+                  '${locationNm.toString()} - 거리: ${widget.data.distance!.toStringAsFixed(1)}km',
+                  mode: TextScrollMode.endless,
+                  numberOfReps: 20000,
+                  fadedBorder: true,
+                  delayBefore: const Duration(milliseconds: 4000),
+                  pauseBetween: const Duration(milliseconds: 2000),
+                  velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
+                  style: const TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w700),
+                  textAlign: TextAlign.right,
+                  selectable: true,
+                ),
+              ),
+            ],
+          ),
+          const Gap(5),
+          widget.data.contents != ""
+              ? Padding(
+                  padding: const EdgeInsets.only(right: 40),
+                  child: HashTagText(
+                    text: "${widget.data.contents}",
+                    basicStyle: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w700),
+                    decoratedStyle: const TextStyle(
+                        fontSize: 17,
+                        color: Color.fromARGB(255, 218, 245, 253),
+                        // color: Color.fromARGB(255, 205, 240, 122),
+                        // color: Color.fromARGB(255, 189, 230, 220),
+                        fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.left,
+                    onTap: (text) {
+                      print(text);
+                    },
+                  ),
+                )
+              : const SizedBox(),
+          const Gap(5),
+          // SizedBox(
+          //   width: Get.width * 0.78,
+          //   child: const TextScroll(
+          //     '여기서는 TextButton, FilledButton, ElevatedButton의 크기를 변경하는 방법에 대해서 알아보겠습니다. ',
+          //     mode: TextScrollMode.endless,
+          //     numberOfReps: 200,
+          //     fadedBorder: false,
+          //     delayBefore: Duration(milliseconds: 4000),
+          //     pauseBetween: Duration(milliseconds: 2000),
+          //     velocity: Velocity(pixelsPerSecond: Offset(100, 0)),
+          //     style: TextStyle(fontSize: 16, color: Colors.white),
+          //     textAlign: TextAlign.right,
+          //     selectable: true,
+          //   ),
+          // )
           Row(
             children: [
               GestureDetector(
@@ -423,138 +529,9 @@ class VideoScreenPageState extends State<VideoScreenPage> {
                         );
                       },
                     ),
-
-              // ValueListenableBuilder<String>(
-              //   valueListenable: isFollowed,
-              //   builder: (context, value, child) {
-              //     if (widget.data.custId == Get.find<AuthCntr>().custId.value) {
-              //       return const SizedBox.shrink();
-              //     }
-              //     return ElevatedButton(
-              //       onPressed: () => value.toString().contains('N') ? follow() : followCancle(),
-              //       clipBehavior: Clip.none,
-              //       style: ElevatedButton.styleFrom(
-              //         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-              //         elevation: 0.5,
-              //         minimumSize: const Size(0, 0),
-              //         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              //         backgroundColor: value.toString().contains('N') ? Colors.transparent : Colors.white,
-              //         // backgroundColor: widget.data.followYn.toString().contains('N') ? Colors.black : Colors.white,
-              //         shape: RoundedRectangleBorder(
-              //             borderRadius: BorderRadius.circular(10.0), side: const BorderSide(color: Colors.white, width: 0.7)),
-              //       ),
-              //       child: Text(
-              //         value.toString().contains('N') ? '팔로우' : '팔로잉',
-              //         style: TextStyle(
-              //           color: value.toString().contains('N') ? Colors.white : Colors.black,
-              //           fontSize: 15,
-              //         ),
-              //       ),
-              //     );
-              //   },
-              // )
             ],
           ),
-          const Gap(5),
-          Row(
-            children: [
-              Text(
-                '${widget.data.crtDtm.toString().split(':')[0].replaceAll('-', '/')}:${widget.data.crtDtm.toString().split(':')[1]}',
-                style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(width: 20, height: 13, child: VerticalDivider(thickness: 1, color: Colors.white)),
-              SizedBox(
-                height: 30,
-                width: 30,
-                child: CachedNetworkImage(
-                  width: 50,
-                  height: 50,
-                  imageUrl: 'http://openweathermap.org/img/wn/${widget.data.icon}@2x.png',
-                  imageBuilder: (context, imageProvider) => Container(
-                    decoration: BoxDecoration(
-                      image: DecorationImage(
-                          image: imageProvider,
-                          fit: BoxFit.cover,
-                          colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn)),
-                    ),
-                  ),
-                  placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 0.6, color: Colors.white),
-                  errorWidget: (context, url, error) => const Icon(Icons.error),
-                ),
-              ),
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.35,
-                child: TextScroll(
-                  '${widget.data.weatherInfo?.split('.')[0]} ${widget.data.currentTemp}°',
-                  mode: TextScrollMode.endless,
-                  numberOfReps: 20000,
-                  fadedBorder: true,
-                  delayBefore: const Duration(milliseconds: 4000),
-                  pauseBetween: const Duration(milliseconds: 2000),
-                  velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
-                  style: const TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w700),
-                  textAlign: TextAlign.right,
-                  selectable: true,
-                ),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              const Icon(Icons.location_on, color: Colors.white, size: 15),
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.75,
-                child: TextScroll(
-                  '${locationNm.toString()} - 나와의거리${widget.data.distance!.toStringAsFixed(1)}km',
-                  mode: TextScrollMode.endless,
-                  numberOfReps: 20000,
-                  fadedBorder: true,
-                  delayBefore: const Duration(milliseconds: 4000),
-                  pauseBetween: const Duration(milliseconds: 2000),
-                  velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
-                  style: const TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w700),
-                  textAlign: TextAlign.right,
-                  selectable: true,
-                ),
-              ),
-            ],
-          ),
-          const Gap(5),
-          widget.data.contents != ""
-              ? Padding(
-                  padding: const EdgeInsets.only(right: 40),
-                  child: HashTagText(
-                    text: "${widget.data.contents}",
-                    basicStyle: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w700),
-                    decoratedStyle: const TextStyle(
-                        fontSize: 17,
-                        color: Color.fromARGB(255, 218, 245, 253),
-                        // color: Color.fromARGB(255, 205, 240, 122),
-                        // color: Color.fromARGB(255, 189, 230, 220),
-                        fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.left,
-                    onTap: (text) {
-                      print(text);
-                    },
-                  ),
-                )
-              : const SizedBox(),
-          const Gap(5),
-          // SizedBox(
-          //   width: Get.width * 0.78,
-          //   child: const TextScroll(
-          //     '여기서는 TextButton, FilledButton, ElevatedButton의 크기를 변경하는 방법에 대해서 알아보겠습니다. ',
-          //     mode: TextScrollMode.endless,
-          //     numberOfReps: 200,
-          //     fadedBorder: false,
-          //     delayBefore: Duration(milliseconds: 4000),
-          //     pauseBetween: Duration(milliseconds: 2000),
-          //     velocity: Velocity(pixelsPerSecond: Offset(100, 0)),
-          //     style: TextStyle(fontSize: 16, color: Colors.white),
-          //     textAlign: TextAlign.right,
-          //     selectable: true,
-          //   ),
-          // )
+          const Gap(10)
         ],
       ),
     );
@@ -564,7 +541,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   Widget buildRightMenuBar() {
     return Positioned(
       bottom: bottomHeight,
-      right: 10,
+      right: 0,
       child: Column(
         children: [
           IgnorePointer(
@@ -594,7 +571,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
               },
               animationDuration: const Duration(milliseconds: 1500),
               likeCount: widget.data.likeCnt,
-              likeCountPadding: const EdgeInsets.only(top: 5, right: 15, left: 15),
+              likeCountPadding: const EdgeInsets.only(top: 5, right: 0, left: 0),
               countPostion: CountPostion.bottom,
               countBuilder: (int? count, bool isLiked, String text) {
                 Color color = isLiked ? Colors.redAccent : Colors.white;
@@ -740,7 +717,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   Widget buildSoundButton() {
     return Positioned(
       bottom: (MediaQuery.of(context).size.height - 15) * .5,
-      left: 10,
+      left: 0,
       child: Obx(() => IconButton(
             onPressed: () {
               Get.find<VideoListCntr>().soundOff.value = !Get.find<VideoListCntr>().soundOff.value;

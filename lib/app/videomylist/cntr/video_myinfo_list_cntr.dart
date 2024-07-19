@@ -1,10 +1,7 @@
 import 'dart:async';
-import 'dart:math';
 
-import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
@@ -12,8 +9,6 @@ import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/repo/weather/data/current_weather.dart';
-import 'package:project1/repo/weather/mylocator_repo.dart';
-import 'package:project1/repo/weather/open_weather_repo.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 
@@ -46,7 +41,7 @@ class VideoMyinfoListCntr extends GetxController {
 
   var isloading = true.obs;
 
-  int preLoadingCount = 3;
+  int preLoadingCount = 8;
   @override
   void onInit() {
     super.onInit();
@@ -131,9 +126,15 @@ class VideoMyinfoListCntr extends GetxController {
           }
         }
       }
-
       list.addAll(_list);
-      videoMyListCntr.sink.add(ResStream.completed(list));
+      List<BoardWeatherListData> initList = list.sublist(0, list.length > 1 ? 2 : 1);
+      videoMyListCntr.sink.add(ResStream.completed(initList));
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        // 1번째 비디오를 플레이 화면에 바로 노출하도록 나머지 스트림 전송
+        videoMyListCntr.sink.add(ResStream.completed(list));
+      });
+
+      // videoMyListCntr.sink.add(ResStream.completed(list));
     } catch (e) {
       Lo.g('getDate() error : $e');
       videoMyListCntr.sink.add(ResStream.error(e.toString()));

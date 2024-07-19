@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:project1/utils/utils.dart';
 
 // ignore: must_be_immutable
 class CustomButton extends StatelessWidget {
   final bool isEnable;
+  final bool isProgressing;
   final String type;
   final String text;
   final void Function()? onPressed;
@@ -16,6 +18,7 @@ class CustomButton extends StatelessWidget {
   CustomButton({
     super.key,
     this.isEnable = true,
+    this.isProgressing = false,
     required this.text,
     required this.type,
     required this.onPressed,
@@ -70,9 +73,18 @@ class CustomButton extends StatelessWidget {
     // Color(0xFF8A90BA), // 기준 색상보다 훨씬 더 밝은 색상
 
     // 기준 퍼플
-    Color(0xFF483D8B), // 어두운 슬레이트 블루
-    Color(0xFF5A4FCF), // 슬레이트 블루
-    Color(0xFF7D67E8), // 미디엄 슬레이트 블루
+    // const Color(0xFF483D8B), // 어두운 슬레이트 블루
+    // const Color(0xFF5A4FCF), // 슬레이트 블루
+    // const Color(0xFF7D67E8), // 미디엄 슬레이트 블루
+
+    // const Color(0xFF5A4FCF), // 슬레이트 블루
+    // const Color(0xFF5A4FCC), // 미디엄 슬레이트 블루
+
+    const Color.fromARGB(255, 36, 77, 158),
+    const Color.fromARGB(255, 35, 81, 172),
+
+    // const Color.fromARGB(255, 36, 77, 158),
+    // const Color.fromARGB(255, 35, 81, 172),
 
     // 밝은 퍼플
     // Color(0xFF5A4FCF), //- 바이올렛 블루
@@ -117,7 +129,7 @@ class CustomButton extends StatelessWidget {
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: isEnable ? onPressed : null,
+          onTap: isEnable && !isProgressing ? onPressed : null,
           child: Ink(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
@@ -132,21 +144,27 @@ class CustomButton extends StatelessWidget {
               ),
             ),
             child: Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (prefixIcon != null) prefixIcon!,
-                  Text(
-                    text,
-                    style: TextStyle(
-                      color: isEnable ? Colors.white : Colors.grey[300],
-                      fontSize: fontValue,
-                      fontWeight: FontWeight.w600,
+              child: isProgressing
+                  ? Utils.progressbar(
+                      // 로딩바
+                      color: Colors.white,
+                      size: 30,
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (prefixIcon != null) prefixIcon!,
+                        Text(
+                          text,
+                          style: TextStyle(
+                            color: isEnable ? Colors.white : Colors.grey[300],
+                            fontSize: fontValue,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (suffixIcon != null) suffixIcon!,
+                      ],
                     ),
-                  ),
-                  if (suffixIcon != null) suffixIcon!,
-                ],
-              ),
             ),
           ),
         ),

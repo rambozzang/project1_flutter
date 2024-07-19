@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:gap/gap.dart';
 import 'package:geolocator/geolocator.dart';
@@ -167,6 +168,7 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
     // final onMarkerInfoWindow = NInfoWindow.onMarker(offsetX: 10, id: marker.info.id, text: "${geocodeData.name}");
 
     // marker.openInfoWindow(onMarkerInfoWindow);
+    // buildSaveWidget(geocodeData);
   }
 
   void goFavoriteAreaPage(String searchWord) async {
@@ -244,39 +246,6 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
                       : const SizedBox.shrink(),
                 ),
                 const Gap(20),
-                ValueListenableBuilder(
-                    valueListenable: geocodeDataValue,
-                    builder: (builder, value, child) {
-                      if (value.name == '') return const SizedBox.shrink();
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 20.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(value.name.toString(), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-                                Text(value.addr.toString(), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                              ],
-                            ),
-                            SizedBox(
-                                height: 35,
-                                width: 90,
-                                child: CustomButton(
-                                    text: '등록하기',
-                                    listColors: const [
-                                      Color.fromARGB(255, 38, 162, 40),
-                                      Color.fromARGB(255, 34, 112, 26),
-                                      Color.fromARGB(255, 13, 104, 43),
-                                    ],
-                                    type: 'S',
-                                    onPressed: () => addLocalTag(value))),
-                          ],
-                        ),
-                      );
-                    }),
                 const Divider(),
                 const Gap(10),
                 const Align(
@@ -289,9 +258,104 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
           ),
           FavoriteAreaSearchPage(
             onSelectClick: locationUpdate,
+          ),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: ValueListenableBuilder(
+                valueListenable: geocodeDataValue,
+                builder: (builder, value, child) {
+                  if (value.name == '') return const SizedBox.shrink();
+                  return Container(
+                    padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(value.name.toString(), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+                              Text(value.addr.toString(),
+                                  overflow: TextOverflow.clip, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                        SizedBox(
+                            height: 40,
+                            width: 90,
+                            child: CustomButton(
+                                text: '등록하기',
+                                listColors: const [
+                                  Color.fromARGB(255, 36, 77, 158),
+                                  Color.fromARGB(255, 35, 81, 172),
+                                ],
+                                type: 'S',
+                                onPressed: () => addLocalTag(value))),
+                      ],
+                    ),
+                  );
+                }),
           )
         ],
       ),
+    );
+  }
+
+  // 검색지역 저장 화면
+  void buildSaveWidget(GeocodeData value) {
+    showModalBottomSheet(
+      isScrollControlled: true,
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(15.0),
+        ),
+      ),
+      backgroundColor: Colors.white, //.withOpacity(0.8),
+      builder: (BuildContext context) {
+        return SizedBox(
+            height: 120,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(value.name.toString(), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+                      Text(value.addr.toString(), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                  SizedBox(
+                      height: 40,
+                      width: 80,
+                      child: CustomButton(
+                          text: '등록하기',
+                          listColors: const [
+                            Color.fromARGB(255, 36, 77, 158),
+                            Color.fromARGB(255, 35, 81, 172),
+                          ],
+                          type: 'S',
+                          onPressed: () {
+                            Navigator.pop(context);
+                            addLocalTag(value);
+                          })),
+                ],
+              ),
+            ));
+      },
     );
   }
 
@@ -363,7 +427,6 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
     );
   }
 
-  // 금등검색어 칩
   Widget buildChip(String label) {
     return InkWell(
         onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/0/${Uri.encodeComponent(label)}'),

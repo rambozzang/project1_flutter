@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -20,6 +21,7 @@ import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_marquee.dart';
 import 'package:text_scroll/text_scroll.dart';
+import 'package:path_provider/path_provider.dart';
 
 class VideoListPage extends StatefulWidget {
   const VideoListPage({super.key});
@@ -159,133 +161,26 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
 
   // 동영상 리스트
   Widget buildVideoBody(List<BoardWeatherListData> data) {
-    return PreloadPageView.builder(
-      key: const PageStorageKey("tigerBkPageView"),
-      controller: _controller,
-      preloadPagesCount: Get.find<VideoListCntr>().preLoadingCount, // 7 이 이상적임
-      scrollDirection: Axis.vertical,
-      itemCount: data.length,
-      // physics: const CustomPhysics(),
-      onPageChanged: (int position) {
-        Get.find<VideoListCntr>().currentIndex.value = position;
-        Get.find<VideoListCntr>().getMoreData(position, data.length);
-      },
-      itemBuilder: (context, i) {
-        return VideoScreenPage(index: i, data: data[i]);
+    return GetBuilder<VideoListCntr>(
+      builder: (cntr) {
+        return PreloadPageView.builder(
+          key: const PageStorageKey("tigerBkPageView"),
+          controller: _controller,
+          preloadPagesCount: cntr.preLoadingCount, // 7 이 이상적임
+          scrollDirection: Axis.vertical,
+          itemCount: data.length,
+          // physics: const CustomPhysics(),
+          onPageChanged: (int position) {
+            cntr.currentIndex.value = position;
+            cntr.getMoreData(position, data.length);
+          },
+          itemBuilder: (context, i) {
+            return VideoScreenPage(index: i, data: data[i]);
+          },
+        );
       },
     );
   }
-
-  // 상단 현재 온도
-  // Widget buildTemp() {
-  //   return Obx(() => Positioned(
-  //         top: 80,
-  //         right: 10,
-  //         left: 10,
-  //         child: Get.find<WeatherCntr>().currentWeather.value!.coord != null
-  //             ? SizedBox(
-  //                 width: double.infinity,
-  //                 child: Row(
-  //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                   children: [
-  //                     Column(
-  //                       crossAxisAlignment: CrossAxisAlignment.start,
-  //                       mainAxisSize: MainAxisSize.max,
-  //                       children: [
-  //                         Text(
-  //                           Get.find<WeatherCntr>().currentWeather.value!.weather![0].description!.toString(),
-  //                           style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
-  //                         ),
-  //                         Row(
-  //                           mainAxisSize: MainAxisSize.min,
-  //                           children: [
-  //                             Text(
-  //                               '${Get.find<WeatherCntr>().currentWeather.value?.main!.temp?.toStringAsFixed(1) ?? 0}°',
-  //                               textAlign: TextAlign.right,
-  //                               style: const TextStyle(fontSize: 25, color: Colors.white, fontWeight: FontWeight.bold),
-  //                             ),
-  //                             CachedNetworkImage(
-  //                               width: 50,
-  //                               height: 50,
-  //                               // color: Colors.white,
-  //                               imageUrl:
-  //                                   'http://openweathermap.org/img/wn/${Get.find<WeatherCntr>().currentWeather.value?.weather![0].icon ?? '10n'}@2x.png',
-  //                               //   imageUrl:  'http://openweathermap.org/img/w/${value.weather![0].icon}.png',
-  //                               imageBuilder: (context, imageProvider) => Container(
-  //                                 decoration: BoxDecoration(
-  //                                   image: DecorationImage(
-  //                                       image: imageProvider,
-  //                                       fit: BoxFit.cover,
-  //                                       colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn)),
-  //                                 ),
-  //                               ),
-  //                               placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 1, color: Colors.white),
-  //                               errorWidget: (context, url, error) => const Icon(Icons.error),
-  //                             ),
-  //                           ],
-  //                         ),
-  //                         Text(
-  //                           '체감온도 ${Get.find<WeatherCntr>().currentWeather.value?.main!.feels_like?.toStringAsFixed(1) ?? 0}°',
-  //                           style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
-  //                         ),
-  //                         Text(
-  //                           '${Get.find<WeatherCntr>().currentWeather.value?.main!.temp_min?.toStringAsFixed(1) ?? 0}° · ${Get.find<WeatherCntr>().currentWeather.value?.main!.temp_max?.toStringAsFixed(1) ?? 0}°',
-  //                           style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
-  //                         ),
-  //                         Get.find<WeatherCntr>().mistViewData.value?.mist10Grade != null
-  //                             ? Row(
-  //                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                                 children: [
-  //                                   Column(
-  //                                     crossAxisAlignment: CrossAxisAlignment.start,
-  //                                     mainAxisSize: MainAxisSize.max,
-  //                                     children: [
-  //                                       Text(
-  //                                         '미세:${Get.find<WeatherCntr>().mistViewData.value?.mist10Grade} · 초미세:${Get.find<WeatherCntr>().mistViewData.value?.mist25Grade}',
-  //                                         style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
-  //                                       ),
-  //                                     ],
-  //                                   ),
-  //                                 ],
-  //                               )
-  //                             : const SizedBox.shrink()
-  //                       ],
-  //                     ),
-  //                   ],
-  //                 ),
-  //               )
-  //             : const SizedBox.shrink(),
-  //       ));
-  // }
-
-  // 미제먼지
-  // Widget buildMist() {
-  //   return Obx(() => Positioned(
-  //         top: 195,
-  //         right: 10,
-  //         left: 10,
-  //         child: Get.find<WeatherCntr>().mistViewData.value?.mist10Grade != null
-  //             ? SizedBox(
-  //                 width: double.infinity,
-  //                 child: Row(
-  //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                   children: [
-  //                     Column(
-  //                       crossAxisAlignment: CrossAxisAlignment.start,
-  //                       mainAxisSize: MainAxisSize.max,
-  //                       children: [
-  //                         Text(
-  //                           '미세먼지:${Get.find<WeatherCntr>().mistViewData.value?.mist10Grade} · 초미세먼지:${Get.find<WeatherCntr>().mistViewData.value?.mist25Grade}',
-  //                           style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
-  //                         ),
-  //                       ],
-  //                     ),
-  //                   ],
-  //                 ),
-  //               )
-  //             : const SizedBox.shrink(),
-  //       ));
-  // }
 
   // 상단 동네 이름
   Widget buildLocalName() {
@@ -402,56 +297,68 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
   // Refresh 하기
   Widget buildRefreshBtn() {
     return Obx(() => Positioned(
-          top: MediaQuery.of(context).padding.top + 45,
-          right: 10,
+          top: MediaQuery.of(context).padding.top + 48,
+          right: 0,
           child: Get.find<WeatherCntr>().oneCallCurrentWeather.value!.dt != null
               ? Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    SizedBox(
-                        width: 40,
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.refresh,
+                    IconButton(
+                      icon: Icon(
+                        Icons.refresh,
+                        color: Colors.white,
+                        size: Get.find<VideoListCntr>().searchType.value == 'DIST' ? 33 : 30,
+                      ),
+                      onPressed: () async {
+                        Get.find<VideoListCntr>().swichSearchType('TOTAL');
+                      },
+                    ),
+                    TextButton(
+                      child: Text(
+                        '거리',
+                        style: TextStyle(
                             color: Colors.white,
-                            size: 30,
-                          ),
-                          onPressed: () async {
-                            Get.find<VideoListCntr>().swichSearchType('TOTAL');
-                          },
-                        )),
-                    SizedBox(
-                        width: 60,
-                        child: TextButton(
-                          child: const Text(
-                            '거리',
-                            style: TextStyle(color: Colors.white, fontSize: 9),
-                          ),
-                          onPressed: () async {
-                            Get.find<VideoListCntr>().swichSearchType('DIST');
-                          },
-                        )),
-                    SizedBox(
-                        width: 60,
-                        child: TextButton(
-                          child: const Text(
-                            '관심태그',
-                            style: TextStyle(color: Colors.white, fontSize: 9),
-                          ),
-                          onPressed: () async {
-                            Get.find<VideoListCntr>().swichSearchType('TAG');
-                          },
-                        )),
-                    SizedBox(
-                        width: 60,
-                        child: TextButton(
-                          child: const Text(
-                            '관심지역',
-                            style: TextStyle(color: Colors.white, fontSize: 9),
-                          ),
-                          onPressed: () async {
-                            Get.find<VideoListCntr>().swichSearchType('LOCAL');
-                          },
-                        )),
+                            fontSize: Get.find<VideoListCntr>().searchType.value == 'DIST' ? 13 : 11,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: () async {
+                        Get.find<VideoListCntr>().swichSearchType('DIST');
+                      },
+                    ),
+                    TextButton(
+                      child: Text(
+                        '관심태그',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: Get.find<VideoListCntr>().searchType.value == 'TAG' ? 13 : 11,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: () async {
+                        Get.find<VideoListCntr>().swichSearchType('TAG');
+                      },
+                    ),
+                    TextButton(
+                      child: Text(
+                        '관심지역',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: Get.find<VideoListCntr>().searchType.value == 'LOCAL' ? 13 : 11,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: () async {
+                        Get.find<VideoListCntr>().swichSearchType('LOCAL');
+                      },
+                    ),
+                    TextButton(
+                      child: Text(
+                        '캐쉬삭제',
+                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: () async {
+                        CacheManager.clearAppCache();
+                      },
+                    ),
                   ],
                 )
               : const SizedBox.shrink(),
@@ -512,4 +419,36 @@ class CustomPhysics extends ScrollPhysics {
         stiffness: 100,
         damping: 1,
       );
+}
+
+class CacheManager {
+  static Future<void> clearAppCache() async {
+    try {
+      Directory tempDir = await getTemporaryDirectory();
+      if (tempDir.existsSync()) {
+        tempDir.listSync().forEach((FileSystemEntity file) {
+          if (file is File) {
+            file.deleteSync();
+          } else if (file is Directory) {
+            file.deleteSync(recursive: true);
+          }
+        });
+      }
+
+      Directory appDocDir = await getApplicationDocumentsDirectory();
+      if (appDocDir.existsSync()) {
+        appDocDir.listSync().forEach((FileSystemEntity file) {
+          if (file is File) {
+            file.deleteSync();
+          } else if (file is Directory) {
+            file.deleteSync(recursive: true);
+          }
+        });
+      }
+
+      Utils.alert("App cache cleared successfully.");
+    } catch (e) {
+      Utils.alert("Error clearing app cache: $e");
+    }
+  }
 }

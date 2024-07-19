@@ -8,6 +8,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:project1/app/weather/helper/extensions.dart';
 import 'package:project1/app/weather/models/dailyWeather.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
+import 'package:project1/app/weather/widgets/customShimmer.dart';
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:supercharged/supercharged.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';

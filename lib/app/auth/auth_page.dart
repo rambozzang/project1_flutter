@@ -24,7 +24,7 @@ class _AuthPageState extends State<AuthPage> {
     Stopwatch stopwatch = Stopwatch()..start();
     Get.find<WeatherCntr>().requestLocation().then((value) {
       stopwatch.stop();
-      lo.g('@@@  auth page   =>. ${stopwatch.elapsed}');
+      lo.g('@@@ Auth Page => ${stopwatch.elapsed}');
       Get.offAllNamed('/rootPage');
     });
   }
@@ -33,18 +33,17 @@ class _AuthPageState extends State<AuthPage> {
   Widget build(BuildContext context) {
     // log(AuthCntr.to.custId.value);
 
-    return GetBuilder(
+    return GetBuilder<AuthCntr>(
         init: AuthCntr(),
-        builder: (context) {
-          if (Get.find<AuthCntr>().isLogged.value) {
+        builder: (controller) {
+          if (controller.isLogged.value) {
             if (isInitSYn == false) {
               isInitSYn = true;
               initS();
             }
           }
-
-          return Scaffold(
-            backgroundColor: const Color(0xFF262B49),
+          return const Scaffold(
+            backgroundColor: Color(0xFF262B49),
             body: Center(
               child: Stack(
                 children: [
@@ -52,20 +51,20 @@ class _AuthPageState extends State<AuthPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Lottie.asset(
-                          'assets/lottie/sun5.json',
-                          height: 50.0,
-                          width: 50.0,
-                        ),
-                        const Gap(1),
-                        const Text(
+                        // Lottie.asset(
+                        //   'assets/lottie/sun5.json',
+                        //   height: 50.0,
+                        //   width: 50.0,
+                        // ),
+                        Gap(1),
+                        Text(
                           "SkySnap",
                           style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w500),
                         ),
                       ],
                     ),
                   ),
-                  const Positioned(
+                  Positioned(
                     bottom: 20,
                     left: 20,
                     right: 20,
@@ -78,10 +77,6 @@ class _AuthPageState extends State<AuthPage> {
                   ),
                 ],
               ),
-              // child: Text(
-              //   'GPS ...',
-              //   style: TextStyle(color: Colors.white, fontSize: 11),
-              // ),
             ),
           );
         });

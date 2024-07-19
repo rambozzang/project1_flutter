@@ -182,17 +182,12 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
   // Check and ask for camera permission and initialize camera
   Future<void> _checkPermissionAndInitializeCamera() async {
-    // lo.g("await permissionUtils.getCameraAndMicrophonePermissionStatus() :")
-
-    var aa = await permissionUtils.getCameraAndMicrophonePermissionStatus();
-    var bb = await permissionUtils.askForPermission();
-
-    lo.g("message : $aa $bb");
-
     if (await permissionUtils.getCameraAndMicrophonePermissionStatus()) {
       await _initializeCamera();
     } else {
       if (await permissionUtils.askForPermission()) {
+        // 릴레이를 쭤야 함 안그럼 빨간딱지 나옴 - 여긴 최초한번만 실행되니까
+        sleep(const Duration(milliseconds: 800));
         await _initializeCamera();
       } else {
         return Future.error(CameraErrorType.permission); // Throw the specific error type for permission denial

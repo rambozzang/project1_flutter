@@ -224,8 +224,11 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                   child: state is CameraReady
                       ? Builder(builder: (context) {
                           var controller = cameraBloc.getController();
+
                           return Transform.scale(
-                            scale: 1 / (controller!.value.aspectRatio * MediaQuery.of(context).size.aspectRatio),
+                            scale: 1 /
+                                ((controller!.value == null ? 1.6 : controller.value.aspectRatio) *
+                                    MediaQuery.of(context).size.aspectRatio),
                             child: ZoomableWidget(
                                 child: _cameraPreviewWidget(),
                                 onTapUp: (scaledPoint) {
@@ -234,7 +237,7 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                                 onZoom: (zoom) {
                                   print('zoom');
                                   if (zoom < 11) {
-                                    controller.setZoomLevel(zoom);
+                                    controller!.setZoomLevel(zoom);
                                   }
                                 }),
                           );

@@ -72,15 +72,14 @@ class _CctvPageState extends State<CctvPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-        child: Padding(
+    return Padding(
       padding: MediaQuery.of(context).viewInsets,
       child: SizedBox(
         height: 430,
         child: Column(children: [
           Container(
             ///height: 45,
-            padding: EdgeInsets.only(left: 5, bottom: 10, right: 5),
+            padding: const EdgeInsets.only(left: 5, bottom: 10, right: 5),
             decoration: const BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.only(topLeft: Radius.circular(10.0), topRight: Radius.circular(10.0)),
@@ -110,6 +109,6 @@ class _CctvPageState extends State<CctvPage> {
           )
         ]),
       ),
-    ));
+    );
   }
 }

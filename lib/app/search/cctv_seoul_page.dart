@@ -1,13 +1,9 @@
-import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
-import 'package:project1/repo/cctv/data/cctv_res_data.dart';
 import 'package:project1/repo/cctv/data/cctv_seoul_res_data.dart';
 import 'package:project1/utils/log_utils.dart';
-import 'package:project1/utils/utils.dart';
 import 'package:video_player/video_player.dart';
 
 class CctvSeoulPageBottomSheet {

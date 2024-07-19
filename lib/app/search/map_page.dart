@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:get/get_state_manager/get_state_manager.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/search/cctv_page.dart';
@@ -20,6 +21,7 @@ import 'package:project1/repo/cctv/data/cctv_res_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
+import 'package:syncfusion_flutter_sliders/sliders.dart';
 import 'package:text_scroll/text_scroll.dart';
 import 'package:video_player/video_player.dart';
 import 'package:http/http.dart' as http;
@@ -42,15 +44,13 @@ class _MapPageState extends State<MapPage> {
 
   Duration position = Duration.zero;
 
+  // 검색어 Data
+  int seachDay = 10;
+
   @override
   void initState() {
     super.initState();
     topheight = Platform.isIOS ? 55 : 45;
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
   }
 
   // 동영상 비디오 재생
@@ -61,12 +61,9 @@ class _MapPageState extends State<MapPage> {
           'Connection': 'keep-alive',
           'Cache-Control': 'max-age=3600',
         },
-        formatHint: VideoFormat.hls);
-    // ignore: avoid_single_cascade_in_expression_statements
-    videoCntroller
+        formatHint: VideoFormat.hls)
       ..initialize().then((_) {
         if (mounted) {
-          // lo.g('@@@  VideoScreenPageState initiliazeVideo() Mounted : ${widget.data.boardId}');
           setState(() {
             videoCntroller.setLooping(true);
             videoCntroller.play();
@@ -76,9 +73,8 @@ class _MapPageState extends State<MapPage> {
       });
   }
 
+  // 카카오 검색창에서 검색후 클릭시 위치로 이동
   Future<void> locationUpdate(GeocodeData geocodeData) async {
-    lo.g('geocodeData.latLng.latitude: ${geocodeData.latLng.latitude}');
-
     NaverMapController mapController = Get.find<MapCntr>().mapController;
 
     NLatLng currentCoord = NLatLng(geocodeData.latLng.latitude, geocodeData.latLng.longitude);
@@ -212,15 +208,19 @@ class _MapPageState extends State<MapPage> {
             ),
             const Gap(10),
             ElevatedButton(
-                onPressed: () => Get.back(),
-                style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.all(0),
-                    minimumSize: const Size(50, 50),
-                    backgroundColor: Colors.white,
-                    elevation: 5,
-                    shadowColor: Colors.grey,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5))),
-                child: const Icon(Icons.close, color: Colors.black))
+              onPressed: () => Get.back(),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.all(0),
+                minimumSize: const Size(50, 50),
+                backgroundColor: Colors.white,
+                elevation: 5,
+                shadowColor: Colors.grey,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(5),
+                ),
+              ),
+              child: const Icon(Icons.close, color: Colors.black),
+            ),
           ],
         ));
   }
@@ -236,6 +236,8 @@ class _MapPageState extends State<MapPage> {
         elevation: 8.0);
   }
 
+  ValueNotifier<double> isSlider = ValueNotifier<double>(0.0);
+
   // 우측 하단 버튼
   Widget buildBottom() {
     return Positioned(
@@ -243,38 +245,61 @@ class _MapPageState extends State<MapPage> {
         right: 16,
         child: Column(
           children: [
-            // ElevatedButton(
-            //   style: ElevatedButton.styleFrom(
-            //       padding: const EdgeInsets.all(1),
-            //       minimumSize: const Size(50, 30),
-            //       backgroundColor: Colors.white,
-            //       elevation: 5,
-            //       shadowColor: Colors.grey,
-            //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5))),
-            //   onPressed: () => Get.find<MapCntr>().getLocation(),
-            //   child: const Text("현재위치", style: TextStyle(color: Colors.black, fontSize: 12)),
-            // ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(5),
-                  minimumSize: const Size(70, 40),
-                  backgroundColor: Colors.white,
-                  elevation: 5,
-                  shadowColor: Colors.grey,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5))),
-              onPressed: () => buildMarker(context),
-              child: const Text("근처영상보기", style: TextStyle(color: Colors.black, fontSize: 12)),
+            ValueListenableBuilder<double>(
+              valueListenable: isSlider,
+              builder: (context, value, child) {
+                return SizedBox(
+                  height: 250,
+                  // child: Slider(
+                  //   value: value,
+                  //   min: 0,
+                  //   max: 5,
+                  //   divisions: 1,
+                  //   label: '${value.round()}일',
+                  //   onChanged: (double value) {
+                  //     //  setState(() {
+                  //     isSlider.value = value;
+                  //     seachDay = value.round();
+                  //     //});
+                  //     buildMarker(context);
+                  //   },
+                  //   activeColor: Colors.blue,
+                  //   inactiveColor: Colors.grey.shade300,
+                  // ),
+                  child: SfSlider.vertical(
+                    min: 1.0,
+                    max: 5.0,
+                    value: value,
+                    interval: 1.0,
+                    showTicks: true,
+                    activeColor: Colors.brown,
+                    inactiveColor: Colors.grey,
+                    labelPlacement: LabelPlacement.onTicks,
+                    dividerShape: SfDividerShape(),
+                    shouldAlwaysShowTooltip: true,
+                    stepSize: 1.0,
+                    showLabels: true,
+                    enableTooltip: true,
+                    minorTicksPerInterval: 1,
+                    onChanged: (dynamic values) {
+                      isSlider.value = values;
+                      seachDay = values.start.toInt();
+                      buildMarker(context);
+                    },
+                  ),
+                );
+              },
             ),
             // ElevatedButton(
             //   style: ElevatedButton.styleFrom(
-            //       padding: const EdgeInsets.all(0),
-            //       minimumSize: const Size(50, 30),
+            //       padding: const EdgeInsets.all(5),
+            //       minimumSize: const Size(70, 40),
             //       backgroundColor: Colors.white,
             //       elevation: 5,
             //       shadowColor: Colors.grey,
             //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5))),
-            //   onPressed: () => getCctv(),
-            //   child: const Text("CCTV", style: TextStyle(color: Colors.black, fontSize: 12)),
+            //   onPressed: () => buildMarker(context),
+            //   child: const Text("근처영상보기", style: TextStyle(color: Colors.black, fontSize: 12)),
             // ),
           ],
         ));
@@ -284,14 +309,12 @@ class _MapPageState extends State<MapPage> {
   Future<void> buildMarker(BuildContext context) async {
     Size size = const Size(45, 60);
 
-    // 마커 리스트
-    // TODO : 지도 가운데를 기준으로 다시 가져오는 방법 찾기
-    // List<BoardWeatherListData> _list = Get.find<VideoListCntr>().list;
-
     var (southWest, northEast) = await getbounds();
+    // 현재 그려진 마커 삭제
+    Get.find<MapCntr>().mapController.clearOverlays();
 
     BoardRepo boardRepo = BoardRepo();
-    ResData resListData = await boardRepo.searchBoardListByMaplonlat(southWest, northEast, 0, 200);
+    ResData resListData = await boardRepo.searchBoardListByMaplonlatAndDay(southWest, northEast, seachDay, 0, 200);
     if (resListData.code != '00') {
       Utils.alert(resListData.msg.toString());
       return;
@@ -653,13 +676,12 @@ class _MapPageState extends State<MapPage> {
           ),
         );
       },
-    );
-    // ).then((onValue) {
-    //   videoCntroller.pause();
-    //   videoCntroller.seekTo(const Duration(seconds: 0));
-    //   initialized = false;
-    //   videoCntroller.dispose();
-    // });
+    ).then((onValue) {
+      videoCntroller.pause();
+      videoCntroller.seekTo(const Duration(seconds: 0));
+      initialized = false;
+      // videoCntroller.dispose();
+    });
   }
 
   TextSpan buildTextMist(String mist) {
@@ -670,7 +692,55 @@ class _MapPageState extends State<MapPage> {
       return '보통';
     } else if (value >= 81 && value <= 150) {
       return '나쁨';
-    } else {
+    } else {Widget buildBottom() {
+  return Positioned(
+    bottom: 40,
+    left: 16,
+    right: 16,
+    child: Column(
+      children: [
+        // 기존 버튼들...
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.5),
+                spreadRadius: 1,
+                blurRadius: 7,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Text(
+                '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              Slider(
+                value: selectedDate.millisecondsSinceEpoch.toDouble(),
+                min: startDate.millisecondsSinceEpoch.toDouble(),
+                max: endDate.millisecondsSinceEpoch.toDouble(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedDate = DateTime.fromMillisecondsSinceEpoch(value.toInt());
+                  });
+                  // 여기에 선택된 날짜에 따른 마커 업데이트 로직을 추가할 수 있습니다.
+                  updateMarkersForDate(selectedDate);
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
       return '매우나쁨';
     }
     */

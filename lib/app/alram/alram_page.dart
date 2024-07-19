@@ -6,13 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:project1/app/alram/gemini_chat_page.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/chatting/chat_main_page.dart';
-import 'package:project1/repo/weather_gogo/gpt_api.dart';
-import 'package:project1/repo/weather_gogo/models/response/fct/fct_model.dart';
-import 'package:project1/repo/weather_gogo/models/response/super_fct/super_fct_model.dart';
-import 'package:project1/repo/weather_gogo/models/response/super_nct/super_nct_model.dart';
-import 'package:project1/repo/weather_gogo/weather_gogo_repo.dart';
 import 'package:project1/repo/alram/alram_repo.dart';
 import 'package:project1/repo/alram/data/alram_req_data.dart';
 import 'package:project1/repo/alram/data/alram_res_data.dart';
@@ -21,7 +17,6 @@ import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:project1/widget/custom_tabbarview.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -170,10 +165,23 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
           title: const Text('알람'),
           centerTitle: false,
           actions: [
-            IconButton(
-              onPressed: () => aa(),
-              icon: const Icon(Icons.chat_bubble_outline),
-            ),
+            // IconButton(
+            //   onPressed: () {
+            //     // SectionStreamChat 페이지로 이동
+
+            //     Navigator.of(context).push(
+            //       MaterialPageRoute(
+            //         fullscreenDialog: true,
+            //         builder: (context) => SectionStreamChat(),
+            //       ),
+            //     );
+            //   },
+            //   icon: const Icon(Icons.refresh_outlined),
+            // ),
+            // IconButton(
+            //   onPressed: () => aa(),
+            //   icon: const Icon(Icons.chat_bubble_outline),
+            // ),
             IconButton(
               onPressed: () => tabController.index == 0 ? getDataInit() : chatMainPageKey.currentState?.initSupaBaseSession(),
               icon: const Icon(Icons.refresh_outlined),

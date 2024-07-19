@@ -56,7 +56,7 @@ class OpenWheatherRepo {
     } finally {}
   }
 
-  Future<ResData> getDailyWeather(LatLng position) async {
+  Future<ResData> getOneCallWeather(LatLng position) async {
     // final dio = await AuthDio.instance.getNoAuthCathDio(cachehour: 1);
     final dio = await AuthDio.instance.getNoAuthDio();
     try {

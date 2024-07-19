@@ -106,7 +106,7 @@ class _NotiPageState extends State<NotiPage> with AutomaticKeepAliveClientMixin 
           icon: const Icon(Icons.arrow_back_ios),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('공지사항'),
+        title: const Text('공지사항'),
         centerTitle: true,
         elevation: 0,
       ),
@@ -126,7 +126,7 @@ class _NotiPageState extends State<NotiPage> with AutomaticKeepAliveClientMixin 
                   if (val) {
                     return SizedBox(height: 60, child: Utils.progressbar());
                   } else {
-                    return SizedBox(
+                    return const SizedBox(
                       height: 60,
                     );
                   }
@@ -205,14 +205,14 @@ class _NotiPageState extends State<NotiPage> with AutomaticKeepAliveClientMixin 
                         if (data.isTop == 'Y') ...[
                           CustomBadge(
                             text: 'Top',
-                            bgColor: Colors.red[700],
+                            colorNo: 4,
                           ),
                           const Gap(5),
                         ],
                         if (data.isNew == 'Y') ...[
                           CustomBadge(
                             text: 'New',
-                            bgColor: Colors.blue,
+                            colorNo: 1,
                           ),
                           const Gap(5),
                         ],

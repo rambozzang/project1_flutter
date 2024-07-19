@@ -5,6 +5,8 @@ import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/repo/chatting/chat_repo.dart';
+import 'package:project1/repo/chatting/data/update_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
@@ -25,6 +27,7 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
   bool get wantKeepAlive => true;
 
   final formKey = GlobalKey<FormState>();
+  TextEditingController emailController = TextEditingController();
   TextEditingController nickNmController = TextEditingController();
   TextEditingController custNmController = TextEditingController();
   TextEditingController selfIntroController = TextEditingController();
@@ -35,6 +38,9 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
   FocusNode hpFocus = FocusNode();
 
   final StreamController<ResStream<CustData>> dataCntr = StreamController();
+
+  // 버튼 상태관리
+  ValueNotifier<bool> isProgressing = ValueNotifier(false);
 
   @override
   initState() {
@@ -62,6 +68,7 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
 
   Future<void> save() async {
     try {
+      isProgressing.value = true;
       dataCntr.sink.add(ResStream.loading());
       CustRepo repo = CustRepo();
       CustUpdataData data = CustUpdataData();
@@ -75,15 +82,25 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         dataCntr.sink.add(ResStream.error(res.msg.toString()));
+        isProgressing.value = false;
         return;
       }
       Utils.alert('수정되었습니다.');
-      AuthCntr.to.resLoginData.value.nickNm = nickNmController.text;
-      AuthCntr.to.resLoginData.value.custNm = custNmController.text;
+
+      // chatting 서버 이미지도 변경한다.
+      ChatRepo chatRepo = ChatRepo();
+      ChatUpdateData chatUpdateData = ChatUpdateData();
+      chatUpdateData.firstName = nickNmController.text;
+      chatUpdateData.uid = AuthCntr.to.resLoginData.value.chatId.toString();
+      chatUpdateData.imageUrl = AuthCntr.to.resLoginData.value.profilePath;
+      chatRepo.updateUserino(chatUpdateData);
+
+      Get.find<AuthCntr>().upDateNickNmAndCustName(nickNmController.text, custNmController.text);
 
       Get.back(result: true);
     } catch (e) {
       Utils.alert(e.toString());
+      isProgressing.value = false;
       dataCntr.sink.add(ResStream.error(e.toString()));
     }
   }
@@ -115,12 +132,19 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
           )),
         ),
       ),
-      bottomNavigationBar:
-          bottomContainer(context, CustomButton(text: '수정완료', type: 'XL', heightValue: 55, isEnable: true, onPressed: () => save())),
+      bottomNavigationBar: bottomContainer(
+          context,
+          ValueListenableBuilder<bool>(
+              valueListenable: isProgressing,
+              builder: (context, value, child) {
+                return CustomButton(
+                    text: '수정완료', isProgressing: value, type: 'XL', heightValue: 55, isEnable: true, onPressed: () => save());
+              })),
     );
   }
 
   Widget buildBody(CustData data) {
+    emailController.text = data.email ?? '';
     nickNmController.text = data.nickNm ?? '';
     custNmController.text = data.custNm ?? '';
     selfIntroController.text = data.selfIntro ?? '';
@@ -128,6 +152,46 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
 
     return Column(
       children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 15.0),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 0),
+            padding: const EdgeInsets.only(top: 5),
+            height: 54,
+            child: TextFormField(
+              controller: emailController,
+              // focusNode: textFocus,
+              readOnly: true,
+              maxLines: 1,
+              // cursorHeight: 14,
+              style: const TextStyle(decorationThickness: 0), // 한글밑줄제거
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                counterStyle: const TextStyle(color: Colors.grey),
+                filled: true,
+                // fillColor: Colors.grey[100],
+                // suffixIcon: const Icon(Icons.search, color: Colors.grey),
+                enabledBorder: OutlineInputBorder(
+                  // width: 0.0 produces a thin "hairline" border
+                  borderSide: const BorderSide(color: Colors.grey, width: 0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                border: OutlineInputBorder(
+                  // width: 0.0 produces a thin "hairline" border
+                  //  borderSide: const BorderSide(color: Colors.grey, width: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: Colors.grey, width: 0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                label: const Text("계정 Email - 수정불가"),
+                labelStyle: const TextStyle(color: Colors.black38),
+              ),
+              onFieldSubmitted: (text) {},
+            ),
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.only(bottom: 15.0),
           child: Container(

@@ -8,6 +8,9 @@
 
 # psql 설치  : brew install libpq
 # DB 접속 비밀번호  : GsH1yDz1ZytaChAS  
+# anon public key  :  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRueGdsZ2p0dWhyeHhva3B4cGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTg3NzUxMjMsImV4cCI6MjAzNDM1MTEyM30.nX6nB4TFhcmXK6tEgCa6PYCcljvImLMp9RfhM0Hl8OE 
+# 
+
 while getopts h:p:d:U flag
 do
     case "${flag}" in

@@ -19,7 +19,7 @@ String getWeatherImage(String input) {
   // String assetPath = 'assets/images/';
   switch (weather) {
     case 'thunderstorm':
-      return assetPath + 'Storm.json';
+      return assetPath + 'storm.json';
 
     case 'drizzle':
     case 'rain':

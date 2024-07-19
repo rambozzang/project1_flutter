@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:comment_sheet/comment_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -11,7 +9,6 @@ import 'package:project1/app/videocomment/comment_header_widget.dart';
 import 'package:project1/app/videocomment/list_item_widget.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_comment_res_data.dart';
-import 'package:project1/repo/board/data/board_main_detail_data.dart';
 import 'package:project1/repo/board/data/board_comment_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
@@ -20,7 +17,6 @@ import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/error_page.dart';
-import 'package:project1/widget/no_data_widget.dart';
 
 class CommentPage {
   Future<dynamic> open(
@@ -54,7 +50,7 @@ class CommentsPage extends StatefulWidget {
 
 class _CommentsPageState extends State<CommentsPage> {
   ScrollController scrollController = ScrollController();
-  final CommentSheetController commentSheetController = CommentSheetController();
+  // final CommentSheetController commentSheetController = CommentSheetController();
 
   final StreamController<ResStream<List<BoardCommentResData>>> listCtrl = StreamController.broadcast();
 

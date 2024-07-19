@@ -41,7 +41,7 @@ class BoardRepo {
     } finally {}
   }
 
-  Future<ResData> searchBoardListByMaplonlat(LatLng southWest, LatLng northEast, int pageNum, int pageSize) async {
+  Future<ResData> searchBoardListByMaplonlatAndDay(LatLng southWest, LatLng northEast, int day, int pageNum, int pageSize) async {
     final dio = await AuthDio.instance.getDio();
     try {
       String minX = southWest.longitude.toString();
@@ -50,10 +50,10 @@ class BoardRepo {
       String maxX = northEast.longitude.toString();
       String maxY = northEast.latitude.toString();
 
-      var url = '${UrlConfig.baseURL}/board/searchBoardListByMaplonlat';
+      var url = '${UrlConfig.baseURL}/board/searchBoardListByMaplonlatAndDay';
 
-      Response response =
-          await dio.post(url, data: {'minX': minX, 'minY': minY, 'maxX': maxX, 'maxY': maxY, 'pageNum': pageNum, 'pageSize': pageSize});
+      Response response = await dio
+          .post(url, data: {'minX': minX, 'minY': minY, 'maxX': maxX, 'maxY': maxY, 'day': day, 'pageNum': pageNum, 'pageSize': pageSize});
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);
@@ -281,11 +281,11 @@ class BoardRepo {
   }
 
   //신고하기
-  Future<ResData> saveSingo(String boardId, String reason) async {
+  Future<ResData> saveSingo(String boardId, String reasonCd, String reason) async {
     final dio = await AuthDio.instance.getDio();
     try {
       var url = '${UrlConfig.baseURL}/singo/save';
-      Response response = await dio.post(url, queryParameters: {'boardId': boardId, 'reason': reason});
+      Response response = await dio.post(url, queryParameters: {'boardId': boardId, 'reasonCd': reasonCd, 'reason': reason});
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);

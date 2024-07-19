@@ -33,22 +33,10 @@ class WeatherGogoRepo {
     return dio;
   }
 
-  // Texst
-  // Future<List<ItemSuperNct>> getYesterDayInfo() async {
-
-  //   /getVilageFcst
-
-  //   final json = await SuperNctRepositoryImp(isLog: isLog).getItemListJSON(weather);
-
-  //   json.map((e) => items.add(e)).toList();
-
-  //   return items;
-  // }
-  // 초단기 실황조회
+  // 초단기 실황 24시 조회
   //  X축이 Longitude, Y축이 Latitude
   Future<List<ItemSuperNct>> getYesterDayJson(LatLng latLng, {isLog = false, isChache = false}) async {
     lo.g("################ 1:  ${latLng.longitude} ${latLng.latitude}");
-
     //위경도를 기상청 좌료로 변경
     //  제주도 126.54587355630036 33.379777816446165 - > nx: 54, ny: 36
     //  서울역 126.970606917394 37.5546788388674 ->  nx: 61, ny: 127
@@ -57,7 +45,7 @@ class WeatherGogoRepo {
     Weather weather = Weather(
       serviceKey: _key,
       pageNo: 1,
-      numOfRows: 100,
+      numOfRows: 100000,
       nx: changeMap.x,
       ny: changeMap.y,
     );
@@ -70,15 +58,25 @@ class WeatherGogoRepo {
     return items;
   }
 
+  //----------------------------------------------------------
   // 초단기 실황조회
+  //----------------------------------------------------------
+  // T1H : 기온 ℃
+  // RN1 : 1시간 강수량 mm
+  // UUU : 동서바람성분 m/s
+  // VVV : 남북바람성분 m/s
+  // REH : 습도 %
+  // PTY : 강수형태 ㅣ (초단기) 없음(0), 비(1), 비/눈(2), 눈(3), 빗방울(5), 빗방울눈날림(6), 눈날림(7)
+  // VEC : 풍량 deg
+  // WSD : 풍속
   Future<List<ItemSuperNct>> getSuperNctListJson(LatLng latLng, {isLog = false, isChache = false}) async {
-    MapAdapter _changeMap = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
+    MapAdapter changeMap = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
     final weather = Weather(
       serviceKey: _key,
       pageNo: 1,
-      numOfRows: 100,
-      nx: _changeMap.x,
-      ny: _changeMap.y,
+      numOfRows: 1000,
+      nx: changeMap.x,
+      ny: changeMap.y,
       dateTime: DateTime.now().subtract(const Duration(hours: 23, minutes: 59, seconds: 01)),
     );
     final List<ItemSuperNct> items = [];
@@ -89,14 +87,34 @@ class WeatherGogoRepo {
     return items;
   }
 
-  // ### 단기 예보 예제
-  Future<List<ItemFct>> getFctListJson({isLog = true}) async {
+  //----------------------------------------------------------
+  // 단기 예보 예제 +3일
+  //----------------------------------------------------------
+  // POP : 강수확률 %
+  // PTY : 강수형태 (단기) 없음(0), 비(1), 비/눈(2), 눈(3), 소나기(4)
+  // PCP : 1시간 강수량 범주(1mm)
+  // REH : 습도
+  // SNO : 1시간 신적설
+  // SKY	하늘상태	맑음(1), 구름많음(3), 흐림(4)
+  // TMP	1시간 기온	℃
+  // TMN	일 최저기온	℃
+  // TMX	일 최고기온	℃
+  // UUU	풍속(동서성분)	m/s
+  // VVV	풍속(남북성분)	m/s
+  // WAV	파고	M
+  // VEC	풍향	deg
+  // WSD	풍속	m/s
+  Future<List<ItemFct>> getFctListJson(LatLng latLng, {isLog = false, isChache = false}) async {
     lo.g('getFctListJson : ${DateTime.now().subtract(const Duration(hours: 24, minutes: 01, seconds: 01))}');
+
+    MapAdapter changeMap = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
 
     final weather = Weather(
       serviceKey: _key,
       pageNo: 1,
-      numOfRows: 10,
+      numOfRows: 100000,
+      nx: changeMap.x,
+      ny: changeMap.y,
       dateTime: DateTime.now().subtract(const Duration(hours: 23, minutes: 59, seconds: 01)),
     );
     final List<ItemFct> items = [];
@@ -107,10 +125,31 @@ class WeatherGogoRepo {
     return items;
   }
 
-  Future<List<ItemSuperFct>> getSuperFctListJson({isLog = false}) async {
+  // 기온
+  // 강수확률
+
+  //----------------------------------------------------------
+  // 초단기 예보조회 +6시간 정보
+  //----------------------------------------------------------
+  // T1H	기온	℃
+  // RN1	1시간 강수량	범주 (1 mm)
+  // SKY	하늘상태	맑음(1), 구름많음(3), 흐림(4)
+  // UUU	동서바람성분	m/s
+  // VVV	남북바람성분	m/s
+  // REH	습도	%
+  // PTY	강수형태	(초단기) 없음(0), 비(1), 비/눈(2), 눈(3), 빗방울(5), 빗방울눈날림(6), 눈날림(7)
+  // LGT	낙뢰	kA(킬로암페어)
+  // VEC	풍향	deg
+  // WSD	풍속	m/s
+  Future<List<ItemSuperFct>> getSuperFctListJson(LatLng latLng, {isLog = false, isChache = false}) async {
+    MapAdapter changeMap = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
+
     final weather = Weather(
-      serviceKey: _key,
-    );
+        serviceKey: _key,
+        pageNo: 1,
+        numOfRows: 10000, //기준시간별 항목이 12개이므로 24시간치 데이터를 가져오기 위해 12 * 24
+        nx: changeMap.x,
+        ny: changeMap.y);
 
     final List<ItemSuperFct> items = [];
 

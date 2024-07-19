@@ -1,45 +1,88 @@
+import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:project1/utils/log_utils.dart';
+import 'package:project1/utils/utils.dart';
 
-class PermissionPage extends StatefulWidget {
-  const PermissionPage({super.key});
-
-  @override
-  State<PermissionPage> createState() => _PermissionPageState();
-}
-
-class _PermissionPageState extends State<PermissionPage> {
-  @override
-  void initState() {
-    super.initState();
-    permissionRequest();
+class PermissionHandler {
+  Future<void> complated() async {
+    await handlePermissions();
   }
 
-  // 최초 회원 강비ㅅ
-  Future<void> permissionRequest() async {
-    Map<Permission, PermissionStatus> status = await [Permission.location, Permission.notification].request(); // [] 권한배열에 권한을
-
-    // var status = await Permission.location.request();
-    // var status = await Permission.notification.request();
-    // var status = await Permission.camera.request();
-
-    // if (await Permission.location.isGranted) {
-    //   return Future.value(true);
-    // } else {
-    //   return Future.value(false);
-    // }
+  Future<void> handlePermissions() async {
+    await handleNotificationPermission();
+    await handleLocationPermission();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFF262B49),
-      body: Center(
-        child: Text(
-          '권한 체크...',
-          style: TextStyle(color: Colors.white, fontSize: 8),
-        ),
+  Future<void> handleNotificationPermission() async {
+    var status = await Permission.notification.request();
+    if (status.isDenied) {
+      Utils.alert('알림 권한이 거부되었습니다. 일부 기능이 제한될 수 있습니다.');
+    } else if (status.isPermanentlyDenied) {
+      await showOpenSettingsDialog('알림');
+    }
+  }
+
+  Future<void> handleLocationPermission() async {
+    LocationPermission locationPermission = await Geolocator.checkPermission();
+    lo.g(locationPermission.toString());
+
+    if (locationPermission == LocationPermission.denied || locationPermission == LocationPermission.deniedForever) {
+      locationPermission = await Geolocator.requestPermission();
+      if (locationPermission == LocationPermission.denied || locationPermission == LocationPermission.deniedForever) {
+        await openAppSettings().then((value) => handleLocationPermission()).catchError((e) => lo.g('openAppSettings error: $e'));
+      }
+    }
+  }
+
+  Future<void> showLocationExplanationDialog() async {
+    bool? result = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('위치 권한 필요'),
+        content: const Text('정확한 서비스 제공을 위해 위치 권한이 필요합니다. 권한을 허용하시겠습니까?'),
+        actions: [
+          TextButton(
+            child: const Text('나중에'),
+            onPressed: () => Get.back(result: false),
+          ),
+          TextButton(
+            child: const Text('허용'),
+            onPressed: () => Get.back(result: true),
+          ),
+        ],
       ),
     );
+
+    if (result == true) {
+      var newStatus = await Permission.location.request();
+      if (newStatus.isPermanentlyDenied) {
+        await showOpenSettingsDialog('위치');
+      }
+    }
+  }
+
+  Future<void> showOpenSettingsDialog(String permissionName) async {
+    bool? result = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('$permissionName 권한 설정'),
+        content: Text('$permissionName 권한이 거부되었습니다. 앱 설정에서 수동으로 권한을 허용해주세요.'),
+        actions: [
+          TextButton(
+            child: const Text('나중에'),
+            onPressed: () => Get.back(result: false),
+          ),
+          TextButton(
+            child: const Text('설정으로 이동'),
+            onPressed: () => Get.back(result: true),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      await openAppSettings();
+    }
   }
 }

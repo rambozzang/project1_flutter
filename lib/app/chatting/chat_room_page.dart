@@ -1,14 +1,14 @@
+import 'dart:convert';
+
 import 'package:bot_toast/bot_toast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_saver/file_saver.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
+import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_supabase_chat_core/flutter_supabase_chat_core.dart';
-import 'package:get/get.dart';
 import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
@@ -43,6 +43,11 @@ class _ChatPageState extends State<ChatPage> {
 
   bool _isFirst = true;
 
+  final gemini = Gemini.instance;
+  final TextEditingController _textController = TextEditingController();
+  final ValueNotifier<String> geminiText = ValueNotifier<String>('');
+  final ValueNotifier<bool> isGeminiAi = ValueNotifier<bool>(true);
+
   @override
   void initState() {
     room = widget.room; // Get.arguments['room'];
@@ -58,6 +63,40 @@ class _ChatPageState extends State<ChatPage> {
     super.initState();
   }
 
+  void geminiChat(List<types.Message> list) {
+    List<String> chats = [];
+    // list 를 chats에 파싱 해줘
+    for (types.Message item in list) {
+      Map<String, dynamic> jsonData = item.toJson();
+
+      lo.g('item firstName : ${item.author.firstName}');
+      lo.g('item firstName : ${jsonData['text']}');
+      if (item.author.id == SupabaseChatCore.instance.supabaseUser!.id) {
+        chats.add('나 : ${jsonData['text']}');
+      } else {
+        chats.add('상대방 :${jsonData['text']}');
+      }
+    }
+
+    chats = chats.reversed.toList();
+    lo.g('chats : $chats');
+
+    geminiText.value = "";
+    if (isGeminiAi.value) {
+      gemini
+          .streamGenerateContent(
+              "지금 나는 채팅방에서 대화중입니다. Gemini 당신은  나의 보조이자  같은편이다.  대화 내용은 [$chats] 입니다. 내말에 대답할 필요는 없다. 최근 대화 내용 중 맨 마지막 대화 글이 상대방이면 내가 대답할 차례입니다.  재미있는 답변을 추천 해주세요. 답변만 짧고 간단하게 알려주세요?")
+          .listen((value) {
+        if (value.output == null) {
+          return;
+        }
+        lo.g('대답 :  ${value.output.toString()}');
+        geminiText.value = geminiText.value + value.output!;
+      });
+    }
+  }
+
+  // 첨부파일 보내기
   void _handleAttachmentPressed() {
     showModalBottomSheet<void>(
       context: context,
@@ -78,7 +117,7 @@ class _ChatPageState extends State<ChatPage> {
                   child: const Row(
                     children: [
                       Icon(Icons.image),
-                      Text('Image'),
+                      Text('이미지'),
                     ],
                   ),
                 ),
@@ -90,7 +129,7 @@ class _ChatPageState extends State<ChatPage> {
                   child: const Row(
                     children: [
                       Icon(Icons.attach_file),
-                      Text('File'),
+                      Text('파일'),
                     ],
                   ),
                 ),
@@ -249,6 +288,24 @@ class _ChatPageState extends State<ChatPage> {
     super.dispose();
   }
 
+  void _handleCustomSendPressed() {
+    if (_textController.text.isEmpty) {
+      return;
+    }
+
+    // final textMessage = types.TextMessage(
+
+    //   createdAt: DateTime.now().millisecondsSinceEpoch,
+    //   id: Uuid().v4(),
+    //   text: _textController.text,
+    // );
+
+    types.PartialText partialText = types.PartialText(text: _textController.text, metadata: null, previewData: null, repliedMessage: null);
+
+    _handleSendPressed(partialText);
+    _textController.clear();
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
@@ -272,6 +329,8 @@ class _ChatPageState extends State<ChatPage> {
             style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
           ),
           actions: [
+            // isGeminiAi
+
             IconButton(
               icon: const Icon(
                 Icons.exit_to_app,
@@ -293,6 +352,8 @@ class _ChatPageState extends State<ChatPage> {
               if (!snapshot.hasData) {
                 return Center(child: Utils.progressbar());
               }
+
+              geminiChat(snapshot.data ?? []);
 
               // if (snapshot.data!.isEmpty) {
               //   return Container(
@@ -364,10 +425,7 @@ class _ChatPageState extends State<ChatPage> {
                 isAttachmentUploading: _isAttachmentUploading,
                 messages: snapshot.data ?? [],
 
-                // customBottomWidget: Container(
-                //   color: Colors.white,
-                //   child: const Text('Custom bottom widget'),
-                // ),
+                customBottomWidget: customTextinputWidget(),
                 onAttachmentPressed: _handleAttachmentPressed,
                 onMessageTap: _handleMessageTap,
                 onPreviewDataFetched: _handlePreviewDataFetched,
@@ -392,4 +450,126 @@ class _ChatPageState extends State<ChatPage> {
               );
             }),
       );
+  Widget customTextinputWidget() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: isGeminiAi,
+      builder: (context, value, child) {
+        return Container(
+          height: value ? 160 + 35 : 68 + 35,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: const Color.fromARGB(255, 57, 65, 112),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Column(
+            children: [
+              SizedBox(
+                height: 35,
+                child: Row(
+                  children: [
+                    const SizedBox(width: 10),
+                    const Text(
+                      'Gemini AI',
+                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                    const Spacer(),
+                    FittedBox(
+                      child: Switch(
+                        value: isGeminiAi.value,
+                        onChanged: (value) {
+                          isGeminiAi.value = value;
+                        },
+                        // activeColor: Colors.red,
+                        // activeTrackColor: Colors.grey,
+                        // inactiveThumbColor: Colors.white,
+                        // inactiveTrackColor: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
+                ),
+              ),
+              value
+                  ? Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 4.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ValueListenableBuilder<String>(
+                              valueListenable: geminiText,
+                              builder: (context, value, child) {
+                                return Expanded(
+                                  child: GestureDetector(
+                                    onTap: () => _textController.text = value,
+                                    child: SingleChildScrollView(
+                                      child: Text(value,
+                                          overflow: TextOverflow.clip,
+                                          softWrap: true,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 15,
+                                          )),
+                                    ),
+                                  ),
+                                );
+                              },
+                            )
+                          ],
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+              Container(
+                color: Colors.white,
+                height: 60,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    IconButton(
+                      padding: const EdgeInsets.all(0),
+                      icon: const Icon(Icons.add),
+                      onPressed: () {
+                        _handleAttachmentPressed();
+                      },
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: _textController,
+                        onSubmitted: (text) => _handleCustomSendPressed(),
+                        keyboardType: TextInputType.text,
+                        style: const TextStyle(color: Colors.black, decorationThickness: 0), //
+                        decoration: const InputDecoration(
+                          contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          hintText: "메세지 입력",
+                          border: InputBorder.none,
+                          enabledBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Colors.transparent),
+                          ),
+                          // border: OutlineInputBorder(
+                          //   borderRadius: BorderRadius.circular(8.0),
+                          // ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 40,
+                      child: IconButton(
+                        icon: const Icon(Icons.send),
+                        onPressed: () {
+                          // Handle send button press
+                          _handleCustomSendPressed();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }

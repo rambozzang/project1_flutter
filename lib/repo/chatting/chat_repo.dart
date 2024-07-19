@@ -42,7 +42,7 @@ class ChatRepo {
       resData.data = response.user!.id;
       return resData;
     } catch (e) {
-      log('Kakao supabase signUp Result : $e');
+      log('supabase signUp Result : $e');
       Utils.alert(e.toString());
       resData.msg = e.toString();
       AuthException exception = e as AuthException;
@@ -95,7 +95,7 @@ class ChatRepo {
       resData.msg = '업데이트 성공';
       return resData;
     } catch (e) {
-      log('Kakao supabase signUp Result : $e');
+      log('supabase signUp Result : $e');
       Utils.alert(e.toString());
       resData.msg = e.toString();
       return resData;

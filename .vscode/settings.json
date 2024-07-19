@@ -13,5 +13,6 @@
     "editor.stickyScroll.enabled": true,
     "dart.previewFlutterUiGuides": true,
     "dart.previewFlutterUiGuidesCustomTracking": true,
+    "CodeGPT.apiKey": "CodeGPT Plus Beta",
     
 }

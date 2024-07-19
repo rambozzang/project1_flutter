@@ -16,7 +16,10 @@ import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 //  연결 주소 : https://developers.naver.com/docs/login/api/api.md
 class NaverApi with SecureStorage {
-  Future<bool> signInWithNaver() async {
+  Future<ResData> signInWithNaver() async {
+    ResData resData = ResData();
+    resData.code = "00";
+
     NaverLoginResult result = await FlutterNaverLogin.logIn();
     log('Naver Login Result : $result');
     NaverJoinData naverJoinData = NaverJoinData();
@@ -45,16 +48,20 @@ class NaverApi with SecureStorage {
 
       ResData res = await repo.createNaverCust(naverJoinData);
       if (res.code != "00") {
-        Utils.alert(res.msg.toString());
-        return false;
+        resData.code = res.code.toString();
+        resData.msg = res.msg.toString();
+        return resData;
       }
     } catch (e) {
-      Utils.alert(e.toString());
-      return false;
+      resData.code = '99';
+      resData.msg = e.toString();
+      return resData;
     }
 
-    bool result1 = await AuthCntr.to.signUpProc(naverJoinData.account!.id.toString());
-    return result1;
+    // ResData signUpProcRes = await AuthCntr.to.signUpProc(naverJoinData.account!.id.toString());
+    // return signUpProcRes;
+    resData.data = naverJoinData.account!.id.toString();
+    return resData;
   }
 
   Future<String> chatSignUp(NaverLoginResult result) async {
@@ -71,6 +78,16 @@ class NaverApi with SecureStorage {
     } catch (e) {
       log('chatSignup : $e');
       return '';
+    }
+  }
+
+  void logOut() async {
+    try {
+      // await FlutterNaverLogin.logOut();
+      await FlutterNaverLogin.logOutAndDeleteToken();
+      print('로그아웃 성공, SDK에서 토큰 삭제');
+    } catch (error) {
+      print('로그아웃 실패, SDK에서 토큰 삭제 $error');
     }
   }
 }

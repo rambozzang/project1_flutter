@@ -15,20 +15,16 @@ class CameraInitial extends CameraState {}
 
 // Camera ready state when it's initialized and ready to use
 class CameraReady extends CameraState {
-  final bool
-      isRecordingVideo; // Flag indicating if the camera is currently recording a video
-  final bool
-      hasRecordingError; // Flag indicating if there was a recording error
-  final bool
-      decativateRecordButton; // Flag indicating if the record button should be deactivated
+  final bool isRecordingVideo; // Flag indicating if the camera is currently recording a video
+  final bool hasRecordingError; // Flag indicating if there was a recording error
+  final bool decativateRecordButton; // Flag indicating if the record button should be deactivated
   CameraReady({
     required this.isRecordingVideo,
     this.hasRecordingError = false,
     this.decativateRecordButton = false,
   });
   @override
-  List<Object> get props =>
-      [isRecordingVideo, hasRecordingError, decativateRecordButton];
+  List<Object> get props => [isRecordingVideo, hasRecordingError, decativateRecordButton];
 
   @override
   String toString() {

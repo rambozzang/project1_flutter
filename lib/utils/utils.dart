@@ -410,7 +410,7 @@ abstract class Utils {
     // );
     return Center(
         child: LoadingAnimationWidget.fourRotatingDots(
-      color: const Color.fromARGB(255, 173, 32, 79),
+      color: color ?? const Color.fromARGB(255, 173, 32, 79),
       size: size ?? 40,
     ));
   }

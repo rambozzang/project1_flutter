@@ -1,14 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:bot_toast/bot_toast.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:get/get_connect/http/src/response/response.dart';
-import 'package:giffy_dialog/giffy_dialog.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/repo/weather_accu/accu_repo.dart';
 import 'package:project1/repo/weather_gogo/interface/imp_fct_repository.dart';
@@ -27,6 +23,7 @@ import 'package:project1/repo/search/camping/camping_repo.dart';
 import 'package:project1/repo/search/camping/camping_res_data.dart';
 import 'package:project1/repo/search/school/school_repo.dart';
 import 'package:project1/repo/search/school/school_res_data.dart';
+import 'package:project1/repo/weather_gogo/weather_gogo_repo.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 
@@ -153,52 +150,75 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
   // 골프장 검색
 
   // 전국 전철역 검색
-
-  // 기상청 초단기예보 가져오기
-  void getSuperShortCast() async {
+  String weatherKey = 'CeGmiV26lUPH9guq1Lca6UA25Al/aZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur+t2iPaL/LtEQdZebg==';
+  // 기상청 초단기실황 가져오기
+  void getSuperNctCast() async {
     try {
-      String _key = 'CeGmiV26lUPH9guq1Lca6UA25Al/aZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur+t2iPaL/LtEQdZebg==';
-      final weather = Weather(
-        serviceKey: _key,
-        pageNo: 1,
-        numOfRows: 12 * 24, //기준시간별 항목이 12개이므로 24시간치 데이터를 가져오기 위해 12 * 24
-      );
-      final List<ItemFct> items = [];
-      final json = await FctRepositoryImp(isLog: true).getItemListJSON(weather);
+      // 초단기실황조회
+      final List<ItemSuperNct> items = [];
+      WeatherGogoRepo repo = WeatherGogoRepo();
+      List<ItemSuperNct> json =
+          await repo.getSuperNctListJson(const LatLng(37.5546788388674, 126.970606917394), isLog: true, isChache: false);
 
       json.map((e) => setState(() => items.add(e))).toList();
-
-      items.forEach((element) {
-        Lo.g('element : $element');
+      items?.forEach((element) {
+        Lo.g('초단기실황 : element : $element');
       });
-
-      //초단기실황조회
-      // final weather = Weather(
-      //   serviceKey: _key,
-      //   pageNo: 1,
-      //   numOfRows: 10000,
-      // );
-      // final List<ItemSuperNct> items = [];
-      // final json = await SuperNctRepositoryImp(isLog: true).getItemListJSON(weather);
-
-      // json.map((e) => setState(() => items.add(e))).toList();
-      // items.forEach((element) {
-      //   Lo.g('element : $element');
-      // });
-
-      // accu weather
-      AccuRepo repo = AccuRepo();
-      String locationKey = await repo.getLocation(Get.find<WeatherCntr>().currentLocation.value!.latLng);
-
-      await repo.getCurrentWeather(locationKey);
     } catch (e) {
       Lo.g('초단기실황 가져오기 오류 : $e');
     }
   }
 
-  // NotiShow2(){
+  // 기상청 초단기예보 가져오기
+  void getSuperFctCast() async {
+    try {
+      final List<ItemSuperFct> items = [];
+      // final json = await SuperFctRepositoryImp(isLog: true).getItemListJSON(weather);
+      WeatherGogoRepo repo = WeatherGogoRepo();
+      List<ItemSuperFct> json = await repo.getSuperFctListJson(const LatLng(37.5546788388674, 126.970606917394));
+      json.map((e) => setState(() => items.add(e))).toList();
+      items.forEach((element) {
+        Lo.g('초단기 : element : $element');
+      });
+    } catch (e) {
+      Lo.g('초단기실황 가져오기 오류 : $e');
+    }
+  }
 
-  // }
+  // 기상청 단기예보 가져오기
+  void getNctCast() async {
+    try {
+      final weather = Weather(
+        serviceKey: weatherKey,
+        pageNo: 1,
+        numOfRows: 12 * 24, //기준시간별 항목이 12개이므로 24시간치 데이터를 가져오기 위해 12 * 24
+      );
+      final List<ItemFct> items = [];
+      // final json = await FctRepositoryImp(isLog: true).getItemListJSON(weather);
+      WeatherGogoRepo repo = WeatherGogoRepo();
+      List<ItemFct> json = await repo.getFctListJson(const LatLng(37.5546788388674, 126.970606917394));
+
+      json.map((e) => setState(() => items.add(e))).toList();
+
+      items.forEach((element) {
+        Lo.g('단기 element : $element');
+      });
+    } catch (e) {
+      Lo.g('초단기실황 가져오기 오류 : $e');
+    }
+  }
+
+  // accu weather
+  void getAccWeatherCast() async {
+    try {
+      AccuRepo repo = AccuRepo();
+      String locationKey = await repo.getLocation(Get.find<WeatherCntr>().currentLocation.value!.latLng);
+
+      await repo.getCurrentWeather(locationKey);
+    } catch (e) {
+      Lo.g('Accu weather가져오기 오류 : $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -208,15 +228,25 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            WeatherLineChartWidget(),
-
             ElevatedButton(
-              onPressed: () => Utils.bottomNotiAlert(context, '최신 버전 업데이트', '최신 버전이 있습니다. 플레이스토어로 이동합니다.'),
-              child: const Text('초기화면 알림'),
+              onPressed: () => Get.toNamed('/JoinPage'),
+              child: const Text('회원가입 화면 '),
             ),
             ElevatedButton(
-              onPressed: () => Utils.appUpdateAlert(context, 'https://www.daum.net'),
-              child: const Text('초기화면 알림'),
+              onPressed: () => Get.toNamed('/AuthPage'),
+              child: const Text('로그인 로딩 화면 '),
+            ),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: () => Utils.bottomNotiAlert(context, '최신 버전 업데이트', '최신 버전이 있습니다. 플레이스토어로 이동합니다.'),
+                  child: const Text('초기화면 알림'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Utils.appUpdateAlert(context, 'https://www.daum.net'),
+                  child: const Text('초기화면 알림'),
+                ),
+              ],
             ),
             ElevatedButton(
               onPressed: () => getCampingData('서울'),
@@ -226,10 +256,21 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
               onPressed: () => getSchoolata('선덕', '고등학교'),
               child: const Text('학교'),
             ),
-
-            ElevatedButton(
-              onPressed: () => getSuperShortCast(),
-              child: const Text('초단기예보'),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: () => getSuperNctCast(),
+                  child: const Text('초단기실황예보'),
+                ),
+                ElevatedButton(
+                  onPressed: () => getSuperFctCast(),
+                  child: const Text('초단기예보'),
+                ),
+                ElevatedButton(
+                  onPressed: () => getNctCast(),
+                  child: const Text('단기예보'),
+                ),
+              ],
             ),
             ElevatedButton(onPressed: () => aaa(), child: const Text('video')),
             Container(
@@ -248,174 +289,9 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
                     );
                   },
                 )),
-
-            // child: Marquee(
-            //   key: GlobalKey(),
-            //   moveDuration: const Duration(milliseconds: 500),
-            //   items: [
-            //     Container(
-            //         padding: const EdgeInsets.all(2),
-            //         decoration: BoxDecoration(
-            //           color: Colors.green.withOpacity(0.9),
-            //           borderRadius: BorderRadius.circular(5),
-            //         ),
-            //         child: const Icon(Icons.location_on, color: Colors.white, size: 15)),
-            //     const SizedBox(width: 5),
-            //     Text(
-            //       '111111 f',
-            //       textAlign: TextAlign.right,
-            //       style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
-            //     ),
-            //     const Gap(5),
-            //     Text(
-            //       'asdasdfa°',
-            //       textAlign: TextAlign.right,
-            //       style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
-            //     ),
-            //     Text(
-            //       '12333',
-            //       style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.bold),
-            //     ),
-            //     const Gap(10),
-            //   ],
-            // )),
           ],
         ),
       ),
     );
-  }
-}
-
-class WeatherLineChartWidget extends StatelessWidget {
-  final List<double> dataPoints = [10, 12, 14, 15, 13, 11, 10, 9, 8, 7, 6, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
-  final List<String> hours = [
-    '0h',
-    '1h',
-    '2h',
-    '3h',
-    '4h',
-    '5h',
-    '6h',
-    '7h',
-    '8h',
-    '9h',
-    '10h',
-    '11h',
-    '12h',
-    '13h',
-    '14h',
-    '15h',
-    '16h',
-    '17h',
-    '18h',
-    '19h',
-    '20h',
-    '21h',
-    '22h',
-    '23h'
-  ];
-  final double maxValue = 17;
-  final double minValue = 5;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      // color: Colors.white,
-      height: 250,
-      padding: const EdgeInsets.only(bottom: 30, left: 40), // Padding for x-axis labels
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: CustomPaint(
-          size: Size(dataPoints.length * 50.0, 200), // Adjust width as needed
-          painter: WeatherLineChartPainter(dataPoints, hours, maxValue, minValue),
-        ),
-      ),
-    );
-  }
-}
-
-class WeatherLineChartPainter extends CustomPainter {
-  final List<double> dataPoints;
-  final List<String> hours;
-  final double maxValue;
-  final double minValue;
-
-  WeatherLineChartPainter(this.dataPoints, this.hours, this.maxValue, this.minValue);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.blue
-      ..strokeWidth = 2.0
-      ..style = PaintingStyle.stroke;
-
-    final path = Path();
-    final double step = size.width / (dataPoints.length - 1);
-    final double heightRange = maxValue - minValue;
-
-    final dotPaint = Paint()
-      ..color = Colors.red
-      ..strokeWidth = 4.0
-      ..style = PaintingStyle.fill;
-
-    // Start drawing the path
-    path.moveTo(0, size.height - ((dataPoints[0] - minValue) / heightRange * size.height));
-
-    for (int i = 0; i < dataPoints.length - 1; i++) {
-      double x1 = i * step;
-      double y1 = size.height - ((dataPoints[i] - minValue) / heightRange * size.height);
-      double x2 = (i + 1) * step;
-      double y2 = size.height - ((dataPoints[i + 1] - minValue) / heightRange * size.height);
-      double xc = (x1 + x2) / 2;
-      double yc = (y1 + y2) / 2;
-
-      path.quadraticBezierTo(x1, y1, xc, yc);
-      path.quadraticBezierTo(xc, yc, x2, y2);
-    }
-
-    // Draw the path
-    canvas.drawPath(path, paint);
-
-    // Draw dots and labels
-    for (int i = 0; i < dataPoints.length; i++) {
-      double x = i * step;
-      double y = size.height - ((dataPoints[i] - minValue) / heightRange * size.height);
-
-      // Draw dot
-      canvas.drawCircle(Offset(x, y), 4.0, dotPaint);
-
-      // Draw temperature text
-      TextSpan span = TextSpan(style: const TextStyle(color: Colors.black, fontSize: 12), text: dataPoints[i].toString());
-      TextPainter tp = TextPainter(text: span, textAlign: TextAlign.center, textDirection: TextDirection.ltr);
-      tp.layout();
-      tp.paint(canvas, Offset(x - tp.width / 2, y - tp.height - 8));
-    }
-
-    // Draw x-axis labels (hours)
-    for (int i = 0; i < hours.length; i++) {
-      double x = i * step;
-      double y = size.height;
-
-      TextSpan span = TextSpan(style: const TextStyle(color: Colors.black, fontSize: 12), text: hours[i]);
-      TextPainter tp = TextPainter(text: span, textAlign: TextAlign.center, textDirection: TextDirection.ltr);
-      tp.layout();
-      tp.paint(canvas, Offset(x - tp.width / 2, y + 4));
-    }
-
-    // Draw y-axis labels (temperatures)
-    for (int i = 0; i <= 5; i++) {
-      double y = size.height - (i / 5 * size.height);
-      double value = minValue + (i / 5 * heightRange);
-
-      TextSpan span = TextSpan(style: const TextStyle(color: Colors.black, fontSize: 12), text: value.toStringAsFixed(1));
-      TextPainter tp = TextPainter(text: span, textAlign: TextAlign.right, textDirection: TextDirection.ltr);
-      tp.layout();
-      tp.paint(canvas, Offset(-tp.width - 4, y - tp.height / 2));
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
   }
 }

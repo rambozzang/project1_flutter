@@ -18,21 +18,18 @@ import 'package:project1/firebase/firebase_service.dart';
 import 'package:project1/route/app_route.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'firebase_options.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 환경설정 파일 로드
-  // 사용방법 : dotenv.env['GEMINI_API_KEY']
-  await dotenv.load(fileName: 'skysnap_prod.env');
-
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   final firebaseService = FirebaseService();
   await firebaseService.initialize();
+
   // 카카오개발자센터 네이티브 앱키
   KakaoSdk.init(nativeAppKey: 'd0023f080e59afd633bc19e469ed4a73');
   // KakaoSdk.init(nativeAppKey: 'e94966b7ae7e09c06d47e9d9fa580f4c');
+
   // 광고 init
   AdManager.init(targetPlatform: Platform.isIOS ? TargetPlatform.iOS : TargetPlatform.android);
 
@@ -44,9 +41,10 @@ void main() async {
 
   //v100004v@gmail.com
   Gemini.init(apiKey: 'AIzaSyDSLGJFE9yZTeVt2xrtgnp6MTkE3LdYrCI', enableDebugging: true);
+
   // 안드로이드  : Network : CERTIFICATE_VERIFY_FAILED 오류 수정
   HttpOverrides.global = MyHttpOverrides();
-  // HttpOverrides.global = WeatherHttpOverrides();
+
   runApp(const TigerBk());
 }
 

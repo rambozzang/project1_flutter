@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import 'package:project1/config/url_config.dart';
+import 'package:project1/repo/api/apple_api.dart';
 import 'package:project1/repo/api/auth_dio.dart';
 import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/repo/cust/data/apple_join_data.dart';
 import 'package:project1/repo/cust/data/cust_tag_data.dart';
 import 'package:project1/repo/cust/data/cust_update_data.dart';
 import 'package:project1/repo/cust/data/google_join_data.dart';
@@ -55,6 +57,21 @@ class CustRepo {
     } finally {}
   }
 
+  // Apple 회원가입
+  Future<ResData> createAppleCust(AppleJoinData data) async {
+    final dio = await AuthDio.instance.getDio(debug: true);
+    try {
+      //var url = 'http://localhost:7010/api/auth/googlejoin';
+      var url = '${UrlConfig.baseURL}/auth/applejoin';
+
+      log(data.toString());
+      Response response = await dio.post(url, data: data.toJson());
+      return AuthDio.instance.dioResponse(response);
+    } on DioException catch (e) {
+      return AuthDio.instance.dioException(e);
+    } finally {}
+  }
+
   // 회원정보 수정
   Future<ResData> updateCust(CustUpdataData data) async {
     final dio = await AuthDio.instance.getDio(debug: true);
@@ -82,9 +99,18 @@ class CustRepo {
   }
 
   // 회원탈퇴
-  Future<void> deleteCust() async {
+  Future<ResData> deleteCust(String custId) async {
     // Delete customer
+    final dio = await AuthDio.instance.getDio(debug: true);
+    try {
+      var url = '${UrlConfig.baseURL}/cust/deleteCust?custId=$custId';
+      Response response = await dio.post(url);
+      return AuthDio.instance.dioResponse(response);
+    } on DioException catch (e) {
+      return AuthDio.instance.dioException(e);
+    } finally {}
   }
+
   // 회원정보 조회
   Future<ResData> login(String custId, String fcmId) async {
     final dio = await AuthDio.instance.getDio(debug: true);

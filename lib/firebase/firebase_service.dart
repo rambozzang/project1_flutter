@@ -11,23 +11,29 @@ import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
 import 'package:project1/app/chatting/chat_room_page.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:project1/firebase_options.dart';
 import 'package:project1/utils/log_utils.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
 // 백그라운드 클릭시
 @pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {}
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  Lo.g("_firebaseMessagingBackgroundHandler");
+}
 
 // 포그라운 클릭시
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse details) async {
+  Lo.g("notificationTapBackground");
+
   var message = jsonDecode(details.payload!);
   _processMessageData(message);
 }
 
 @pragma('vm:entry-point')
 void backgroundHandler(NotificationResponse details) {
+  Lo.g("backgroundHandler");
   var message = jsonDecode(details.payload!);
 }
 
@@ -63,9 +69,9 @@ void _processMessageData(Map<String, dynamic> messageData) async {
 class FirebaseService {
   late DarwinInitializationSettings initializationSettingsDarwin;
   Future<void> initialize() async {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     _setupFirebaseMessaging();
-    _initializeLocalNotifications();
+    initializeLocalNotifications();
   }
 
   void _setupFirebaseMessaging() async {
@@ -118,7 +124,7 @@ class FirebaseService {
     );
   }
 
-  void _initializeLocalNotifications() async {
+  void initializeLocalNotifications() async {
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(const AndroidNotificationChannel(
@@ -127,6 +133,7 @@ class FirebaseService {
           importance: Importance.max,
         ));
 
+    // Root_page.dart 에서 이미 설정함. -> 메인에서 호출하면 회원가입도 안햇는데 노티 권한요청이 떠버림
     if (Platform.isIOS) {
       await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
         alert: true,
@@ -159,6 +166,7 @@ class FirebaseService {
       Lo.g("onMessage null : ${message.notification}");
       return;
     }
+    Lo.g("onMessage body 1");
 
     String alramCd = message.data["alramCd"] ?? '99';
     // 채팅중인 경우는 노티를 띄우지 않는다. - 보낸사람과 채팅중일때로 수정이 필요함.
@@ -166,6 +174,7 @@ class FirebaseService {
     if (alramCd == '07' && Get.currentRoute == '/ChatPage' && message.data["senderCustId"] == AuthCntr.to.currentChatId) {
       return;
     }
+    Lo.g("onMessage body 2");
 
     // 포그라운드에서 알람 07 일때 채널명을 완전 썡뚱맞는걸로 하니 노티가 안뜨고 상태바에서만 들어옴.
     AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
@@ -174,7 +183,7 @@ class FirebaseService {
       priority: alramCd == '07' ? Priority.low : Priority.high,
       importance: alramCd == '07' ? Importance.low : Importance.high,
       channelDescription: "Skysanp Importance notification",
-      icon: '@mipmap/skysnap',
+      icon: '@mipmap/ic_launcher',
       showWhen: alramCd == '07' ? false : true,
       groupKey: 'com.skysnap.skysnap',
       // groupKey: alramCd == '07' ? 'com.skysnap.skysnap' : null,
@@ -187,13 +196,16 @@ class FirebaseService {
         summaryText: '${message.notification?.title}: ${message.notification?.body}',
       ),
 
-      largeIcon: message.data["senderProfilePath"] != ""
+      largeIcon: message.data["senderProfilePath"] != null
           ? FilePathAndroidBitmap(await downloadAndSaveFile(message.data["senderProfilePath"], 'largeIcon'))
           : null,
     );
+    Lo.g("onMessage body 3");
+
     // Ios specific settings
     const DarwinNotificationDetails iOSPlatformChannelSpecifics =
         DarwinNotificationDetails(badgeNumber: 1, threadIdentifier: 'com.skysnap.skysnap');
+    Lo.g("onMessage body 4");
 
     flutterLocalNotificationsPlugin.show(
       notification.hashCode,

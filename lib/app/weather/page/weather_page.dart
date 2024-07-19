@@ -1,6 +1,5 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:gap/gap.dart';
@@ -8,7 +7,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/admob/full_width_banner_ad.dart';
-import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/app/weather/page/kakao_searchbar.dart';
 import 'package:project1/app/weather/page/location_error.dart';
 import 'package:project1/app/webview/weather_webview.dart';
@@ -157,6 +155,7 @@ class _WeatherPageState extends State<WeatherPage> with TickerProviderStateMixin
                       ),
                     ],
                   ),
+                  // 온도, 날씨 아이콘, 날씨 상태
                   const MainWeatherInfo(),
                   const SizedBox(height: 16.0),
                   // gemini 컨테이너
@@ -184,75 +183,6 @@ class _WeatherPageState extends State<WeatherPage> with TickerProviderStateMixin
                       ],
                     ),
                   ),
-                  // Container(
-                  //   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                  //   margin: const EdgeInsets.symmetric(horizontal: 16.0),
-                  //   decoration: BoxDecoration(
-                  //     color: const Color.fromARGB(255, 52, 59, 100),
-                  //     borderRadius: BorderRadius.circular(10.0),
-                  //   ),
-                  //   child: SingleChildScrollView(
-                  //     scrollDirection: Axis.horizontal,
-                  //     child: Expanded(
-                  //       child: Row(
-                  //         crossAxisAlignment: CrossAxisAlignment.start,
-                  //         children: [
-                  //           Container(
-                  //             width: 100.0,
-                  //             height: 160.0,
-                  //             decoration: BoxDecoration(
-                  //               color: Colors.grey[300],
-                  //               borderRadius: BorderRadius.circular(10.0),
-                  //               image: DecorationImage(
-                  //                 image: CachedNetworkImageProvider(Get.find<VideoListCntr>().list[0].thumbnailPath!),
-                  //                 fit: BoxFit.cover,
-                  //               ),
-                  //             ),
-                  //           ),
-                  //           const Gap(10),
-                  //           Container(
-                  //             width: 100.0,
-                  //             height: 160.0,
-                  //             decoration: BoxDecoration(
-                  //               color: Colors.grey[300],
-                  //               borderRadius: BorderRadius.circular(10.0),
-                  //               image: DecorationImage(
-                  //                 image: CachedNetworkImageProvider(Get.find<VideoListCntr>().list[1].thumbnailPath!),
-                  //                 fit: BoxFit.cover,
-                  //               ),
-                  //             ),
-                  //           ),
-                  //           const Gap(10),
-                  //           Container(
-                  //             width: 100.0,
-                  //             height: 160.0,
-                  //             decoration: BoxDecoration(
-                  //               color: Colors.grey[300],
-                  //               borderRadius: BorderRadius.circular(10.0),
-                  //               image: DecorationImage(
-                  //                 image: CachedNetworkImageProvider(Get.find<VideoListCntr>().list[2].thumbnailPath!),
-                  //                 fit: BoxFit.cover,
-                  //               ),
-                  //             ),
-                  //           ),
-                  //           const Gap(10),
-                  //           Container(
-                  //             width: 100.0,
-                  //             height: 160.0,
-                  //             decoration: BoxDecoration(
-                  //               color: Colors.grey[300],
-                  //               borderRadius: BorderRadius.circular(10.0),
-                  //               image: DecorationImage(
-                  //                 image: CachedNetworkImageProvider(Get.find<VideoListCntr>().list[3].thumbnailPath!),
-                  //                 fit: BoxFit.cover,
-                  //               ),
-                  //             ),
-                  //           ),
-                  //         ],
-                  //       ),
-                  //     ),
-                  //   ),
-                  // ),
 
                   // 6가지 항목 컨테이너
                   const MainWeatherDetail(),

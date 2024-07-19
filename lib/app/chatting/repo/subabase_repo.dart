@@ -4,6 +4,8 @@ import 'package:flutter_supabase_chat_core/flutter_supabase_chat_core.dart';
 
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
+// post gresql://postgres.tnxglgjtuhrxxokpxphr:x2pqx8mjEDO5387C@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres
+
 class SupaBaseRepo {
   // SupaBaseRepo._();
   bool isInitialized = false;
@@ -68,6 +70,21 @@ class SupaBaseRepo {
       Lo.g('createRoom error: $e');
     }
   }
+
+  // 5. 사용자 삭제
+  Future<void> removeUser(String chatId) async {
+    try {
+      await Supabase.instance.client.from('users').delete().eq('id', chatId);
+    } catch (e) {
+      Lo.g('removeUser 1 error: $e');
+    }
+    try {
+      await Supabase.instance.client.auth.admin.deleteUser(chatId);
+    } catch (e) {
+      Lo.g('removeUser 2 error: $e');
+    }
+  }
+
   // 5. 채팅방 삭제
   // 6. 채팅방 목록 조회
   // 7. 채팅방 입장

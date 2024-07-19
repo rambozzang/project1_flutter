@@ -8,6 +8,7 @@ class SupabaseOptions {
   });
 }
 
+// server role key : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRueGdsZ2p0dWhyeHhva3B4cGhyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxODc3NTEyMywiZXhwIjoyMDM0MzUxMTIzfQ.LmdNbUkiDNKIpMMgG9m638htzVhenXpUzbVyeIub9GE
 final SupabaseOptions supabaseOptions = SupabaseOptions(
   url: 'https://tnxglgjtuhrxxokpxphr.supabase.co',
   anonKey:
