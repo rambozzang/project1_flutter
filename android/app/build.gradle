@@ -44,6 +44,12 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
+  
+    
+    packagingOptions {
+        exclude "**/librive_text.so"
+    }
+
     kotlinOptions {
         jvmTarget = '1.8'
     }
@@ -62,6 +68,11 @@ android {
         targetSdk 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+
+        //이렇게 하면 x86 아키텍처용 라이브러리를 제외할 수 있습니다.
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
+        }
     }
 
     signingConfigs {
@@ -86,6 +97,13 @@ android {
 
             // ProGuard 규칙 파일
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+
+            //압축
+             packagingOptions {
+                jniLibs {
+                    useLegacyPackaging = true
+                }
+            }
 
         }
     }

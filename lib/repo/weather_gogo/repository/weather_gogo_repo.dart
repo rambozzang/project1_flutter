@@ -4,13 +4,23 @@ import 'package:latlong2/latlong.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/repo/weather_gogo/adapter/adapter_map.dart';
+import 'package:project1/app/weathergogo/services/regioninfo_util.dart';
 import 'package:project1/repo/weather_gogo/interface/imp_fct_repository.dart';
+import 'package:project1/repo/weather_gogo/interface/imp_fct_version_repository.dart';
 import 'package:project1/repo/weather_gogo/interface/imp_super_fct_repository.dart';
 import 'package:project1/repo/weather_gogo/interface/imp_super_nct_repository.dart';
+import 'package:project1/repo/weather_gogo/models/enum/data_type.dart';
+import 'package:project1/repo/weather_gogo/models/request/midland_fct_req.dart';
+import 'package:project1/repo/weather_gogo/models/request/midta_fct_req.dart';
 import 'package:project1/repo/weather_gogo/models/request/weather.dart';
+import 'package:project1/repo/weather_gogo/models/request/weather_version.dart';
 import 'package:project1/repo/weather_gogo/models/response/fct/fct_model.dart';
+import 'package:project1/repo/weather_gogo/models/response/fct_version/fct_version_model.dart';
+import 'package:project1/repo/weather_gogo/models/response/midland_fct/midlan_fct_res.dart';
+import 'package:project1/repo/weather_gogo/models/response/midta_fct/midta_fct_res.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_fct/super_fct_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_nct/super_nct_model.dart';
+import 'package:project1/repo/weather_gogo/repository/midland_fct_repo.dart';
 import 'package:project1/utils/log_utils.dart';
 
 // https://www.data.go.kr/iim/api/selectAPIAcountView.do
@@ -18,6 +28,8 @@ import 'package:project1/utils/log_utils.dart';
 // 하루 10000 번 제한
 /*
 
+초단기실황조회, 초단기예보조회, 단기예보조회 :  Weather class
+예보버전 :  WeatherVersion class
 */
 class WeatherGogoRepo {
   static const _baseURL = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0';
@@ -51,7 +63,7 @@ class WeatherGogoRepo {
     );
 
     final List<ItemSuperNct> items = [];
-    final json = await SuperNctRepositoryImp(isLog: isLog).getYesterDayJson(weather, isChache);
+    final json = await SuperNctRepositoryImp(isLog: isLog).getYesterDayJson(weather, false);
 
     json.map((e) => items.add(e)).toList();
 
@@ -77,48 +89,11 @@ class WeatherGogoRepo {
       numOfRows: 1000,
       nx: changeMap.x,
       ny: changeMap.y,
-      dateTime: DateTime.now().subtract(const Duration(hours: 23, minutes: 59, seconds: 01)),
+      // dateTime: DateTime.now().subtract(const Duration(hours: 23, minutes: 59, seconds: 01),
+      // ),
     );
     final List<ItemSuperNct> items = [];
     final json = await SuperNctRepositoryImp(isLog: isLog).getItemListJSON(weather);
-
-    json.map((e) => items.add(e)).toList();
-
-    return items;
-  }
-
-  //----------------------------------------------------------
-  // 단기 예보 예제 +3일
-  //----------------------------------------------------------
-  // POP : 강수확률 %
-  // PTY : 강수형태 (단기) 없음(0), 비(1), 비/눈(2), 눈(3), 소나기(4)
-  // PCP : 1시간 강수량 범주(1mm)
-  // REH : 습도
-  // SNO : 1시간 신적설
-  // SKY	하늘상태	맑음(1), 구름많음(3), 흐림(4)
-  // TMP	1시간 기온	℃
-  // TMN	일 최저기온	℃
-  // TMX	일 최고기온	℃
-  // UUU	풍속(동서성분)	m/s
-  // VVV	풍속(남북성분)	m/s
-  // WAV	파고	M
-  // VEC	풍향	deg
-  // WSD	풍속	m/s
-  Future<List<ItemFct>> getFctListJson(LatLng latLng, {isLog = false, isChache = false}) async {
-    lo.g('getFctListJson : ${DateTime.now().subtract(const Duration(hours: 24, minutes: 01, seconds: 01))}');
-
-    MapAdapter changeMap = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
-
-    final weather = Weather(
-      serviceKey: _key,
-      pageNo: 1,
-      numOfRows: 100000,
-      nx: changeMap.x,
-      ny: changeMap.y,
-      dateTime: DateTime.now().subtract(const Duration(hours: 23, minutes: 59, seconds: 01)),
-    );
-    final List<ItemFct> items = [];
-    final json = await FctRepositoryImp(isLog: isLog).getItemListJSON(weather);
 
     json.map((e) => items.add(e)).toList();
 
@@ -158,5 +133,106 @@ class WeatherGogoRepo {
     json.map((e) => items.add(e)).toList();
 
     return items;
+  }
+
+  //----------------------------------------------------------
+  // 단기 예보 예제 +3일
+  //----------------------------------------------------------
+  // POP : 강수확률 %
+  // PTY : 강수형태 (단기) 없음(0), 비(1), 비/눈(2), 눈(3), 소나기(4)
+  // PCP : 1시간 강수량 범주(1mm)
+  // REH : 습도
+  // SNO : 1시간 신적설
+  // SKY	하늘상태	맑음(1), 구름많음(3), 흐림(4)
+  // TMP	1시간 기온	℃
+  // TMN	일 최저기온	℃
+  // TMX	일 최고기온	℃
+  // UUU	풍속(동서성분)	m/s
+  // VVV	풍속(남북성분)	m/s
+  // WAV	파고	M
+  // VEC	풍향	deg
+  // WSD	풍속	m/s
+  Future<List<ItemFct>> getFctListJson(LatLng latLng, {isLog = false, isChache = false}) async {
+    lo.g('getFctListJson : ${DateTime.now().subtract(const Duration(hours: 24, minutes: 01, seconds: 01))}');
+
+    MapAdapter changeMap = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
+
+    final weather = Weather(
+      serviceKey: _key,
+      pageNo: 1,
+      numOfRows: 100000,
+      nx: changeMap.x,
+      ny: changeMap.y,
+      // dateTime: DateTime.now().subtract(const Duration(hours: 23, minutes: 59, seconds: 01),),
+    );
+    final List<ItemFct> items = [];
+    final json = await FctRepositoryImp(isLog: isLog).getItemListJSON(weather);
+
+    json.map((e) => items.add(e)).toList();
+
+    return items;
+  }
+
+  // 예보버전
+  Future<List<ItemFctVersion>> getFctVersionJson(LatLng latLng, {isLog = true}) async {
+    final List<ItemFctVersion> items = [];
+    final ItemFctVersion item = ItemFctVersion();
+    final weather = WeatherVersion(
+      serviceKey: _key,
+      pageNo: 1,
+      numOfRows: 1000000,
+      dataType: DataType.json,
+    );
+
+    final json = await FctVersionRepositoryImp(isLog: isLog).getItemListJSON(weather);
+    json.map((e) => items.add(e)).toList();
+
+    return items;
+  }
+
+  //중기 예보 - 육상 상태 정보
+  Future<MidLandFcstResponse?> getMidFctJson(LatLng latLng, {isLog = true}) async {
+    try {
+      // regId 구하기
+      String nearestRegId = findNearestRegId(latLng, '1');
+
+      // 육상 정보
+      MidLandFcstRequest req = MidLandFcstRequest(
+        serviceKey: _key,
+        pageNo: 1,
+        numOfRows: 1000,
+        regId: nearestRegId,
+        tmFc: getTmFc(),
+      );
+      MidlanFctRepo repo = MidlanFctRepo();
+      final res = await repo.getMidLandFcst(req);
+      return res;
+    } catch (e) {
+      lo.g(e.toString());
+      return null;
+    }
+  }
+
+  //중기 예보 - 기온 정보 정보
+  Future<MidTaResponse?> getMidTaJson(LatLng latLng, {isLog = true}) async {
+    try {
+      // regId 구하기
+      String nearestRegId = findNearestRegId(latLng, '2');
+
+      // 육상 정보
+      MidTaRequest req = MidTaRequest(
+        serviceKey: _key,
+        pageNo: 1,
+        numOfRows: 1000,
+        regId: nearestRegId,
+        tmFc: getTmFc(),
+      );
+      MidlanFctRepo repo = MidlanFctRepo();
+      MidTaResponse res = await repo.getMidTa(req);
+      return res;
+    } catch (e) {
+      lo.g(e.toString());
+      return null;
+    }
   }
 }

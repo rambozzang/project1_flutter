@@ -34,6 +34,7 @@ abstract class Utils {
           Image.asset(
             'assets/images/app_update.png',
             height: 200,
+            scale: 0.7,
             fit: BoxFit.cover,
           ),
           title: const Text(

@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:ffi';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
+import 'package:get/get.dart';
+import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_comment_res_data.dart';
 import 'package:project1/repo/common/code_data.dart';
@@ -20,6 +23,7 @@ class SigoPageSheet {
     BuildContext context,
     String boardId,
     String crtCustId,
+    VoidCallback onClick,
   ) async {
     showModalBottomSheet(
       isScrollControlled: true,
@@ -42,6 +46,7 @@ class SigoPageSheet {
                 contextParent: context,
                 boardId: boardId,
                 crtCustId: crtCustId,
+                onClick: onClick,
               )),
         );
       },
@@ -50,10 +55,11 @@ class SigoPageSheet {
 }
 
 class SigoPage extends StatefulWidget {
-  const SigoPage({super.key, required this.contextParent, required this.boardId, required this.crtCustId});
+  const SigoPage({super.key, required this.contextParent, required this.boardId, required this.crtCustId, required this.onClick});
   final BuildContext contextParent;
   final String boardId;
   final String crtCustId;
+  final VoidCallback onClick;
 
   @override
   State<SigoPage> createState() => _SigoPageState();
@@ -116,22 +122,25 @@ class _SigoPageState extends State<SigoPage> {
     try {
       BoardRepo repo = BoardRepo();
 
-      String reasonCd = '${dropdownValue}';
       String reason = '${replyController.text}';
 
       String boardId = widget.boardId.toString();
 
       // dropdownValue 07 이면 사용자신고(거절) 이므로 boardID 대신 상대방 custId를 넘긴다.
-      boardId = dropdownValue == '07' ? widget.crtCustId : boardId;
+      // boardId = dropdownValue == '07' ? widget.crtCustId : boardId;
 
-      ResData res = await repo.saveSingo(boardId, dropdownValue, reason);
-      if (res.code == '00') {
-        Utils.alert('신고가 완료되었습니다.');
-        Navigator.pop(widget.contextParent);
-      } else {
+      ResData res = await repo.saveSingo(boardId, dropdownValue, widget.crtCustId, reason);
+      if (res.code != '00') {
         Utils.alert('다시 시도해주세요.');
         Navigator.pop(widget.contextParent);
       }
+      Utils.alert('신고가 완료되었습니다.');
+      // 사용자신고 및 사용자 차단 인 경우 리스트 갱신
+      if (dropdownValue == '07' || dropdownValue == '08') {
+        Get.find<VideoListCntr>().getData();
+        //  widget.onClick;
+      }
+      Navigator.pop(widget.contextParent);
     } catch (e) {
       Lo.g('saveReply() error : $e');
       Utils.alert("다시 시도해주세요.");
@@ -259,12 +268,12 @@ class _SigoPageState extends State<SigoPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                dropdownValue == '08' ? ' 게시물만 차단' : '신고 사유 입력(선택)',
-                style: const TextStyle(color: Colors.white, fontSize: 13),
+                dropdownValue == '08' ? ' 게시물 즉시 차단됨' : '신고 사유 입력(선택)',
+                style: TextStyle(color: dropdownValue == '08' ? Colors.yellow : Colors.white, fontSize: 13),
               ),
               dropdownValue == '07'
                   ? const Text(
-                      ' 게시물 차단',
+                      ' 게시물 즉시 차단됨',
                       style: TextStyle(color: Colors.yellow, fontSize: 13),
                     )
                   : const SizedBox.shrink()
@@ -293,7 +302,12 @@ class _SigoPageState extends State<SigoPage> {
             child: SizedBox(
               width: MediaQuery.of(context).size.width * 0.95,
               height: 48,
-              child: CustomButton(text: '신고 완료', type: 'L', onPressed: () => saveSigo()),
+              child: CustomButton(
+                  text: '신고 완료',
+                  type: 'L',
+                  onPressed: () async {
+                    await saveSigo();
+                  }),
             ),
           ),
           const Gap(16),

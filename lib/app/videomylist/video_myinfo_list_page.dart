@@ -127,6 +127,7 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
         physics: const AlwaysScrollableScrollPhysics(),
         onPageChanged: (int position) {
           lo.g('page changed. current: $position');
+
           Get.find<VideoMyinfoListCntr>().currentIndex.value = position;
           Get.find<VideoMyinfoListCntr>().getMoreData(position, data.length);
         },

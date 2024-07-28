@@ -6,6 +6,7 @@ import 'package:gap/gap.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:project1/admob/ad_manager.dart';
+import 'package:project1/admob/banner_ad_widget.dart';
 import 'package:project1/admob/full_width_banner_ad.dart';
 import 'package:project1/app/weather/page/kakao_searchbar.dart';
 import 'package:project1/app/weather/page/location_error.dart';
@@ -38,6 +39,12 @@ class _WeatherPageState extends State<WeatherPage> with TickerProviderStateMixin
   @override
   void initState() {
     super.initState();
+    _loadAd();
+  }
+
+  Future<void> _loadAd() async {
+    await AdManager().loadBannerAd('WeathPage');
+    setState(() {}); // 광고 로드 후 UI 업데이트
   }
 
   Future<void> requestWeather() async {
@@ -68,6 +75,7 @@ class _WeatherPageState extends State<WeatherPage> with TickerProviderStateMixin
 
   @override
   void dispose() {
+    AdManager().disposeBannerAd('WeathPage');
     super.dispose();
   }
 
@@ -217,7 +225,8 @@ class _WeatherPageState extends State<WeatherPage> with TickerProviderStateMixin
                   ),
                   const SizedBox(height: 38.0),
                   // Ads 패딩 적용
-                  FullWidthBannerAd(bannerAd: AdManager.instance.myCafeScreenBannerAd, sidePadding: 40.0),
+                  // FullWidthBannerAd(bannerAd: AdManager.instance.weatherPageBannerAd, sidePadding: 40.0),
+                  const BannerAdWidget(screenName: 'WeathPage')
                 ],
               ),
               // CustomSearchBar(fsc: fsc),
@@ -228,17 +237,4 @@ class _WeatherPageState extends State<WeatherPage> with TickerProviderStateMixin
       )),
     );
   }
-}
-
-class SalesData {
-  SalesData(this.year, this.sales);
-  final String year;
-  final double sales;
-}
-
-class _ChartData {
-  _ChartData(this.x, this.y, this.z);
-  final int x;
-  final int y;
-  final int z;
 }

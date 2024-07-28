@@ -46,9 +46,7 @@ class FctVersionAPI {
 
       response = await _dio.get(
         _getURL,
-        queryParameters: version
-            .copyWith(dataType: DataType.xml, dateTime: nowDate)
-            .toJson(),
+        queryParameters: version.copyWith(dataType: DataType.xml, dateTime: nowDate).toJson(),
       );
     } on DioError catch (e) {
       debugPrint(e.message);

@@ -7,6 +7,8 @@ import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
 
 class AgreePage extends StatefulWidget {
+  const AgreePage({super.key});
+
   @override
   _AgreePageState createState() => _AgreePageState();
 }
@@ -16,7 +18,8 @@ class _AgreePageState extends State<AgreePage> {
   List<Map<String, dynamic>> agreements = [
     {'id': 1, 'title': '(필수) 서비스이용약관 동의', 'checked': false, 'url': '/ServicePage'},
     {'id': 2, 'title': '(필수) 개인정보 수집 및 이용 동의', 'checked': false, 'url': '/PrivecyPage'},
-    {'id': 3, 'title': '(필수) 위치정보 이용 동의', 'checked': false, 'url': '/LocatinServicePage'},
+    {'id': 3, 'title': '(필수) 개인정보처리방침 동의', 'checked': false, 'url': '/PrivecyPage'},
+    {'id': 4, 'title': '(필수) 위치정보 이용 동의', 'checked': false, 'url': '/LocatinServicePage'},
   ];
   late String custId;
 
@@ -92,49 +95,6 @@ class _AgreePageState extends State<AgreePage> {
     }
     Get.offAllNamed('/AuthPage');
   }
-
-  // Future<void> handleNotificationPermission() async {
-  //   // var status = await Permission.notification.status;
-  //   Map<Permission, PermissionStatus> status = await [Permission.location, Permission.notification].request();
-
-  //   // 노티 체크
-  //   if (status[Permission.notification]!.isDenied) {
-  //     showNotificationExplanationDialog();
-  //   } else if (status[Permission.notification]!.isPermanentlyDenied) {
-  //     Utils.alert('알림 권한이 영구적으로 거부되었습니다. 앱 설정에서 수동으로 권한을 허용해주세요.');
-  //     await openAppSettings();
-  //   }
-  // }
-
-  // void showNotificationExplanationDialog() {
-  //   Get.dialog(
-  //     AlertDialog(
-  //       title: const Text('알림 권한이 필요합니다'),
-  //       content: const Text('중요한 업데이트와 메시지를 받기 위해 알림 권한이 필요합니다. 허용해 주시겠습니까?'),
-  //       actions: [
-  //         TextButton(
-  //           child: const Text('나중에'),
-  //           onPressed: () => Get.back(),
-  //         ),
-  //         TextButton(
-  //           child: const Text('설정'),
-  //           onPressed: () {
-  //             Get.back();
-  //             requestNotificationPermission();
-  //           },
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
-  // Future<void> requestNotificationPermission() async {
-  //   var status = await Permission.notification.request();
-  //   if (status.isDenied) {
-  //     // 사용자가 거부한 경우 처리
-  //     Lo.g("알림 권한이 거부되었습니다.");
-  //   }
-  // }
 
   @override
   void dispose() {

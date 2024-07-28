@@ -6,6 +6,7 @@ import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
+import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 
@@ -76,15 +77,8 @@ class VideoListCntr extends GetxController {
       late String lon;
 
       // 위치 좌표 가져오기
-      // if (Get.find<WeatherCntr>().currentLocation.value!.latLng.latitude == 0.0) {
-      //   Position? position = await MyLocatorRepo().getCurrentLocation();
-      //   lat = position!.latitude.toString();
-      //   lon = position!.longitude.toString();
-      // } else {
-      //   lat = Get.find<WeatherCntr>().currentLocation.value?.latLng.latitude.toString() ?? '';
-      //   lon = Get.find<WeatherCntr>().currentLocation.value?.latLng.longitude.toString() ?? '';
-      // }
-      var currentLocation = Get.find<WeatherCntr>().currentLocation.value?.latLng;
+
+      var currentLocation = Get.find<WeatherGogoCntr>().currentLocation.value?.latLng;
 
       lat = currentLocation?.latitude.toString() ?? '';
       lon = currentLocation?.longitude.toString() ?? '';
@@ -115,30 +109,27 @@ class VideoListCntr extends GetxController {
 
       list = ((resListData.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
 
-      if (list.length == 0) {
+      if (list.isEmpty) {
         Utils.alert('데이터가 없습니다.');
-        Get.find<WeatherCntr>().getWeatherData();
         return;
       }
 
       List<BoardWeatherListData> initList = list.sublist(0, list.length > 1 ? 2 : 1);
       videoListCntr.sink.add(ResStream.completed(initList));
-      Future.delayed(const Duration(milliseconds: 1500), () {
+      Future.delayed(const Duration(milliseconds: 2000), () {
         // 1번째 비디오를 플레이 화면에 바로 노출하도록 나머지 스트림 전송
         videoListCntr.sink.add(ResStream.completed(list));
       });
       // videoListCntr.sink.add(ResStream.completed(list));
-
-      // 날씨 정보가 없을때만 다시 가져온다.  - 최초시만 가져온다.
-      if (Get.find<WeatherCntr>().oneCallCurrentWeather.value?.dt == null) {
-        Get.find<WeatherCntr>().getWeatherData();
-      }
     } catch (e) {
       Lo.g('getDate() error : $e');
       videoListCntr.sink.add(ResStream.error(e.toString()));
     } finally {
       // 리스트가 다 구성이 끝나면 날씨 데이터 가져온다.
-      // Get.find<WeatherCntr>().getWeatherData();
+      // 날씨 정보가 없을때만 다시 가져온다.  - 최초시만 가져온다.
+      if (Get.find<WeatherGogoCntr>().currentWeather.value?.temp == null) {
+        Get.find<WeatherGogoCntr>().getInitWeatherData(true);
+      }
     }
   }
 
@@ -158,8 +149,12 @@ class VideoListCntr extends GetxController {
         return;
       }
 
+      if (!isLoadingMore.value) {
+        return;
+      }
+
       pageNum++;
-      var currentLocation = Get.find<WeatherCntr>().currentLocation.value?.latLng;
+      var currentLocation = Get.find<WeatherGogoCntr>().currentLocation.value?.latLng;
       String lat = currentLocation?.latitude.toString() ?? '';
       String lon = currentLocation?.longitude.toString() ?? '';
 
@@ -183,6 +178,11 @@ class VideoListCntr extends GetxController {
         return;
       }
       List<BoardWeatherListData> _list = ((resListData.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
+
+      if (_list.isEmpty || _list.length < pagesize) {
+        isLoadingMore.value = false;
+      }
+
       list.addAll(_list);
 
       videoListCntr.sink.add(ResStream.completed(list));

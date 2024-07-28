@@ -6,8 +6,10 @@ import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:giffy_dialog/giffy_dialog.dart';
 import 'package:hashtagable_v3/hashtagable.dart';
 import 'package:like_button/like_button.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
@@ -18,6 +20,7 @@ import 'package:project1/app/videolist/video_sigo_page.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:share_plus/share_plus.dart';
@@ -28,6 +31,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 import 'package:http/http.dart' as http;
 
 // video_player 오류  https://github.com/flutter/flutter/issues/61309 , https://github.com/flutter/flutter/issues/25558
+
 class VideoScreenPage extends StatefulWidget {
   const VideoScreenPage({super.key, required this.index, required this.data});
 
@@ -299,34 +303,36 @@ class VideoScreenPageState extends State<VideoScreenPage> {
           buildRightMenuBar(),
           // 재생 progressbar
           buildPlayProgress(),
+          //
+          buildSingo()
           // Center(
           //   child: Text(widget.data.boardId.toString(),
           //       style: const TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.bold)),
           // )
-          Positioned(
-            bottom: (MediaQuery.of(context).size.height - 12) * .5,
-            right: 12,
-            child: GestureDetector(
-              onTap: () => SigoPageSheet().open(
-                context,
-                widget.data.boardId.toString(),
-                Get.find<VideoListCntr>().list[widget.index].custId.toString(),
-              ),
-              child: const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Icon(Icons.warning, color: Colors.white),
-                  const Gap(5),
-                  Text(
-                    '신고',
-                    style: TextStyle(color: Colors.white, fontSize: 9),
-                  )
-                ],
-              ),
-            ),
-          )
         ],
+      ),
+    );
+  }
+
+  Widget buildSingo() {
+    return Positioned(
+      bottom: (MediaQuery.of(context).size.height - 12) * .5,
+      right: 12,
+      child: GestureDetector(
+        onTap: () => SigoPageSheet().open(context, widget.data.boardId.toString(),
+            Get.find<VideoListCntr>().list[widget.index].custId.toString(), Get.find<VideoListCntr>().getData),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(Icons.warning, color: Colors.white),
+            const Gap(5),
+            Text(
+              '신고',
+              style: TextStyle(color: Colors.white, fontSize: 9),
+            )
+          ],
+        ),
       ),
     );
   }
@@ -374,21 +380,26 @@ class VideoScreenPageState extends State<VideoScreenPage> {
               SizedBox(
                 height: 30,
                 width: 30,
-                child: CachedNetworkImage(
-                  width: 50,
-                  height: 50,
-                  imageUrl: 'http://openweathermap.org/img/wn/${widget.data.icon}@2x.png',
-                  imageBuilder: (context, imageProvider) => Container(
-                    decoration: BoxDecoration(
-                      image: DecorationImage(
-                          image: imageProvider,
-                          fit: BoxFit.cover,
-                          colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn)),
-                    ),
-                  ),
-                  placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 0.6, color: Colors.white),
-                  errorWidget: (context, url, error) => const Icon(Icons.error),
+                child: Lottie.asset(
+                  WeatherDataProcessor.instance.getWeatherGogoImage(widget.data!.sky.toString(), widget.data!.rain.toString()),
+                  height: 138.0,
+                  width: 138.0,
                 ),
+                // child: CachedNetworkImage(
+                //   width: 50,
+                //   height: 50,
+                //   imageUrl: 'http://openweathermap.org/img/wn/${widget.data.icon}@2x.png',
+                //   imageBuilder: (context, imageProvider) => Container(
+                //     decoration: BoxDecoration(
+                //       image: DecorationImage(
+                //           image: imageProvider,
+                //           fit: BoxFit.cover,
+                //           colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn)),
+                //     ),
+                //   ),
+                //   placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 0.6, color: Colors.white),
+                //   errorWidget: (context, url, error) => const Icon(Icons.error),
+                // ),
               ),
               SizedBox(
                 width: MediaQuery.of(context).size.width * 0.35,
@@ -448,21 +459,6 @@ class VideoScreenPageState extends State<VideoScreenPage> {
                 )
               : const SizedBox(),
           const Gap(5),
-          // SizedBox(
-          //   width: Get.width * 0.78,
-          //   child: const TextScroll(
-          //     '여기서는 TextButton, FilledButton, ElevatedButton의 크기를 변경하는 방법에 대해서 알아보겠습니다. ',
-          //     mode: TextScrollMode.endless,
-          //     numberOfReps: 200,
-          //     fadedBorder: false,
-          //     delayBefore: Duration(milliseconds: 4000),
-          //     pauseBetween: Duration(milliseconds: 2000),
-          //     velocity: Velocity(pixelsPerSecond: Offset(100, 0)),
-          //     style: TextStyle(fontSize: 16, color: Colors.white),
-          //     textAlign: TextAlign.right,
-          //     selectable: true,
-          //   ),
-          // )
           Row(
             children: [
               GestureDetector(

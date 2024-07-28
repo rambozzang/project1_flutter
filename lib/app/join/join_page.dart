@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -32,7 +33,7 @@ class _JoinPageState extends State<JoinPage> {
   Future signIn(String provider) async {
     try {
       isLoading.value = true;
-      ResData result = ResData();
+      ResData<String> result = ResData<String>();
 
       // 선택된 제공자에 따라 적절한 로그인 API 호출
       switch (provider) {
@@ -70,12 +71,12 @@ class _JoinPageState extends State<JoinPage> {
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: ExactAssetImage('assets/images/7.jpg'),
+            image: ExactAssetImage('assets/images/girl-6356393_640.jpg'),
             fit: BoxFit.cover,
           ),
         ),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
+          filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
           blendMode: BlendMode.srcIn,
           child: Stack(
             children: [
@@ -158,8 +159,7 @@ class _JoinPageState extends State<JoinPage> {
             _buildSocialLoginButton('naver', "assets/login/naver_circle.png", '네이버'),
             const Gap(20),
             _buildSocialLoginButton('google', "assets/login/google_circle.png", '구글'),
-            const Gap(20),
-            _buildSocialLoginButton('apple', "assets/login/apple_login.png", '애플'),
+            if (Platform.isIOS) ...[const Gap(20), _buildSocialLoginButton('apple', "assets/login/apple_login.png", '애플')]
           ],
         ),
       ],

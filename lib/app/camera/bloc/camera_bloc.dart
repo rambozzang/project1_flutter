@@ -10,6 +10,7 @@ import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/camera/utils/permission_utils.dart';
 import 'package:project1/repo/weather/data/current_weather.dart';
 import 'package:project1/utils/log_utils.dart';
+import 'package:path/path.dart' as path;
 part 'camera_event.dart';
 
 // A BLoC class that handles camera-related operations
@@ -174,7 +175,14 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     try {
       XFile video = await _cameraController!.stopVideoRecording();
       _stopTimerAndResetDuration();
-      return File(video.path);
+
+      File videoFile = File(video.path);
+
+      // 확장자 확인 및 수정
+      videoFile = await ensureMP4Extension(videoFile);
+
+      return File(videoFile.path);
+      // return File(video.path);
     } catch (e) {
       return Future.error(e);
     }
@@ -232,5 +240,43 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     _cameraController = await cameraUtils.getCameraController(
         lensDirection:
             currentLensDirection); // it's important to remove old camera controller instances otherwise _cameraController!.value will remain unchanged hence _cameraController!.value.isInitialized will always true
+  }
+
+  Future<File> ensureMP4Extension(File videoFile) async {
+    if (!videoFile.existsSync()) {
+      throw FileSystemException('Video file does not exist', videoFile.path);
+    }
+
+    if (!videoFile.path.toLowerCase().endsWith('.mp4')) {
+      final String directory = path.dirname(videoFile.path);
+      final String fileName = path.basenameWithoutExtension(videoFile.path);
+      final String newPath = path.join(directory, '$fileName.mp4');
+
+      try {
+        // 파일 이름 변경
+        final File renamedFile = await videoFile.rename(newPath);
+
+        // 변경된 파일이 실제로 존재하는지 확인
+        if (!renamedFile.existsSync()) {
+          throw FileSystemException('Failed to rename the file', newPath);
+        }
+
+        return renamedFile;
+      } on FileSystemException catch (e) {
+        print('Error renaming file: ${e.message}');
+        // 이름 변경에 실패한 경우, 파일을 복사하는 방법을 시도
+        try {
+          final File copiedFile = await videoFile.copy(newPath);
+          await videoFile.delete(); // 원본 파일 삭제
+          return copiedFile;
+        } catch (e) {
+          print('Error copying file: $e');
+          // 모든 시도가 실패하면 원본 파일 반환
+          return videoFile;
+        }
+      }
+    }
+
+    return videoFile; // 이미 .mp4 확장자를 가진 경우 원본 반환
   }
 }

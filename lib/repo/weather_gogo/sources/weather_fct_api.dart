@@ -45,9 +45,7 @@ class FctAPI {
       final nowDate = _date.getFctDate(weather.date);
       response = await _dio.get(
         _getURL,
-        queryParameters: weather
-            .copyWith(dataType: DataType.xml, dateTime: nowDate)
-            .toJson(),
+        queryParameters: weather.copyWith(dataType: DataType.xml, dateTime: nowDate).toJson(),
       );
     } on DioError catch (e) {
       debugPrint(e.message);

@@ -5,12 +5,17 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:giffy_dialog/giffy_dialog.dart';
+import 'package:project1/admob/ad_manager.dart';
+import 'package:project1/admob/banner_ad_widget.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/repo/common/code_data.dart';
 import 'package:project1/repo/common/comm_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/secure_storge.dart';
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
+import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
+import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
@@ -62,6 +67,7 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
         RootCntr.to.bottomBarStreamController.sink.add(true);
       }
     });
+    _loadAd();
     // 추천 검색어
     searchWord('RECOM', recoWordlist);
     // 급등 검색어
@@ -77,6 +83,11 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
 
     // Tag 검색어
     // searchWord('RECOM' , taglist);
+  }
+
+  Future<void> _loadAd() async {
+    await AdManager().loadBannerAd('SeachPage');
+    setState(() {}); // 광고 로드 후 UI 업데이트
   }
 
   void goSearchPage(String searchWord) async {
@@ -198,7 +209,10 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
             const Gap(20),
             buildCommon('급등 검색어', 2, suddenlylist),
             const Gap(20),
+            const Center(child: BannerAdWidget(screenName: 'SeachPage')),
+            const Gap(20),
             buildCommon('지하철 검색어', 3, subwaylist),
+
             const Gap(20),
             buildCommon('학교 검색어', 4, schoollist),
             const Gap(20),
@@ -210,7 +224,7 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
             // const Gap(20),
             buildWeatherInfoImg(),
             buildTodayWeather(),
-            buildAddmob(),
+            // buildAddmob(),
             // ValueListenableBuilder 만들어서 이미지 가져오기
             ValueListenableBuilder<String>(
               valueListenable: bgImaggeUrl,
@@ -251,7 +265,7 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
             margin: const EdgeInsets.all(0),
             decoration: BoxDecoration(color: Colors.red[300], borderRadius: const BorderRadius.all(Radius.circular(40))),
             child: Text(
-              '${Get.find<WeatherCntr>().oneCallCurrentWeather.value?.temp?.toStringAsFixed(1) ?? 0}°C',
+              '${Get.find<WeatherGogoCntr>().currentWeather.value?.temp ?? 0}°C',
               style: const TextStyle(color: Colors.white, fontSize: 13),
             ),
           ),
@@ -259,36 +273,22 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Image.asset('?assets/images/map/fog.png'),
-              CachedNetworkImage(
-                width: 80,
-                height: 80,
-                imageUrl:
-                    'http://openweathermap.org/img/wn/${Get.find<WeatherCntr>().oneCallCurrentWeather.value?.weather![0].icon ?? '10n'}@2x.png',
-                //   imageUrl:  'http://openweathermap.org/img/w/${value.weather![0].icon}.png',
-                imageBuilder: (context, imageProvider) => Container(
-                  padding: const EdgeInsets.all(0),
-                  decoration: BoxDecoration(
-                    image: DecorationImage(
-                        image: imageProvider,
-                        fit: BoxFit.cover,
-                        colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn)),
-                  ),
-                ),
-                placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 1, color: Colors.white),
-                errorWidget: (context, url, error) => const Icon(Icons.error),
+              Lottie.asset(
+                WeatherDataProcessor.instance.getWeatherGogoImage(Get.find<WeatherGogoCntr>().currentWeather.value!.sky.toString(),
+                    Get.find<WeatherGogoCntr>().currentWeather.value!.rain.toString()),
+                height: 138.0,
+                width: 138.0,
               ),
-              // const Gap(5),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    '${Get.find<WeatherCntr>().oneCallCurrentWeather.value!.temp?.toStringAsFixed(1) ?? 0}°',
+                    '${Get.find<WeatherGogoCntr>().currentWeather.value!.temp ?? 0}°',
                     style: const TextStyle(fontSize: 20, color: Colors.white),
                   ),
                   Text(
-                    Get.find<WeatherCntr>().oneCallCurrentWeather.value!.weather![0].description!.toString(),
+                    Get.find<WeatherGogoCntr>().currentWeather.value!.description!.toString(),
                     style: const TextStyle(fontSize: 13, color: Colors.white),
                   )
                 ],
@@ -301,7 +301,7 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                '${Get.find<WeatherCntr>().dailyWeather[0].tempMin.toStringAsFixed(1) ?? 0}° / ${Get.find<WeatherCntr>().dailyWeather[0].tempMax.toStringAsFixed(1) ?? 0}°',
+                '${Get.find<WeatherGogoCntr>().sevenDayWeather[0].morning.minTemp ?? 0}°/${Get.find<WeatherGogoCntr>().sevenDayWeather[0].afternoon.maxTemp ?? 0}°',
                 style: const TextStyle(fontSize: 13, color: Colors.white),
               ),
               // Text(
@@ -309,12 +309,17 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
               //   style: TextStyle(fontSize: 13, color: Colors.white),
               // ),
               Text(
-                Get.find<WeatherCntr>().currentLocation.value!.name.toString(),
-                style: TextStyle(fontSize: 13, color: Colors.white),
+                Get.find<WeatherGogoCntr>().currentLocation.value!.name.toString(),
+                style: const TextStyle(fontSize: 13, color: Colors.white),
               ),
-              Text(
-                '${Get.find<WeatherCntr>().openApiLastUpdated.value.toString().substring(0, 10).replaceAll('-', '/')} ${Get.find<WeatherCntr>().openApiLastUpdated.value?.toString().substring(11, 16)}',
-                style: const TextStyle(fontSize: 10, color: Colors.white),
+              Row(
+                children: [
+                  const Icon(Icons.alarm, color: Colors.white, size: 13),
+                  Text(
+                    '${Get.find<WeatherGogoCntr>().lastUpdated.value?.toString().substring(11, 16)}',
+                    style: const TextStyle(fontSize: 10, color: Colors.white),
+                  ),
+                ],
               )
             ],
           )

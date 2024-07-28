@@ -92,5 +92,5 @@ class Weather {
 
   String _dateBase(DateTime dateTime) => DateFormat('yyyMMdd').format(dateTime);
 
-  String _timeBase(DateTime dateTime) => DateFormat('kkmm').format(dateTime);
+  String _timeBase(DateTime dateTime) => DateFormat('HHmm').format(dateTime);
 }

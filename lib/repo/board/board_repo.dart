@@ -281,11 +281,12 @@ class BoardRepo {
   }
 
   //신고하기
-  Future<ResData> saveSingo(String boardId, String reasonCd, String reason) async {
+  Future<ResData> saveSingo(String boardId, String reasonCd, String custId, String reason) async {
     final dio = await AuthDio.instance.getDio();
     try {
       var url = '${UrlConfig.baseURL}/singo/save';
-      Response response = await dio.post(url, queryParameters: {'boardId': boardId, 'reasonCd': reasonCd, 'reason': reason});
+      Response response =
+          await dio.post(url, queryParameters: {'boardId': boardId, 'reasonCd': reasonCd, 'custId': custId, 'reason': reason});
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);

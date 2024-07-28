@@ -9,7 +9,7 @@ import 'package:project1/app/weather/models/geocode.dart';
 import 'package:project1/app/weather/models/hourlyWeather.dart';
 import 'package:project1/app/weather/models/oneCallCurrentWeather.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_nct/super_nct_model.dart';
-import 'package:project1/repo/weather_gogo/weather_gogo_repo.dart';
+import 'package:project1/repo/weather_gogo/repository/weather_gogo_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/kakao/kakao_repo.dart';
 import 'package:project1/repo/mist_gogoapi/data/mist_data.dart';
@@ -95,6 +95,8 @@ class WeatherCntr extends GetxController {
   Future<void> getWeatherData() async {
     isLoading.value = true;
     isRequestError.value = false;
+    Utils.alert('안쓰는 Weather 함수입니다.');
+    return;
 
     // 날씨 가져오기
     //  Position? positionData = await requestLocation();
@@ -121,30 +123,6 @@ class WeatherCntr extends GetxController {
       // 날씨 가져오기
       Position positionData = await Geolocator.getCurrentPosition();
       currentLocation.value!.latLng = LatLng(positionData.latitude, positionData.longitude);
-      // OpenWheatherRepo repo = OpenWheatherRepo();
-      // ResData resData = await repo.getWeather(currentLocation.value!.latLng);
-      // if (resData.code != '00') {
-      //   Utils.alert(resData.msg.toString());
-      //   return;
-      // }
-      //currentWeather.value = CurrentWeather.fromMap(resData.data);
-
-      // weather.value = Weather(
-      //   temp: currentWeather.value!.main?.temp,
-      //   tempMax: currentWeather.value!.main?.temp_max,
-      //   tempMin: currentWeather.value!.main?.temp_min,
-      //   lat: currentWeather.value!.coord!.lat,
-      //   long: currentWeather.value!.coord!.lon,
-      //   feelsLike: currentWeather.value!.main?.feels_like,
-      //   pressure: currentWeather.value!.main?.pressure,
-      //   description: currentWeather.value!.weather![0].description,
-      //   weatherCategory: currentWeather.value!.weather![0].main,
-      //   humidity: currentWeather.value!.main?.humidity,
-      //   windSpeed: currentWeather.value!.wind?.speed,
-      //   city: currentWeather.value!.name,
-      //   countryCode: currentWeather.value!.sys?.country,
-      // );
-      // openApiLastUpdated.value = DateTime.now();
       await getOneCallWeather(LatLng(currentLocation.value!.latLng.latitude, currentLocation.value!.latLng.longitude!), false);
 
       isLoading.value = false;
@@ -382,15 +360,15 @@ class WeatherCntr extends GetxController {
       }
     }
 
-    print('Filtered Hourly Weather:');
-    for (var data in filteredHourlyWeather) {
-      print('${data.date} - ${data.temp}°C');
-    }
+    // print('Filtered Hourly Weather:');
+    // for (var data in filteredHourlyWeather) {
+    //   print('${data.date} - ${data.temp}°C');
+    // }
 
-    print('\nFiltered Yesterday Hourly Weather:');
-    for (var data in filteredYesterdayHourlyWeather) {
-      print('${data.date} - ${data.temp}°C');
-    }
+    // print('\nFiltered Yesterday Hourly Weather:');
+    // for (var data in filteredYesterdayHourlyWeather) {
+    //   print('${data.date} - ${data.temp}°C');
+    // }
 
     filteredYesterdayHourlyWeather.reversed.toList();
     return (filteredHourlyWeather, filteredYesterdayHourlyWeather);

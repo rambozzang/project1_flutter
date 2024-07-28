@@ -300,7 +300,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
         isLoading.value = false;
       }
     } catch (e) {
-      Utils.alert(e.toString());
+      // Utils.alert(e.toString());
       isLoading.value = false;
     }
   }
@@ -393,7 +393,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
         Utils.alert(res.msg.toString());
         return;
       }
-      _taglist = (res.data as List).map((e) => e['tagNm'].toString()).toList();
+      _taglist = (res.data as List).map((e) => e['id']['tagNm'].toString()).toList();
 
       tagStream.sink.add(ResStream.completed(_taglist));
     } catch (e) {
@@ -413,7 +413,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
         return;
       }
 
-      areaStream.sink.add(ResStream.completed((res.data as List).map((e) => e['tagNm'].toString()).toList()));
+      areaStream.sink.add(ResStream.completed((res.data as List).map((e) => e['id']['tagNm'].toString()).toList()));
     } catch (e) {
       Utils.alert(e.toString());
       // myCountCntr.sink.add(ResStream.error(e.toString()));
@@ -927,7 +927,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.black, width: 2),
+                      border: Border.all(color: Colors.black, width: 1),
                     ),
                     child: const Icon(
                       Icons.add,

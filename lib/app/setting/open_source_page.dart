@@ -50,6 +50,7 @@ class _OpenSourcePageState extends State<OpenSourcePage> {
       }
       lo.g("2222");
       final licenses = allDependencies.toList();
+
       // for (var key in lm.keys) {
       //   licenses.add(Package(
       //     name: key,
@@ -62,6 +63,7 @@ class _OpenSourcePageState extends State<OpenSourcePage> {
       //     dependencies: [],
       //   ));
       // }
+
       lo.g("33333 : ${licenses.length}");
       return licenses..sort((a, b) => a.name.compareTo(b.name));
     } catch (e) {

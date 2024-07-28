@@ -1,5 +1,6 @@
 // 광고
 import 'package:flutter/material.dart';
+import 'package:project1/admob/banner_ad_widget.dart';
 
 Widget buildAddmob() {
   return Container(
@@ -12,6 +13,7 @@ Widget buildAddmob() {
     ),
     child: Stack(
       children: [
+        const BannerAdWidget(screenName: 'SeachPage'),
         Container(
           color: Colors.red[300],
           child: const Text(

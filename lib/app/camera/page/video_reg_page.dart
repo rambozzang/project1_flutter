@@ -1,24 +1,22 @@
 import 'dart:io';
 // import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:bot_toast/bot_toast.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:hashtagable_v3/hashtagable.dart';
-import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/app/weather/models/geocode.dart';
-import 'package:project1/app/weather/models/oneCallCurrentWeather.dart';
 import 'package:project1/repo/board/data/board_save_data.dart';
 import 'package:project1/repo/board/data/board_save_main_data.dart';
 import 'package:project1/repo/board/data/board_save_weather_data.dart';
 import 'package:project1/repo/weather/data/current_weather.dart';
+import 'package:project1/app/weathergogo/cntr/data/current_weather_data.dart';
+import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_button.dart';
-import 'package:project1/widget/custom_checkbox.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
 import 'package:video_compress/video_compress.dart';
 import 'package:video_player/video_player.dart';
@@ -70,7 +68,6 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
 
     initializeVideo();
 
-    getDate();
     _controller = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -82,6 +79,10 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
         curve: Curves.easeInOut,
       ),
     );
+
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      getDate();
+    });
   }
 
   void _toggleCheckbox() {
@@ -97,25 +98,35 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
   }
 
   void initializeVideo() async {
-    _videoController = VideoPlayerController.file(widget.videoFile);
-    await _videoController.initialize().then((a) {
-      setState(() {});
-      _videoController.setLooping(true);
-      _videoController.play();
-      initVideo = true;
-      durationOfVideo = _videoController.value.duration;
-    });
+    try {
+      lo.g("initializeVideo() widget.videoFile : ${widget.videoFile}");
+      _videoController = VideoPlayerController.file(widget.videoFile);
+      await _videoController.initialize().then((a) {
+        setState(() {
+          _videoController.setLooping(true);
+          _videoController.play();
+          initVideo = true;
+          durationOfVideo = _videoController.value.duration;
+        });
+      });
+    } catch (e) {
+      Utils.alert("비디오초기화 오류 : $e");
+      lo.g("initializeVideo() error : $e");
+    }
   }
 
   Future<void> getDate() async {
     try {
-      await Get.find<WeatherCntr>().getWeatherDataOnlyCurrentWeather();
-    } catch (e) {}
+      // Utils.alert("최신 날씨 다시 가져와");
+      await Get.find<WeatherGogoCntr>().getInitWeatherData(false);
+    } catch (e) {
+      lo.g("getDate() error : $e");
+    }
   }
 
   // 파일 업로드
   Future<void> upload() async {
-    if (Get.find<WeatherCntr>().isLoading.value) {
+    if (Get.find<WeatherGogoCntr>().isLoading.value) {
       Utils.alert("현지 위치정보 수신중입니다. 수신완료 후 다시 시도해주세요.");
       return;
     }
@@ -132,8 +143,8 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
       boardSaveMainData.typeDtCd = 'V';
       boardSaveMainData.hideYn = hideYn;
 
-      OneCallCurrentWeather? currentWeather = Get.find<WeatherCntr>().oneCallCurrentWeather.value;
-      GeocodeData geocodeData = Get.find<WeatherCntr>().currentLocation.value!;
+      CurrentWeatherData? currentWeather = Get.find<WeatherGogoCntr>().currentWeather.value;
+      GeocodeData geocodeData = Get.find<WeatherGogoCntr>().currentLocation.value!;
 
       BoardSaveWeatherData boardSaveWeatherData = BoardSaveWeatherData();
       boardSaveWeatherData.boardId = 0;
@@ -141,25 +152,27 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
       boardSaveWeatherData.city = '';
       boardSaveWeatherData.country = ''!;
 
-      boardSaveWeatherData.currentTemp = currentWeather!.temp?.toStringAsFixed(1);
-      boardSaveWeatherData.feelsTemp = currentWeather!.feels_like?.toStringAsFixed(1);
-      boardSaveWeatherData.humidity = currentWeather!.humidity.toString();
-      boardSaveWeatherData.icon = currentWeather.weather![0].icon;
+      boardSaveWeatherData.currentTemp = currentWeather!.temp;
+      // boardSaveWeatherData.feelsTemp = currentWeather!.feels_like?.toStringAsFixed(1);
+      boardSaveWeatherData.humidity = currentWeather.humidity.toString();
+      // boardSaveWeatherData.icon = currentWeather.weather![0].icon;
       boardSaveWeatherData.lat = geocodeData.latLng.latitude.toString();
       boardSaveWeatherData.lon = geocodeData.latLng.longitude.toString();
-      boardSaveWeatherData.speed = currentWeather.wind_speed.toString();
+      boardSaveWeatherData.speed = currentWeather.speed.toString();
+      boardSaveWeatherData.sky = currentWeather.sky.toString();
+      boardSaveWeatherData.rain = currentWeather.rain.toString();
 
       boardSaveWeatherData.tempMax = ''; // currentWeather.main!.temp_max?.toStringAsFixed(1);
       boardSaveWeatherData.tempMin = ''; // currentWeather.main!.temp_min?.toStringAsFixed(1);
 
-      boardSaveWeatherData.location = Get.find<WeatherCntr>().currentLocation.value!.name;
+      boardSaveWeatherData.location = Get.find<WeatherGogoCntr>().currentLocation.value!.name;
       // boardSaveWeatherData.thumbnailPath = res2.secureUrl;
       // boardSaveWeatherData.videoPath = res.secureUrl;
-      boardSaveWeatherData.weatherInfo = currentWeather.weather![0].description;
+      boardSaveWeatherData.weatherInfo = currentWeather.description;
       boardSaveData.boardMastInVo = boardSaveMainData;
       boardSaveData.boardWeatherVo = boardSaveWeatherData;
-      boardSaveWeatherData.mist10 = Get.find<WeatherCntr>().mistViewData.value!.mist10Grade.toString();
-      boardSaveWeatherData.mist25 = Get.find<WeatherCntr>().mistViewData.value!.mist25Grade.toString();
+      boardSaveWeatherData.mist10 = Get.find<WeatherGogoCntr>().mistData.value!.mist10Grade.toString();
+      boardSaveWeatherData.mist25 = Get.find<WeatherGogoCntr>().mistData.value!.mist25Grade.toString();
       Lo.g("Root upload() videoFilePath : ${widget.videoFile.path}");
       if (hideYn == "Y") {
         Utils.alert('숨기기 상태로 등록중 입니다!');
@@ -275,8 +288,8 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
                                 ),
                           const Gap(5),
                           Expanded(
-                            child: GetBuilder<WeatherCntr>(builder: (weatherCntr) {
-                              if (weatherCntr.isLoading.value) {
+                            child: GetBuilder<WeatherGogoCntr>(builder: (cntr) {
+                              if (cntr.isLoading.value) {
                                 return Container(padding: const EdgeInsets.only(top: 40), child: Utils.progressbar());
                               }
                               return Container(
@@ -305,42 +318,42 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
                                               ),
                                               child: const Icon(Icons.location_on, color: Colors.white, size: 15)),
                                           const SizedBox(width: 5),
-                                          Text(weatherCntr.currentLocation.value!.name,
+                                          Text(cntr.currentLocation.value!.name,
                                               style: const TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold)),
                                         ],
                                       ),
                                     ),
                                     Row(
                                       children: [
-                                        Text('${weatherCntr.oneCallCurrentWeather.value!.temp!.toStringAsFixed(1)}°C',
+                                        Text('${cntr.currentWeather.value!.temp!.split('.')[0]}°C',
                                             style: const TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold)),
-                                        CachedNetworkImage(
-                                          cacheKey: weatherCntr.oneCallCurrentWeather.value?.weather![0].icon ?? '10n',
-                                          width: 50,
-                                          height: 50,
-                                          imageUrl:
-                                              'http://openweathermap.org/img/wn/${weatherCntr.oneCallCurrentWeather.value?.weather![0].icon ?? '10n'}@2x.png',
-                                          imageBuilder: (context, imageProvider) => Container(
-                                            decoration: BoxDecoration(
-                                              image: DecorationImage(
-                                                  image: imageProvider,
-                                                  fit: BoxFit.cover,
-                                                  colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn)),
-                                            ),
-                                          ),
-                                          placeholder: (context, url) =>
-                                              const CircularProgressIndicator(strokeWidth: 1, color: Colors.white),
-                                          errorWidget: (context, url, error) => const Icon(Icons.error),
-                                        ),
+                                        // CachedNetworkImage(
+                                        //   cacheKey: cntr.currentWeather.value?.weather![0].icon ?? '10n',
+                                        //   width: 50,
+                                        //   height: 50,
+                                        //   imageUrl:
+                                        //       'http://openweathermap.org/img/wn/${WeatherGogoCntr.oneCallCurrentWeather.value?.weather![0].icon ?? '10n'}@2x.png',
+                                        //   imageBuilder: (context, imageProvider) => Container(
+                                        //     decoration: BoxDecoration(
+                                        //       image: DecorationImage(
+                                        //           image: imageProvider,
+                                        //           fit: BoxFit.cover,
+                                        //           colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn)),
+                                        //     ),
+                                        //   ),
+                                        //   placeholder: (context, url) =>
+                                        //       const CircularProgressIndicator(strokeWidth: 1, color: Colors.white),
+                                        //   errorWidget: (context, url, error) => const Icon(Icons.error),
+                                        // ),
                                       ],
                                     ),
                                     Text(
-                                      weatherCntr.oneCallCurrentWeather.value!.weather![0].description!,
+                                      cntr.currentWeather.value!.rainDesc!,
                                       style: const TextStyle(fontSize: 15, color: Colors.black),
                                       overflow: TextOverflow.clip,
                                     ),
                                     const Gap(6),
-                                    weatherCntr.mistViewData.value!.mist10Grade.toString() == 'null'
+                                    cntr.mistData.value!.mist10Grade.toString() == 'null'
                                         ? const Text('미세먼지 정보가 없습니다.', style: TextStyle(fontSize: 13, color: Colors.black87))
                                         : RichText(
                                             text: TextSpan(
@@ -351,12 +364,12 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
                                                 fontWeight: FontWeight.w500,
                                               ),
                                               children: <TextSpan>[
-                                                buildTextMist(weatherCntr.mistViewData.value!.mist10Grade.toString()),
+                                                buildTextMist(cntr.mistData.value!.mist10Grade.toString()),
                                                 const TextSpan(
                                                   text: ' 초미세',
                                                   style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: Colors.black),
                                                 ),
-                                                buildTextMist(weatherCntr.mistViewData.value!.mist25Grade.toString()),
+                                                buildTextMist(cntr.mistData.value!.mist25Grade.toString()),
                                               ],
                                             ),
                                           ),

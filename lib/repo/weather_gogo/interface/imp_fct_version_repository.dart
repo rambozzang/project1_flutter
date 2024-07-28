@@ -34,6 +34,21 @@ class FctVersionRepositoryImp implements FctVersionRepository {
     }
   }
 
+  Future<List<ItemFctVersion>> getItemListJSON(WeatherVersion version) async {
+    final List<ItemFctVersion> itemList = [];
+
+    final json = await getJSON(version);
+    final items = json.response!.body!.items!.item!;
+
+    if (items.isNotEmpty) {
+      items.map((e) => itemList.add(e)).toList();
+      return itemList;
+    } else {
+      itemList.add(const ItemFctVersion());
+      return itemList;
+    }
+  }
+
   @override
   Future<ItemFctVersion> getItemXML(WeatherVersion version) async {
     final List<ItemFctVersion> itemList = [];

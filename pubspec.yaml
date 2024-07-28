@@ -114,7 +114,7 @@ dependencies:
   flutter_inappwebview: ^6.0.0
   google_mobile_ads: ^5.1.0  
   # chatting 관련 패키지
-  flutter_supabase_chat_core: ^0.10.0
+  # flutter_supabase_chat_core: ^0.10.0
   supabase_flutter: ^2.5.6
   # flutter_login: ^5.0.0
   flutter_chat_ui: ^1.6.14
@@ -136,7 +136,8 @@ dependencies:
   flutter_markdown: ^0.7.3
   syncfusion_flutter_sliders: ^26.1.41
   sign_in_with_apple: ^6.1.1
-
+  fl_chart: ^0.68.0
+  
  
   # better_player:
   #   git:
@@ -169,7 +170,7 @@ flutter_native_splash:
     color: "#262B49"
     icon_background_color: "#262B49"
     image_dark: assets/play_store_512.png
-    icon_background_color_dark: "#121212"
+    icon_background_color_dark: "#262B49"
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
   # For details regarding adding assets from package dependencies, see

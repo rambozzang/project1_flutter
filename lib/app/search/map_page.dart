@@ -19,6 +19,7 @@ import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/cctv/cctv_repo.dart';
 import 'package:project1/repo/cctv/data/cctv_res_data.dart';
 import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:syncfusion_flutter_sliders/sliders.dart';
@@ -50,7 +51,7 @@ class _MapPageState extends State<MapPage> {
   @override
   void initState() {
     super.initState();
-    topheight = Platform.isIOS ? 55 : 45;
+    topheight = Platform.isIOS ? 55 : 25;
   }
 
   // 동영상 비디오 재생
@@ -75,10 +76,8 @@ class _MapPageState extends State<MapPage> {
 
   // 카카오 검색창에서 검색후 클릭시 위치로 이동
   Future<void> locationUpdate(GeocodeData geocodeData) async {
-    NaverMapController mapController = Get.find<MapCntr>().mapController;
-
     NLatLng currentCoord = NLatLng(geocodeData.latLng.latitude, geocodeData.latLng.longitude);
-    final locationOverlay = mapController.getLocationOverlay();
+    final locationOverlay = Get.find<MapCntr>().mapController.getLocationOverlay();
     const iconImage = NOverlayImage.fromAssetImage('assets/images/map/default_pin.png');
     locationOverlay
       ..setIcon(iconImage)
@@ -90,7 +89,7 @@ class _MapPageState extends State<MapPage> {
 
     final cameraUpdate = NCameraUpdate.withParams(target: currentCoord)
       ..setAnimation(animation: NCameraAnimation.linear, duration: const Duration(milliseconds: 500)); // 2초는 너무 길 수도 있어요.
-    await mapController.updateCamera(cameraUpdate);
+    await Get.find<MapCntr>().mapController.updateCamera(cameraUpdate);
 
     final marker = NMarker(
       id: geocodeData.latLng.longitude.toString(),
@@ -100,11 +99,9 @@ class _MapPageState extends State<MapPage> {
       captionOffset: 10,
       caption: NOverlayCaption(text: geocodeData.name.toString()),
     );
-    mapController.addOverlay(marker);
-    final onMarkerInfoWindow = NInfoWindow.onMarker(offsetX: 10, id: marker.info.id, text: geocodeData.name);
 
-    marker.openInfoWindow(onMarkerInfoWindow);
-
+    marker.openInfoWindow(NInfoWindow.onMarker(offsetX: 10, id: marker.info.id, text: geocodeData.name));
+    Get.find<MapCntr>().mapController.addOverlay(marker);
     buildMarker(context);
   }
 
@@ -130,8 +127,8 @@ class _MapPageState extends State<MapPage> {
                       options: NaverMapViewOptions(
                         locationButtonEnable: true,
                         initialCameraPosition: NCameraPosition(
-                            target: NLatLng(Get.find<WeatherCntr>().currentLocation.value!.latLng.latitude,
-                                Get.find<WeatherCntr>().currentLocation!.value!.latLng.longitude),
+                            target: NLatLng(Get.find<WeatherGogoCntr>().currentLocation.value!.latLng.latitude,
+                                Get.find<WeatherGogoCntr>().currentLocation!.value!.latLng.longitude),
                             zoom: 13,
                             bearing: 0,
                             tilt: 0),
@@ -141,11 +138,11 @@ class _MapPageState extends State<MapPage> {
 
                         Get.find<MapCntr>().mapController = controller;
 
+                        //  Get.find<MapCntr>().getLocation();
+                        locationUpdate(Get.find<WeatherGogoCntr>().currentLocation.value!);
+
                         // 파란색 점으로 현재위치 표시
                         Get.find<MapCntr>().mapController.setLocationTrackingMode(NLocationTrackingMode.noFollow);
-
-                        Get.find<MapCntr>().getLocation();
-                        buildMarker(context);
                       },
                     ),
                     //   buildTop(),
@@ -191,7 +188,7 @@ class _MapPageState extends State<MapPage> {
                         onPressed: () => Get.find<MapCntr>().getLocation(), icon: const Icon(Icons.location_on, color: Colors.black)),
                     // Text(videoListCntr.localName.value, style: const TextStyle(color: Colors.black, fontSize: 15)),
                     TextScroll(
-                      '${Get.find<WeatherCntr>().currentLocation.value!.name.toString()} ',
+                      '${Get.find<WeatherGogoCntr>().currentLocation.value!.name.toString()} ',
                       mode: TextScrollMode.endless,
                       numberOfReps: 20000,
                       fadedBorder: true,
@@ -241,66 +238,70 @@ class _MapPageState extends State<MapPage> {
   // 우측 하단 버튼
   Widget buildBottom() {
     return Positioned(
-        bottom: 40,
+        bottom: 100,
         right: 16,
         child: Column(
           children: [
-            ValueListenableBuilder<double>(
-              valueListenable: isSlider,
-              builder: (context, value, child) {
-                return SizedBox(
-                  height: 250,
-                  // child: Slider(
-                  //   value: value,
-                  //   min: 0,
-                  //   max: 5,
-                  //   divisions: 1,
-                  //   label: '${value.round()}일',
-                  //   onChanged: (double value) {
-                  //     //  setState(() {
-                  //     isSlider.value = value;
-                  //     seachDay = value.round();
-                  //     //});
-                  //     buildMarker(context);
-                  //   },
-                  //   activeColor: Colors.blue,
-                  //   inactiveColor: Colors.grey.shade300,
-                  // ),
-                  child: SfSlider.vertical(
-                    min: 1.0,
-                    max: 5.0,
-                    value: value,
-                    interval: 1.0,
-                    showTicks: true,
-                    activeColor: Colors.brown,
-                    inactiveColor: Colors.grey,
-                    labelPlacement: LabelPlacement.onTicks,
-                    dividerShape: SfDividerShape(),
-                    shouldAlwaysShowTooltip: true,
-                    stepSize: 1.0,
-                    showLabels: true,
-                    enableTooltip: true,
-                    minorTicksPerInterval: 1,
-                    onChanged: (dynamic values) {
-                      isSlider.value = values;
-                      seachDay = values.start.toInt();
-                      buildMarker(context);
-                    },
-                  ),
-                );
-              },
-            ),
-            // ElevatedButton(
-            //   style: ElevatedButton.styleFrom(
-            //       padding: const EdgeInsets.all(5),
-            //       minimumSize: const Size(70, 40),
-            //       backgroundColor: Colors.white,
-            //       elevation: 5,
-            //       shadowColor: Colors.grey,
-            //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5))),
-            //   onPressed: () => buildMarker(context),
-            //   child: const Text("근처영상보기", style: TextStyle(color: Colors.black, fontSize: 12)),
+            // ValueListenableBuilder<double>(
+            //   valueListenable: isSlider,
+            //   builder: (context, value, child) {
+            //     return SizedBox(
+            //       height: 350,
+            // child: RotatedBox(
+            //   quarterTurns: 3,
+            //   child: Slider(
+            //     value: value,
+            //     min: 0,
+            //     max: 5,
+            //     divisions: 1,
+            //     label: '${value.round()}일',
+            //     onChanged: (double value) {
+            //       //  setState(() {
+            //       isSlider.value = value;
+            //       seachDay = value.round();
+            //       //});
+            //       buildMarker(context);
+            //     },
+            //     activeColor: Colors.blue,
+            //     inactiveColor: Colors.grey.shade300,
+            //   ),
             // ),
+
+            // child: SfSlider(
+            //   min: 1.0,
+            //   max: 5.0,
+            //   value: value,
+            //   interval: 1.0,
+            //   showTicks: true,
+            //   activeColor: Colors.blueGrey,
+            //   inactiveColor: Colors.grey.shade300,
+            //   labelPlacement: LabelPlacement.onTicks,
+            //   dividerShape: SfDividerShape(),
+            //   shouldAlwaysShowTooltip: true,
+            //   stepSize: 1.0,
+            //   showLabels: true,
+            //   enableTooltip: true,
+            //   minorTicksPerInterval: 1,
+            //   onChanged: (dynamic values) {
+            //     isSlider.value = values;
+            //     seachDay = values.start.toInt();
+            //     buildMarker(context);
+            //   },
+            // ),
+            //     );
+            //   },
+            // ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.all(5),
+                  minimumSize: const Size(70, 40),
+                  backgroundColor: Colors.white,
+                  elevation: 5,
+                  shadowColor: Colors.grey,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5))),
+              onPressed: () => buildMarker(context),
+              child: const Text("근처영상보기", style: TextStyle(color: Colors.black, fontSize: 12)),
+            ),
           ],
         ));
   }
@@ -346,6 +347,10 @@ class _MapPageState extends State<MapPage> {
         onShowDialog(context, element);
       });
     });
+    if (_list.length == 0) {
+      Utils.alert('근처에 영상이 없습니다.');
+    }
+    // Utils.alert('마커 생성 완료');
   }
 
   // 지역 및 서울 cctv 마커 생성
@@ -366,7 +371,7 @@ class _MapPageState extends State<MapPage> {
       //  return;
     }
     lo.g(res.length.toString());
-    final NOverlayImage icon = NOverlayImage.fromAssetImage('assets/images/map/cctv2.png');
+    final NOverlayImage icon = const NOverlayImage.fromAssetImage('assets/images/map/cctv2.png');
 
     int markid = 1;
     res.forEach((element) async {
@@ -583,21 +588,21 @@ class _MapPageState extends State<MapPage> {
                                 Text('${data.currentTemp.toString()}°C',
                                     overflow: TextOverflow.clip,
                                     style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black)),
-                                CachedNetworkImage(
-                                  width: 50,
-                                  height: 50,
-                                  imageUrl: 'http://openweathermap.org/img/wn/${data.icon ?? '10n'}@2x.png',
-                                  imageBuilder: (context, imageProvider) => Container(
-                                    decoration: BoxDecoration(
-                                      image: DecorationImage(
-                                          image: imageProvider,
-                                          fit: BoxFit.cover,
-                                          colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn)),
-                                    ),
-                                  ),
-                                  placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 1, color: Colors.white),
-                                  errorWidget: (context, url, error) => const Icon(Icons.error),
-                                ),
+                                // CachedNetworkImage(
+                                //   width: 50,
+                                //   height: 50,
+                                //   imageUrl: 'http://openweathermap.org/img/wn/${data.icon ?? '10n'}@2x.png',
+                                //   imageBuilder: (context, imageProvider) => Container(
+                                //     decoration: BoxDecoration(
+                                //       image: DecorationImage(
+                                //           image: imageProvider,
+                                //           fit: BoxFit.cover,
+                                //           colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn)),
+                                //     ),
+                                //   ),
+                                //   placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 1, color: Colors.white),
+                                //   errorWidget: (context, url, error) => const Icon(Icons.error),
+                                // ),
                               ],
                             ),
                             Text(
@@ -606,8 +611,8 @@ class _MapPageState extends State<MapPage> {
                               overflow: TextOverflow.clip,
                             ),
                             const Gap(6),
-                            Get.find<WeatherCntr>().mistViewData.value!.mist10Grade.toString() == 'null' ||
-                                    Get.find<WeatherCntr>().mistViewData.value!.mist25Grade.toString() == null
+                            Get.find<WeatherGogoCntr>().mistData.value!.mist10Grade.toString() == 'null' ||
+                                    Get.find<WeatherGogoCntr>().mistData.value!.mist25Grade.toString() == null
                                 ? const SizedBox()
                                 : RichText(
                                     text: TextSpan(
@@ -618,12 +623,12 @@ class _MapPageState extends State<MapPage> {
                                         fontWeight: FontWeight.w500,
                                       ),
                                       children: <TextSpan>[
-                                        buildTextMist(Get.find<WeatherCntr>().mistViewData.value!.mist10Grade.toString()),
+                                        buildTextMist(Get.find<WeatherGogoCntr>().mistData.value!.mist10Grade.toString()),
                                         const TextSpan(
                                           text: ' 초미세',
                                           style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: Colors.black),
                                         ),
-                                        buildTextMist(Get.find<WeatherCntr>().mistViewData.value!.mist25Grade.toString()),
+                                        buildTextMist(Get.find<WeatherGogoCntr>().mistData.value!.mist25Grade.toString()),
                                       ],
                                     ),
                                   ),
@@ -635,7 +640,7 @@ class _MapPageState extends State<MapPage> {
                             //       style: TextStyle(fontSize: 15, color: Colors.black87),
                             //     ),
                             //     const Gap(10),
-                            //     Text(Get.find<WeatherCntr>().mistViewData.value!.mist10Grade!.toString(),
+                            //     Text(Get.find<WeatherGogoCntr>().mistViewData.value!.mist10Grade!.toString(),
                             //         style: const TextStyle(fontSize: 15, color: Colors.black)),
                             //   ],
                             // ),
@@ -644,7 +649,7 @@ class _MapPageState extends State<MapPage> {
                             //   children: [
                             //     const Text('초미세 :', style: TextStyle(fontSize: 15, color: Colors.black87)),
                             //     const Gap(10),
-                            //     Text(Get.find<WeatherCntr>().mistViewData.value!.mist25Grade!.toString(),
+                            //     Text(Get.find<WeatherGogoCntr>().mistViewData.value!.mist25Grade!.toString(),
                             //         style: const TextStyle(fontSize: 15, color: Colors.black)),
                             //   ],
                             // ),

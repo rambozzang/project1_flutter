@@ -34,3 +34,8 @@ class CameraEnable extends CameraEvent {}
 
 // Event to reset the camera BLoC to its initial state
 class CameraReset extends CameraEvent {}
+
+// 새로운 상태 클래스 추가
+class CameraRecordingStarting extends CameraState {}
+
+class CameraRecording extends CameraState {}

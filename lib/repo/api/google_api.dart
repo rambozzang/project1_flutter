@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/repo/chatting/chat_repo.dart';
 import 'package:project1/repo/chatting/data/signup_data.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -8,11 +7,10 @@ import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/google_join_data.dart';
 import 'package:project1/repo/secure_storge.dart';
 import 'package:project1/utils/log_utils.dart';
-import 'package:project1/utils/utils.dart';
 
 class GoogleApi with SecureStorage {
-  Future<ResData> signInWithGoogle() async {
-    ResData resData = ResData();
+  Future<ResData<String>> signInWithGoogle() async {
+    ResData<String> resData = ResData<String>();
     resData.code = "00";
 
     // ---------------------------------------------------------

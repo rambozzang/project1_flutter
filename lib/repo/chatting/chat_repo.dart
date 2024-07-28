@@ -1,6 +1,6 @@
-import 'package:flutter_supabase_chat_core/flutter_supabase_chat_core.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
 import 'package:project1/repo/chatting/data/signup_data.dart';
 import 'package:project1/repo/chatting/data/update_data.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -77,19 +77,19 @@ class ChatRepo {
 
       var resLoginData = Get.find<AuthCntr>().resLoginData.value;
       String name = resLoginData.nickNm ?? '';
-      if (resLoginData.nickNm == 'null' || resLoginData.nickNm == null || resLoginData.nickNm == '') {
-        name = resLoginData.custNm!;
-      }
+      // if (resLoginData.nickNm == 'null' || resLoginData.nickNm == null || resLoginData.nickNm == '') {
+      //   name = resLoginData.custNm!;
+      // }
       Map<String, dynamic> metadata = {
         'email': resLoginData.email ?? '',
         'custId': resLoginData.custId ?? '',
         'nickNm': resLoginData.nickNm ?? '',
-        'custNm': resLoginData.custNm ?? '',
+        'custNm': resLoginData.nickNm ?? '',
         'selfId': resLoginData.custData?.selfId ?? '',
       };
 
       await SupabaseChatCore.instance.updateUser(
-        types.User(firstName: name, id: data.uid!, lastName: '', imageUrl: data.imageUrl, metadata: metadata),
+        types.User(firstName: resLoginData.nickNm, id: data.uid!, lastName: '', imageUrl: data.imageUrl, metadata: metadata),
       );
       resData.code = '00';
       resData.msg = '업데이트 성공';

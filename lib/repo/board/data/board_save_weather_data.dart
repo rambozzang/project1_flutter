@@ -14,6 +14,8 @@ class BoardSaveWeatherData {
   String? thumbnailPath;
   String? thumbnailId;
   String? icon;
+  String? sky;
+  String? rain;
   String? currentTemp;
   String? feelsTemp;
   String? tempMin;
@@ -35,6 +37,8 @@ class BoardSaveWeatherData {
     this.thumbnailPath,
     this.thumbnailId,
     this.icon,
+    this.sky,
+    this.rain,
     this.currentTemp,
     this.feelsTemp,
     this.tempMin,
@@ -58,6 +62,8 @@ class BoardSaveWeatherData {
     String? thumbnailPath,
     String? thumbnailId,
     String? icon,
+    String? sky,
+    String? rain,
     String? currentTemp,
     String? feelsTemp,
     String? tempMin,
@@ -80,6 +86,8 @@ class BoardSaveWeatherData {
       thumbnailPath: thumbnailPath ?? this.thumbnailPath,
       thumbnailId: thumbnailId ?? this.thumbnailId,
       icon: icon ?? this.icon,
+      sky: sky ?? this.sky,
+      rain: rain ?? this.rain,
       currentTemp: currentTemp ?? this.currentTemp,
       feelsTemp: feelsTemp ?? this.feelsTemp,
       tempMin: tempMin ?? this.tempMin,
@@ -105,6 +113,8 @@ class BoardSaveWeatherData {
       'thumbnailPath': thumbnailPath,
       'thumbnailId': thumbnailId,
       'icon': icon,
+      'sky': sky,
+      'rain': rain,
       'currentTemp': currentTemp,
       'feelsTemp': feelsTemp,
       'tempMin': tempMin,
@@ -130,6 +140,8 @@ class BoardSaveWeatherData {
       thumbnailPath: map['thumbnailPath'] != null ? map['thumbnailPath'] as String : null,
       thumbnailId: map['thumbnailId'] != null ? map['thumbnailId'] as String : null,
       icon: map['icon'] != null ? map['icon'] as String : null,
+      sky: map['sky'] != null ? map['sky'] as String : null,
+      rain: map['rain'] != null ? map['rain'] as String : null,
       currentTemp: map['currentTemp'] != null ? map['currentTemp'] as String : null,
       feelsTemp: map['feelsTemp'] != null ? map['feelsTemp'] as String : null,
       tempMin: map['tempMin'] != null ? map['tempMin'] as String : null,
@@ -149,7 +161,7 @@ class BoardSaveWeatherData {
 
   @override
   String toString() {
-    return 'BoardSaveWeatherData(boardId: $boardId, lat: $lat, lon: $lon, location: $location, weatherInfo: $weatherInfo, videoPath: $videoPath, videoId: $videoId, thumbnailPath: $thumbnailPath, thumbnailId: $thumbnailId, icon: $icon, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, country: $country, city: $city, mist10: $mist10, mist25: $mist25)';
+    return 'BoardSaveWeatherData(boardId: $boardId, lat: $lat, lon: $lon, location: $location, weatherInfo: $weatherInfo, videoPath: $videoPath, videoId: $videoId, thumbnailPath: $thumbnailPath, thumbnailId: $thumbnailId, icon: $icon, sky: $sky, rain: $rain, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, country: $country, city: $city, mist10: $mist10, mist25: $mist25)';
   }
 
   @override
@@ -166,6 +178,8 @@ class BoardSaveWeatherData {
         other.thumbnailPath == thumbnailPath &&
         other.thumbnailId == thumbnailId &&
         other.icon == icon &&
+        other.sky == sky &&
+        other.rain == rain &&
         other.currentTemp == currentTemp &&
         other.feelsTemp == feelsTemp &&
         other.tempMin == tempMin &&
@@ -190,6 +204,8 @@ class BoardSaveWeatherData {
         thumbnailPath.hashCode ^
         thumbnailId.hashCode ^
         icon.hashCode ^
+        sky.hashCode ^
+        rain.hashCode ^
         currentTemp.hashCode ^
         feelsTemp.hashCode ^
         tempMin.hashCode ^

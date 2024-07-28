@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:project1/admob/ad_manager.dart';
+import 'package:project1/admob/banner_ad_widget.dart';
 import 'package:project1/app/alram/gemini_chat_page.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/chatting/chat_main_page.dart';
@@ -64,6 +66,12 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
         }
       }
     });
+    _loadAd();
+  }
+
+  Future<void> _loadAd() async {
+    await AdManager().loadBannerAd('AlramPage');
+    setState(() {}); // 광고 로드 후 UI 업데이트
   }
 
   Future<void> getDataInit() async {
@@ -109,6 +117,7 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
 
   @override
   void dispose() {
+    AdManager().disposeBannerAd('AlramPage');
     tabController.dispose();
     listCtrl.close();
     scrollCtrl.dispose();
@@ -276,8 +285,9 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
         controller: scrollCtrl,
         // physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 12.0),
-        child: Column(children: [
-          // const Gap(24),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Gap(10),
+          const SizedBox(width: double.infinity, child: Center(child: BannerAdWidget(screenName: 'AlramPage'))),
           // 공통 스트림 빌더
           Utils.commonStreamList<AlramResData>(listCtrl, buildList, getDataInit),
           ValueListenableBuilder<bool>(
@@ -454,17 +464,8 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
                           ),
                           Text(
                             Utils.timeage(data.crtDtm.toString()),
-                            // '${data.crtDtm.toString().substring(0, 10).replaceAll('-', '/')} ${data.crtDtm.toString().substring(11, 19)}',
-
                             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: Colors.black),
                           ),
-
-                          // Text(
-                          //   '@${data.senderNickNm == null ? data.senderCustNm.toString() : data.senderNickNm.toString()}',
-                          //   softWrap: true,
-                          //   overflow: TextOverflow.fade,
-                          //   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black),
-                          // ),
                         ],
                       ),
                     ),

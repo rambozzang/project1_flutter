@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
+import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -48,7 +49,7 @@ class VideoMyinfoListCntr extends GetxController {
     getData();
   }
 
-  Future<void> getData() async {
+  void getData() async {
     try {
       list = [];
       BoardWeatherListData boarIdData = BoardWeatherListData();
@@ -80,12 +81,12 @@ class VideoMyinfoListCntr extends GetxController {
       } else if (datatype == "LIKE") {
         resListData = await boardRepo.getLikeBoard(custId.toString(), pageNum, pagesize);
       } else if (datatype == "SEARCHLIST") {
-        position = Get.find<WeatherCntr>().positionData;
+        position = Get.find<WeatherGogoCntr>().positionData;
 
         resListData = await boardRepo.getSearchBoard(
             position!.latitude.toString(), position!.longitude.toString(), pageNum, pagesize, searchWord ?? "");
       } else {
-        position = Get.find<WeatherCntr>().positionData;
+        position = Get.find<WeatherGogoCntr>().positionData;
 
         resListData = await boardRepo.searchBoardBylatlon(position!.latitude.toString(), position!.longitude.toString(), pageNum, pagesize);
       }
@@ -129,12 +130,10 @@ class VideoMyinfoListCntr extends GetxController {
       list.addAll(_list);
       List<BoardWeatherListData> initList = list.sublist(0, list.length > 1 ? 2 : 1);
       videoMyListCntr.sink.add(ResStream.completed(initList));
-      Future.delayed(const Duration(milliseconds: 1500), () {
+      Future.delayed(const Duration(milliseconds: 2000), () {
         // 1번째 비디오를 플레이 화면에 바로 노출하도록 나머지 스트림 전송
         videoMyListCntr.sink.add(ResStream.completed(list));
       });
-
-      // videoMyListCntr.sink.add(ResStream.completed(list));
     } catch (e) {
       Lo.g('getDate() error : $e');
       videoMyListCntr.sink.add(ResStream.error(e.toString()));
@@ -151,6 +150,10 @@ class VideoMyinfoListCntr extends GetxController {
     isBottom = length < pagesize ? false : isBottom;
     // false 이면 바로 리턴 (더이상 데이터가 없음)
     if (!isBottom) {
+      return;
+    }
+
+    if (!isLoadingMore.value) {
       return;
     }
 
@@ -180,6 +183,11 @@ class VideoMyinfoListCntr extends GetxController {
       return;
     }
     List<BoardWeatherListData> _list = ((resListData.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
+
+    if (_list.isEmpty || _list.length < pagesize) {
+      isLoadingMore.value = false;
+    }
+
     list.addAll(_list);
     videoMyListCntr.sink.add(ResStream.completed(list));
   }

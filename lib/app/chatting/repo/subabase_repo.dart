@@ -1,6 +1,6 @@
+import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_supabase_chat_core/flutter_supabase_chat_core.dart';
 
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 

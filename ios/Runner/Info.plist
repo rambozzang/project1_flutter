@@ -94,6 +94,8 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>naverConsumerKey</key>
 	<string>iC9RuDfC4wmdwHXS02Sa</string>
 	<key>naverConsumerSecret</key>

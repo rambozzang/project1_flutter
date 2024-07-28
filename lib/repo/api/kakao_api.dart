@@ -1,11 +1,9 @@
+import 'dart:math';
+
 import 'package:flutter/services.dart';
-import 'package:flutter_supabase_chat_core/flutter_supabase_chat_core.dart';
-import 'package:get/get.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
-import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/repo/chatting/chat_repo.dart';
 import 'package:project1/repo/chatting/data/signup_data.dart';
-import 'package:project1/repo/chatting/data/update_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/kakao_join_data.dart' as Join;
@@ -13,9 +11,6 @@ import 'package:project1/repo/secure_storge.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as Kakao;
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 // 카카오 개발문서
 // https://developers.kakao.com/docs/latest/ko/kakaologin/flutter
@@ -25,8 +20,8 @@ class KakaoApi with SecureStorage {
   // 사용자의 추가 동의가 필요한 사용자 정보 동의항목 확인
   List<String> scopes = ['account_email', "birthday", "birthyear", "phone_number", "profile", "account_ci"];
 
-  Future<ResData> signInWithKakaoApp() async {
-    ResData resData = ResData();
+  Future<ResData<String>> signInWithKakaoApp() async {
+    ResData<String> resData = ResData<String>();
     resData.code = "00";
     // 카카오톡 실행 가능 여부
     if (await isKakaoTalkInstalled()) {
@@ -36,7 +31,8 @@ class KakaoApi with SecureStorage {
         OAuthToken? token = await UserApi.instance.loginWithKakaoTalk(serviceTerms: scopes);
         log('카카오톡으로 로그인 성공1 : _token :  $token ');
         await TokenManagerProvider.instance.manager.setToken(token);
-        ResData signUpRes = await signUpProc(token.toString());
+        ResData<String> signUpRes = await signUpProc(token.toString());
+        return signUpRes;
       } catch (error) {
         log('카카오톡으로 로그인1 실패 $error');
         // 사용자가 카카오톡 설치 후 디바이스 권한 요청 화면에서 로그인을 취소한 경우,
@@ -49,15 +45,15 @@ class KakaoApi with SecureStorage {
         try {
           // 사용자가 카카오계정 정보를 직접 입력하지 않아도 간편하게 로그인 가능
           OAuthToken? token = await UserApi.instance.loginWithKakaoAccount(serviceTerms: scopes);
-          ResData signUpRes = await signUpProc(token.toString());
+          ResData<String> signUpRes = await signUpProc(token.toString());
           log('카카오계정으로 로그인2 성공 : _token :  $token ');
+          return signUpRes;
         } catch (error) {
           log('카카오계정으로 로그인2 실패 $error');
           resData.code = "99";
           return resData;
         }
       }
-      return resData;
     }
 
     log("카카오톡가 없는 경우 프로세스 3");
@@ -66,20 +62,19 @@ class KakaoApi with SecureStorage {
       OAuthToken? token = await UserApi.instance.loginWithKakaoAccount(serviceTerms: scopes);
       log('카카오계정으로 로그인3 성공 : _token :  $token ');
 
-      ResData signUpRes = await signUpProc(token.accessToken.toString());
+      ResData<String> signUpRes = await signUpProc(token.accessToken.toString());
       log('카카오계정으로 로그인3 성공 : _token :  $token ');
-      resData.code = "00";
 
-      return resData;
+      return signUpRes;
     } catch (error) {
       resData.code = "99";
-      resData.data = false;
+      resData.data = error.toString();
       return resData;
     }
   }
 
-  Future<ResData> signUpProc(String token) async {
-    ResData resData = ResData();
+  Future<ResData<String>> signUpProc(String token) async {
+    ResData<String> resData = ResData<String>();
     resData.code = "00";
     Kakao.User user;
     bool result = false;

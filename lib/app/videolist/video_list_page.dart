@@ -1,27 +1,28 @@
-import 'dart:io';
 import 'dart:ui';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:get/get_connect/http/src/utils/utils.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import 'package:preload_page_view/preload_page_view.dart';
+import 'package:project1/admob/ad_manager.dart';
+import 'package:project1/admob/full_width_banner_ad.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/videolist/Video_screen_page.dart';
 import 'package:project1/app/camera/page/camera_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/camera/utils/permission_utils.dart';
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
+import 'package:project1/app/videolist/video_screen2_page.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
-import 'package:project1/app/weather/cntr/weather_cntr.dart';
+import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
+import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
+import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:project1/widget/custom_marquee.dart';
 import 'package:text_scroll/text_scroll.dart';
-import 'package:path_provider/path_provider.dart';
 
 class VideoListPage extends StatefulWidget {
   const VideoListPage({super.key});
@@ -37,13 +38,29 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
   final PreloadPageController _controller = PreloadPageController();
   final ScrollController scrollController = ScrollController();
 
-  GlobalKey<ScaffoldState> Scaffoldkey = GlobalKey<ScaffoldState>();
+  GlobalKey<ScaffoldState> scaffoldkey = GlobalKey<ScaffoldState>();
+  AdManager adManager = AdManager();
+  static const int AD_FREQUENCY = 5; // 광고가 나타날 빈도 (비디오 개수)
+  static const String AD_UNIT_NAME = 'VideoPage';
+
+  int _interstitialCounter = 0;
+  ValueNotifier<bool> _showInterstitial = ValueNotifier<bool>(false);
 
   @override
   void initState() {
     super.initState();
     // permissionLocation();
     // Get.put(VideoListCntr());
+
+    // AdManager().loadInterstitialAd();
+    Future.delayed(const Duration(seconds: 5), () {
+      _showInterstitial.value = true;
+    });
+  }
+
+  Future<void> initBannerAd() async {
+    await adManager.loadBannerAd(AD_UNIT_NAME);
+    await adManager.loadInterstitialAd();
   }
 
   // 동영상 녹화 페이지로 이동
@@ -65,6 +82,7 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
   void dispose() {
     _controller.dispose();
     scrollController.dispose();
+    AdManager().disposeBannerAd('VideoPage');
     super.dispose();
   }
 
@@ -92,7 +110,7 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
-      key: Scaffoldkey,
+      key: scaffoldkey,
       extendBodyBehindAppBar: true,
       resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFF262B49),
@@ -110,6 +128,7 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
                   loadingWidget: buildLoading()),
             ),
             buildLocalName(),
+            buildButton(),
             // 상단 현재 온도
             // buildTemp(),
             // 미세먼지
@@ -122,7 +141,7 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
             // 캐쉬 삭제하기
             // buildEmptyCacheBtn(),
             //
-            buildRefreshBtn(),
+            //    buildRefreshBtn(),
             // 스크롤 Mounted 정보
             //   buildScrollInfo(),
           ],
@@ -169,17 +188,122 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
           preloadPagesCount: cntr.preLoadingCount, // 7 이 이상적임
           scrollDirection: Axis.vertical,
           itemCount: data.length,
-          // physics: const CustomPhysics(),
+          physics: const CustomPhysics(),
           onPageChanged: (int position) {
             cntr.currentIndex.value = position;
             cntr.getMoreData(position, data.length);
           },
-          itemBuilder: (context, i) {
-            return VideoScreenPage(index: i, data: data[i]);
+          itemBuilder: (context, videoIndex) {
+            return VideoScreenPage2(index: videoIndex, data: data[videoIndex]);
           },
         );
       },
     );
+  }
+
+  int calculateItemCount(int dataLength) {
+    // 광고를 포함한 전체 아이템 수 계산
+    return dataLength + (dataLength / AD_FREQUENCY).floor();
+  }
+
+  int calculateActualIndex(int position) {
+    // 실제 데이터 배열의 인덱스 계산
+    return position - (position / (AD_FREQUENCY + 1)).floor();
+  }
+
+  // 상단 버튼
+  Widget buildButton() {
+    return ValueListenableBuilder(
+        valueListenable: _showInterstitial,
+        builder: (context, value, child) {
+          // animation 자동으로 나타나기
+
+          return AnimatedPositioned(
+            duration: const Duration(milliseconds: 1200),
+            curve: Curves.fastOutSlowIn,
+            top: MediaQuery.of(context).padding.top + 34,
+            left: value ? 4 : -200,
+            child: Obx(() => Row(
+                  children: [
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        backgroundColor: Get.find<VideoListCntr>().searchType.value == 'TOTAL' ? Colors.white54 : Colors.white30,
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        minimumSize: const Size(50, 28),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        '전체',
+                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: () async {
+                        Get.find<VideoListCntr>().swichSearchType('TOTAL');
+                      },
+                    ),
+                    const Gap(5),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        backgroundColor: Get.find<VideoListCntr>().searchType.value == 'DIST' ? Colors.white54 : Colors.white30,
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        minimumSize: const Size(50, 28),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        '거리',
+                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: () async {
+                        Get.find<VideoListCntr>().swichSearchType('DIST');
+                      },
+                    ),
+                    const Gap(5),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        backgroundColor: Get.find<VideoListCntr>().searchType.value == 'TAG' ? Colors.white54 : Colors.white30,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        minimumSize: const Size(50, 28),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        '관심태그',
+                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: () async {
+                        Get.find<VideoListCntr>().swichSearchType('TAG');
+                      },
+                    ),
+                    const Gap(5),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        backgroundColor: Get.find<VideoListCntr>().searchType.value == 'LOCAL' ? Colors.white54 : Colors.white30,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        minimumSize: const Size(50, 28),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        '관심지역',
+                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: () async {
+                        Get.find<VideoListCntr>().swichSearchType('LOCAL');
+                      },
+                    ),
+                  ],
+                )),
+          );
+        });
   }
 
   // 상단 동네 이름
@@ -187,11 +311,13 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
     return Positioned(
         top: MediaQuery.of(context).padding.top,
         left: 3,
-        child: GetBuilder<WeatherCntr>(
+        child: GetBuilder<WeatherGogoCntr>(
           builder: (weatherCntr) {
             if (weatherCntr.isLoading.value == true) {
               return const SizedBox.shrink();
             }
+            String weathDesc = WeatherDataProcessor.instance.combineWeatherCondition(
+                weatherCntr.currentWeather.value!.sky.toString(), weatherCntr.currentWeather.value!.rain.toString());
 
             return Container(
               width: 250,
@@ -214,7 +340,7 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
                   SizedBox(
                     width: 210,
                     child: TextScroll(
-                      '${weatherCntr.currentLocation.value!.name} ${weatherCntr.oneCallCurrentWeather.value!.temp?.toStringAsFixed(1) ?? 0}° ${weatherCntr.oneCallCurrentWeather.value!.weather![0].description!.toString()}',
+                      '${weatherCntr.currentLocation.value!.name} ${weatherCntr.currentWeather.value!.temp ?? 0}° ${(weathDesc.isEmpty || weathDesc == 'null') ? '' : weathDesc}',
                       mode: TextScrollMode.endless,
                       numberOfReps: 20000,
                       // fadedBorder: true,
@@ -226,47 +352,6 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
                       selectable: true,
                     ),
                   ),
-                  // Expanded(
-                  //   child: MarqueeList(
-                  //     key: GlobalKey(),
-                  //     children: [
-                  //       const SizedBox(width: 5),
-                  //       Text(
-                  //         weatherCntr.currentLocation.value!.name,
-                  //         textAlign: TextAlign.right,
-                  //         style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w500),
-                  //       ),
-                  //       const Gap(5),
-                  //       Text(
-                  //         '${weatherCntr.oneCallCurrentWeather.value!.temp?.toStringAsFixed(1) ?? 0}°',
-                  //         textAlign: TextAlign.right,
-                  //         style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w500),
-                  //       ),
-                  //       CachedNetworkImage(
-                  //         width: 25,
-                  //         height: 25,
-                  //         imageUrl:
-                  //             'http://openweathermap.org/img/wn/${weatherCntr.oneCallCurrentWeather.value?.weather![0].icon ?? '10n'}@2x.png',
-                  //         imageBuilder: (context, imageProvider) => Container(
-                  //           decoration: BoxDecoration(
-                  //             image: DecorationImage(
-                  //               image: imageProvider,
-                  //               fit: BoxFit.cover,
-                  //               colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn),
-                  //             ),
-                  //           ),
-                  //         ),
-                  //         placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 1, color: Colors.white),
-                  //         errorWidget: (context, url, error) => const Icon(Icons.error),
-                  //       ),
-                  //       Text(
-                  //         weatherCntr.oneCallCurrentWeather.value!.weather![0].description!.toString(),
-                  //         style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w500),
-                  //       ),
-                  //       const SizedBox(width: 25),
-                  //     ],
-                  //   ),
-                  // ),
                 ],
               ),
             );
@@ -276,87 +361,37 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
 
   // 상단 검색 하기
   Widget buildSeachBtn() {
-    return Obx(() => Positioned(
-          top: MediaQuery.of(context).padding.top,
-          right: 10,
-          child: Get.find<WeatherCntr>().oneCallCurrentWeather.value!.dt != null
-              ? SizedBox(
-                  width: 40,
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.search,
-                      color: Colors.white,
-                      size: 30,
-                    ),
-                    onPressed: () => Get.toNamed('/SearchPage'),
-                  ))
-              : const SizedBox.shrink(),
+    return Positioned(
+        top: MediaQuery.of(context).padding.top,
+        right: 1,
+        child: IconButton(
+          icon: const Icon(
+            Icons.search,
+            color: Colors.white,
+            size: 25,
+          ),
+          onPressed: () => Get.toNamed('/SearchPage'),
         ));
   }
 
   // Refresh 하기
   Widget buildRefreshBtn() {
     return Obx(() => Positioned(
-          top: MediaQuery.of(context).padding.top + 48,
+          top: MediaQuery.of(context).padding.top + 42,
           right: 0,
-          child: Get.find<WeatherCntr>().oneCallCurrentWeather.value!.dt != null
+          child: Get.find<WeatherGogoCntr>().currentWeather.value?.temp != null
               ? Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     IconButton(
-                      icon: Icon(
+                      icon: const Icon(
                         Icons.refresh,
                         color: Colors.white,
-                        size: Get.find<VideoListCntr>().searchType.value == 'DIST' ? 33 : 30,
+                        size: 25,
                       ),
                       onPressed: () async {
                         Get.find<VideoListCntr>().swichSearchType('TOTAL');
-                      },
-                    ),
-                    TextButton(
-                      child: Text(
-                        '거리',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: Get.find<VideoListCntr>().searchType.value == 'DIST' ? 13 : 11,
-                            fontWeight: FontWeight.bold),
-                      ),
-                      onPressed: () async {
-                        Get.find<VideoListCntr>().swichSearchType('DIST');
-                      },
-                    ),
-                    TextButton(
-                      child: Text(
-                        '관심태그',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: Get.find<VideoListCntr>().searchType.value == 'TAG' ? 13 : 11,
-                            fontWeight: FontWeight.bold),
-                      ),
-                      onPressed: () async {
-                        Get.find<VideoListCntr>().swichSearchType('TAG');
-                      },
-                    ),
-                    TextButton(
-                      child: Text(
-                        '관심지역',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: Get.find<VideoListCntr>().searchType.value == 'LOCAL' ? 13 : 11,
-                            fontWeight: FontWeight.bold),
-                      ),
-                      onPressed: () async {
-                        Get.find<VideoListCntr>().swichSearchType('LOCAL');
-                      },
-                    ),
-                    TextButton(
-                      child: Text(
-                        '캐쉬삭제',
-                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
-                      ),
-                      onPressed: () async {
-                        CacheManager.clearAppCache();
                       },
                     ),
                   ],
@@ -415,40 +450,8 @@ class CustomPhysics extends ScrollPhysics {
 
   @override
   SpringDescription get spring => const SpringDescription(
-        mass: 150,
-        stiffness: 100,
-        damping: 1,
+        mass: 20,
+        stiffness: 13,
+        damping: 3,
       );
-}
-
-class CacheManager {
-  static Future<void> clearAppCache() async {
-    try {
-      Directory tempDir = await getTemporaryDirectory();
-      if (tempDir.existsSync()) {
-        tempDir.listSync().forEach((FileSystemEntity file) {
-          if (file is File) {
-            file.deleteSync();
-          } else if (file is Directory) {
-            file.deleteSync(recursive: true);
-          }
-        });
-      }
-
-      Directory appDocDir = await getApplicationDocumentsDirectory();
-      if (appDocDir.existsSync()) {
-        appDocDir.listSync().forEach((FileSystemEntity file) {
-          if (file is File) {
-            file.deleteSync();
-          } else if (file is Directory) {
-            file.deleteSync(recursive: true);
-          }
-        });
-      }
-
-      Utils.alert("App cache cleared successfully.");
-    } catch (e) {
-      Utils.alert("Error clearing app cache: $e");
-    }
-  }
 }

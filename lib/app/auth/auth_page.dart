@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
+import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 
 class AuthPage extends StatefulWidget {
@@ -22,7 +23,7 @@ class _AuthPageState extends State<AuthPage> {
 
   Future<void> initS() async {
     Stopwatch stopwatch = Stopwatch()..start();
-    Get.find<WeatherCntr>().requestLocation().then((value) {
+    Get.find<WeatherGogoCntr>().requestLocation().then((value) {
       stopwatch.stop();
       lo.g('@@@ Auth Page => ${stopwatch.elapsed}');
       Get.offAllNamed('/rootPage');

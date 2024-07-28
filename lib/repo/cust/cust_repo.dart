@@ -182,4 +182,16 @@ class CustRepo {
       return AuthDio.instance.dioException(e);
     } finally {}
   }
+
+  //나를 거부했는지 확인여부
+  Future<ResData> checkBlock(String custId) async {
+    final dio = await AuthDio.instance.getDio(debug: true);
+    try {
+      var url = '${UrlConfig.baseURL}/cust/checkBlock?custId=$custId';
+      Response response = await dio.post(url);
+      return AuthDio.instance.dioResponse(response);
+    } on DioException catch (e) {
+      return AuthDio.instance.dioException(e);
+    } finally {}
+  }
 }

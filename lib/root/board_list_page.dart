@@ -6,6 +6,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
+import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -79,8 +80,8 @@ class BoardListPageState extends State<BoardListPage> with AutomaticKeepAliveCli
 
       BoardRepo repo = BoardRepo();
 
-      ResData res = await repo.getSearchBoard(Get.find<WeatherCntr>().positionData.latitude.toString(),
-          Get.find<WeatherCntr>().positionData.latitude.toString(), boardPageNum, boardageSize, searchWord);
+      ResData res = await repo.getSearchBoard(Get.find<WeatherGogoCntr>().positionData.latitude.toString(),
+          Get.find<WeatherGogoCntr>().positionData.latitude.toString(), boardPageNum, boardageSize, searchWord);
 
       if (res.code != '00') {
         Utils.alert(res.msg.toString());

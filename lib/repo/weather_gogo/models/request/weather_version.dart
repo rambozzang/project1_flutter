@@ -73,6 +73,6 @@ class WeatherVersion {
 
   Map<String, dynamic> toJson() => _$WeatherVersionToJson(this);
 
-  String _dateTimeBase(DateTime dateTime) =>
-      DateFormat('yyyyMMddkkmm').format(dateTime);
+  String _dateTimeBase(DateTime dateTime) => DateFormat('yyyyMMddHHmm').format(dateTime);
+  // String _dateTimeBase(DateTime dateTime) => DateFormat('yyyyMMddkkmm').format(dateTime);
 }

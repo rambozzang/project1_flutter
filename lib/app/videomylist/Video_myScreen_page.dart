@@ -10,6 +10,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:giffy_dialog/giffy_dialog.dart';
 import 'package:hashtagable_v3/hashtagable.dart';
 import 'package:like_button/like_button.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
@@ -21,6 +22,7 @@ import 'package:project1/app/videomylist/cntr/video_myinfo_list_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_button.dart';
@@ -254,11 +256,8 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                   top: (MediaQuery.of(context).size.height - 60) * .5,
                   right: 14,
                   child: GestureDetector(
-                    onTap: () => SigoPageSheet().open(
-                      context,
-                      widget.data.boardId.toString(),
-                      Get.find<VideoMyinfoListCntr>().list[widget.index].custId.toString(),
-                    ),
+                    onTap: () => SigoPageSheet().open(context, widget.data.boardId.toString(),
+                        Get.find<VideoMyinfoListCntr>().list[widget.index].custId.toString(), Get.find<VideoMyinfoListCntr>().getData),
                     child: const Column(
                       children: [
                         Icon(Icons.warning, color: Colors.white),
@@ -402,21 +401,26 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
               SizedBox(
                 height: 30,
                 width: 30,
-                child: CachedNetworkImage(
-                  width: 50,
-                  height: 50,
-                  imageUrl: 'http://openweathermap.org/img/wn/${widget.data.icon}@2x.png',
-                  imageBuilder: (context, imageProvider) => Container(
-                    decoration: BoxDecoration(
-                      image: DecorationImage(
-                          image: imageProvider,
-                          fit: BoxFit.cover,
-                          colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn)),
-                    ),
-                  ),
-                  placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 0.6, color: Colors.white),
-                  errorWidget: (context, url, error) => const Icon(Icons.error),
+                child: Lottie.asset(
+                  WeatherDataProcessor.instance.getWeatherGogoImage(widget.data!.sky.toString(), widget.data!.rain.toString()),
+                  height: 138.0,
+                  width: 138.0,
                 ),
+                // child: CachedNetworkImage(
+                //   width: 50,
+                //   height: 50,
+                //   imageUrl: 'http://openweathermap.org/img/wn/${widget.data.icon}@2x.png',
+                //   imageBuilder: (context, imageProvider) => Container(
+                //     decoration: BoxDecoration(
+                //       image: DecorationImage(
+                //           image: imageProvider,
+                //           fit: BoxFit.cover,
+                //           colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn)),
+                //     ),
+                //   ),
+                //   placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 0.6, color: Colors.white),
+                //   errorWidget: (context, url, error) => const Icon(Icons.error),
+                // ),
               ),
               SizedBox(
                 width: MediaQuery.of(context).size.width * 0.35,

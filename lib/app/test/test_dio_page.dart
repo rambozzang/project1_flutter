@@ -7,11 +7,15 @@ import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/repo/weather_accu/accu_repo.dart';
+import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/weather_gogo/interface/imp_fct_repository.dart';
 import 'package:project1/repo/weather_gogo/interface/imp_super_fct_repository.dart';
 import 'package:project1/repo/weather_gogo/interface/imp_super_nct_repository.dart';
 import 'package:project1/repo/weather_gogo/models/request/weather.dart';
 import 'package:project1/repo/weather_gogo/models/response/fct/fct_model.dart';
+import 'package:project1/repo/weather_gogo/models/response/fct_version/fct_version_model.dart';
+import 'package:project1/repo/weather_gogo/models/response/midland_fct/midlan_fct_res.dart';
+import 'package:project1/repo/weather_gogo/models/response/midta_fct/midta_fct_res.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_fct/super_fct_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_nct/super_nct_model.dart';
 import 'package:project1/repo/cloudflare/R2_repo.dart';
@@ -23,7 +27,8 @@ import 'package:project1/repo/search/camping/camping_repo.dart';
 import 'package:project1/repo/search/camping/camping_res_data.dart';
 import 'package:project1/repo/search/school/school_repo.dart';
 import 'package:project1/repo/search/school/school_res_data.dart';
-import 'package:project1/repo/weather_gogo/weather_gogo_repo.dart';
+import 'package:project1/repo/weather_gogo/repository/weather_gogo_caching.dart';
+import 'package:project1/repo/weather_gogo/repository/weather_gogo_repo.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 
@@ -157,8 +162,14 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
       // 초단기실황조회
       final List<ItemSuperNct> items = [];
       WeatherGogoRepo repo = WeatherGogoRepo();
-      List<ItemSuperNct> json =
-          await repo.getSuperNctListJson(const LatLng(37.5546788388674, 126.970606917394), isLog: true, isChache: false);
+      // List<ItemSuperNct> json =
+      //     await repo.getSuperNctListJson(const LatLng(37.5546788388674, 126.970606917394), isLog: true, isChache: false);
+      WeatherService weatherService = WeatherService();
+      // List<ItemSuperNct> json =
+      //     await weatherService.getWeatherData<List<ItemSuperNct>>(const LatLng(37.5546788388674, 126.970606917394), ForecastType.superNct);
+
+      List<ItemSuperNct> json = await weatherService.getWeatherData<List<ItemSuperNct>>(
+          const LatLng(37.5546788388674, 126.970606917394), ForecastType.superNctYesterDay);
 
       json.map((e) => setState(() => items.add(e))).toList();
       items?.forEach((element) {
@@ -174,14 +185,18 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
     try {
       final List<ItemSuperFct> items = [];
       // final json = await SuperFctRepositoryImp(isLog: true).getItemListJSON(weather);
-      WeatherGogoRepo repo = WeatherGogoRepo();
-      List<ItemSuperFct> json = await repo.getSuperFctListJson(const LatLng(37.5546788388674, 126.970606917394));
+      // WeatherGogoRepo repo = WeatherGogoRepo();
+      // List<ItemSuperFct> json = await repo.getSuperFctListJson(const LatLng(37.5546788388674, 126.970606917394));
+      WeatherService weatherService = WeatherService();
+      List<ItemSuperFct> json =
+          await weatherService.getWeatherData<List<ItemSuperFct>>(const LatLng(37.5546788388674, 126.970606917394), ForecastType.superFct);
+
       json.map((e) => setState(() => items.add(e))).toList();
       items.forEach((element) {
-        Lo.g('초단기 : element : $element');
+        Lo.g('초단기예보 : element : $element');
       });
     } catch (e) {
-      Lo.g('초단기실황 가져오기 오류 : $e');
+      Lo.g('초단기예보 가져오기 오류 : $e');
     }
   }
 
@@ -201,10 +216,65 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
       json.map((e) => setState(() => items.add(e))).toList();
 
       items.forEach((element) {
-        Lo.g('단기 element : $element');
+        Lo.g('단기예보 element : $element');
       });
     } catch (e) {
-      Lo.g('초단기실황 가져오기 오류 : $e');
+      Lo.g('단기예보 가져오기 오류 : $e');
+    }
+  }
+
+  // 기상청 예보버전 가져오기
+  void getFctVersion() async {
+    try {
+      final weather = Weather(
+        serviceKey: weatherKey,
+        pageNo: 1,
+        numOfRows: 12 * 24, //기준시간별 항목이 12개이므로 24시간치 데이터를 가져오기 위해 12 * 24
+      );
+      final List<ItemFctVersion> items = [];
+      // final json = await FctRepositoryImp(isLog: true).getItemListJSON(weather);
+      WeatherGogoRepo repo = WeatherGogoRepo();
+      List<ItemFctVersion> json = await repo.getFctVersionJson(const LatLng(37.5546788388674, 126.970606917394));
+
+      json.map((e) => setState(() => items.add(e))).toList();
+
+      items.forEach((element) {
+        Lo.g('예보버전 element : $element');
+      });
+    } catch (e) {
+      Lo.g('단기예보 가져오기 오류 : $e');
+    }
+  }
+
+  // 기상청 중기육상예보 가져오기
+  void getMidFctJson() async {
+    try {
+      // WeatherGogoRepo repo = WeatherGogoRepo();
+      // MidLandFcstResponse? json = await repo.getMidFctJson(const LatLng(37.5546788388674, 126.970606917394));
+      WeatherService weatherService = WeatherService();
+      MidLandFcstResponse json = await weatherService.getWeatherData<MidLandFcstResponse>(
+          const LatLng(37.5546788388674, 126.970606917394), ForecastType.midFctLand);
+
+      lo.g(json!.toString());
+    } catch (e) {
+      Lo.g('중기육상예보 가져오기 오류 : $e');
+    }
+  }
+
+  // 기상청 중기기온 예보 가져오기
+  void getMidTaJson() async {
+    try {
+      WeatherGogoRepo repo = WeatherGogoRepo();
+      // MidTaResponse? json = await repo.getMidTaJson(const LatLng(37.5546788388674, 126.970606917394));
+      // 중기기온 날씨 가져오기
+      // MidTaResponse? midTaResponse = await weatherGogoRepo.getMidTaJson(location);
+      WeatherService weatherService = WeatherService();
+      MidTaResponse midTaResponse =
+          await weatherService.getWeatherData<MidTaResponse>(const LatLng(37.5546788388674, 126.970606917394), ForecastType.midTa);
+
+      lo.g(midTaResponse.toString());
+    } catch (e) {
+      Lo.g('중기기온 가져오기 오류 : $e');
     }
   }
 
@@ -220,6 +290,12 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
     }
   }
 
+  test() {
+    var a = Get.put(WeatherGogoCntr());
+
+    a.getInitWeatherData(true);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -228,6 +304,18 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            ElevatedButton(
+              onPressed: () => Get.toNamed('/WeatherComPage'),
+              child: const Text('WeatherComPage '),
+            ),
+            ElevatedButton(
+              onPressed: () => Get.toNamed('/WeathgergogoPage'),
+              child: const Text('신규 페이지 '),
+            ),
+            ElevatedButton(
+              onPressed: () => test(),
+              child: const Text('기상청 날씨 가져오기 '),
+            ),
             ElevatedButton(
               onPressed: () => Get.toNamed('/JoinPage'),
               child: const Text('회원가입 화면 '),
@@ -256,21 +344,36 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
               onPressed: () => getSchoolata('선덕', '고등학교'),
               child: const Text('학교'),
             ),
-            Row(
-              children: [
-                ElevatedButton(
-                  onPressed: () => getSuperNctCast(),
-                  child: const Text('초단기실황예보'),
-                ),
-                ElevatedButton(
-                  onPressed: () => getSuperFctCast(),
-                  child: const Text('초단기예보'),
-                ),
-                ElevatedButton(
-                  onPressed: () => getNctCast(),
-                  child: const Text('단기예보'),
-                ),
-              ],
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  ElevatedButton(
+                    onPressed: () => getSuperNctCast(),
+                    child: const Text('초단기실황'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => getSuperFctCast(),
+                    child: const Text('초단기'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => getNctCast(),
+                    child: const Text('단기'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => getFctVersion(),
+                    child: const Text('예보버전'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => getMidFctJson(),
+                    child: const Text('중기육상'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => getMidTaJson(),
+                    child: const Text('중기기온'),
+                  ),
+                ],
+              ),
             ),
             ElevatedButton(onPressed: () => aaa(), child: const Text('video')),
             Container(

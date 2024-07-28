@@ -20,6 +20,8 @@ class BoardWeatherListData {
   String? hideYn;
   String? lat;
   String? lon;
+  String? sky;
+  String? rain;
   String? weatherInfo;
   String? videoPath;
   String? thumbnailPath;
@@ -63,6 +65,8 @@ class BoardWeatherListData {
     this.hideYn,
     this.lat,
     this.lon,
+    this.sky,
+    this.rain,
     this.weatherInfo,
     this.videoPath,
     this.thumbnailPath,
@@ -108,6 +112,8 @@ class BoardWeatherListData {
     String? hideYn,
     String? lat,
     String? lon,
+    String? sky,
+    String? rain,
     String? weatherInfo,
     String? videoPath,
     String? thumbnailPath,
@@ -152,6 +158,8 @@ class BoardWeatherListData {
       hideYn: hideYn ?? this.hideYn,
       lat: lat ?? this.lat,
       lon: lon ?? this.lon,
+      sky: sky ?? this.sky,
+      rain: rain ?? this.rain,
       weatherInfo: weatherInfo ?? this.weatherInfo,
       videoPath: videoPath ?? this.videoPath,
       thumbnailPath: thumbnailPath ?? this.thumbnailPath,
@@ -199,6 +207,8 @@ class BoardWeatherListData {
       'hideYn': hideYn,
       'lat': lat,
       'lon': lon,
+      'sky': sky,
+      'rain': rain,
       'weatherInfo': weatherInfo,
       'videoPath': videoPath,
       'thumbnailPath': thumbnailPath,
@@ -246,6 +256,8 @@ class BoardWeatherListData {
       hideYn: map['hideYn'] != null ? map['hideYn'] as String : null,
       lat: map['lat'] != null ? map['lat'] as String : null,
       lon: map['lon'] != null ? map['lon'] as String : null,
+      sky: map['sky'] != null ? map['sky'] as String : null,
+      rain: map['rain'] != null ? map['rain'] as String : null,
       weatherInfo: map['weatherInfo'] != null ? map['weatherInfo'] as String : null,
       videoPath: map['videoPath'] != null ? map['videoPath'] as String : null,
       thumbnailPath: map['thumbnailPath'] != null ? map['thumbnailPath'] as String : null,
@@ -281,7 +293,7 @@ class BoardWeatherListData {
 
   @override
   String toString() {
-    return 'BoardWeatherListData(custId: $custId, custNm: $custNm, nickNm: $nickNm, profilePath: $profilePath, likeYn: $likeYn, followYn: $followYn, suject: $suject, location: $location, country: $country, contents: $contents, parentId: $parentId, distance: $distance, boardId: $boardId, hideYn: $hideYn, lat: $lat, lon: $lon, weatherInfo: $weatherInfo, videoPath: $videoPath, thumbnailPath: $thumbnailPath, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, city: $city, typeCd: $typeCd, typeDtCd: $typeDtCd, depthNo: $depthNo, crtDtm: $crtDtm, replyCnt: $replyCnt, likeCnt: $likeCnt, viewCnt: $viewCnt, icon: $icon, videoId: $videoId, size1: $size1, thumbnail: $thumbnail, preview: $preview, mp4: $mp4, hls: $hls, range1: $range1, total: $total)';
+    return 'BoardWeatherListData(custId: $custId, custNm: $custNm, nickNm: $nickNm, profilePath: $profilePath, likeYn: $likeYn, followYn: $followYn, suject: $suject, location: $location, country: $country, contents: $contents, parentId: $parentId, distance: $distance, boardId: $boardId, hideYn: $hideYn, lat: $lat, lon: $lon, sky: $sky, rain: $rain, weatherInfo: $weatherInfo, videoPath: $videoPath, thumbnailPath: $thumbnailPath, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, city: $city, typeCd: $typeCd, typeDtCd: $typeDtCd, depthNo: $depthNo, crtDtm: $crtDtm, replyCnt: $replyCnt, likeCnt: $likeCnt, viewCnt: $viewCnt, icon: $icon, videoId: $videoId, size1: $size1, thumbnail: $thumbnail, preview: $preview, mp4: $mp4, hls: $hls, range1: $range1, total: $total)';
   }
 
   @override
@@ -304,6 +316,8 @@ class BoardWeatherListData {
         other.hideYn == hideYn &&
         other.lat == lat &&
         other.lon == lon &&
+        other.sky == sky &&
+        other.rain == rain &&
         other.weatherInfo == weatherInfo &&
         other.videoPath == videoPath &&
         other.thumbnailPath == thumbnailPath &&
@@ -350,6 +364,8 @@ class BoardWeatherListData {
         hideYn.hashCode ^
         lat.hashCode ^
         lon.hashCode ^
+        sky.hashCode ^
+        rain.hashCode ^
         weatherInfo.hashCode ^
         videoPath.hashCode ^
         thumbnailPath.hashCode ^

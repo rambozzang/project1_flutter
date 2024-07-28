@@ -1,4 +1,5 @@
-import 'dart:convert';
+import 'dart:ffi';
+import 'dart:io';
 
 import 'package:bot_toast/bot_toast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -8,16 +9,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
-import 'package:flutter_supabase_chat_core/flutter_supabase_chat_core.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
+import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:mime/mime.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
+import 'package:project1/app/videolist/video_sigo_page.dart';
 import 'package:project1/repo/alram/alram_repo.dart';
 import 'package:project1/repo/alram/data/chat_req_data.dart';
+import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -48,53 +52,81 @@ class _ChatPageState extends State<ChatPage> {
   final ValueNotifier<String> geminiText = ValueNotifier<String>('');
   final ValueNotifier<bool> isGeminiAi = ValueNotifier<bool>(true);
 
+  late List<types.Message> messageList;
+  late String? otherChatId;
+  late String? otherCustId;
+  late bool isBlocked = false;
+
   @override
   void initState() {
     room = widget.room; // Get.arguments['room'];
+
     _chatController = SupabaseChatController(room: room);
+
     for (var user in room.users) {
       lo.g("user.id : ${user.id}");
       if (user.id != AuthCntr.to.resLoginData.value.chatId) {
         lo.g("user.id : ${user.id}");
         AuthCntr.to.currentChatId = user.id;
+        otherChatId = user.id;
+        otherCustId = user.metadata!['custId'];
+        checkBlock(otherCustId!);
       }
     }
+
+    updateLastReadTime();
 
     super.initState();
   }
 
-  void geminiChat(List<types.Message> list) {
-    List<String> chats = [];
-    // list 를 chats에 파싱 해줘
-    for (types.Message item in list) {
-      Map<String, dynamic> jsonData = item.toJson();
-
-      lo.g('item firstName : ${item.author.firstName}');
-      lo.g('item firstName : ${jsonData['text']}');
-      if (item.author.id == SupabaseChatCore.instance.supabaseUser!.id) {
-        chats.add('나 : ${jsonData['text']}');
-      } else {
-        chats.add('상대방 :${jsonData['text']}');
-      }
-    }
-
-    chats = chats.reversed.toList();
-    lo.g('chats : $chats');
-
-    geminiText.value = "";
-    if (isGeminiAi.value) {
-      gemini
-          .streamGenerateContent(
-              "지금 나는 채팅방에서 대화중입니다. Gemini 당신은  나의 보조이자  같은편이다.  대화 내용은 [$chats] 입니다. 내말에 대답할 필요는 없다. 최근 대화 내용 중 맨 마지막 대화 글이 상대방이면 내가 대답할 차례입니다.  재미있는 답변을 추천 해주세요. 답변만 짧고 간단하게 알려주세요?")
-          .listen((value) {
-        if (value.output == null) {
-          return;
-        }
-        lo.g('대답 :  ${value.output.toString()}');
-        geminiText.value = geminiText.value + value.output!;
-      });
+  Future<void> checkBlock(String otherCustId) async {
+    try {
+      CustRepo repo = CustRepo();
+      ResData res = await repo.checkBlock(otherCustId);
+      isBlocked = res.data;
+      Utils.alert(isBlocked ? '이 사용자는 차단되어 있습니다.' : '차단 해제 되었습니다.');
+    } catch (e) {
+      lo.g('checkBlock 오류: $e');
     }
   }
+
+  updateLastReadTime() async {
+    // 사용자가 방을 읽었을 때
+    await SupabaseChatCore.instance.updateLastReadTime(int.parse(widget.room.id));
+  }
+
+  // void geminiChat(List<types.Message> list) {
+  //   List<String> chats = [];
+  //   // list 를 chats에 파싱 해줘
+  //   for (types.Message item in list) {
+  //     Map<String, dynamic> jsonData = item.toJson();
+
+  //     lo.g('item firstName : ${item.author.firstName}');
+  //     lo.g('item firstName : ${jsonData['text']}');
+  //     if (item.author.id == SupabaseChatCore.instance.supabaseUser!.id) {
+  //       chats.add('나 : ${jsonData['text']}');
+  //     } else {
+  //       chats.add('상대방 :${jsonData['text']}');
+  //     }
+  //   }
+
+  //   chats = chats.reversed.toList();
+  //   lo.g('chats : $chats');
+
+  //   geminiText.value = "";
+  //   if (isGeminiAi.value) {
+  //     gemini
+  //         .streamGenerateContent(
+  //             "지금 나는 채팅방에서 대화중입니다. Gemini 당신은  나의 보조이자  같은편이다.  대화 내용은 [$chats] 입니다. 내말에 대답할 필요는 없다. 최근 대화 내용 중 맨 마지막 대화 글이 상대방이면 내가 대답할 차례입니다.  재미있는 답변을 추천 해주세요. 답변만 짧고 간단하게 알려주세요?")
+  //         .listen((value) {
+  //       if (value.output == null) {
+  //         return;
+  //       }
+  //       lo.g('대답 :  ${value.output.toString()}');
+  //       geminiText.value = geminiText.value + value.output!;
+  //     });
+  //   }
+  // }
 
   // 첨부파일 보내기
   void _handleAttachmentPressed() {
@@ -234,34 +266,30 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _handleSendPressed(types.PartialText message) async {
-    SupabaseChatCore.instance.sendMessage(
+    bool result = await SupabaseChatCore.instance.sendMessage(
       message,
       room.id,
     );
-    lo.g("_handleSendPressed");
 
-    //최초로 보내거나 이 위젯이 처음 생성될때만 푸시를 보낸다.
-    // 최초 여부를 관리하는 방법이 필요함.
-    // if (_isFirst) {
-    room.users.forEach((element) {
-      if (element.id != SupabaseChatCore.instance.supabaseUser!.id) {
-        String custId = element.metadata!['custId'];
-
-        if (custId != '') {
-          lo.g("element.id : ${element.id}");
-
-          AlramRepo alramRepo = AlramRepo();
-          ChatReqData data = ChatReqData();
-          data.custId = element.metadata!['custId'];
-          data.alramContents = message.text;
-          data.alramCd = '07';
-
-          alramRepo.pushByCustId(data);
+    // 메세지 성공하면
+    if (result) {
+      // 최초 여부를 관리하는 방법이 필요함.
+      // if (_isFirst) {
+      room.users.forEach((element) {
+        if (element.id != SupabaseChatCore.instance.supabaseUser!.id) {
+          String custId = element.metadata!['custId'];
+          if (custId != '') {
+            AlramRepo alramRepo = AlramRepo();
+            ChatReqData data = ChatReqData();
+            data.custId = element.metadata!['custId'];
+            data.alramContents = message.text;
+            data.alramCd = '07';
+            alramRepo.pushByCustId(data);
+          }
         }
-      }
-    });
+      });
+    }
     _isFirst = false;
-    //  }
   }
 
   void _setAttachmentUploading(bool uploading) {
@@ -271,19 +299,34 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void leaveRoom() {
-    Utils.showConfirmDialog('나가기', '대화내용이 삭제됩니다. 나가겠습니까?', BackButtonBehavior.none, confirm: () async {
-      Lo.g('cancel');
-    }, cancel: () async {
-      Lo.g('cancel');
-    }, backgroundReturn: () {});
-
-    // SupabaseChatCore.instance.deleteRoom(room.id);
+    FocusManager.instance.primaryFocus?.unfocus();
+    sleep(const Duration(milliseconds: 150));
+    Utils.showConfirmDialog(
+      '나가기',
+      '대화방을 나가시겠습니까?',
+      BackButtonBehavior.none,
+      confirm: () async {
+        try {
+          bool result = await SupabaseChatCore.instance.leaveRoom(room.id);
+          if (result) {
+            Utils.alert('대화방에서 나왔습니다.');
+            Get.back();
+          }
+        } catch (e) {
+          lo.g('방 나가기 오류: $e');
+          Utils.alert('방 나가기 중 오류가 발생했습니다.');
+        }
+      },
+      cancel: () {
+        lo.g('방 나가기 취소');
+      },
+    );
   }
 
   @override
   void dispose() {
     // _chatController.dispose();
-
+    updateLastReadTime();
     AuthCntr.to.currentChatId = "";
     super.dispose();
   }
@@ -292,13 +335,6 @@ class _ChatPageState extends State<ChatPage> {
     if (_textController.text.isEmpty) {
       return;
     }
-
-    // final textMessage = types.TextMessage(
-
-    //   createdAt: DateTime.now().millisecondsSinceEpoch,
-    //   id: Uuid().v4(),
-    //   text: _textController.text,
-    // );
 
     types.PartialText partialText = types.PartialText(text: _textController.text, metadata: null, previewData: null, repliedMessage: null);
 
@@ -330,6 +366,18 @@ class _ChatPageState extends State<ChatPage> {
           ),
           actions: [
             // isGeminiAi
+            IconButton(
+              icon: const Icon(
+                Icons.warning,
+                color: Colors.white,
+              ),
+              onPressed: () => SigoPageSheet().open(
+                context,
+                '',
+                otherChatId.toString(),
+                () => {},
+              ),
+            ),
 
             IconButton(
               icon: const Icon(
@@ -353,7 +401,7 @@ class _ChatPageState extends State<ChatPage> {
                 return Center(child: Utils.progressbar());
               }
 
-              geminiChat(snapshot.data ?? []);
+              // geminiChat(snapshot.data ?? []);
 
               // if (snapshot.data!.isEmpty) {
               //   return Container(
@@ -367,6 +415,7 @@ class _ChatPageState extends State<ChatPage> {
               //     ),
               //   );
               // }
+              messageList = snapshot.data ?? [];
 
               return Chat(
                 scrollPhysics: const BouncingScrollPhysics(),
@@ -425,7 +474,7 @@ class _ChatPageState extends State<ChatPage> {
                 isAttachmentUploading: _isAttachmentUploading,
                 messages: snapshot.data ?? [],
 
-                customBottomWidget: customTextinputWidget(),
+                //  customBottomWidget: customTextinputWidget(),
                 onAttachmentPressed: _handleAttachmentPressed,
                 onMessageTap: _handleMessageTap,
                 onPreviewDataFetched: _handlePreviewDataFetched,
@@ -434,6 +483,12 @@ class _ChatPageState extends State<ChatPage> {
                 user: types.User(
                   id: SupabaseChatCore.instance.supabaseUser!.id,
                 ),
+                // systemMessageBuilder: (SystemMessage) {
+                //   if (snapshot.data!.first == '[상대방나감]') {
+                //     return const Text('나갔씁니다.');
+                //   }
+                //   return const Text('상대방이 나갔습니다.');
+                // },
 
                 imageHeaders: storageHeaders,
                 onMessageVisibilityChanged: (message, visible) async {
@@ -479,10 +534,6 @@ class _ChatPageState extends State<ChatPage> {
                         onChanged: (value) {
                           isGeminiAi.value = value;
                         },
-                        // activeColor: Colors.red,
-                        // activeTrackColor: Colors.grey,
-                        // inactiveThumbColor: Colors.white,
-                        // inactiveTrackColor: Colors.grey,
                       ),
                     ),
                     const SizedBox(width: 10),

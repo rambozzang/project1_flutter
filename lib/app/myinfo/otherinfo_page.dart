@@ -5,11 +5,11 @@ import 'package:bot_toast/bot_toast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:flutter_supabase_chat_core/flutter_supabase_chat_core.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/chatting/chat_room_page.dart';
+import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/app/weather/widgets/customShimmer.dart';
 import 'package:project1/repo/board/board_repo.dart';
@@ -576,7 +576,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                 },
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.blue,
+                    color: Colors.grey,
                     borderRadius: BorderRadius.circular(10.0),
                     image: DecorationImage(
                       image: CachedNetworkImageProvider(list[index].thumbnailPath!),

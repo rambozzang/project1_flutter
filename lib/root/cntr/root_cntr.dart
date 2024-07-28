@@ -57,15 +57,41 @@ class RootCntr extends GetxController {
 
   // late TabController tabController;
 
+  final RxBool isInterstitialAdReady = false.obs;
+
+  void updateInterstitialAdStatus(bool isReady) {
+    isInterstitialAdReady.value = isReady;
+  }
+
+  // 광고 로드 여부
+  // 각 화면의 광고 로딩 상태를 저장하는 Map
+  final Map<String, RxBool> adLoadingStatus = <String, RxBool>{}.obs;
+  // 전체 앱의 광고 로딩 상태
+  final RxBool isAdLoading = false.obs;
+
+  // 특정 화면의 광고 로딩 상태를 업데이트하는 함수
+  void updateAdLoadingStatus(String screenName, bool isLoaded) {
+    // 해당 화면의 광고 로딩 상태를 업데이트
+    adLoadingStatus[screenName] = RxBool(isLoaded);
+
+    // 전체 앱의 광고 로딩 상태 업데이트
+    // 하나라도 로딩 중인 광고가 있으면 true, 아니면 false
+    isAdLoading.value = adLoadingStatus.values.any((status) => status.value);
+  }
+
+  // 특정 화면의 광고 로딩 상태를 확인하는 함수
+  bool isAdLoaded(String screenName) {
+    // 해당 화면의 광고 로딩 상태를 반환
+    // 만약 해당 화면의 상태가 없으면 false 반환
+    return adLoadingStatus[screenName]?.value ?? false;
+  }
+
   // 하단 바 숨기기 변수
   // RxDouble isVisible = 1.0.obs;
   RxBool isVisible = true.obs;
 
   late Cloudflare cloudflare;
   String? cloudflareInitMessage;
-
-  // ad loading flag
-  RxBool isAdLoading = false.obs;
 
   @override
   void onInit() {

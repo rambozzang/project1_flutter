@@ -12,18 +12,25 @@ class FullWidthBannerAd extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // if (bannerAd != null) {
-    bannerAd!.load();
+    // bannerAd!.load();
 
-    return Obx(() => Get.find<RootCntr>().isAdLoading.value
+    return Obx(() => (Get.find<RootCntr>().adLoadingStatus['VideoPage']?.value == true)
         ? Container(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             alignment: Alignment.center,
             width: MediaQuery.of(context).size.width,
-            height: bannerAd!.sizes.first.height.toDouble(),
+            height: MediaQuery.of(context).size.height,
             child: AdWidget(ad: bannerAd!))
-        : const SizedBox(width: 0, height: 0));
-    // } else {
-    //   return const SizedBox(width: 0, height: 0);
-    // }
+        : Container(
+            width: 500,
+            height: 500,
+            child: Center(
+                child: Text(
+              Get.find<RootCntr>().adLoadingStatus['VideoPage'] == null
+                  ? '로딩중'
+                  : Get.find<RootCntr>().adLoadingStatus['VideoPage']!.value.toString(),
+              style: const TextStyle(color: Colors.white),
+            )),
+          ));
   }
 }

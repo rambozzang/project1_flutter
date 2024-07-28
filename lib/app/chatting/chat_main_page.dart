@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-import 'package:flutter_supabase_chat_core/flutter_supabase_chat_core.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:project1/admob/ad_manager.dart';
+import 'package:project1/admob/banner_ad_widget.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
@@ -33,6 +35,7 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
 
   User? _user;
 
+  List<String> roomlist = [];
   @override
   void initState() {
     super.initState();
@@ -44,6 +47,12 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
         _userController.add(_user!);
       }
     });
+    _loadAd();
+  }
+
+  Future<void> _loadAd() async {
+    await AdManager().loadBannerAd('AlramPage2');
+    setState(() {}); // 광고 로드 후 UI 업데이트
   }
 
   Future<void> initSupaBaseSession() async {
@@ -267,6 +276,8 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
   @override
   void dispose() {
     _userController.close();
+
+    AdManager().disposeBannerAd('AlramPage2');
     super.dispose();
   }
 
@@ -285,127 +296,52 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
         child: Column(
           children: [
             const Gap(10),
-            // StreamBuilder<User>(
-            //     stream: _userController.stream,
-            //     builder: (context, snapshot) {
-            //       if (snapshot.hasError) {
-            //         return const Padding(
-            //           padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            //           child: Column(
-            //             crossAxisAlignment: CrossAxisAlignment.end,
-            //             children: [
-            //               Positioned(child: Text("Error", style: TextStyle(color: Colors.green, fontSize: 12))),
-            //               Divider(
-            //                 height: 3,
-            //                 thickness: 3,
-            //                 color: Colors.red,
-            //               ),
-            //             ],
-            //           ),
-            //         );
-            //       }
-
-            //       if (!snapshot.hasData) {
-            //         return Container(
-            //           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            //           child: const Text('Loading...'),
-            //         );
-            //       }
-            //       // return const SizedBox(height: 16);
-            //       return const Padding(
-            //         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            //         child: Column(
-            //           crossAxisAlignment: CrossAxisAlignment.end,
-            //           children: [
-            //             Positioned(child: Text("Online", style: TextStyle(color: Colors.green, fontSize: 12))),
-            //             Divider(
-            //               height: 3,
-            //               thickness: 3,
-            //               color: Colors.green,
-            //             ),
-            //           ],
-            //         ),
-            //       );
-            //       User data = snapshot.data!;
-            //       // return Container(
-            //       //   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            //       //   child: Row(
-            //       //     children: [
-            //       //       Text(
-            //       //         data.email ?? '',
-            //       //         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
-            //       //       ),
-            //       //       const Spacer(),
-            //       //       IconButton(
-            //       //         icon: const Icon(
-            //       //           Icons.person,
-            //       //         ),
-            //       //         onPressed: _user == null
-            //       //             ? null
-            //       //             : () {
-            //       //                 Navigator.of(context).push(
-            //       //                   MaterialPageRoute(
-            //       //                     fullscreenDialog: true,
-            //       //                     builder: (context) => const UsersPage(),
-            //       //                   ),
-            //       //                 );
-            //       //               },
-            //       //       ),
-            //       //       TextButton(
-            //       //         onPressed: () => initSupaBaseSession(),
-            //       //         child: const Icon(
-            //       //           Icons.refresh,
-            //       //           color: Colors.black,
-            //       //         ),
-            //       //       ),
-            //       //     ],
-            //       //   ),
-            //       // );
-            //     }),
+            const SizedBox(width: double.infinity, child: Center(child: BannerAdWidget(screenName: 'AlramPage2'))),
+            const Gap(10),
             Expanded(
               child: StreamBuilder<List<types.Room>>(
                 stream: SupabaseChatCore.instance.rooms(orderByUpdatedAt: false),
-                // initialData: const [],
                 builder: (context, snapshot) {
-                  lo.g('SupabaseChatCore.instance.rooms() > snapshot.data : ${snapshot.data}');
-                  lo.g('SupabaseChatCore.instance.rooms() > snapshot.data : ${snapshot.connectionState}');
-                  // if (snapshot.connectionState == ConnectionState.waiting) {
-                  //   return Container(
-                  //     alignment: Alignment.center,
-                  //     margin: const EdgeInsets.only(
-                  //       bottom: 200,
-                  //     ),
-                  //     child: Utils.progressbar(),
-                  //   );
-                  // }
-                  if (!snapshot.hasData) {
-                    return Container(
-                      alignment: Alignment.center,
-                      margin: const EdgeInsets.only(
-                        bottom: 200,
-                      ),
-                      child: const Text('대화 내용이 없습니다.'),
-                    );
+                  lo.g('StreamBuilder state: ${snapshot.connectionState}');
+                  lo.g('StreamBuilder data: ${snapshot.data}');
+                  lo.g('StreamBuilder error: ${snapshot.error}');
+
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: Utils.progressbar());
                   }
-                  if (snapshot.data!.isEmpty) {
+
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return Container(
                       alignment: Alignment.center,
-                      margin: const EdgeInsets.only(
-                        bottom: 200,
-                      ),
+                      margin: const EdgeInsets.only(bottom: 200),
                       child: const Text('대화 내용이 없습니다.'),
                     );
                   }
 
+                  final rooms = snapshot.data!.where((room) => room.name != null && room.lastMessages != null).toList();
+
+                  if (rooms.isEmpty) {
+                    return Container(
+                      alignment: Alignment.center,
+                      margin: const EdgeInsets.only(bottom: 200),
+                      child: const Text('유효한 대화방이 없습니다.'),
+                    );
+                  }
+
+                  roomlist.clear();
                   return ListView.builder(
-                    itemCount: snapshot.data!.length,
+                    itemCount: rooms.length,
                     controller: RootCntr.to.hideButtonController4,
                     physics: const AlwaysScrollableScrollPhysics(),
                     itemBuilder: (context, index) {
-                      final room = snapshot.data![index];
+                      final room = rooms[index];
                       // room.name이 null이면 대화방만 만들어 대화를 안한상태로 가비지 처리 해야함.
-                      if (room.name == null) {
-                        SupabaseChatCore.instance.deleteRoom(room.id);
+                      if (room.name == null || room.lastMessages == null) {
+                        //   SupabaseChatCore.instance.deleteRoom(room.id);
                         return const SizedBox.shrink();
                       }
                       return buildItem(room);
@@ -438,12 +374,11 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
   }
 
   buildItem(types.Room room) {
-    // 메세지가 있으면 마지막 메세지를 보여준다.
-    // if (room.lastMessages!.first != null) {
-    //   Utils.alert("DM : ${(room.lastMessages!.first as types.TextMessage).text}");
-
-    //   lo.g('room.lastMessages!.first : ${(room.lastMessages!.first as types.TextMessage).text}');
+    // if (roomlist.contains(room.id)) {
+    //   return const SizedBox.shrink();
     // }
+    // roomlist.add(room.id);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
       child: Row(
@@ -489,12 +424,10 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
                     style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black),
                   ),
                   Text(
-                    room.lastMessages != null && room.lastMessages!.isNotEmpty && room.lastMessages!.first is types.TextMessage
-                        ? (room.lastMessages!.first as types.TextMessage).text
-                        : '',
+                    room.lastMessages!.isNotEmpty ? (room.lastMessages!.first as types.TextMessage).text : '',
                     softWrap: true,
                     // overflow: TextOverflow.fade,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black),
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87),
                   ),
                 ],
               ),
@@ -502,13 +435,115 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
           ),
           // const Spacer(),
           const Gap(10),
-          Text(
-            timeago.format(DateTime.now().subtract(Duration(milliseconds: DateTime.now().millisecondsSinceEpoch - (room.updatedAt ?? 0))),
-                locale: 'ko_short'),
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black),
+
+          Column(
+            children: [
+              Text(
+                timeago.format(
+                    DateTime.now().subtract(Duration(milliseconds: DateTime.now().millisecondsSinceEpoch - (room.updatedAt ?? 0))),
+                    locale: 'ko_short'),
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black),
+              ),
+              const Gap(5),
+              (room.lastMessages?.first.author.id != _user?.id && room.metadata!['unreadCount'] != 0)
+                  ? Container(
+                      // height: 19,
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${room.metadata!['unreadCount']}',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  Widget buildUserState() {
+    return SizedBox.shrink();
+    // return StreamBuilder<User>(
+    //     stream: _userController.stream,
+    //     builder: (context, snapshot) {
+    //       if (snapshot.hasError) {
+    //         return const Padding(
+    //           padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+    //           child: Column(
+    //             crossAxisAlignment: CrossAxisAlignment.end,
+    //             children: [
+    //               Positioned(child: Text("Error", style: TextStyle(color: Colors.green, fontSize: 12))),
+    //               Divider(
+    //                 height: 3,
+    //                 thickness: 3,
+    //                 color: Colors.red,
+    //               ),
+    //             ],
+    //           ),
+    //         );
+    //       }
+
+    //       if (!snapshot.hasData) {
+    //         return Container(
+    //           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+    //           child: const Text('Loading...'),
+    //         );
+    //       }
+    //       // return const SizedBox(height: 16);
+    //       return const Padding(
+    //         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+    //         child: Column(
+    //           crossAxisAlignment: CrossAxisAlignment.end,
+    //           children: [
+    //             Positioned(child: Text("Online", style: TextStyle(color: Colors.green, fontSize: 12))),
+    //             Divider(
+    //               height: 3,
+    //               thickness: 3,
+    //               color: Colors.green,
+    //             ),
+    //           ],
+    //         ),
+    //       );
+    //       User data = snapshot.data!;
+    //       // return Container(
+    //       //   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+    //       //   child: Row(
+    //       //     children: [
+    //       //       Text(
+    //       //         data.email ?? '',
+    //       //         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
+    //       //       ),
+    //       //       const Spacer(),
+    //       //       IconButton(
+    //       //         icon: const Icon(
+    //       //           Icons.person,
+    //       //         ),
+    //       //         onPressed: _user == null
+    //       //             ? null
+    //       //             : () {
+    //       //                 Navigator.of(context).push(
+    //       //                   MaterialPageRoute(
+    //       //                     fullscreenDialog: true,
+    //       //                     builder: (context) => const UsersPage(),
+    //       //                   ),
+    //       //                 );
+    //       //               },
+    //       //       ),
+    //       //       TextButton(
+    //       //         onPressed: () => initSupaBaseSession(),
+    //       //         child: const Icon(
+    //       //           Icons.refresh,
+    //       //           color: Colors.black,
+    //       //         ),
+    //       //       ),
+    //       //     ],
+    //       //   ),
+    //       // );
+    //     });
   }
 }

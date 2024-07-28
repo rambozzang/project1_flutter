@@ -2,34 +2,28 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:app_version_update/app_version_update.dart';
-import 'package:bot_toast/bot_toast.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_supabase_chat_core/flutter_supabase_chat_core.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/alram/alram_page.dart';
-import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/camera/page/camera_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/camera/utils/permission_utils.dart';
-import 'package:project1/app/chatting/chat_room_page.dart';
+import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
 import 'package:project1/app/myinfo/myinfo_page.dart';
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/app/videolist/video_list_page.dart';
-import 'package:project1/app/weather/page/weather_page.dart';
+import 'package:project1/app/weathergogo/weathergogo_page.dart';
 import 'package:project1/config/app_config.dart';
-import 'package:project1/firebase/firebase_service.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/fade_stack.dart';
 import 'package:project1/widget/hide_bottombar.dart';
-
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 // ignore: must_be_immutable
 class RootPage extends StatefulWidget {
@@ -63,7 +57,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   // body Widget List
   late List<Widget> mainlist = [
     const VideoListPage(),
-    const WeatherPage(),
+    const WeathgergogoPage(),
     const SizedBox.shrink(),
     const SizedBox.shrink(),
     const SizedBox.shrink()
@@ -75,7 +69,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     Get.put(VideoListCntr());
     checkAppVersion();
 
-    initFirebase();
+    // initFirebase();
 
     // getData();
     // 3초후 실행
@@ -87,34 +81,38 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     // });
   }
 
-  Future<void> initFirebase() async {
-    if (Platform.isIOS) {
-      await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
-      await FirebaseMessaging.instance.requestPermission(
-        alert: true,
-        announcement: false,
-        badge: true,
-        carPlay: false,
-        criticalAlert: false,
-        provisional: false,
-        sound: true,
-      );
-    }
-  }
+  // Future<void> initFirebase() async {
+  //   if (Platform.isIOS) {
+  //     await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+  //       alert: true,
+  //       badge: true,
+  //       sound: true,
+  //     );
+  //     await FirebaseMessaging.instance.requestPermission(
+  //       alert: true,
+  //       announcement: false,
+  //       badge: true,
+  //       carPlay: false,
+  //       criticalAlert: false,
+  //       provisional: false,
+  //       sound: true,
+  //     );
+  //   }
+  // }
 
   Future<void> checkAppVersion() async {
-    await AppVersionUpdate.checkForUpdates(appleId: AppConfig.appleId, playStoreId: AppConfig.playStoreId).then((data) async {
-      lo.g('checkAppVersion : ${data.storeUrl}');
-      lo.g('checkAppVersion : ${data.storeVersion}');
+    try {
+      await AppVersionUpdate.checkForUpdates(appleId: AppConfig.appleId, playStoreId: AppConfig.playStoreId).then((data) async {
+        lo.g('checkAppVersion : ${data.storeUrl}');
+        lo.g('checkAppVersion : ${data.storeVersion}');
 
-      if (data.canUpdate!) {
-        Utils.appUpdateAlert(context, data.storeUrl.toString());
-      }
-    });
+        if (data.canUpdate!) {
+          Utils.appUpdateAlert(context, data.storeUrl.toString());
+        }
+      });
+    } catch (e) {
+      lo.g('checkAppVersion : ${e}');
+    }
   }
 
   DateTime? currentBackPressTime = null;

@@ -1,6 +1,4 @@
 import 'package:flutter_naver_login/flutter_naver_login.dart';
-import 'package:flutter_supabase_chat_core/flutter_supabase_chat_core.dart';
-import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/repo/chatting/chat_repo.dart';
 import 'package:project1/repo/chatting/data/signup_data.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -9,15 +7,11 @@ import 'package:project1/repo/cust/data/naver_join_data.dart';
 import 'package:project1/repo/secure_storge.dart';
 
 import 'package:project1/utils/log_utils.dart';
-import 'package:project1/utils/utils.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 //  연결 주소 : https://developers.naver.com/docs/login/api/api.md
 class NaverApi with SecureStorage {
-  Future<ResData> signInWithNaver() async {
-    ResData resData = ResData();
+  Future<ResData<String>> signInWithNaver() async {
+    ResData<String> resData = ResData<String>();
     resData.code = "00";
 
     NaverLoginResult result = await FlutterNaverLogin.logIn();

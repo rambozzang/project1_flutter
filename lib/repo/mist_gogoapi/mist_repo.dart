@@ -35,7 +35,7 @@ class MistRepo {
         stationNm = '충남';
       } else if (stationNm == '충청북도') {
         stationNm = '충북';
-      } else if (stationNm == '강원도') {
+      } else if (stationNm == '강원도' || stationNm == '강원특별자치도') {
         stationNm = '강원';
       } else if (stationNm == '제주특별자치도') {
         stationNm = '제주';
@@ -68,7 +68,7 @@ class MistRepo {
           'sidoName=$stationNm&dataTerm=DAILY&pageNo=1&ver=1.0'
           '&numOfRows=1&returnType=json&serviceKey=$apiKey';
 
-      final dio = await AuthDio.instance.getNoAuthCathDio(cachehour: 2);
+      final dio = await AuthDio.instance.getNoAuthDio();
       Response response = await dio.get(airConditon);
 
       return response;

@@ -15,6 +15,7 @@ import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/common/life_cycle_getx.dart';
 import 'package:project1/config/app_theme.dart';
 import 'package:project1/firebase/firebase_service.dart';
+import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/route/app_route.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'firebase_options.dart';
@@ -22,7 +23,7 @@ import 'firebase_options.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   final firebaseService = FirebaseService();
   await firebaseService.initialize();
 
@@ -31,7 +32,7 @@ void main() async {
   // KakaoSdk.init(nativeAppKey: 'e94966b7ae7e09c06d47e9d9fa580f4c');
 
   // 광고 init
-  AdManager.init(targetPlatform: Platform.isIOS ? TargetPlatform.iOS : TargetPlatform.android);
+  await AdManager.initialize(targetPlatform: Platform.isIOS ? TargetPlatform.iOS : TargetPlatform.android);
 
   // supabase
   await Supabase.initialize(url: supabaseOptions.url, anonKey: supabaseOptions.anonKey);
@@ -69,7 +70,7 @@ class TigerBk extends StatelessWidget {
       initialBinding: BindingsBuilder(() {
         Get.put(AuthCntr());
         Get.put(LifeCycleGetx());
-        Get.put(WeatherCntr());
+        Get.put(WeatherGogoCntr());
       }),
       locale: const Locale('ko'),
       supportedLocales: const [

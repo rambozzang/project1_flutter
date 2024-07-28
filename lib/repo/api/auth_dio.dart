@@ -72,17 +72,17 @@ class AuthDio {
     // 캐쉬 사용 설정 2
     // dio.interceptors.add(DioCacheInterceptor(options: customCacheOptions));
 
-    if (debug == true) {
-      dio.interceptors.add(PrettyDioLogger(
-        requestHeader: true,
-        requestBody: true,
-        responseBody: true,
-        responseHeader: true,
-        error: true,
-        compact: true,
-        maxWidth: 120,
-      ));
-    }
+    // if (debug == true) {
+    //   dio.interceptors.add(PrettyDioLogger(
+    //     requestHeader: true,
+    //     requestBody: true,
+    //     responseBody: true,
+    //     responseHeader: true,
+    //     error: true,
+    //     compact: true,
+    //     maxWidth: 120,
+    //   ));
+    // }
 
     return dio;
   }

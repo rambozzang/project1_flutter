@@ -11,6 +11,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/favoriteArea/favorite_area_search_page.dart';
 import 'package:project1/app/weather/models/geocode.dart';
+import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
@@ -125,7 +126,7 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
         Utils.alert(res.msg.toString());
         return;
       }
-      _arealist = (res.data as List).map((e) => e['tagNm'].toString()).toList();
+      _arealist = (res.data as List).map((e) => e['id']['tagNm'].toString()).toList();
 
       areaStream.sink.add(ResStream.completed(_arealist));
     } catch (e) {
@@ -231,8 +232,8 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
                           options: NaverMapViewOptions(
                             locationButtonEnable: false,
                             initialCameraPosition: NCameraPosition(
-                                target: NLatLng(Get.find<WeatherCntr>().currentLocation.value!.latLng.latitude,
-                                    Get.find<WeatherCntr>().currentLocation!.value!.latLng.longitude),
+                                target: NLatLng(Get.find<WeatherGogoCntr>().currentLocation.value!.latLng.latitude,
+                                    Get.find<WeatherGogoCntr>().currentLocation!.value!.latLng.longitude),
                                 zoom: 13,
                                 bearing: 0,
                                 tilt: 0),

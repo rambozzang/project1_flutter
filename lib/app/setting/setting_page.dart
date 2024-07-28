@@ -1,20 +1,17 @@
-import 'dart:io';
-
 import 'package:babstrap_settings_screen/babstrap_settings_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:project1/admob/ad_manager.dart';
+import 'package:project1/admob/banner_ad_widget.dart';
 import 'package:project1/app/auth/agree_pagge.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
-import 'package:image_cropper/image_cropper.dart';
 // import 'package:flutter_image_compress/flutter_image_compress.dart';
 
-import 'package:path_provider/path_provider.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
-import 'package:project1/widget/ads_page.dart';
 import 'package:project1/widget/custom_button.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
 
@@ -33,12 +30,18 @@ class _SettingPageState extends State<SettingPage> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
+    _loadAd();
+  }
+
+  Future<void> _loadAd() async {
+    await AdManager().loadBannerAd('SettingPage');
+    setState(() {}); // 광고 로드 후 UI 업데이트
   }
 
   @override
   void dispose() {
+    // AdManager().disposeBannerAd('SettingPage');
     super.dispose();
   }
 
@@ -104,7 +107,7 @@ class _SettingPageState extends State<SettingPage> {
                     ),
                   ],
                 ),
-                buildAddmob(),
+                const BannerAdWidget(screenName: 'SettingPage'),
                 const Gap(30),
                 SettingsGroup(
                   settingsGroupTitle: "개인정 동의 및 약관",

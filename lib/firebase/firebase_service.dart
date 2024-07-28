@@ -5,12 +5,12 @@ import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_supabase_chat_core/flutter_supabase_chat_core.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
 import 'package:project1/app/chatting/chat_room_page.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
 import 'package:project1/firebase_options.dart';
 import 'package:project1/utils/log_utils.dart';
 
@@ -105,6 +105,9 @@ class FirebaseService {
 
     // foreground 상태에서 메시지를 수신할 때
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+      if (Platform.isIOS) {
+        return;
+      }
       forgroundMessage(message);
     });
 
@@ -133,7 +136,6 @@ class FirebaseService {
           importance: Importance.max,
         ));
 
-    // Root_page.dart 에서 이미 설정함. -> 메인에서 호출하면 회원가입도 안햇는데 노티 권한요청이 떠버림
     if (Platform.isIOS) {
       await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
         alert: true,
@@ -207,7 +209,7 @@ class FirebaseService {
         DarwinNotificationDetails(badgeNumber: 1, threadIdentifier: 'com.skysnap.skysnap');
     Lo.g("onMessage body 4");
 
-    flutterLocalNotificationsPlugin.show(
+    await flutterLocalNotificationsPlugin.show(
       notification.hashCode,
       notification!.title,
       notification.body,

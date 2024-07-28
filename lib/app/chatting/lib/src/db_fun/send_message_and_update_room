@@ -1,0 +1,41 @@
+
+DECLARE
+    v_message_id bigint;
+    v_created_at bigint;
+BEGIN
+    v_created_at := (extract(epoch from now()) * 1000)::bigint;
+
+    -- Insert the new message
+    INSERT INTO chats.messages (
+        "createdAt", "updatedAt", metadata, "roomId", "authorId",
+        duration, "mimeType", name, "remoteId", "repliedMessage",
+        "showStatus", size, status, type, uri, "waveForm",
+        "isLoading", height, width, "previewData", text
+    ) VALUES (
+        v_created_at, v_created_at,
+        p_message->'metadata', p_room_id, (p_message->>'authorId')::uuid,
+        (p_message->>'duration')::bigint, p_message->>'mimeType', p_message->>'name',
+        p_message->>'remoteId', p_message->'repliedMessage',
+        (p_message->>'showStatus')::boolean, (p_message->>'size')::bigint,
+        p_message->>'status', p_message->>'type', p_message->>'uri',
+        p_message->'waveForm', (p_message->>'isLoading')::boolean,
+        (p_message->>'height')::double precision, (p_message->>'width')::double precision,
+        p_message->'previewData', p_message->>'text'
+    )
+    RETURNING id INTO v_message_id;
+
+    -- Update the room's last message, lastMessages, and updated time
+    UPDATE chats.rooms
+    SET 
+        "updatedAt" = v_created_at,
+        last_message = p_message,
+        "lastMessages" = COALESCE("lastMessages", '[]'::jsonb) || 
+                         jsonb_build_array(jsonb_build_object(
+                             'id', v_message_id::text,
+                             'createdAt', v_created_at,
+                             'text', p_message->>'text',
+                             'type', p_message->>'type',
+                             'authorId', p_message->>'authorId'
+                         ))
+    WHERE id = p_room_id;
+END;

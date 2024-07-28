@@ -1,9 +1,9 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 class HourlyWeather {
-  final double temp;
-  final String weatherCategory;
-  final String? condition;
-  final DateTime date;
+  double temp;
+  String weatherCategory;
+  String? condition;
+  DateTime date;
 
   HourlyWeather({
     required this.temp,
