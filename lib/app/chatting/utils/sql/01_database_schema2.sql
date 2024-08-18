@@ -14,6 +14,8 @@ SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
+
+
 CREATE TABLE chats.users (
     "firstName" text,
     "imageUrl" text,
