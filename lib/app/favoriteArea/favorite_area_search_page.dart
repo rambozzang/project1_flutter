@@ -66,7 +66,8 @@ class _FavoriteAreaSearchPageState extends State<FavoriteAreaSearchPage> {
       hint: '통합 검색...',
       clearQueryOnClose: true,
       scrollPadding: const EdgeInsets.only(top: 3.0, bottom: 56.0, left: 2.0, right: 2.0),
-      margins: EdgeInsets.only(left: 12.0, right: 12, top: Platform.isIOS ? kToolbarHeight : kToolbarHeight - 20, bottom: 0),
+      // margins: EdgeInsets.only(left: 12.0, right: 12, top: Platform.isIOS ? kToolbarHeight : kToolbarHeight - 20, bottom: 0),
+      margins: const EdgeInsets.only(left: 12.0, right: 12, top: 5),
       transitionDuration: const Duration(milliseconds: 300),
       borderRadius: BorderRadius.circular(14.0),
       transitionCurve: Curves.easeInOut,
@@ -76,20 +77,20 @@ class _FavoriteAreaSearchPageState extends State<FavoriteAreaSearchPage> {
       physics: const BouncingScrollPhysics(),
       elevation: 2.0,
       implicitDuration: const Duration(milliseconds: 10),
-      debounceDelay: const Duration(milliseconds: 300),
+      debounceDelay: const Duration(milliseconds: 250),
       //  style: const TextStyle(decorationThickness: 0), // 한글밑줄제거
       leadingActions: [
-        FloatingSearchBarAction.icon(
-          showIfClosed: true,
-          showIfOpened: false,
-          icon: const PhosphorIcon(
-            PhosphorIconsBold.arrowLeft,
-            color: primaryBlue,
-          ),
-          onTap: () {
-            Get.back();
-          },
-        ),
+        // FloatingSearchBarAction.icon(
+        //   showIfClosed: true,
+        //   showIfOpened: false,
+        //   icon: Icon(
+        //     Icons.arrow_back_ios,
+        //     color: primaryBlue,
+        //   ),
+        //   onTap: () {
+        //     Get.back();
+        //   },
+        // ),
       ],
       onFocusChanged: (isFocused) {
         // if (!isFocused) {

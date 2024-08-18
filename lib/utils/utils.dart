@@ -114,14 +114,14 @@ abstract class Utils {
     );
   }
 
-  static void alert(String msg) {
+  static void alert(String msg, {String? align = 'bottom'}) {
     BotToast.showCustomText(
       duration: const Duration(seconds: 3),
       backButtonBehavior: BackButtonBehavior.none,
       animationDuration: const Duration(milliseconds: 300),
       animationReverseDuration: const Duration(milliseconds: 200),
       toastBuilder: (_) => Align(
-        alignment: const Alignment(0, 0.77),
+        alignment: align == 'bottom' ? const Alignment(0, 0.77) : const Alignment(0.1, 0),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
           margin: const EdgeInsets.symmetric(horizontal: 16),

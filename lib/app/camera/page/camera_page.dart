@@ -164,13 +164,6 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
   }
 
   void startRecording() async {
-    try {
-      takeCameraScreenshot(key: screenshotKey).then((value) {
-        screenshotBytes = value;
-      });
-    } catch (e) {
-      rethrow;
-    }
     cameraBloc.add(CameraRecordingStart());
   }
 
@@ -179,6 +172,13 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
       Utils.alert("${cameraBloc.limitSec}초 이상 촬영해주세요!");
       return;
     }
+
+    // try {
+    //   screenshotBytes = await takeCameraScreenshot(key: screenshotKey);
+    // } catch (e) {
+    //   // 스크린샷 에러 처리
+    // }
+
     cameraBloc.add(CameraRecordingStop());
   }
 

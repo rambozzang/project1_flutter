@@ -7,7 +7,7 @@ import 'package:project1/root/cntr/root_cntr.dart';
 class BannerAdWidget extends StatelessWidget {
   final String screenName;
 
-  const BannerAdWidget({Key? key, required this.screenName}) : super(key: key);
+  const BannerAdWidget({super.key, required this.screenName});
 
   @override
   Widget build(BuildContext context) {

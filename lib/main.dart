@@ -3,22 +3,22 @@ import 'dart:io';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gemini/flutter_gemini.dart';
+// import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
+// import 'package:media_kit/media_kit.dart';
 import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/chatting/supabase_options.dart';
-import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/common/life_cycle_getx.dart';
 import 'package:project1/config/app_theme.dart';
 import 'package:project1/firebase/firebase_service.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/route/app_route.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'firebase_options.dart';
+
+// import com.kakao.sdk.common.util.Utility
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +26,8 @@ void main() async {
   // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   final firebaseService = FirebaseService();
   await firebaseService.initialize();
+
+  // MediaKit.ensureInitialized();
 
   // 카카오개발자센터 네이티브 앱키
   KakaoSdk.init(nativeAppKey: 'd0023f080e59afd633bc19e469ed4a73');
@@ -41,7 +43,7 @@ void main() async {
 //  Gemini.init(  apiKey: const String.fromEnvironment('apiKey'), enableDebugging: true);
 
   //v100004v@gmail.com
-  Gemini.init(apiKey: 'AIzaSyDSLGJFE9yZTeVt2xrtgnp6MTkE3LdYrCI', enableDebugging: true);
+  // Gemini.init(apiKey: 'AIzaSyDSLGJFE9yZTeVt2xrtgnp6MTkE3LdYrCI', enableDebugging: true);
 
   // 안드로이드  : Network : CERTIFICATE_VERIFY_FAILED 오류 수정
   HttpOverrides.global = MyHttpOverrides();

@@ -71,6 +71,7 @@ https://developers.kakao.com/docs/latest/ko/local/dev-guide#coord-to-address
 
   Future<(String, String, String)> getAddressbylatlon(double lat, double lon) async {
     String apiUrl = 'https://dapi.kakao.com/v2/local/geo/coord2address.json?input_coord=WGS84';
+    lo.g("kakao url : ${Uri.parse('$apiUrl&x=$lon&y=$lat')}");
     final response = await http.get(
       Uri.parse('$apiUrl&x=$lon&y=$lat'),
       headers: {

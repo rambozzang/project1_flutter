@@ -76,6 +76,12 @@ class ItemFct with _$ItemFct {
       fcstValue: AdapterXml.resultXml(xml, 'fcstValue'),
     );
   }
+
+  // toString() 만들어주어
+  @override
+  String toString() {
+    return 'ItemFct(baseDate: $baseDate, baseTime: $baseTime, category: $category, fcstDate: $fcstDate, fcstTime: $fcstTime, fcstValue: $fcstValue, nx: $nx, ny: $ny)';
+  }
 }
 
 @freezed

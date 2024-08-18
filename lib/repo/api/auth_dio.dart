@@ -97,17 +97,17 @@ class AuthDio {
 
     dio.interceptors.clear();
     // dio.interceptors.add(DioCacheInterceptor(options: customCacheOptions));
-    if (debug == true) {
-      dio.interceptors.add(PrettyDioLogger(
-        requestHeader: true,
-        requestBody: true,
-        responseBody: true,
-        responseHeader: true,
-        error: true,
-        compact: true,
-        maxWidth: 120,
-      ));
-    }
+    // if (debug == true) {
+    //   dio.interceptors.add(PrettyDioLogger(
+    //     requestHeader: true,
+    //     requestBody: true,
+    //     responseBody: true,
+    //     responseHeader: true,
+    //     error: true,
+    //     compact: true,
+    //     maxWidth: 120,
+    //   ));
+    // }
 
     return dio;
   }
@@ -132,17 +132,17 @@ class AuthDio {
 
     dio.interceptors.clear();
     dio.interceptors.add(DioCacheInterceptor(options: customCacheOptions));
-    if (debug == true) {
-      dio.interceptors.add(PrettyDioLogger(
-        requestHeader: true,
-        requestBody: true,
-        responseBody: true,
-        responseHeader: true,
-        error: true,
-        compact: true,
-        maxWidth: 120,
-      ));
-    }
+    // if (debug == true) {
+    //   dio.interceptors.add(PrettyDioLogger(
+    //     requestHeader: true,
+    //     requestBody: true,
+    //     responseBody: true,
+    //     responseHeader: true,
+    //     error: true,
+    //     compact: true,
+    //     maxWidth: 120,
+    //   ));
+    // }
 
     return dio;
   }

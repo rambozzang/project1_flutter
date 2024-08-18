@@ -5,7 +5,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/repo/weather/mylocator_repo.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';

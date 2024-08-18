@@ -32,7 +32,7 @@ class VideoListCntr extends GetxController {
   int playAtFirst = 0;
 
   var isLoadingMore = true.obs;
-  int preLoadingCount = 8;
+  int preLoadingCount = 7;
 
   //현재 영상의 index값 저장
   var currentIndex = 0.obs;
@@ -63,10 +63,14 @@ class VideoListCntr extends GetxController {
     update();
   }
 
-  getData() {
+  getData() async {
     pageNum = 0;
     searchType.value = 'TOTAL';
+
+    //  await Future.wait([
     getDataProcess();
+    // Get.find<WeatherGogoCntr>().getInitWeatherData(true),
+//    ]);
   }
 
   Future<void> getDataProcess() async {
@@ -85,19 +89,16 @@ class VideoListCntr extends GetxController {
 
       // 비디오 리스트 가져오기
       BoardRepo boardRepo = BoardRepo();
-      // ResData resListData = await boardRepo.searchBoardBylatlon(lat.toString(), lon.toString(), pageNum, pagesize);
-      late ResData resListData;
-      if ('TOTAL'.contains(searchType.value)) {
-        resListData = await boardRepo.getTotalBoardList(lat.toString(), lon.toString(), pageNum, pagesize);
-      } else if ('LOCAL'.contains(searchType.value)) {
-        resListData = await boardRepo.getLocalBoardList(lat.toString(), lon.toString(), pageNum, pagesize);
-      } else if ('TAG'.contains(searchType.value)) {
-        resListData = await boardRepo.getTagBoardList(lat.toString(), lon.toString(), pageNum, pagesize);
-      } else if ('DIST'.contains(searchType.value)) {
-        resListData = await boardRepo.getDistinceBoardList(lat.toString(), lon.toString(), pageNum, pagesize);
-      } else {
-        resListData = await boardRepo.getTotalBoardList(lat.toString(), lon.toString(), pageNum, pagesize);
-      }
+      // 각 searchType에 대한 API 호출 매핑
+      final apiCallMap = {
+        'TOTAL': () => boardRepo.getTotalBoardList(lat, lon, pageNum, pagesize),
+        'LOCAL': () => boardRepo.getLocalBoardList(lat, lon, pageNum, pagesize),
+        'TAG': () => boardRepo.getTagBoardList(lat, lon, pageNum, pagesize),
+        'DIST': () => boardRepo.getDistinceBoardList(lat, lon, pageNum, pagesize),
+      };
+
+      // API 호출
+      ResData resListData = await apiCallMap[searchType.value]!();
 
       if (resListData.code != '00') {
         Utils.alert(resListData.msg.toString());
@@ -105,20 +106,21 @@ class VideoListCntr extends GetxController {
       }
       // 리스트 초기화
       mountedList.clear();
-      list.clear();
 
-      list = ((resListData.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
+      List<BoardWeatherListData> _list = ((resListData.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
 
-      if (list.isEmpty) {
+      if (_list.isEmpty) {
         Utils.alert('데이터가 없습니다.');
         return;
       }
 
-      List<BoardWeatherListData> initList = list.sublist(0, list.length > 1 ? 2 : 1);
+      list = _list;
+
+      List<BoardWeatherListData> initList = _list.sublist(0, _list.length > 1 ? 2 : 1);
       videoListCntr.sink.add(ResStream.completed(initList));
       Future.delayed(const Duration(milliseconds: 2000), () {
         // 1번째 비디오를 플레이 화면에 바로 노출하도록 나머지 스트림 전송
-        videoListCntr.sink.add(ResStream.completed(list));
+        videoListCntr.sink.add(ResStream.completed(_list));
       });
       // videoListCntr.sink.add(ResStream.completed(list));
     } catch (e) {
@@ -127,14 +129,17 @@ class VideoListCntr extends GetxController {
     } finally {
       // 리스트가 다 구성이 끝나면 날씨 데이터 가져온다.
       // 날씨 정보가 없을때만 다시 가져온다.  - 최초시만 가져온다.
-      if (Get.find<WeatherGogoCntr>().currentWeather.value?.temp == null) {
-        Get.find<WeatherGogoCntr>().getInitWeatherData(true);
+      if (Get.find<WeatherGogoCntr>().currentWeather.value.temp == null) {
+        Future.delayed(const Duration(milliseconds: 5000), () {
+          Get.find<WeatherGogoCntr>().getInitWeatherData(true);
+        });
       }
     }
   }
 
   // 참고 싸이트 : https://github.com/octomato/preload_page_view/issues/43
   Future<void> getMoreData(int index, int length) async {
+    currentIndex.value = index;
     try {
       bool isBottom = index >= list.length - (preLoadingCount + 1);
       isBottom = length < pagesize ? false : isBottom;
@@ -142,9 +147,7 @@ class VideoListCntr extends GetxController {
       //    getAllPost();
       // }
       var len = list.length;
-      lo.g('🚀🚀🚀 getMoreData index : $index');
-      lo.g('🚀🚀🚀 getMoreData list.length : ${list.length}');
-      lo.g('🚀🚀🚀 isBottom: ${isBottom}');
+
       if (!isBottom) {
         return;
       }
@@ -160,18 +163,16 @@ class VideoListCntr extends GetxController {
 
       BoardRepo boardRepo = BoardRepo();
       // ResData resListData = await boardRepo.searchBoardBylatlon(lat.toString(), lon.toString(), pageNum, pagesize);
-      late ResData resListData;
-      if ('TOTAL'.contains(searchType.value)) {
-        resListData = await boardRepo.getTotalBoardList(lat.toString(), lon.toString(), pageNum, pagesize);
-      } else if ('LOCAL'.contains(searchType.value)) {
-        resListData = await boardRepo.getLocalBoardList(lat.toString(), lon.toString(), pageNum, pagesize);
-      } else if ('TAG'.contains(searchType.value)) {
-        resListData = await boardRepo.getTagBoardList(lat.toString(), lon.toString(), pageNum, pagesize);
-      } else if ('DIST'.contains(searchType.value)) {
-        resListData = await boardRepo.getDistinceBoardList(lat.toString(), lon.toString(), pageNum, pagesize);
-      } else {
-        resListData = await boardRepo.getTotalBoardList(lat.toString(), lon.toString(), pageNum, pagesize);
-      }
+      // 각 searchType에 대한 API 호출 매핑
+      final apiCallMap = {
+        'TOTAL': () => boardRepo.getTotalBoardList(lat, lon, pageNum, pagesize),
+        'LOCAL': () => boardRepo.getLocalBoardList(lat, lon, pageNum, pagesize),
+        'TAG': () => boardRepo.getTagBoardList(lat, lon, pageNum, pagesize),
+        'DIST': () => boardRepo.getDistinceBoardList(lat, lon, pageNum, pagesize),
+      };
+
+      // API 호출
+      ResData resListData = await apiCallMap[searchType.value]!();
 
       if (resListData.code != '00') {
         Utils.alert(resListData.msg.toString());
@@ -191,14 +192,14 @@ class VideoListCntr extends GetxController {
     }
   }
 
-  Future<void> follow(String custId) async {
+  Future<bool> follow(String custId) async {
     try {
       // isFollowed.value = 'Y';
       BoardRepo boardRepo = BoardRepo();
       ResData resData = await boardRepo.follow(custId.toString());
       if (resData.code != '00') {
         Utils.alert(resData.msg.toString());
-        return;
+        return false;
       }
       Utils.alert('팔로우 되었습니다!');
       // 현재 리스트에 팔로우여부 변경
@@ -210,19 +211,21 @@ class VideoListCntr extends GetxController {
         }
       });
       update();
+      return true;
     } catch (e) {
       Utils.alert('실패! 다시 시도해주세요');
+      return false;
     }
   }
 
-  Future<void> followCancle(String custId) async {
+  Future<bool> followCancle(String custId) async {
     try {
       // isFollowed.value = 'N';
       BoardRepo boardRepo = BoardRepo();
       ResData resData = await boardRepo.followCancle(custId.toString());
       if (resData.code != '00') {
         Utils.alert(resData.msg.toString());
-        return;
+        return false;
       }
 
       Utils.alert('팔로우	취소되었습니다!');
@@ -234,8 +237,10 @@ class VideoListCntr extends GetxController {
         }
       });
       update();
+      return true;
     } catch (e) {
       Utils.alert('실패! 다시 시도해주세요');
+      return false;
     }
   }
 

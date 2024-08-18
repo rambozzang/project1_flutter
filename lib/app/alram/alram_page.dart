@@ -49,6 +49,7 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
   late TabController tabController;
 
   GlobalKey<ChatMainAppState> chatMainPageKey = GlobalKey();
+  ValueNotifier<bool> isAdLoading = ValueNotifier<bool>(false);
 
   @override
   void initState() {
@@ -71,7 +72,7 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
 
   Future<void> _loadAd() async {
     await AdManager().loadBannerAd('AlramPage');
-    setState(() {}); // 광고 로드 후 UI 업데이트
+    isAdLoading.value = true;
   }
 
   Future<void> getDataInit() async {
@@ -287,7 +288,13 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
         padding: const EdgeInsets.symmetric(horizontal: 12.0),
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           const Gap(10),
-          const SizedBox(width: double.infinity, child: Center(child: BannerAdWidget(screenName: 'AlramPage'))),
+
+          ValueListenableBuilder<bool>(
+              valueListenable: isAdLoading,
+              builder: (context, value, child) {
+                if (!value) return const SizedBox.shrink();
+                return const SizedBox(width: double.infinity, child: Center(child: BannerAdWidget(screenName: 'AlramPage')));
+              }),
           // 공통 스트림 빌더
           Utils.commonStreamList<AlramResData>(listCtrl, buildList, getDataInit),
           ValueListenableBuilder<bool>(

@@ -3,47 +3,43 @@ import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
+import 'package:project1/app/weather/widgets/customShimmer.dart';
 import 'package:project1/app/weathergogo/cntr/data/current_weather_data.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/weather/data/weather_view_data.dart';
+import 'package:project1/utils/utils.dart';
 
-class HeaderMainPage extends StatelessWidget {
-  const HeaderMainPage({Key? key}) : super(key: key);
+class HeaderMainPage extends GetView<WeatherGogoCntr> {
+  const HeaderMainPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return GetX<WeatherGogoCntr>(
-      builder: (cntr) {
-        final currentWeather = cntr.currentWeather.value;
-        if (currentWeather == CurrentWeatherData()) {
-          return const SizedBox(height: 1);
-        }
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildYesterdayInfo(cntr.yesterdayDesc.value),
-                    _buildTemperature(currentWeather!.temp ?? ''),
-                    const Gap(5),
-                    Text(
-                      currentWeather.description ?? '',
-                      style: lightText.copyWith(fontSize: 16),
-                    ),
-                    _buildAirQualityInfo(cntr.mistData!),
-                  ],
-                ),
+    return Obx(
+      () => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildYesterdayInfo(controller.yesterdayDesc.value),
+                  _buildTemperature(controller.currentWeather.value.temp ?? ''),
+                  const Gap(5),
+                  Text(
+                    controller.currentWeather.value.description ?? '',
+                    style: lightText.copyWith(fontSize: 16),
+                  ),
+                  _buildAirQualityInfo(controller.mistData),
+                ],
               ),
-              _buildWeatherAnimation(currentWeather),
-            ],
-          ),
-        );
-      },
+            ),
+            _buildWeatherAnimation(controller.currentWeather.value),
+          ],
+        ),
+      ),
     );
   }
 
@@ -142,7 +138,9 @@ class HeaderMainPage extends StatelessWidget {
       height: 120.0,
       width: 120.0,
       frameRate: FrameRate.max,
-      options: LottieOptions(enableMergePaths: true),
+      filterQuality: FilterQuality.high,
+      repeat: true,
+      options: LottieOptions(enableMergePaths: true, enableApplyingOpacityToLayers: true),
     );
   }
 }

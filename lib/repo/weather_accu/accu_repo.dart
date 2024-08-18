@@ -9,6 +9,7 @@ import 'package:project1/utils/log_utils.dart';
 // https://developer.accuweather.com/weather-icons
 // https://developer.accuweather.com/accuweather-current-conditions-api/apis/get/currentconditions/v1/%7BlocationKey%7D
 // 12시간 까지만 무료 => https://developer.accuweather.com/packages
+// 5일까지만 무료
 class AccuRepo {
   final apikey = '9Dpql374txlRZGgiECCDS2gGcvuqdmeT';
   final baseUrl = 'http://dataservice.accuweather.com';

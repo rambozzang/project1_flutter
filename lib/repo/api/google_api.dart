@@ -10,35 +10,36 @@ import 'package:project1/utils/log_utils.dart';
 
 class GoogleApi with SecureStorage {
   Future<ResData<String>> signInWithGoogle() async {
-    ResData<String> resData = ResData<String>();
-    resData.code = "00";
-
-    // ---------------------------------------------------------
-    // 1. Google 로그인 진행
-    // ---------------------------------------------------------
-    lo.g('UserCredential gogo');
-    final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-    lo.g('googleUser : $googleUser');
-    if (googleUser == null) {
-      resData.code = '99';
-      resData.msg = '로그인 취소';
-      return resData;
-    }
-    final GoogleSignInAuthentication googleAuth = await googleUser!.authentication;
-    lo.g('googleAuth.accessToken : ${googleAuth.accessToken}');
-
-    lo.g('googleAuth.idToken : ${googleAuth.idToken}');
-
-    final OAuthCredential credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
-    );
-    // ---------------------------------------------------------
-    // 2. firebase 회원가입,로그인 처리
-    // ---------------------------------------------------------
-    GoogleJoinData googleJoinData = GoogleJoinData();
-    late ResData? res;
     try {
+      ResData<String> resData = ResData<String>();
+      resData.code = "00";
+
+      // ---------------------------------------------------------
+      // 1. Google 로그인 진행
+      // ---------------------------------------------------------
+      lo.g('UserCredential gogo');
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      lo.g('googleUser : $googleUser');
+      if (googleUser == null) {
+        resData.code = '99';
+        resData.msg = '로그인 취소';
+        return resData;
+      }
+      final GoogleSignInAuthentication googleAuth = await googleUser!.authentication;
+      lo.g('googleAuth.accessToken : ${googleAuth.accessToken}');
+
+      lo.g('googleAuth.idToken : ${googleAuth.idToken}');
+
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      // ---------------------------------------------------------
+      // 2. firebase 회원가입,로그인 처리
+      // ---------------------------------------------------------
+      GoogleJoinData googleJoinData = GoogleJoinData();
+      late ResData? res;
+
       await FirebaseAuth.instance.signInWithCredential(credential).then((UserCredential value) {
         googleJoinData.displayName = value.user!.displayName;
         googleJoinData.email = value.user!.email;
@@ -64,6 +65,7 @@ class GoogleApi with SecureStorage {
       resData.data = googleJoinData.uid.toString();
       return resData;
     } catch (e) {
+      ResData<String> resData = ResData<String>();
       resData.code = '99';
       resData.msg = e.toString();
       return resData;
@@ -87,7 +89,7 @@ class GoogleApi with SecureStorage {
     }
   }
 
-  void logOut() async {
+  Future<void> logOut() async {
     await FirebaseAuth.instance.signOut();
   }
 }

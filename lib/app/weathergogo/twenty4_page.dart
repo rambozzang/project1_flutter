@@ -1,38 +1,78 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' as intl;
+
 import 'package:lottie/lottie.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:project1/app/weather/theme/textStyle.dart';
+import 'package:project1/app/weatherCom/models/weather_data.dart';
+import 'package:project1/app/weatherCom/weather_com_page.dart';
 import 'package:project1/app/weathergogo/cntr/data/hourly_weather_data.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:syncfusion_flutter_charts/charts.dart';
+// import 'package:syncfusion_flutter_charts/charts.dart';
 
-class Twenty4Page extends StatelessWidget {
+class Twenty4Page extends StatefulWidget {
   const Twenty4Page({super.key});
+
+  @override
+  State<Twenty4Page> createState() => _Twenty4PageState();
+}
+
+class _Twenty4PageState extends State<Twenty4Page> {
+  // 크기 관련 상수 정의
+  final double hourlyItemWidth = 60.0;
+
+  final double hourlyItemHeight = 320.0;
+  // final double hourlyItemHeight = 280.0;
+
+  final double weatherIconSize = 40.0;
+
+  final double chartHeight = 135.0;
+
+  final double chartTopPadding = 178.0;
+
+  final double circleRadius = 4.0;
+
+  final controller = Get.find<WeatherGogoCntr>();
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(color: Color(0xFF262B49)),
-      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      // padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
           _buildHeader(),
           const SizedBox(height: 10.0),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: _buildHourlyWeatherWidget(),
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Stack(
+              children: [
+                _buildHourlyWeatherWidget(),
+                Positioned(
+                    top: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.white38,
+                        size: 20,
+                      ),
+                      onPressed: () {},
+                    )),
+              ],
+            ),
           ),
           const SizedBox(height: 10.0),
           _buildScrollHint(),
-          _buildWeatherChart(context),
-          const Gap(14),
+          const SizedBox(height: 15.0),
+          // _buildWeatherChart(context),
         ],
       ),
     );
@@ -40,7 +80,7 @@ class Twenty4Page extends StatelessWidget {
 
   Widget _buildHeader() {
     return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16.0),
+      padding: EdgeInsets.symmetric(horizontal: 8.0),
       child: Row(
         children: [
           PhosphorIcon(PhosphorIconsRegular.clock, size: 24, color: Colors.white),
@@ -52,96 +92,214 @@ class Twenty4Page extends StatelessWidget {
   }
 
   Widget _buildScrollHint() {
-    return const Align(
-      alignment: Alignment.bottomRight,
-      child: Text(
-        "좌우 드래그만 가능합니다.",
-        style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w400),
-      ),
-    );
-  }
-
-  Widget _buildHourlyWeatherWidget() {
-    return GetBuilder<WeatherGogoCntr>(
-      builder: (cntr) {
-        if (cntr.hourlyWeather.isEmpty) {
-          return Center(child: Utils.progressbar(size: 5));
-        }
-        return SizedBox(
-          height: 200.0,
-          child: ListView.builder(
-            physics: const ClampingScrollPhysics(),
-            scrollDirection: Axis.horizontal,
-            itemCount: cntr.hourlyWeather.length,
-            itemBuilder: (context, index) => _buildHourlyWeatherItem(cntr, index),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildHourlyWeatherItem(WeatherGogoCntr cntr, int index) {
-    final data = cntr.hourlyWeather[index];
-    final yesterdayData = cntr.yesterdayHourlyWeather.firstWhere(
-      (element) => element.date.hour == data.date.hour,
-      orElse: () => HourlyWeatherData(temp: 0, sky: '', rain: '', date: DateTime.now()),
-    );
-
-    final tempDiff = data.temp - yesterdayData.temp;
-    final yesterDayDesc = _getYesterdayDescription(tempDiff);
-
-    return Container(
-      constraints: const BoxConstraints(minWidth: 90),
-      margin: const EdgeInsets.only(left: 4.0),
-      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 1.0),
-      decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(16.0),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
-      ),
-      child: Column(
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            index == 0 ? 'Now' : DateFormat('a hh:mm ', 'ko').format(data.date),
-            style: mediumText,
-          ),
-          const SizedBox(height: 10.0),
-          SizedBox(
-            height: 60.0,
-            width: 60.0,
-            child: Lottie.asset(
-              WeatherDataProcessor.instance.getFinalWeatherIcon(data.sky.toString(), data.rain.toString()),
-              fit: BoxFit.cover,
+          Container(
+            width: 20,
+            height: 5,
+            decoration: BoxDecoration(
+              color: getColorForSource('Today'),
             ),
           ),
-          Text('${data.temp.toStringAsFixed(1)}°', style: semiboldText),
-          if (yesterDayDesc.isNotEmpty) _buildYesterdayComparisonRow(tempDiff, yesterDayDesc),
-          const SizedBox(height: 4.0),
-          FittedBox(
-            child: Text(
-              WeatherDataProcessor.instance.combineWeatherCondition(data.sky.toString(), data.rain.toString()),
-              style: const TextStyle(fontSize: 12.0, color: Colors.white, fontWeight: FontWeight.w400),
+          const Gap(5),
+          const Text(
+            "오늘",
+            style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w400),
+          ),
+          const Gap(10),
+          Container(
+            width: 20,
+            height: 5,
+            decoration: BoxDecoration(
+              color: getColorForSource('Yesterday'),
             ),
+          ),
+          const Gap(5),
+          const Text(
+            "어제",
+            style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w400),
           ),
         ],
       ),
     );
   }
 
+  Widget _buildHourlyWeatherWidget() {
+    return Obx(
+      () {
+        return SizedBox(
+          height: hourlyItemHeight,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: Get.find<WeatherGogoCntr>().hourlyWeather.length * hourlyItemWidth,
+              child: Stack(
+                children: [
+                  _buildHourlyWeatherItems(),
+                  Positioned(
+                    top: chartTopPadding,
+                    left: 0,
+                    right: 0,
+                    child: _buildContinuousChart(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildContinuousChart() {
+    return Obx(() {
+      if (controller.hourlyWeather.isEmpty) return const SizedBox.shrink();
+      return SizedBox(
+        height: chartHeight,
+        child: CustomPaint(
+          size: Size(controller.hourlyWeather.length * hourlyItemWidth, chartHeight),
+          painter: ChartPainterHour({
+            'Yesterday': Get.find<WeatherGogoCntr>()
+                .yesterdayHourlyWeather
+                .map((e) => WeatherData(
+                      time: e.date,
+                      humidity: 0,
+                      temperature: e.temp,
+                      rainProbability: double.parse((e.rainPo ?? 0.0).toString()), // 실제 데이터로 대체 필요
+                      source: 'Yesterday',
+                    ))
+                .toList(),
+            'Today': Get.find<WeatherGogoCntr>()
+                .hourlyWeather
+                .map((e) => WeatherData(
+                      time: e.date,
+                      temperature: e.temp,
+                      humidity: 0,
+                      rainProbability: double.parse((e.rainPo ?? 0.0).toString()), // 실제 데이터로 대체 필요
+                      source: 'Today',
+                    ))
+                .toList(),
+          }, hourlyItemWidth, chartHeight, chartHeight, circleRadius),
+        ),
+      );
+    });
+  }
+
+  Widget _buildHourlyWeatherItems() {
+    return Obx(() => Row(
+          children: List.generate(
+            controller.hourlyWeather.length,
+            (index) => _buildHourlyWeatherItem(controller.hourlyWeather[index], index),
+          ),
+        ));
+  }
+
+  Widget _buildHourlyWeatherItem(HourlyWeatherData data, int index) {
+    final yesterdayData = controller.yesterdayHourlyWeather.firstWhere(
+      (element) => element.date.hour == data.date.hour && element.date.day == (data.date.subtract(const Duration(days: 1))).day,
+      orElse: () => HourlyWeatherData(temp: 99.0, sky: '', rain: '', date: DateTime.now()),
+    );
+
+    final tempDiff = data.temp - (yesterdayData.temp == 99.0 ? data.temp : yesterdayData.temp);
+    var yesterDayDesc = _getYesterdayDescription(tempDiff);
+    yesterDayDesc = yesterdayData.temp == 99.0 ? '-' : yesterDayDesc;
+
+    return Column(
+      children: [
+        data.date.hour == 0 || index == 0
+            ? SizedBox(
+                height: 23,
+                child: Text('${intl.DateFormat('dd', 'ko').format(data.date)}(${intl.DateFormat('EE', 'ko').format(data.date)})',
+                    style: const TextStyle(fontSize: 13, color: Colors.white70, fontWeight: FontWeight.bold)),
+              )
+            : const SizedBox(height: 23),
+        Container(
+          width: hourlyItemWidth,
+          padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 1.0),
+          decoration: BoxDecoration(
+            color: index % 2 == 0 ? const Color(0xFF1B263B) : Colors.transparent,
+            border: data.date.hour == 0 ? Border(left: BorderSide(color: Colors.white.withOpacity(0.5))) : null,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                intl.DateFormat('H', 'ko').format(data.date), // '${intl.DateFormat('a h', 'ko').format(data.date)}시',
+                style: const TextStyle(fontSize: 14.0, color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+
+              const SizedBox(height: 5.0),
+              SizedBox(
+                height: weatherIconSize,
+                width: weatherIconSize,
+                child: Lottie.asset(
+                  WeatherDataProcessor.instance.getFinalWeatherIcon(data.sky.toString(), data.rain.toString()),
+                  fit: BoxFit.cover,
+                ),
+              ),
+              const SizedBox(height: 4.0),
+
+              FittedBox(
+                child: Text(
+                  WeatherDataProcessor.instance.combineWeatherCondition(data.sky.toString(), data.rain.toString()),
+                  overflow: TextOverflow.clip,
+                  style: const TextStyle(fontSize: 13.0, color: Colors.white, fontWeight: FontWeight.w400),
+                ),
+              ),
+              const SizedBox(height: 4.0),
+
+              FittedBox(
+                child: data.rainPo == '99.99'
+                    ? const Text(
+                        '-',
+                        overflow: TextOverflow.clip,
+                        style: TextStyle(fontSize: 13.0, color: Color.fromARGB(255, 204, 226, 240), fontWeight: FontWeight.w400),
+                      )
+                    : Row(
+                        children: [
+                          const Icon(CupertinoIcons.umbrella_fill, size: 12, color: Color.fromARGB(255, 204, 226, 240)),
+                          const SizedBox(width: 2.0),
+                          Text(
+                            '${data.rainPo}%',
+                            overflow: TextOverflow.clip,
+                            style: const TextStyle(fontSize: 13.0, color: Color.fromARGB(255, 204, 226, 240), fontWeight: FontWeight.w400),
+                          ),
+                        ],
+                      ),
+              ),
+              const SizedBox(height: 4.0),
+
+              _buildYesterdayComparisonRow(tempDiff, yesterDayDesc),
+              const SizedBox(height: 4.0),
+              SizedBox(height: chartHeight + 5), // 차트를 위한 공간
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildYesterdayComparisonRow(double tempDiff, String yesterDayDesc) {
     final isWarmer = tempDiff > 0;
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
           yesterDayDesc,
           style: TextStyle(
-            fontSize: 12,
-            color: isWarmer ? Colors.amber : Colors.green,
+            fontSize: 13,
+            color: yesterDayDesc == '-'
+                ? Colors.white
+                : isWarmer
+                    ? Colors.amber
+                    : Colors.green,
             fontWeight: FontWeight.bold,
           ),
         ),
-        if (tempDiff != 0)
+        if (tempDiff != 0 && yesterDayDesc != '-')
           Icon(
             isWarmer ? Icons.arrow_upward : Icons.arrow_downward,
             size: 13,
@@ -152,156 +310,12 @@ class Twenty4Page extends StatelessWidget {
   }
 
   String _getYesterdayDescription(double tempDiff) {
-    if (tempDiff == 0) return '어제와 동일';
+    if (tempDiff == 0) return '-';
     final formattedDiff = tempDiff.abs().toStringAsFixed(1);
-    return tempDiff > 0 ? '어제보다 $formattedDiff°' : '어제보다 -$formattedDiff°';
+    return tempDiff > 0 ? '$formattedDiff°' : '-$formattedDiff°';
   }
 
-  Widget _buildWeatherChart(context) {
-    return GetBuilder<WeatherGogoCntr>(
-      builder: (cntr) {
-        if (cntr.hourlyWeather.isEmpty) {
-          return const SizedBox(height: 1);
-        }
-        final todayMinMax = _getMinMaxTemperature(cntr.hourlyWeather);
-        final yesterdayMinMax = cntr.yesterdayHourlyWeather.isNotEmpty
-            ? _getMinMaxTemperature(cntr.yesterdayHourlyWeather)
-            : const MinMax(min: double.infinity, max: double.negativeInfinity);
-
-        return GestureDetector(
-          onVerticalDragUpdate: (details) {
-            // 수직 드래그를 감지하여 ListView로 전달
-            if (details.delta.dy != 0) {
-              Scrollable.of(context).position.jumpTo(
-                    Scrollable.of(context).position.pixels - details.delta.dy,
-                  );
-            }
-          },
-          child: SfCartesianChart(
-            plotAreaBorderWidth: 0,
-            legend: const Legend(
-              isVisible: true,
-              position: LegendPosition.bottom,
-              textStyle: TextStyle(fontSize: 13, color: Colors.white),
-            ),
-            palette: const <Color>[Colors.red, Colors.blue],
-            primaryXAxis: _buildCategoryAxis(),
-            primaryYAxis: _buildNumericAxis(todayMinMax, yesterdayMinMax),
-            zoomPanBehavior: ZoomPanBehavior(
-              enablePanning: true,
-              enablePinching: true,
-              enableSelectionZooming: true,
-              enableMouseWheelZooming: true,
-              zoomMode: ZoomMode.x,
-            ),
-            series: _buildLineSeries(cntr),
-          ),
-        );
-      },
-    );
-  }
-
-  CategoryAxis _buildCategoryAxis() {
-    return CategoryAxis(
-      name: 'C',
-      labelStyle: const TextStyle(fontSize: 13, color: Colors.white),
-      maximumLabels: 50,
-      autoScrollingDelta: 7,
-      placeLabelsNearAxisLine: true,
-      autoScrollingMode: AutoScrollingMode.start,
-      majorGridLines: MajorGridLines(width: 0.3, color: Colors.grey.withOpacity(0.3)),
-      majorTickLines: const MajorTickLines(width: 0),
-    );
-  }
-
-  NumericAxis _buildNumericAxis(MinMax todayMinMax, MinMax yesterdayMinMax) {
-    final min = (todayMinMax.min < yesterdayMinMax.min ? todayMinMax.min : yesterdayMinMax.min) - 6;
-    final max = (todayMinMax.max > yesterdayMinMax.max ? todayMinMax.max : yesterdayMinMax.max) + 6;
-    return NumericAxis(
-      maximumLabels: 7,
-      labelStyle: const TextStyle(fontSize: 11, color: Colors.white),
-      minimum: min,
-      maximum: max,
-      majorGridLines: const MajorGridLines(width: 0),
-    );
-  }
-
-  List<LineSeries<HourlyWeatherData, String>> _buildLineSeries(WeatherGogoCntr cntr) {
-    final series = <LineSeries<HourlyWeatherData, String>>[
-      _buildTodayLineSeries(cntr.hourlyWeather),
-    ];
-    if (cntr.yesterdayHourlyWeather.isNotEmpty) {
-      series.add(_buildYesterdayLineSeries(cntr.yesterdayHourlyWeather));
-    }
-    return series;
-  }
-
-  LineSeries<HourlyWeatherData, String> _buildTodayLineSeries(List<HourlyWeatherData> data) {
-    return LineSeries<HourlyWeatherData, String>(
-      key: const ValueKey('TODAY'),
-      name: '오늘',
-      dataSource: data,
-      xValueMapper: (HourlyWeatherData weather, _) => '${weather.date.hour}시',
-      yValueMapper: (HourlyWeatherData weather, _) => weather.temp,
-      dataLabelSettings: DataLabelSettings(
-        isVisible: true,
-        labelIntersectAction: LabelIntersectAction.none,
-        overflowMode: OverflowMode.hide,
-        labelPosition: ChartDataLabelPosition.outside,
-        labelAlignment: ChartDataLabelAlignment.top,
-        connectorLineSettings: const ConnectorLineSettings(
-          type: ConnectorType.curve,
-          color: Colors.red,
-          width: 2,
-        ),
-        builder: (dynamic data, dynamic point, dynamic series, int pointIndex, int seriesIndex) {
-          return SizedBox(
-            height: 65,
-            width: 40,
-            child: Column(
-              children: [
-                Lottie.asset(
-                  WeatherDataProcessor.instance.getWeatherGogoImage(data.sky, data.rain),
-                  fit: BoxFit.cover,
-                ),
-                Text('${data.temp.toStringAsFixed(0)}°', style: const TextStyle(fontSize: 12, color: Colors.white)),
-              ],
-            ),
-          );
-        },
-      ),
-      width: 4.5,
-      color: Colors.blue,
-      markerSettings: const MarkerSettings(isVisible: true),
-    );
-  }
-
-  LineSeries<HourlyWeatherData, String> _buildYesterdayLineSeries(List<HourlyWeatherData> data) {
-    return LineSeries<HourlyWeatherData, String>(
-      key: const ValueKey('yesterday'),
-      name: '어제',
-      dataSource: data,
-      xValueMapper: (HourlyWeatherData weather, _) => '${weather.date.hour}시',
-      yValueMapper: (HourlyWeatherData weather, _) => weather.temp,
-      dataLabelSettings: DataLabelSettings(
-        isVisible: true,
-        builder: (dynamic weather, dynamic point, dynamic series, int pointIndex, int seriesIndex) {
-          return SizedBox(
-            height: 20,
-            width: 30,
-            child: Text(
-              '${weather.temp.toStringAsFixed(1)}°',
-              style: TextStyle(fontSize: 12, color: Colors.amber),
-            ),
-          );
-        },
-      ),
-      width: 2,
-      color: Colors.amber,
-      markerSettings: const MarkerSettings(isVisible: true),
-    );
-  }
-
+  // Widget _buildWeatherChart(context) {
   MinMax _getMinMaxTemperature(List<HourlyWeatherData> data) {
     final temperatures = data.map((e) => e.temp).toList();
     return MinMax(
@@ -315,4 +329,105 @@ class MinMax {
   final double min;
   final double max;
   const MinMax({required this.min, required this.max});
+}
+
+class ChartPainterHour extends CustomPainter {
+  final Map<String, List<WeatherData>> weatherData;
+  final double cellWidth;
+  final double cellHeight;
+  final double chartHeight;
+  final double circleRadius;
+
+  ChartPainterHour(this.weatherData, this.cellWidth, this.cellHeight, this.chartHeight, this.circleRadius);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final double chartTopPadding = cellHeight * 0.15;
+    final double chartBottomPadding = cellHeight * 0.15;
+
+    double minTemp = double.infinity;
+    double maxTemp = double.negativeInfinity;
+
+    for (var dataList in weatherData.values) {
+      for (var data in dataList) {
+        if (data.temperature < minTemp) minTemp = data.temperature;
+        if (data.temperature > maxTemp) maxTemp = data.temperature;
+      }
+    }
+
+    // 온도 범위를 더 넓게 만듭니다.
+    final tempRange = maxTemp - minTemp;
+    minTemp -= tempRange * 0.01;
+    maxTemp += tempRange * 0.01;
+
+    weatherData.forEach((source, dataList) {
+      final paint = Paint()
+        ..color = getColorForSource(source)
+        ..strokeWidth = source == 'Today' ? 5 : 2
+        ..style = PaintingStyle.stroke;
+
+      final path = Path();
+      bool isFirstPoint = true;
+
+      for (int i = 0; i < dataList.length; i++) {
+        final data = dataList[i];
+        final double x = i * cellWidth + cellWidth / 2;
+        final double normalizedTemp = (data.temperature - minTemp) / (maxTemp - minTemp);
+        final double y = chartTopPadding + (1 - normalizedTemp) * (chartHeight - chartTopPadding - chartBottomPadding);
+
+        if (isFirstPoint) {
+          path.moveTo(x, y);
+          isFirstPoint = false;
+        } else {
+          path.lineTo(x, y);
+        }
+      }
+
+      canvas.drawPath(path, paint);
+      for (int i = 0; i < dataList.length; i++) {
+        final data = dataList[i];
+        final double x = i * cellWidth + cellWidth / 2;
+        final double normalizedTemp = (data.temperature - minTemp) / (maxTemp - minTemp);
+        final double y = chartTopPadding + (1 - normalizedTemp) * (chartHeight - chartTopPadding - chartBottomPadding);
+
+        // 원 그리기 부분만 수정
+        canvas.drawCircle(
+          Offset(x, y),
+          source == 'Today' ? circleRadius : circleRadius - 1,
+          Paint()..color = Colors.white,
+        );
+        // 온도를 원 아래에 표시
+        final textSpan = TextSpan(
+          text: '${data.temperature.toStringAsFixed(1)}°',
+          style: TextStyle(
+            color: data.source == 'Today' ? Colors.black : Colors.white, // 텍스트 색상을 검정색으로 변경
+            fontSize: data.source == 'Today' ? 13 : 12,
+            fontWeight: FontWeight.bold,
+          ),
+        );
+        final textPainter = TextPainter(
+          text: textSpan,
+          textDirection: TextDirection.ltr,
+        );
+        textPainter.layout();
+
+        // 텍스트가 차트 영역을 벗어나지 않도록 위치 조정
+        double textX = x - textPainter.width / 2;
+        double textY = y + (data.source == 'Today' ? -30 : 10);
+
+        if (textY + textPainter.height > size.height) {
+          textY = y - textPainter.height - (data.source == 'Today' ? -30 : 10); // 원 위에 표시
+        }
+
+        // 텍스트 배경 그리기
+        final bgRect = Rect.fromLTWH(textX - 2, textY - 2, textPainter.width + 4, textPainter.height + 4);
+        canvas.drawRect(bgRect, Paint()..color = data.source == 'Today' ? Colors.white.withOpacity(0.85) : Colors.transparent);
+
+        textPainter.paint(canvas, Offset(textX, textY));
+      }
+    });
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

@@ -8,11 +8,12 @@ import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
-import 'package:flutter_gemini/flutter_gemini.dart';
+// import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:mime/mime.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
@@ -47,7 +48,7 @@ class _ChatPageState extends State<ChatPage> {
 
   bool _isFirst = true;
 
-  final gemini = Gemini.instance;
+  // final gemini = Gemini.instance;
   final TextEditingController _textController = TextEditingController();
   final ValueNotifier<String> geminiText = ValueNotifier<String>('');
   final ValueNotifier<bool> isGeminiAi = ValueNotifier<bool>(true);
@@ -66,10 +67,11 @@ class _ChatPageState extends State<ChatPage> {
     for (var user in room.users) {
       lo.g("user.id : ${user.id}");
       if (user.id != AuthCntr.to.resLoginData.value.chatId) {
-        lo.g("user.id : ${user.id}");
         AuthCntr.to.currentChatId = user.id;
         otherChatId = user.id;
-        otherCustId = user.metadata!['custId'];
+        otherCustId = user?.metadata?['custId'] ?? '';
+        lo.g("otherChatId.id : ${user.id}");
+        lo.g("otherCustId.id : ${otherCustId}");
         checkBlock(otherCustId!);
       }
     }
@@ -80,11 +82,14 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> checkBlock(String otherCustId) async {
+    if (otherCustId == '' || otherCustId == null) return;
     try {
       CustRepo repo = CustRepo();
       ResData res = await repo.checkBlock(otherCustId);
       isBlocked = res.data;
-      Utils.alert(isBlocked ? '이 사용자는 차단되어 있습니다.' : '차단 해제 되었습니다.');
+      if (isBlocked) {
+        Utils.alert('이 사용자는 차단되어 있습니다.');
+      }
     } catch (e) {
       lo.g('checkBlock 오류: $e');
     }
@@ -266,6 +271,10 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _handleSendPressed(types.PartialText message) async {
+    if (isBlocked) {
+      Utils.alert('차단된 사용자입니다.');
+      return;
+    }
     bool result = await SupabaseChatCore.instance.sendMessage(
       message,
       room.id,
@@ -277,7 +286,7 @@ class _ChatPageState extends State<ChatPage> {
       // if (_isFirst) {
       room.users.forEach((element) {
         if (element.id != SupabaseChatCore.instance.supabaseUser!.id) {
-          String custId = element.metadata!['custId'];
+          String custId = element.metadata!['custId'] ?? '';
           if (custId != '') {
             AlramRepo alramRepo = AlramRepo();
             ChatReqData data = ChatReqData();
@@ -396,27 +405,10 @@ class _ChatPageState extends State<ChatPage> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Center(child: Utils.progressbar());
               }
-
               if (!snapshot.hasData) {
                 return Center(child: Utils.progressbar());
               }
-
-              // geminiChat(snapshot.data ?? []);
-
-              // if (snapshot.data!.isEmpty) {
-              //   return Container(
-              //     alignment: Alignment.center,
-              //     margin: const EdgeInsets.only(
-              //       bottom: 200,
-              //     ),
-              //     child: const Text(
-              //       '메세지 내용이 없습니다.',
-              //       style: TextStyle(color: Colors.white),
-              //     ),
-              //   );
-              // }
               messageList = snapshot.data ?? [];
-
               return Chat(
                 scrollPhysics: const BouncingScrollPhysics(),
                 theme: const DefaultChatTheme(
@@ -455,13 +447,33 @@ class _ChatPageState extends State<ChatPage> {
                     fontSize: 15,
                   ),
                 ),
-
                 dateFormat: DateFormat('yyyy/MM/dd'),
                 timeFormat: DateFormat('HH:mm'),
-
                 messageWidthRatio: 0.8,
                 showUserNames: false,
                 showUserAvatars: true,
+                emptyState: const Center(
+                  child: Column(
+                    children: [
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          '💥음란대화는 법적조치가 들어갑니다.',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                      Spacer(),
+                      Text(
+                        '이제 대화를 시작해보세요.',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      Spacer(),
+                      const SizedBox(
+                        height: 1,
+                      )
+                    ],
+                  ),
+                ),
                 avatarBuilder: (author) => Padding(
                   padding: const EdgeInsets.only(right: 10.0),
                   child: CircleAvatar(
@@ -473,8 +485,7 @@ class _ChatPageState extends State<ChatPage> {
                 ),
                 isAttachmentUploading: _isAttachmentUploading,
                 messages: snapshot.data ?? [],
-
-                //  customBottomWidget: customTextinputWidget(),
+                // customBottomWidget: customTextinputWidget(),
                 onAttachmentPressed: _handleAttachmentPressed,
                 onMessageTap: _handleMessageTap,
                 onPreviewDataFetched: _handlePreviewDataFetched,

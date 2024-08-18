@@ -8,7 +8,6 @@ import 'package:material_floating_search_bar_2/material_floating_search_bar_2.da
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:project1/app/weather/models/geocode.dart';
 import 'package:project1/app/weather/theme/colors.dart';
-import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/repo/kakao/kakao_repo.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 
@@ -65,7 +64,7 @@ class _MapSearchPageState extends State<MapSearchPage> {
       hint: '통합 검색...',
       clearQueryOnClose: false,
       scrollPadding: const EdgeInsets.only(top: 3.0, bottom: 56.0, left: 2.0, right: 2.0),
-      margins: const EdgeInsets.only(left: 12.0, right: 12, top: kToolbarHeight, bottom: 0),
+      margins: EdgeInsets.only(left: 12.0, right: 12, top: MediaQuery.of(context).padding.top, bottom: 0),
       transitionDuration: const Duration(milliseconds: 300),
       borderRadius: BorderRadius.circular(14.0),
       transitionCurve: Curves.easeInOut,
@@ -74,16 +73,20 @@ class _MapSearchPageState extends State<MapSearchPage> {
       queryStyle: const TextStyle(color: Colors.black, decorationThickness: 0), //regularText,
       physics: const BouncingScrollPhysics(),
       elevation: 2.0,
-      implicitDuration: const Duration(milliseconds: 10),
-      debounceDelay: const Duration(milliseconds: 300),
+      implicitDuration: const Duration(milliseconds: 100),
+      debounceDelay: const Duration(milliseconds: 200),
       leadingActions: [
         FloatingSearchBarAction.icon(
           showIfClosed: true,
           showIfOpened: false,
-          icon: const PhosphorIcon(
-            PhosphorIconsBold.arrowLeft,
-            color: primaryBlue,
+          icon: const Icon(
+            Icons.arrow_back_ios,
+            color: Colors.black,
           ),
+          // icon: const PhosphorIcon(
+          //   PhosphorIconsBold.arrowLeft,
+          //   color: primaryBlue,
+          // ),
           onTap: () {
             Get.back();
           },
@@ -110,7 +113,7 @@ class _MapSearchPageState extends State<MapSearchPage> {
           showIfOpened: false,
           child: PhosphorIcon(
             PhosphorIconsBold.magnifyingGlass,
-            color: primaryBlue,
+            color: Colors.black,
           ),
         ),
         FloatingSearchBarAction.icon(

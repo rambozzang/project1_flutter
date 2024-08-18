@@ -3,10 +3,14 @@ description: "SkySnap Flutter project."
 
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.0+1
+version: 1.0.0+6
 
 environment:
   sdk: ">=3.3.0-99.1.beta <4.0.0"
+
+dependency_overrides:
+  video_player_android:
+    path: /Users/bumkyuchun/work/app/flutter_plugins/packages/video_player/video_player_android
 
 dependencies:
   flutter:
@@ -20,8 +24,7 @@ dependencies:
   firebase_auth: ^5.1.0
   firebase_core: ^3.1.0
   google_sign_in: ^6.2.1
-  firebase_messaging: ^15.0.1
- 
+  firebase_messaging: ^15.0.1 
   flutter_secure_storage: ^9.0.0
   flutter_spinkit: ^5.2.0
   gap: ^3.0.1
@@ -31,33 +34,24 @@ dependencies:
   uuid: ^4.3.3
   kakao_flutter_sdk: ^1.9.0
   flutter_naver_login: ^1.8.0
-  #flutter_animate: ^4.5.0
-  
-  flutter_local_notifications: ^17.1.2
+  #flutter_animate: ^4.5.0  
+  flutter_local_notifications: ^17.2.1+2
   # flutter_onboarding_slider: ^1.0.11
-  permission_handler: ^11.3.0
-  
+  permission_handler: ^11.3.0  
   # 동영상촬영 패키지
   # camera: ^0.11.0
   camera: ^0.11.0+1
   flutter_bloc: ^8.1.4
   equatable: ^2.0.5
-  video_player: ^2.8.7
-
-
-  visibility_detector: ^0.4.0+2
-  
+  video_player: ^2.9.1
+  visibility_detector: ^0.4.0+2  
   preload_page_view: ^0.2.0
-
   flutter_cache_manager: ^3.3.2
   dio_cache_interceptor: ^3.5.0
-  dio_cache_interceptor_hive_store: ^3.2.2
-
-  
+  dio_cache_interceptor_hive_store: ^3.2.2  
   geolocator: ^12.0.0
   flutter_svg: ^2.0.10+1
   text_scroll: ^0.2.0  
-
   video_compress: ^3.1.2
   hashtagable_v3: ^3.0.1
   # comment_sheet: ^0.0.1
@@ -69,7 +63,7 @@ dependencies:
   # extended_image: ^8.2.0
   intl: ^0.19.0
   # badges: ^3.1.2
-
+  path_provider: ^2.1.4
   # image_editor: ^1.4.0
   # image: ^4.1.7
   image_cropper: ^7.0.5
@@ -78,19 +72,20 @@ dependencies:
   # photo_view: ^0.15.0
   # simple_progress_indicators: ^0.2.0
   image_picker: ^1.0.7
-  babstrap_settings_screen: ^0.1.6  
   # chips_choice: ^3.0.1
   rxdart: ^0.27.7
   share_plus: ^9.0.0
   flutter_staggered_grid_view: ^0.7.0
   cloudflare: ^3.2.1+1
   # flutter_naver_map: ^1.2.2
-  flutter_naver_map: ^1.2.2+flutter3.22
+  flutter_naver_map: ^1.2.3+1
   latlong2: ^0.9.1
   xml2json: ^6.2.3
   http: ^1.2.1
   lottie: ^3.1.2
-
+  percent_indicator: ^4.2.3
+  animate_icons: ^2.0.0
+  hive: ^2.2.3
  
   # font_awesome_flutter: ^10.7.0
   aws_s3_upload_lite: ^0.0.8
@@ -107,7 +102,7 @@ dependencies:
   # simple_animations: ^5.0.0+3
   supercharged: ^2.1.1
   #fl_chart: ^0.68.0
-  syncfusion_flutter_charts: ^26.1.39
+  # syncfusion_flutter_charts: ^26.1.39
   syncfusion_flutter_gauges: ^26.1.39
   #cached_video_player_plus: ^3.0.1
   # google_mobile_ads: ^5.1.0
@@ -131,14 +126,22 @@ dependencies:
   syncfusion_flutter_datagrid: ^26.1.40
   giffy_dialog: ^2.1.0
   app_version_update: ^5.0.1
-  flutter_gemini: ^2.0.4
+  # flutter_gemini: ^2.0.4
   flutter_dotenv: ^5.1.0
   flutter_markdown: ^0.7.3
-  syncfusion_flutter_sliders: ^26.1.41
+  # syncfusion_flutter_sliders: ^26.1.41
   sign_in_with_apple: ^6.1.1
-  fl_chart: ^0.68.0
   
- 
+  # chewie: ^1.8.3
+  # native_video_player: ^1.3.1 
+  video_player_android:
+    path: /Users/bumkyuchun/work/app/flutter_plugins/packages/video_player/video_player_android
+  # media_kit: ^1.1.10+1
+  # media_kit_video: ^1.2.4
+  # media_kit_libs_video: ^1.0.4 
+
+
+
   # better_player:
   #   git:
   #     url: 'https://github.com/Widnano/betterplayer.git'

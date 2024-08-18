@@ -4,8 +4,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:project1/repo/api/auth_dio.dart';
+import 'package:project1/repo/weather_gogo/sources/http_client.dart';
 import 'package:project1/utils/log_utils.dart';
-
+import 'dart:convert' as con;
 import '../adapter/adapter.dart';
 import '../models/models.dart';
 import 'package:http/http.dart' as http;
@@ -13,6 +14,8 @@ import 'package:http/http.dart' as http;
 class NctAPI {
   // late Dio  AuthDio.instance.getNoAuthCathDio();
   final _date = DateTimeAdapter();
+
+  final HttpService _httpService = HttpService();
 
   //
 
@@ -24,7 +27,9 @@ class NctAPI {
   //    AuthDio.instance.getNoAuthCathDio() = await  AuthDio.instance.getNoAuthCathDio();
   // }
 
-  static const _getURL = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst';
+  static const _baseURL = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0';
+
+  static const _getURL = '$_baseURL/getUltraSrtNcst';
 
   // 초단기 실황 과거 24시간 내정보
   // Future<List<dynamic>> getYesterDayJsonData(Weather weather, bool isChache) async {
@@ -77,20 +82,28 @@ class NctAPI {
   //   return resultList;
   // }
   Future<List<dynamic>> getYesterDayJsonData(Weather weather, bool isCache) async {
-    final dio =
-        isCache ? await AuthDio.instance.getNoAuthCathDio(debug: true, cachehour: 1) : await AuthDio.instance.getNoAuthDio(debug: true);
-
     final now = DateTime.now();
     final startTime = now.minute <= 40 ? now.subtract(const Duration(hours: 24)) : now.subtract(const Duration(hours: 23));
 
     List<Future<List<dynamic>>> futures = [];
 
-    for (int i = 0; i < 24; i++) {
-      futures.add(_fetchData(dio, startTime.add(Duration(hours: i)), weather));
-    }
-
     try {
+      final stopwatch = Stopwatch()..start();
+      lo.g('===================== getYesterDayJsonData start ');
+
+      for (int i = 0; i < 24; i++) {
+        futures.add(_fetchData(startTime.add(Duration(hours: i)), weather));
+      }
       List<List<dynamic>> results = await Future.wait(futures);
+
+      // results 가 24개의 리스트가 아니면 나머지를 다시 요청해서 24개로 만든다.
+      if (results.length <= 22) {
+        results = await _fillMissingData(results, startTime, weather);
+      }
+      if (results.length <= 22) {
+        results = await _fillMissingData(results, startTime, weather);
+      }
+      lo.g('===================== getYesterDayJsonData end  ${stopwatch.elapsedMilliseconds}ms , list : ${results.length}');
       return results.expand((x) => x).toList();
     } catch (e) {
       lo.g('어제 날씨 가져오기 실패!!!!!!!!');
@@ -99,25 +112,70 @@ class NctAPI {
     }
   }
 
-  Future<List<dynamic>> _fetchData(Dio dio, DateTime dateTime, Weather weather) async {
-    String baseDate = DateFormat('yyyyMMdd').format(dateTime);
-    String baseTime = DateFormat('HHmm').format(dateTime);
-
-    var json = weather.copyWith(dateTime: dateTime).toJson();
-    // json['base_date'] = baseDate;
-    // json['base_time'] = baseTime;
-
-    try {
-      final response = await dio.get(_getURL, queryParameters: json);
-
-      if (response.statusCode == 200 || response.statusCode == 304) {
-        Map<String, dynamic> data = response.data;
-        if (data['response']['header']['resultCode'] == '00') {
-          return data['response']['body']['items']['item'];
-        }
+  Future<List<List<dynamic>>> _fillMissingData(List<List<dynamic>> results, DateTime startTime, Weather weather) async {
+    List<Future<List<dynamic>>> futures = [];
+    for (int i = 0; i < 25; i++) {
+      if (results.where((element) => element.isNotEmpty).length >= 24) {
+        break;
       }
+      if (results[i].isEmpty) {
+        lo.g('getYesterDayJsonData() -> 추가 호출 () : ${startTime.add(Duration(hours: i))}');
+        futures.add(_fetchData(startTime.add(Duration(hours: i)), weather));
+      }
+    }
+    List<List<dynamic>> additionalResults = await Future.wait(futures);
+    results.addAll(additionalResults);
+    return results;
+  }
+
+  Future<List<dynamic>> _fetchData(DateTime dateTime, Weather weather) async {
+    // weather 객체를 JSON으로 변환
+    Map<String, dynamic> weatherJson = weather.copyWith(dateTime: dateTime).toJson();
+    // 모든 값을 문자열로 변환
+    Map<String, String> queryParams = weatherJson.map((key, value) => MapEntry(key, value.toString()));
+    final uri = Uri.parse(_getURL).replace(queryParameters: queryParams);
+    // lo.g('getYesterDayJsonData() -> ${uri.toString()} ');
+    try {
+      var response = await _httpService.getWithRetry(uri);
+      if (response is String) {
+        response = json.decode(response);
+      }
+
+      if (response is Map<String, dynamic>) {
+        if (response['response']['header']['resultCode'] == '00') {
+          return response['response']['body']['items']['item'];
+        } else {
+          return [];
+          // throw Exception('API 응답 코드 오류: ${response['response']['header']['resultCode']}');
+        }
+      } else {
+        throw Exception('예상치 못한 응답 형식');
+      }
+
+      // final response = await http.get(uri);
+
+      // if (response.statusCode == 200 ) {
+      //   Map<String, dynamic> data = con.json.decode(response.body);
+      //   if (data['response']['header']['resultCode'] == '00') {
+      //     return data['response']['body']['items']['item'];
+      //   }
+      // }
+
+      // final response = await dio.get(_getURL, queryParameters: json);
+      // lo.g('response : ${response.data}');
+      // if (response.statusCode == 200 || response.statusCode == 304) {
+      //   Map<String, dynamic> data = response.data;
+      //   if (data['response']['header']['resultCode'] == '00') {
+      //     return data['response']['body']['items']['item'];
+      //   }
+      // }
+      // return [];
     } catch (e) {
-      lo.g('Error fetching data for $baseDate $baseTime: ${e.toString()}');
+      lo.g('getYesterDayJsonData() -> Error fetching data for ${e.toString()} ${uri.toString()}');
+      // Future.delayed(const Duration(milliseconds: 200), () {
+      _fetchData(dateTime, weather);
+      //   return;
+      // });
     }
     return [];
   }
@@ -137,7 +195,7 @@ class NctAPI {
   }
 
   /// 초단기실황정보 Json Data
-  Future getJsonData(Weather weather) async {
+  Future getJsonDataDio(Weather weather) async {
     late Response response;
     final dio = await AuthDio.instance.getNoAuthDio(debug: true);
 
@@ -153,6 +211,36 @@ class NctAPI {
     }
 
     return response.data;
+  }
+
+  /// 초단기실황정보 Json Data
+  Future getJsonData(Weather weather) async {
+    late http.Response response;
+    late Uri uri;
+
+    try {
+      final nowDate = _date.getSuperNctDate(weather.date);
+
+      // weather 객체를 JSON으로 변환
+      Map<String, dynamic> weatherJson = weather.copyWith(dateTime: nowDate).toJson();
+      // 모든 값을 문자열로 변환
+      Map<String, String> queryParams = weatherJson.map((key, value) => MapEntry(key, value.toString()));
+
+      uri = Uri.parse(_getURL).replace(queryParameters: queryParams);
+      lo.g('uri :$uri');
+      // response = await dio.get(
+      //   _getURL,
+      //   queryParameters: weather.copyWith(dateTime: nowDate).toJson(),
+      // );
+
+      response = await http.get(uri);
+      return json.decode(response.body);
+    } on DioException catch (e) {
+      debugPrint(e.toString());
+      lo.g('NctAPI() -> Error fetching data for ${e.toString()} ${uri.toString()}');
+
+      throw Exception('Request failed: ${e.toString()}');
+    }
   }
 
   /// 초단기실황정보 XML Data

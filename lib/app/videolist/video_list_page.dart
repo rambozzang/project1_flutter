@@ -4,23 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:project1/admob/ad_manager.dart';
-import 'package:project1/admob/full_width_banner_ad.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/videolist/Video_screen_page.dart';
 import 'package:project1/app/camera/page/camera_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/camera/utils/permission_utils.dart';
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
-import 'package:project1/app/videolist/video_screen2_page.dart';
+import 'package:project1/app/videolist/video_screen3_page.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
-import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:text_scroll/text_scroll.dart';
 
@@ -40,10 +36,8 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
 
   GlobalKey<ScaffoldState> scaffoldkey = GlobalKey<ScaffoldState>();
   AdManager adManager = AdManager();
-  static const int AD_FREQUENCY = 5; // 광고가 나타날 빈도 (비디오 개수)
-  static const String AD_UNIT_NAME = 'VideoPage';
+  // static const String AD_UNIT_NAME = 'VideoPage';
 
-  int _interstitialCounter = 0;
   ValueNotifier<bool> _showInterstitial = ValueNotifier<bool>(false);
 
   @override
@@ -58,10 +52,10 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
     });
   }
 
-  Future<void> initBannerAd() async {
-    await adManager.loadBannerAd(AD_UNIT_NAME);
-    await adManager.loadInterstitialAd();
-  }
+  // Future<void> initBannerAd() async {
+  //   await adManager.loadBannerAd(AD_UNIT_NAME);
+  //   await adManager.loadInterstitialAd();
+  // }
 
   // 동영상 녹화 페이지로 이동
   void goRecord() {
@@ -82,7 +76,7 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
   void dispose() {
     _controller.dispose();
     scrollController.dispose();
-    AdManager().disposeBannerAd('VideoPage');
+    // AdManager().disposeBannerAd('VideoPage');
     super.dispose();
   }
 
@@ -92,14 +86,15 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
       child: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: ExactAssetImage(
-              'assets/images/2.jpg',
-            ),
+            image: AssetImage('assets/images/2.jpg'),
+            // image: ExactAssetImage(
+            //   'assets/images/2.jpg',
+            // ),
             fit: BoxFit.cover,
           ),
         ),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 40.0, sigmaY: 45.0),
+          filter: ImageFilter.blur(sigmaX: 35.0, sigmaY: 45.0),
           child: const Center(child: Text(" ", style: TextStyle(color: Colors.white, fontSize: 9))),
         ),
       ),
@@ -129,24 +124,34 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
             ),
             buildLocalName(),
             buildButton(),
-            // 상단 현재 온도
-            // buildTemp(),
-            // 미세먼지
-            //buildMist(),
-            // buildRecodeBtn(),
-            // Join 버튼
-            //  buildJoinButton(),
             // 검색하기
             buildSeachBtn(),
-            // 캐쉬 삭제하기
-            // buildEmptyCacheBtn(),
-            //
-            //    buildRefreshBtn(),
-            // 스크롤 Mounted 정보
-            //   buildScrollInfo(),
           ],
         ),
       ),
+    );
+  }
+
+  // 동영상 리스트
+  Widget buildVideoBody(List<BoardWeatherListData> data) {
+    return GetBuilder<VideoListCntr>(
+      builder: (cntr) {
+        return PreloadPageView.builder(
+          key: const PageStorageKey("tigerBkPageView"),
+          controller: _controller,
+          preloadPagesCount: cntr.preLoadingCount, // 7 이 이상적임
+          scrollDirection: Axis.vertical,
+          itemCount: data.length,
+          physics: const CustomPhysics(),
+          onPageChanged: (int inx) {
+            cntr.getMoreData(inx, data.length);
+          },
+          itemBuilder: (context, videoIndex) {
+            PageStorageKey key = PageStorageKey('key_$videoIndex');
+            return VideoScreenPage(key: key, index: videoIndex, data: data[videoIndex]);
+          },
+        );
+      },
     );
   }
 
@@ -178,39 +183,6 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
     );
   }
 
-  // 동영상 리스트
-  Widget buildVideoBody(List<BoardWeatherListData> data) {
-    return GetBuilder<VideoListCntr>(
-      builder: (cntr) {
-        return PreloadPageView.builder(
-          key: const PageStorageKey("tigerBkPageView"),
-          controller: _controller,
-          preloadPagesCount: cntr.preLoadingCount, // 7 이 이상적임
-          scrollDirection: Axis.vertical,
-          itemCount: data.length,
-          physics: const CustomPhysics(),
-          onPageChanged: (int position) {
-            cntr.currentIndex.value = position;
-            cntr.getMoreData(position, data.length);
-          },
-          itemBuilder: (context, videoIndex) {
-            return VideoScreenPage2(index: videoIndex, data: data[videoIndex]);
-          },
-        );
-      },
-    );
-  }
-
-  int calculateItemCount(int dataLength) {
-    // 광고를 포함한 전체 아이템 수 계산
-    return dataLength + (dataLength / AD_FREQUENCY).floor();
-  }
-
-  int calculateActualIndex(int position) {
-    // 실제 데이터 배열의 인덱스 계산
-    return position - (position / (AD_FREQUENCY + 1)).floor();
-  }
-
   // 상단 버튼
   Widget buildButton() {
     return ValueListenableBuilder(
@@ -221,8 +193,8 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
           return AnimatedPositioned(
             duration: const Duration(milliseconds: 1200),
             curve: Curves.fastOutSlowIn,
-            top: MediaQuery.of(context).padding.top + 34,
-            left: value ? 4 : -200,
+            top: MediaQuery.of(context).padding.top + 10,
+            left: value ? 6 : -400,
             child: Obx(() => Row(
                   children: [
                     TextButton(
@@ -247,7 +219,7 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
                     TextButton(
                       style: TextButton.styleFrom(
                         backgroundColor: Get.find<VideoListCntr>().searchType.value == 'DIST' ? Colors.white54 : Colors.white30,
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
                         minimumSize: const Size(50, 28),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         shape: RoundedRectangleBorder(
@@ -255,7 +227,7 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
                         ),
                       ),
                       child: const Text(
-                        '거리',
+                        '위치기반',
                         style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                       ),
                       onPressed: () async {
@@ -308,17 +280,17 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
 
   // 상단 동네 이름
   Widget buildLocalName() {
+    final controller = Get.find<WeatherGogoCntr>();
     return Positioned(
-        top: MediaQuery.of(context).padding.top,
-        left: 3,
-        child: GetBuilder<WeatherGogoCntr>(
-          builder: (weatherCntr) {
-            if (weatherCntr.isLoading.value == true) {
+        top: MediaQuery.of(context).padding.top + 47,
+        left: 6,
+        child: Obx(
+          () {
+            if (controller.isLoading.value == true) {
               return const SizedBox.shrink();
             }
-            String weathDesc = WeatherDataProcessor.instance.combineWeatherCondition(
-                weatherCntr.currentWeather.value!.sky.toString(), weatherCntr.currentWeather.value!.rain.toString());
-
+            String weathDesc = WeatherDataProcessor.instance
+                .combineWeatherCondition(controller.currentWeather.value.sky.toString(), controller.currentWeather.value.rain.toString());
             return Container(
               width: 250,
               padding: const EdgeInsets.all(2),
@@ -340,7 +312,7 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
                   SizedBox(
                     width: 210,
                     child: TextScroll(
-                      '${weatherCntr.currentLocation.value!.name} ${weatherCntr.currentWeather.value!.temp ?? 0}° ${(weathDesc.isEmpty || weathDesc == 'null') ? '' : weathDesc}',
+                      '${controller.currentLocation.value!.name} ${controller.currentWeather.value.temp ?? 0}° ${(weathDesc.isEmpty || weathDesc == 'null' || weathDesc == null) ? '' : weathDesc}',
                       mode: TextScrollMode.endless,
                       numberOfReps: 20000,
                       // fadedBorder: true,
@@ -356,7 +328,54 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
               ),
             );
           },
-        ));
+        )
+        // child: GetBuilder<WeatherGogoCntr>(
+        //   builder: (weatherCntr) {
+        //     if (weatherCntr.isLoading.value == true) {
+        //       return const SizedBox.shrink();
+        //     }
+        //     String weathDesc = WeatherDataProcessor.instance
+        //         .combineWeatherCondition(weatherCntr.currentWeather.sky.toString(), weatherCntr.currentWeather.rain.toString());
+
+        //     return Container(
+        //       width: 250,
+        //       padding: const EdgeInsets.all(2),
+        //       decoration: BoxDecoration(
+        //         color: Colors.grey.withOpacity(0.2),
+        //         borderRadius: BorderRadius.circular(5),
+        //       ),
+        //       child: Row(
+        //         children: [
+        //           Container(
+        //               width: 22,
+        //               padding: const EdgeInsets.all(3),
+        //               decoration: BoxDecoration(
+        //                 color: Colors.green.withOpacity(0.9),
+        //                 borderRadius: BorderRadius.circular(5),
+        //               ),
+        //               child: const Icon(Icons.location_on, color: Colors.white, size: 15)),
+        //           const Gap(6),
+        //           SizedBox(
+        //             width: 210,
+        //             child: TextScroll(
+        //               '${weatherCntr.currentLocation.value!.name} ${weatherCntr.currentWeather.temp ?? 0}° ${(weathDesc.isEmpty || weathDesc == 'null' || weathDesc == null) ? '' : weathDesc}',
+        //               mode: TextScrollMode.endless,
+        //               numberOfReps: 20000,
+        //               // fadedBorder: true,
+        //               delayBefore: const Duration(milliseconds: 4000),
+        //               pauseBetween: const Duration(milliseconds: 2000),
+        //               velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
+        //               style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w500),
+        //               textAlign: TextAlign.right,
+        //               selectable: true,
+        //             ),
+        //           ),
+        //         ],
+        //       ),
+        //     );
+        //   },
+        // ),
+        );
   }
 
   // 상단 검색 하기
@@ -379,7 +398,7 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
     return Obx(() => Positioned(
           top: MediaQuery.of(context).padding.top + 42,
           right: 0,
-          child: Get.find<WeatherGogoCntr>().currentWeather.value?.temp != null
+          child: Get.find<WeatherGogoCntr>().currentWeather.value.temp != null
               ? Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.center,

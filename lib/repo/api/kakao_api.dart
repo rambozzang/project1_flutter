@@ -240,7 +240,7 @@ class KakaoApi with SecureStorage {
     }
   }
 
-  void logOut() async {
+  Future<void> logOut() async {
     try {
       await UserApi.instance.logout();
       print('로그아웃 성공, SDK에서 토큰 삭제');

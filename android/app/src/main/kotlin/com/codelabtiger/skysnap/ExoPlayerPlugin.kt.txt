@@ -1,0 +1,123 @@
+package com.codelabtiger.skysnap
+
+import android.content.Context
+import android.net.Uri
+import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.source.DefaultMediaSourceFactory
+import com.google.android.exoplayer2.source.MediaSource
+import com.google.android.exoplayer2.upstream.DataSource
+import com.google.android.exoplayer2.upstream.DefaultDataSource
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
+import com.google.android.exoplayer2.upstream.cache.CacheDataSource
+import com.google.android.exoplayer2.upstream.cache.LeastRecentlyUsedCacheEvictor
+import com.google.android.exoplayer2.upstream.cache.SimpleCache
+import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.plugin.common.MethodCall
+import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugin.common.MethodChannel.MethodCallHandler
+import io.flutter.plugin.common.MethodChannel.Result
+import io.flutter.plugin.common.StandardMessageCodec
+import io.flutter.plugin.platform.PlatformView
+import io.flutter.plugin.platform.PlatformViewFactory
+import java.io.File
+
+class ExoPlayerPlugin: FlutterPlugin, MethodCallHandler {
+    private lateinit var channel : MethodChannel
+    private lateinit var context: Context
+    private var player: ExoPlayer? = null
+    private lateinit var cache: SimpleCache
+    private lateinit var cacheDataSourceFactory: DataSource.Factory
+    private var isInitialized = false
+
+    override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+        context = flutterPluginBinding.applicationContext
+        channel = MethodChannel(flutterPluginBinding.binaryMessenger, "exoplayer_plugin")
+        channel.setMethodCallHandler(this)
+        
+        // 캐시 초기화
+        val cacheSize: Long = 100 * 1024 * 1024 // 100 MB
+        val cacheEvictor = LeastRecentlyUsedCacheEvictor(cacheSize)
+        cache = SimpleCache(File(context.cacheDir, "exoplayer"), cacheEvictor)
+        
+        // 캐시를 사용하는 DataSource.Factory 생성
+        val upstreamFactory = DefaultDataSource.Factory(context, DefaultHttpDataSource.Factory())
+        cacheDataSourceFactory = CacheDataSource.Factory()
+            .setCache(cache)
+            .setUpstreamDataSourceFactory(upstreamFactory)
+            .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+
+        flutterPluginBinding
+            .platformViewRegistry
+            .registerViewFactory("exoplayer_view", ExoPlayerViewFactory(this))
+    }
+
+    override fun onMethodCall(call: MethodCall, result: Result) {
+        when (call.method) {
+            "initialize" -> {
+                val url = call.argument<String>("url")
+                url?.let { 
+                    initializePlayer(it)
+                    isInitialized = true
+                }
+                result.success(null)
+            }
+            "isInitialized" -> {
+                result.success(isInitialized)
+            }
+            "play" -> {
+                player?.play()
+                result.success(null)
+            }
+            "pause" -> {
+                player?.pause()
+                result.success(null)
+            }
+            "setVolume" -> {
+                val volume = call.argument<Float>("volume")
+                volume?.let { player?.volume = it }
+                result.success(null)
+            }
+            "dispose" -> {
+                disposePlayer()
+                result.success(null)
+            }
+            else -> result.notImplemented()
+        }
+    }
+
+    private fun initializePlayer(url: String) {
+        val mediaItem = MediaItem.fromUri(Uri.parse(url))
+        val mediaSource: MediaSource = DefaultMediaSourceFactory(cacheDataSourceFactory)
+            .createMediaSource(mediaItem)
+
+        player = ExoPlayer.Builder(context)
+            .setMediaSourceFactory(DefaultMediaSourceFactory(cacheDataSourceFactory))
+            .build()
+            .apply {
+                setMediaSource(mediaSource)
+                prepare()
+            }
+    }
+
+    private fun disposePlayer() {
+        player?.release()
+        player = null
+        isInitialized = false
+    }
+
+    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        channel.setMethodCallHandler(null)
+        cache.release()
+    }
+
+    fun getPlayer(): ExoPlayer? = player
+}
+
+class ExoPlayerViewFactory(private val plugin: ExoPlayerPlugin) : PlatformViewFactory(StandardMessageCodec.INSTANCE) {
+    override fun create(context: Context, viewId: Int, args: Any?): PlatformView {
+        val view = ExoPlayerView(context, viewId, args as? Map<String, Any>)
+        plugin.getPlayer()?.let { view.setPlayer(it) }
+        return view
+    }
+}

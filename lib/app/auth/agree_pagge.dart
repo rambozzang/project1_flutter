@@ -18,8 +18,9 @@ class _AgreePageState extends State<AgreePage> {
   List<Map<String, dynamic>> agreements = [
     {'id': 1, 'title': '(필수) 서비스이용약관 동의', 'checked': false, 'url': '/ServicePage'},
     {'id': 2, 'title': '(필수) 개인정보 수집 및 이용 동의', 'checked': false, 'url': '/PrivecyPage'},
-    {'id': 3, 'title': '(필수) 개인정보처리방침 동의', 'checked': false, 'url': '/PrivecyPage'},
-    {'id': 4, 'title': '(필수) 위치정보 이용 동의', 'checked': false, 'url': '/LocatinServicePage'},
+    // {'id': 3, 'title': '(필수) 개인정보처리방침 동의', 'checked': false, 'url': '/PrivecyPage'},
+    {'id': 3, 'title': '(필수) 위치정보 이용 동의', 'checked': false, 'url': '/LocatinServicePage'},
+    {'id': 4, 'title': '(필수) 14세 이상 동의', 'checked': false, 'url': ''},
   ];
   late String custId;
 
@@ -137,7 +138,7 @@ class _AgreePageState extends State<AgreePage> {
                             child: Container(
                               padding: const EdgeInsets.all(15),
                               decoration: BoxDecoration(
-                                color: Colors.grey[200],
+                                color: Colors.blueGrey[100],
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(
@@ -179,15 +180,17 @@ class _AgreePageState extends State<AgreePage> {
                                             style: const TextStyle(fontSize: 14),
                                           ),
                                         ),
-                                        InkWell(
-                                          onTap: () {
-                                            Get.toNamed(agreement['url']);
-                                          },
-                                          child: const Text(
-                                            '보기',
-                                            style: TextStyle(fontSize: 13, color: Colors.blue),
-                                          ),
-                                        ),
+                                        agreement['url'] == ''
+                                            ? const SizedBox()
+                                            : InkWell(
+                                                onTap: () {
+                                                  Get.toNamed(agreement['url']);
+                                                },
+                                                child: const Text(
+                                                  '보기',
+                                                  style: TextStyle(fontSize: 13, color: Colors.blue),
+                                                ),
+                                              ),
                                       ],
                                     ),
                                   ))
@@ -204,7 +207,7 @@ class _AgreePageState extends State<AgreePage> {
                           : null,
                       style: ElevatedButton.styleFrom(
                         foregroundColor: Colors.white,
-                        backgroundColor: Colors.black54,
+                        backgroundColor: Color.fromARGB(255, 47, 54, 95),
                         minimumSize: const Size(double.infinity, 50),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),

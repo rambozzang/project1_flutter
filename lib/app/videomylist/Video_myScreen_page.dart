@@ -5,9 +5,9 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:giffy_dialog/giffy_dialog.dart';
@@ -57,6 +57,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
   double bottomHeight = Platform.isIOS ? 22.0 : 10.0;
 
   bool isUpdateCount = true;
+  final ValueNotifier<String> timeDesc = ValueNotifier<String>('0ms');
 
   bool initPlay = false;
   int loadingImageIndex = 0;
@@ -70,34 +71,85 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
     loadingImageIndex = Random().nextInt(6);
   }
 
-  Future initiliazeVideo() async {
-    if (initialized) {
-      return;
-    }
+  // String _getFinalUrl() {
+  //   return Platform.isAndroid ? widget.data.videoPath.toString().replaceAll('m3u8', 'mpd') : widget.data.videoPath.toString();
+  // }
+
+  Map<String, String> _getHttpHeaders() {
+    final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
+    final lastModified = _formatHttpDate(sevenDaysAgo);
+
+    return {
+      'Connection': 'keep-alive',
+      'Cache-Control': 'max-age=3600, stale-while-revalidate=86400',
+      'Etg': widget.data.boardId.toString(),
+      'Last-Modified': lastModified,
+      'If-None-Match': widget.data.boardId.toString(),
+      'If-Modified-Since': lastModified,
+      'Vary': 'Accept-Encoding, User-Agent',
+    };
+  }
+
+  Future<void> initiliazeVideo() async {
+    final stopwatch = Stopwatch()..start();
+
+    // https://customer-r151saam0lb88khc.cloudflarestream.com/854ec7a9a60b43e7b5a7ac79ea09577d/manifest/video.m3u8
+    // https://customer-r151saam0lb88khc.cloudflarestream.com/854ec7a9a60b43e7b5a7ac79ea09577d/manifest/video.mpd
+
+    //  Ios : m3u8
+    String finalUrl = widget.data.videoPath.toString();
+    VideoFormat format = VideoFormat.hls;
+
+    // if (Platform.isAndroid) {
+    //   // 안드로이드면 대쉬 사용
+    //   finalUrl = widget.data.videoPath.toString().replaceAll('m3u8', 'mpd');
+    //   format = VideoFormat.dash;
+    // }
+
     final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
     final lastModified = _formatHttpDate(sevenDaysAgo);
 
     try {
-      lo.g('@@@  VideoMyScreenPageState initiliazeVideo() Loading : ${widget.data.boardId}');
-      lo.g('@@@  VideoMyScreenPageState initiliazeVideo() Loading : ${widget.data.videoPath.toString()}');
+      // final response = await http.head(Uri.parse(finalUrl));
+      // final cfRay = response.headers['cf-ray'];
+      // if (cfRay != null) {
+      //   // CF-RAY 헤더의 형식: <식별자>-<데이터센터코드>
+      //   final datacenterCode = cfRay.split('-').last;
+      //   lo.g('Cloudflare datacenter code: $datacenterCode');
+      // }
 
-      _controller = VideoPlayerController.networkUrl(
-        Uri.parse(widget.data.videoPath.toString()),
-        httpHeaders: {
-          'Connection': 'keep-alive',
-          'Cache-Control': 'max-age=604800',
-          'Etg': widget.data.boardId.toString(),
-          'Last-Modified': lastModified, // Set Last-Modified header
-        },
-        formatHint: VideoFormat.hls,
-      )..initialize().then((_) {
+      Stopwatch stopwatch = Stopwatch()..start();
+      lo.g(
+          '@@@  VideoScreenPage init(${Get.find<VideoMyinfoListCntr>().currentIndex.value}) ${widget.index} : ${widget.data.boardId} : 1.Start ');
+
+      _controller = VideoPlayerController.networkUrl(Uri.parse(finalUrl),
+          httpHeaders: {
+            'Connection': 'keep-alive',
+            'Cache-Control': 'max-age=3600, stale-while-revalidate=86400',
+            'Etg': widget.data.boardId.toString(),
+            'Last-Modified': lastModified,
+            'If-None-Match': widget.data.boardId.toString(),
+            'If-Modified-Since': lastModified,
+            'Vary': 'Accept-Encoding, User-Agent',
+          },
+          videoPlayerOptions: VideoPlayerOptions(
+            mixWithOthers: true,
+            allowBackgroundPlayback: false,
+          ),
+          formatHint: format)
+        ..initialize().then((_) {
           if (mounted) {
-            lo.g('@@@  VideoMyScreenPageState initiliazeVideo() Mounted : ${widget.data.boardId}');
+            lo.g('VideoScreenPage initialization time: ${stopwatch.elapsedMilliseconds}ms');
+            timeDesc.value = '${stopwatch.elapsedMilliseconds}ms';
+
+            lo.g(
+                '@@@  VideoScreenPage init(${Get.find<VideoMyinfoListCntr>().currentIndex.value}) ${widget.index} : ${widget.data.boardId} : 2.Mounted =>. ${stopwatch.elapsed}');
             setState(() {
               _controller.setLooping(true);
               _controller.pause();
               initialized = true;
             });
+            //   Get.find<VideoListCntr>().onPageMounted(widget.data.boardId!);
           }
         });
 
@@ -106,15 +158,27 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
         int max = _controller.value.duration.inSeconds;
         position = _controller.value.position;
         progress.value = (position.inSeconds / max * 100).isNaN ? 0 : position.inSeconds / max * 100;
-
         if (isPlay.value) {
           updateCount();
+        }
+        if (_controller.value.hasError) {
+          lo.g('Video error: ${_controller.value.errorDescription}');
+          // 4. 재시도 로직
+          // _retryInitialization();
         }
       });
     } catch (e) {
       lo.g('initiliazeMyVideo error : ${e.toString()}');
+      Utils.alert('영상 초기화 실패! ${e.toString()}');
       initiliazeVideo();
     } finally {}
+  }
+
+  Future<void> _retryInitialization() async {
+    // await _videoController.dispose();
+    lo.g('retryInitialization');
+    await Future.delayed(const Duration(milliseconds: 500));
+    initiliazeVideo();
   }
 
   String _formatHttpDate(DateTime date) {
@@ -177,8 +241,10 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
   @override
   void dispose() {
     initialized = false;
+    _controller.removeListener(() {});
     _controller.pause();
     _controller.dispose();
+
     super.dispose();
   }
 
@@ -212,12 +278,12 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                         : VisibilityDetector(
                             onVisibilityChanged: (info) {
                               initPlay = false;
-                              if (info.visibleFraction > 0.5) {
+                              if (info.visibleFraction > 0.1) {
                                 if (initialized) {
                                   _controller.play();
                                   Get.find<VideoMyinfoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
                                 }
-                              } else if (info.visibleFraction < 0.4) {
+                              } else if (info.visibleFraction < 0.3) {
                                 if (initialized) {
                                   _controller.pause();
                                   _controller.seekTo(Duration.zero);
@@ -258,12 +324,16 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                   child: GestureDetector(
                     onTap: () => SigoPageSheet().open(context, widget.data.boardId.toString(),
                         Get.find<VideoMyinfoListCntr>().list[widget.index].custId.toString(), Get.find<VideoMyinfoListCntr>().getData),
-                    child: const Column(
+                    child: Column(
                       children: [
-                        Icon(Icons.warning, color: Colors.white),
-                        Text(
+                        const Icon(Icons.warning, color: Colors.white),
+                        const Text(
                           '신고',
                           style: TextStyle(color: Colors.white, fontSize: 9),
+                        ),
+                        Text(
+                          '${initialized}',
+                          style: const TextStyle(color: Colors.transparent, fontSize: 1),
                         )
                       ],
                     ),
@@ -305,6 +375,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                         child: CustomButton(
                             text: ' 게시물수정 ',
                             type: 'XS',
+                            isEnable: true,
                             onPressed: () =>
                                 VideoManagePageSheet().open(context, widget.data.boardId.toString(), widget.data.hideYn.toString())),
                       )
@@ -318,43 +389,22 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
   }
 
   Widget buildLoading() {
-    return SizedBox.expand(
-      child: Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: ExactAssetImage(
-              // 'assets/images/girl-6356393_640.jpg',
-              'assets/images/$loadingImageIndex.jpg',
+    return ClipRect(
+      // ClipRect을 사용하여 블러 효과가 자식 위젯 영역을 벗어나지 않도록 합니다.
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 25.0, sigmaY: 25.0),
+        child: Container(
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: CachedNetworkImageProvider(
+                widget.data.videoPath!.replaceAll('/manifest/video.m3u8', '/thumbnails/thumbnail.jpg'),
+                cacheKey: widget.data.boardId.toString(),
+              ),
+              fit: BoxFit.cover,
             ),
-            fit: BoxFit.cover,
           ),
-        ),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 25.0),
-          child: Stack(
-            children: [
-              // Positioned.fill(
-              //   child: CachedNetworkImage(
-              //      cacheKey: widget.data.boardId.toString(),
-              //     imageUrl: widget.data.thumbnailPath.toString(),
-              //     fit: BoxFit.cover,
-              //     placeholder: (context, url) => SizedBox(width: 60, height: 60, child: Utils.progressbar(color: Colors.white)),
-              //   ),
-              // ),
-              // Positioned.fill(
-
-              //   child: Image.asset(
-              //     'assets/images/girl-6356393_640.jpg',
-              //     fit: BoxFit.cover,
-              //     filterQuality: FilterQuality.high,
-              //   ),
-              // ),
-              Positioned(
-                  top: MediaQuery.of(context).size.height * 0.5,
-                  left: 10,
-                  right: 10,
-                  child: const Center(child: Text(" ", style: TextStyle(color: Colors.white, fontSize: 9))))
-            ],
+          child: Container(
+            color: Colors.black.withOpacity(0.3), // 약간의 어두운 오버레이 추가
           ),
         ),
       ),
@@ -481,21 +531,6 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                 )
               : const SizedBox(),
           const Gap(15),
-          // SizedBox(
-          //   width: Get.width * 0.78,
-          //   child: const TextScroll(
-          //     '여기서는 TextButton, FilledButton, ElevatedButton의 크기를 변경하는 방법에 대해서 알아보겠습니다. ',
-          //     mode: TextScrollMode.endless,
-          //     numberOfReps: 200,
-          //     fadedBorder: false,
-          //     delayBefore: Duration(milliseconds: 4000),
-          //     pauseBetween: Duration(milliseconds: 2000),
-          //     velocity: Velocity(pixelsPerSecond: Offset(100, 0)),
-          //     style: TextStyle(fontSize: 16, color: Colors.white),
-          //     textAlign: TextAlign.right,
-          //     selectable: true,
-          //   ),
-          // )
           Row(
             children: [
               GestureDetector(
@@ -564,31 +599,6 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                         );
                       },
                     ),
-              // ValueListenableBuilder<String>(
-              //     valueListenable: isFollowed,
-              //     builder: (context, value, child) {
-              //       return ElevatedButton(
-              //         onPressed: () => value.toString().contains('N') ? follow() : followCancle(),
-              //         clipBehavior: Clip.none,
-              //         style: ElevatedButton.styleFrom(
-              //           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              //           elevation: 1.5,
-              //           minimumSize: const Size(0, 0),
-              //           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              //           backgroundColor: widget.data.followYn.toString().contains('N') ? Colors.white : Colors.grey,
-              //           shape: RoundedRectangleBorder(
-              //             borderRadius: BorderRadius.circular(20.0),
-              //           ),
-              //         ),
-              //         child: Text(
-              //           value.toString().contains('N') ? '팔로우' : '팔로잉',
-              //           style: const TextStyle(
-              //             color: Colors.black,
-              //             fontSize: 14,
-              //           ),
-              //         ),
-              //       );
-              //     })
             ],
           ),
         ],
@@ -603,6 +613,14 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
       right: 0,
       child: Column(
         children: [
+          kDebugMode
+              ? ValueListenableBuilder<String>(
+                  valueListenable: timeDesc,
+                  builder: (context, value, child) {
+                    return Text('1: $value', style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600));
+                  },
+                )
+              : const SizedBox.shrink(),
           IgnorePointer(
             ignoring: widget.data.custId.toString() == AuthCntr.to.custId.value.toString() ? true : false,
             child: LikeButton(

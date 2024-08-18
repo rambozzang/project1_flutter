@@ -5,8 +5,8 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:giffy_dialog/giffy_dialog.dart';
@@ -25,6 +25,7 @@ import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:text_scroll/text_scroll.dart';
+import 'package:flutter/src/painting/gradient.dart' as ui;
 
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -49,38 +50,38 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   late VideoPlayerController _controller;
 
   GlobalKey _key = GlobalKey();
-  bool initialized = false;
+  // bool initialized = false;
 
   bool initPlay = false;
 
   final ValueNotifier<bool> soundOff = ValueNotifier<bool>(false);
   final ValueNotifier<bool> isPlay = ValueNotifier<bool>(true);
   final ValueNotifier<double> progress = ValueNotifier<double>(0.0);
+  final ValueNotifier<String> timeDesc = ValueNotifier<String>('0ms');
 
   ValueNotifier<String> isFollowed = ValueNotifier<String>('N');
+  ValueNotifier<bool> initialized = ValueNotifier<bool>(false);
 
   // double progress = 0;
   Duration position = Duration.zero;
 
   double bottomHeight = Platform.isIOS ? 92.0 : 80.0;
 
-  // 운영계에서 true로 변경
-  bool isUpdateCount = true;
-  int loadingImageIndex = 0;
+  // 운영계에서 false 로 변경
+  bool isUpdateCount = false;
 
   @override
   void initState() {
     super.initState();
     initiliazeVideo();
+    // initialized.value = false;
 
     isFollowed.value = widget.data.followYn.toString();
-    loadingImageIndex = Random().nextInt(6);
   }
 
   Future<void> initiliazeVideo() async {
-    if (initialized) {
-      return;
-    }
+    final stopwatch = Stopwatch()..start();
+
     // https://customer-r151saam0lb88khc.cloudflarestream.com/854ec7a9a60b43e7b5a7ac79ea09577d/manifest/video.m3u8
     // https://customer-r151saam0lb88khc.cloudflarestream.com/854ec7a9a60b43e7b5a7ac79ea09577d/manifest/video.mpd
 
@@ -88,11 +89,11 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     String finalUrl = widget.data.videoPath.toString();
     VideoFormat format = VideoFormat.hls;
 
-    if (Platform.isAndroid) {
-      // 안드로이드면 대쉬 사용
-      finalUrl = widget.data.videoPath.toString().replaceAll('m3u8', 'mpd');
-      format = VideoFormat.dash;
-    }
+    // if (Platform.isAndroid) {
+    //   // 안드로이드면 대쉬 사용
+    //   finalUrl = widget.data.videoPath.toString().replaceAll('m3u8', 'mpd');
+    //   format = VideoFormat.dash;
+    // }
 
     final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
     final lastModified = _formatHttpDate(sevenDaysAgo);
@@ -120,17 +121,20 @@ class VideoScreenPageState extends State<VideoScreenPage> {
             'If-Modified-Since': lastModified,
             'Vary': 'Accept-Encoding, User-Agent',
           },
+          videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true, allowBackgroundPlayback: false),
           formatHint: format)
         ..initialize().then((_) {
           if (mounted) {
-            stopwatch.stop();
+            lo.g('VideoScreenPage initialization time: ${stopwatch.elapsedMilliseconds}ms');
+            timeDesc.value = '${stopwatch.elapsedMilliseconds}ms';
+
             lo.g(
                 '@@@  VideoScreenPage init(${Get.find<VideoListCntr>().currentIndex.value}) ${widget.index} : ${widget.data.boardId} : 2.Mounted =>. ${stopwatch.elapsed}');
             setState(() {
               _controller.setLooping(true);
               _controller.pause();
-              initialized = true;
             });
+            initialized.value = true;
             //   Get.find<VideoListCntr>().onPageMounted(widget.data.boardId!);
           }
         });
@@ -171,7 +175,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     try {
       await boardRepo.updateBoardCount(widget.data.boardId.toString());
     } catch (e) {
-      lo.g('@@@  updateCount error : $e');
+      lo.g('@@@ VideoScreenPage  updateCount error : $e');
     }
   }
 
@@ -227,9 +231,8 @@ class VideoScreenPageState extends State<VideoScreenPage> {
 
   @override
   void dispose() {
-    // lo.g(
-    // '@@@  VideoScreenPage init(${Get.find<VideoListCntr>().currentIndex.value}) ${widget.index} : ${widget.data.boardId} : 3.dispose ');
-    initialized = false;
+    initialized.value = false;
+    initialized.dispose();
     _controller.removeListener(() {});
     _controller.pause();
     _controller.dispose();
@@ -240,76 +243,97 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF262B49),
+      backgroundColor: Colors.black38,
+      // backgroundColor: const Color(0xFF262B49),
       resizeToAvoidBottomInset: true,
       extendBodyBehindAppBar: true,
       extendBody: true,
-      body: Stack(
-        children: [
-          GestureDetector(
-            onTap: () {
-              initPlay = true;
-              if (_controller.value.isPlaying) {
-                _controller.pause();
-              } else {
-                _controller.play();
-              }
-            },
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              switchInCurve: Curves.easeIn,
-              switchOutCurve: Curves.ease,
-              child: initialized == false
-                  ? buildLoading()
-                  : VisibilityDetector(
-                      onVisibilityChanged: (info) {
-                        initPlay = false;
-                        if (info.visibleFraction > 0.1) {
-                          if (initialized) {
-                            _controller.play();
-
-                            Get.find<VideoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
-                          }
-                        } else if (info.visibleFraction < 0.3) {
-                          // } else {
-                          if (initialized) {
-                            _controller.pause();
-                            _controller.seekTo(Duration.zero);
-                            Get.find<VideoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
-                          }
-                        }
-                      },
-                      key: _key,
-                      child: SizedBox.expand(
-                        child: FittedBox(
-                          fit: BoxFit.cover,
-                          child: SizedBox(
-                            width: _controller.value.size.width,
-                            height: _controller.value.size.height,
-                            child: VideoPlayer(_controller),
-                          ),
-                        ),
-                      ),
-                    ),
+      body: Container(
+        // decoration: const BoxDecoration(
+        //   gradient: ui.LinearGradient(
+        //     begin: Alignment.topCenter,
+        //     end: Alignment.bottomCenter,
+        //     colors: [
+        //       Color(0xFF0D1B2A),
+        //       Color(0xFF1B263B),
+        //       Color(0xFF2A3B50),
+        //     ],
+        //   ),
+        // ),
+        child: Stack(
+          children: [
+            GestureDetector(
+              onTap: () {
+                initPlay = true;
+                if (_controller.value.isPlaying) {
+                  _controller.pause();
+                } else {
+                  _controller.play();
+                }
+              },
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                switchInCurve: Curves.easeIn,
+                switchOutCurve: Curves.ease,
+                // child: initialized == false ? buildLoading() : buildVideoScreen(),
+                child: ValueListenableBuilder<bool>(
+                  valueListenable: initialized,
+                  builder: (builder, value, child) {
+                    return value == false ? buildLoading() : buildVideoScreen(value);
+                  },
+                ),
+              ),
             ),
+            // 중앙 play 버튼
+            buildCenterPlayButton(),
+            // 사운드 on/off 버튼
+            buildSoundButton(),
+            // 하단 컨텐츠
+            buildBottomContent(),
+            // 오른쪽 메뉴바
+            buildRightMenuBar(),
+            // 재생 progressbar
+            buildPlayProgress(),
+            //
+            buildSingo()
+            // Center(
+            //   child: Text(widget.data.boardId.toString(),
+            //       style: const TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.bold)),
+            // )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget buildVideoScreen(bool init) {
+    return VisibilityDetector(
+      onVisibilityChanged: (info) {
+        initPlay = false;
+        if (info.visibleFraction > 0.1) {
+          if (init) {
+            _controller.play();
+            Get.find<VideoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
+          }
+        } else if (info.visibleFraction < 0.3) {
+          // } else {
+          if (init) {
+            _controller.pause();
+            _controller.seekTo(Duration.zero);
+            Get.find<VideoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
+          }
+        }
+      },
+      key: _key,
+      child: SizedBox.expand(
+        child: FittedBox(
+          fit: BoxFit.cover,
+          child: SizedBox(
+            width: _controller.value.size.width,
+            height: _controller.value.size.height,
+            child: VideoPlayer(_controller),
           ),
-          // 중앙 play 버튼
-          buildCenterPlayButton(),
-          // 사운드 on/off 버튼
-          buildSoundButton(),
-          // 하단 컨텐츠
-          buildBottomContent(),
-          // 오른쪽 메뉴바
-          buildRightMenuBar(),
-          // 재생 progressbar
-          buildPlayProgress(),
-          //
-          buildSingo()
-          // Center(
-          //   child: Text(widget.data.boardId.toString(),
-          //       style: const TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.bold)),
-          // )
-        ],
+        ),
       ),
     );
   }
@@ -338,20 +362,23 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   }
 
   Widget buildLoading() {
-    return SizedBox.expand(
-      child: Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            //  image: CachedNetworkImageProvider(widget.data.thumbnailPath.toString()),
-            image: ExactAssetImage(
-              'assets/images/$loadingImageIndex.jpg',
+    return ClipRect(
+      // ClipRect을 사용하여 블러 효과가 자식 위젯 영역을 벗어나지 않도록 합니다.
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 25.0, sigmaY: 25.0),
+        child: Container(
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: CachedNetworkImageProvider(
+                widget.data.videoPath!.replaceAll('/manifest/video.m3u8', '/thumbnails/thumbnail.jpg'),
+                cacheKey: widget.data.boardId.toString(),
+              ),
+              fit: BoxFit.cover,
             ),
-            fit: BoxFit.cover,
           ),
-        ),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
-          child: const Text("", style: TextStyle(color: Colors.white, fontSize: 9)),
+          child: Container(
+            color: Colors.black.withOpacity(0.3), // 약간의 어두운 오버레이 추가
+          ),
         ),
       ),
     );
@@ -540,6 +567,15 @@ class VideoScreenPageState extends State<VideoScreenPage> {
       right: 0,
       child: Column(
         children: [
+          kDebugMode
+              ? ValueListenableBuilder<String>(
+                  valueListenable: timeDesc,
+                  builder: (context, value, child) {
+                    return Text('1: $value', style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600));
+                  },
+                )
+              : const SizedBox.shrink(),
+          const Gap(10),
           IgnorePointer(
             ignoring: widget.data.custId.toString() == AuthCntr.to.custId.value.toString() ? true : false,
             child: LikeButton(

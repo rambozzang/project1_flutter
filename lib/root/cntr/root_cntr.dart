@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloudflare/cloudflare.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
@@ -153,30 +155,30 @@ class RootCntr extends GetxController {
   }
 
   // 비디오 파일 압축 및 썸네일 생성
-  Future<List<File>> compressVideo(videoFile) async {
-    try {
-      final List list;
-      list = await Future.wait([
-        VideoCompress.compressVideo(
-          videoFile.path,
-          quality: VideoQuality.HighestQuality,
-          deleteOrigin: false,
-          includeAudio: true,
-        ),
-        VideoCompress.getFileThumbnail(videoFile.path, quality: 50),
-      ]);
-      pickedFile = list[0];
-      thumbnailFile = list[1].path;
-      uploadVideoFile = File(pickedFile!.path.toString());
-      uploadThumbnailFile = File(thumbnailFile!.toString());
-      return [uploadVideoFile, uploadThumbnailFile];
-      // // return pickedFile;
-    } catch (e) {
-      Lo.g('비디오 압축 에러 : $e');
-      VideoCompress.cancelCompression();
-      return [];
-    }
-  }
+  // Future<List<File>> compressVideo(videoFile) async {
+  //   try {
+  //     final List list;
+  //     list = await Future.wait([
+  //       VideoCompress.compressVideo(
+  //         videoFile.path,
+  //         quality: VideoQuality.HighestQuality,
+  //         deleteOrigin: false,
+  //         includeAudio: true,
+  //       ),
+  //       VideoCompress.getFileThumbnail(videoFile.path, quality: 50),
+  //     ]);
+  //     pickedFile = list[0];
+  //     thumbnailFile = list[1].path;
+  //     uploadVideoFile = File(pickedFile!.path.toString());
+  //     uploadThumbnailFile = File(thumbnailFile!.toString());
+  //     return [uploadVideoFile, uploadThumbnailFile];
+  //     // // return pickedFile;
+  //   } catch (e) {
+  //     Lo.g('비디오 압축 에러 : $e');
+  //     VideoCompress.cancelCompression();
+  //     return [];
+  //   }
+  // }
 
   void uploadR2Storage(File videoFile, BoardSaveData boardSaveData) async {
     isFileUploading.value = UploadingType.UPLOADING;
@@ -257,19 +259,28 @@ class RootCntr extends GetxController {
     await cloudflare.init();
 
     try {
-      MediaInfo? pickedFile = await VideoCompress.compressVideo(
-        videoFile.path,
-        quality: VideoQuality.HighestQuality,
-        deleteOrigin: false,
-        includeAudio: true,
-      );
+      bool needsCompression = await shouldCompressVideo(videoFile.path);
+      late MediaInfo? pickedFile;
+
+      if (needsCompression) {
+        pickedFile = await VideoCompress.compressVideo(
+          videoFile.path,
+          quality: VideoQuality.HighestQuality,
+          deleteOrigin: false,
+          includeAudio: true,
+        );
+      } else {
+        pickedFile = await VideoCompress.getMediaInfo(videoFile.path);
+      }
 
       Lo.g('비디오 압축 결과 : ${pickedFile!.toJson()}');
       if (pickedFile == null) {
         Utils.alert('비디오 압축에 실패했습니다.');
         isFileUploading.value = UploadingType.FAIL;
-        VideoCompress.deleteAllCache();
-        VideoCompress.cancelCompression();
+        if (needsCompression) {
+          VideoCompress.deleteAllCache();
+          VideoCompress.cancelCompression();
+        }
         return;
       }
 
@@ -281,8 +292,10 @@ class RootCntr extends GetxController {
         // if (videoRes?.isSuccessful == false || thumbnailres?.isSuccessful == false) {
         Utils.alert('파일 업로드에 실패했습니다.');
         isFileUploading.value = UploadingType.FAIL;
-        VideoCompress.deleteAllCache();
-        VideoCompress.cancelCompression();
+        if (needsCompression) {
+          VideoCompress.deleteAllCache();
+          VideoCompress.cancelCompression();
+        }
         return;
       }
       CloudflareReqSaveData cloudSaveData = CloudflareReqSaveData();
@@ -290,6 +303,7 @@ class RootCntr extends GetxController {
       cloudSaveData.preview = video.preview;
       cloudSaveData.size = video.size;
       cloudSaveData.thumbnail = video.animatedThumbnail;
+
       // cloudSaveData.thumbnail = video.thumbnail;
       cloudSaveData.dash = video.playback!.dash.toString();
       cloudSaveData.hls = video.playback!.hls.toString();
@@ -304,9 +318,10 @@ class RootCntr extends GetxController {
         File(pickedFile!.path.toString()).delete();
         File(thumbnailFile!.toString()).delete();
         File(videoFile.path!.toString()).delete();
-
-        VideoCompress.deleteAllCache();
-        VideoCompress.cancelCompression();
+        if (needsCompression) {
+          VideoCompress.deleteAllCache();
+          VideoCompress.cancelCompression();
+        }
         return;
       }
 
@@ -317,7 +332,7 @@ class RootCntr extends GetxController {
       boardSaveData.boardWeatherVo?.thumbnailId = video.thumbnail;
       boardSaveData.boardWeatherVo?.videoPath = video.playback!.hls.toString();
       boardSaveData.boardWeatherVo?.videoId = video.id;
-      // m3u8 파일 다운 받아 내용 저장
+      // m3u8 파일 다운 받아 내용 저장 - m3u8 파일은 cloudflare에서 동영상 파일이 업로드 이후에 생성이 되어 배치로 받는 수 뿐이 없다.
       // String m3u8 = await downloadAndSaveM3U8File(video.playback!.hls.toString(), video.id!);
       // boardSaveData.boardWeatherVo?.thumbnailId = m3u8;
 
@@ -329,9 +344,10 @@ class RootCntr extends GetxController {
         File(pickedFile!.path.toString()).delete();
         File(thumbnailFile!.toString()).delete();
         File(videoFile.path!.toString()).delete();
-
-        VideoCompress.deleteAllCache();
-        VideoCompress.cancelCompression();
+        if (needsCompression) {
+          VideoCompress.deleteAllCache();
+          VideoCompress.cancelCompression();
+        }
         return;
       }
       isFileUploading.value = UploadingType.SUCCESS;
@@ -341,9 +357,10 @@ class RootCntr extends GetxController {
         File(pickedFile!.path.toString()).delete();
         // File(thumbnailFile!.toString()).delete();
         File(videoFile.path!.toString()).delete();
-
-        VideoCompress.deleteAllCache();
-        VideoCompress.cancelCompression();
+        if (needsCompression) {
+          VideoCompress.deleteAllCache();
+          VideoCompress.cancelCompression();
+        }
       });
     } catch (e) {
       isFileUploading.value = UploadingType.FAIL;
@@ -356,19 +373,12 @@ class RootCntr extends GetxController {
   //m3u8 파일 다운로드받아 내용을 저장하려면 다음과 같이 작성하면 됩니다.
   // 하지만 m3u8 파일은 cloudflare에서 동영상 파일이 얼로드 이후에 생성이 되어 배치로 받는 수 뿐이 없다.
   Future<String> downloadAndSaveM3U8File(String url, String fileName) async {
-    final Directory directory = await getApplicationDocumentsDirectory();
-    final String filePath = '${directory.path}/$fileName';
-    lo.g("m3u8 : $url");
     final http.Response response = await http.get(Uri.parse(url));
-
     if (response.statusCode == 200) {
-      // Save to local file
-      final File file = File(filePath);
-      await file.writeAsBytes(response.bodyBytes);
       final String fileContent = response.body;
       return fileContent;
     } else {
-      throw Exception('Failed to download m3u8 file : ${response.toString()}');
+      return '';
     }
   }
 
@@ -396,5 +406,58 @@ class RootCntr extends GetxController {
     super.dispose();
   }
 
-  changePage(int i) {}
+  // 압축여부
+  //   bool needsCompression = await VideoCompressionHelper.shouldCompressVideo(videoPath);
+
+  Future<bool> shouldCompressVideo(
+    String filePath, {
+    int sizeThreshold = 50 * 1024 * 1024, // 50MB
+    int widthThreshold = 1920,
+    int heightThreshold = 1080,
+    double bitrateThreshold = 5000000, // 5 Mbps
+  }) async {
+    File file = File(filePath);
+    int fileSize = await file.length();
+
+    MediaInfo? mediaInfo = await VideoCompress.getMediaInfo(filePath);
+
+    if (mediaInfo == null) {
+      throw Exception('Failed to get video metadata');
+    }
+
+    int width = mediaInfo.width ?? 0;
+    int height = mediaInfo.height ?? 0;
+
+    // bitrate를 직접 계산합니다 (bps 단위)
+    double bitrate = 0;
+    if (mediaInfo.filesize != null && mediaInfo.duration != null) {
+      // duration이 이미 초 단위일 수 있으므로, 직접 사용합니다.
+      double durationInSeconds = mediaInfo.duration ?? 0;
+      if (durationInSeconds > 0) {
+        bitrate = (mediaInfo.filesize! * 8) / durationInSeconds;
+      }
+    }
+
+    print('File size: $fileSize bytes');
+    print('Resolution: ${width}x$height');
+    print('Calculated bitrate: $bitrate bps');
+
+    if (fileSize > sizeThreshold) {
+      print('File size exceeds threshold');
+      return true;
+    }
+
+    if (width > widthThreshold || height > heightThreshold) {
+      print('Resolution exceeds threshold');
+      return true;
+    }
+
+    if (bitrate > bitrateThreshold) {
+      print('Bitrate exceeds threshold');
+      return true;
+    }
+
+    print('Compression not needed');
+    return false;
+  }
 }

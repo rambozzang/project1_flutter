@@ -7,8 +7,6 @@ import 'package:flutter/widgets.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
-import 'package:project1/repo/alram/alram_repo.dart';
-import 'package:project1/repo/alram/data/alram_devy_data.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/follow_data.dart';
 import 'package:project1/repo/common/res_data.dart';

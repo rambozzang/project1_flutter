@@ -1,5 +1,6 @@
-import 'package:babstrap_settings_screen/babstrap_settings_screen.dart';
+// import 'package:babstrap_settings_screen/babstrap_settings_screen.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
@@ -28,6 +29,8 @@ class _SettingPageState extends State<SettingPage> {
 
   ValueNotifier<bool> isExitprocess = ValueNotifier<bool>(false);
 
+  ValueNotifier<bool> isAdLoading = ValueNotifier<bool>(false);
+
   @override
   void initState() {
     super.initState();
@@ -36,7 +39,7 @@ class _SettingPageState extends State<SettingPage> {
 
   Future<void> _loadAd() async {
     await AdManager().loadBannerAd('SettingPage');
-    setState(() {}); // 광고 로드 후 UI 업데이트
+    isAdLoading.value = true;
   }
 
   @override
@@ -107,25 +110,32 @@ class _SettingPageState extends State<SettingPage> {
                     ),
                   ],
                 ),
-                const BannerAdWidget(screenName: 'SettingPage'),
+                ValueListenableBuilder<bool>(
+                    valueListenable: isAdLoading,
+                    builder: (context, value, child) {
+                      if (!value) return const SizedBox.shrink();
+                      return const BannerAdWidget(screenName: 'SettingPage');
+                    }),
                 const Gap(30),
                 SettingsGroup(
                   settingsGroupTitle: "개인정 동의 및 약관",
                   settingsGroupTitleStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 16),
                   items: [
-                    SettingsItem(
-                      onTap: () => Get.toNamed('/MaketingPage'),
-                      icons: CupertinoIcons.pencil_outline,
-                      backgroundColor: Colors.white,
-                      iconStyle: IconStyle(),
-                      title: '마케팅 수신 동의 설정',
-                      subtitle: "다양한 맴버 혜택을 담은 마케팅 정보를 SMS, 이메일, 앱 푸시로 보내드립니다.",
-                      titleMaxLine: 1,
-                      subtitleMaxLine: 1,
-                    ),
+                    if (kDebugMode) ...[
+                      SettingsItem(
+                        onTap: () => Get.toNamed('/MaketingPage'),
+                        icons: CupertinoIcons.pencil_outline,
+                        backgroundColor: Colors.white,
+                        iconStyle: IconStyle(),
+                        title: '마케팅 수신 동의 설정',
+                        subtitle: "다양한 맴버 혜택을 담은 마케팅 정보를 SMS, 이메일, 앱 푸시로 보내드립니다.",
+                        titleMaxLine: 1,
+                        subtitleMaxLine: 1,
+                      ),
+                    ],
                     SettingsItem(
                       onTap: () => Get.toNamed('/ServicePage'),
-                      icons: Icons.fingerprint,
+                      icons: Icons.info_rounded,
                       backgroundColor: Colors.white,
                       iconStyle: IconStyle(
                         iconsColor: Colors.white,
@@ -178,54 +188,56 @@ class _SettingPageState extends State<SettingPage> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SettingsItem(
-                      onTap: () async {
-                        // bool? result = await Get.dialog<bool>(
-                        //   PrivacyPolicyDialog(),
-                        //   barrierDismissible: true,
-                        // );
-                        // AgreePage() 페이지로 이동 머터리얼 라우터를 이용
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => AgreePage()));
-                      },
-                      icons: Icons.exit_to_app_rounded,
-                      iconStyle: IconStyle(
-                        backgroundColor: Colors.deepOrange,
+                    // 릴리즈 버전에서만 보이는 버튼
+                    if (kDebugMode) ...[
+                      SettingsItem(
+                        onTap: () async {
+                          // bool? result = await Get.dialog<bool>(
+                          //   PrivacyPolicyDialog(),
+                          //   barrierDismissible: true,
+                          // );
+                          // AgreePage() 페이지로 이동 머터리얼 라우터를 이용
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => AgreePage()));
+                        },
+                        icons: Icons.exit_to_app_rounded,
+                        iconStyle: IconStyle(
+                          backgroundColor: Colors.deepOrange,
+                        ),
+                        title: "회원동의",
+                        titleStyle: const TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      title: "회원동의",
-                      titleStyle: const TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
+                      SettingsItem(
+                        onTap: () => Get.toNamed('/TestDioPage'),
+                        icons: CupertinoIcons.link_circle,
+                        title: "TestDioPage",
+                        titleStyle: const TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    SettingsItem(
-                      onTap: () => Get.toNamed('/TestDioPage'),
-                      icons: CupertinoIcons.link_circle,
-                      title: "TestDioPage",
-                      titleStyle: const TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
+                      SettingsItem(
+                        onTap: () => Get.toNamed('/WeatherComparePage'),
+                        icons: CupertinoIcons.link_circle,
+                        title: "WeatherComparePage",
+                        titleStyle: const TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    SettingsItem(
-                      onTap: () => Get.toNamed('/WeatherComparePage'),
-                      icons: CupertinoIcons.link_circle,
-                      title: "WeatherComparePage",
-                      titleStyle: const TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
+                      SettingsItem(
+                        onTap: () => Get.toNamed('/SupaTestPage'),
+                        icons: CupertinoIcons.link_circle,
+                        title: "SupaTestPage",
+                        titleStyle: const TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    SettingsItem(
-                      onTap: () => Get.toNamed('/SupaTestPage'),
-                      icons: CupertinoIcons.link_circle,
-                      title: "SupaTestPage",
-                      titleStyle: const TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
-                    //
+                      //
+                    ]
                   ],
                 ),
                 const Gap(20),
@@ -257,12 +269,12 @@ class _SettingPageState extends State<SettingPage> {
       child: Column(
         children: [
           const Text(
-            "코드랩타이거(CodeLabTiger)\n서울시 서대문구 종로35길 125 TigerGroup (05510)  대표자 : tigerBk, 사업자등록번호 : 770-50-01045",
+            "코드랩타이거(CodeLabTiger)\n서울시 서대문구 TigerGroup 대표 : tigerBk, 사업자등록번호 : 770-50-01045",
             style: TextStyle(fontSize: 13, color: Colors.black54),
           ),
           const Gap(20),
           const Text(
-            'Copyright 2024 TIGER Group..',
+            'Copyright 2024 TIGER Group',
             style: TextStyle(fontSize: 13, color: Colors.black),
           ),
           const Text(
@@ -273,17 +285,17 @@ class _SettingPageState extends State<SettingPage> {
           Stack(
             children: [
               Image.asset('assets/images/5124556.jpg', fit: BoxFit.cover, width: double.infinity, height: 75),
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  color: Colors.white,
-                  child: const Text(
-                    "02-1588-1234",
-                    style: TextStyle(fontSize: 15, color: Colors.black, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
+              // Positioned(
+              //   right: 0,
+              //   bottom: 0,
+              //   child: Container(
+              //     color: Colors.white,
+              //     child: const Text(
+              //       "010-1588-1234",
+              //       style: TextStyle(fontSize: 15, color: Colors.black, fontWeight: FontWeight.bold),
+              //     ),
+              //   ),
+              // ),
             ],
           ),
 
@@ -384,4 +396,157 @@ class _SettingPageState extends State<SettingPage> {
       },
     );
   }
+}
+
+/// This component group the Settings items (BabsComponentSettingsItem)
+/// All one BabsComponentSettingsGroup have a title and the developper can improve the design.
+class SettingsGroup extends StatelessWidget {
+  final String? settingsGroupTitle;
+  final TextStyle? settingsGroupTitleStyle;
+  final List<SettingsItem> items;
+  // Icons size
+  final double? iconItemSize;
+
+  SettingsGroup({this.settingsGroupTitle, this.settingsGroupTitleStyle, required this.items, this.iconItemSize = 25});
+
+  @override
+  Widget build(BuildContext context) {
+    if (this.iconItemSize != null) SettingsScreenUtils.settingsGroupIconSize = iconItemSize;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 20),
+      color: Colors.transparent,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // The title
+          (settingsGroupTitle != null)
+              ? Padding(
+                  padding: const EdgeInsets.only(bottom: 5),
+                  child: Text(
+                    settingsGroupTitle!,
+                    style:
+                        (settingsGroupTitleStyle == null) ? TextStyle(fontSize: 25, fontWeight: FontWeight.bold) : settingsGroupTitleStyle,
+                  ),
+                )
+              : Container(),
+          // The SettingsGroup sections
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: ListView.separated(
+              separatorBuilder: (context, index) {
+                return Divider();
+              },
+              itemCount: items.length,
+              itemBuilder: (BuildContext context, int index) {
+                return items[index];
+              },
+              shrinkWrap: true,
+              padding: EdgeInsets.zero,
+              physics: ScrollPhysics(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SettingsScreenUtils {
+  static double? settingsGroupIconSize;
+  static TextStyle? settingsGroupTitleStyle;
+}
+
+class SettingsItem extends StatelessWidget {
+  final IconData icons;
+  final IconStyle? iconStyle;
+  final String title;
+  final TextStyle? titleStyle;
+  final String? subtitle;
+  final TextStyle? subtitleStyle;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+  final Color? backgroundColor;
+  final int? titleMaxLine;
+  final int? subtitleMaxLine;
+  final TextOverflow? overflow;
+
+  SettingsItem(
+      {required this.icons,
+      this.iconStyle,
+      required this.title,
+      this.titleStyle,
+      this.subtitle,
+      this.subtitleStyle,
+      this.backgroundColor,
+      this.trailing,
+      this.onTap,
+      this.titleMaxLine,
+      this.subtitleMaxLine,
+      this.overflow = TextOverflow.ellipsis});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(15),
+      child: ListTile(
+        onTap: onTap,
+        leading: (iconStyle != null && iconStyle!.withBackground!)
+            ? Container(
+                decoration: BoxDecoration(
+                  color: iconStyle!.backgroundColor,
+                  borderRadius: BorderRadius.circular(iconStyle!.borderRadius!),
+                ),
+                padding: EdgeInsets.all(5),
+                child: Icon(
+                  icons,
+                  size: SettingsScreenUtils.settingsGroupIconSize,
+                  color: iconStyle!.iconsColor,
+                ),
+              )
+            : Padding(
+                padding: EdgeInsets.all(5),
+                child: Icon(
+                  icons,
+                  size: SettingsScreenUtils.settingsGroupIconSize,
+                ),
+              ),
+        title: Text(
+          title,
+          style: titleStyle ?? TextStyle(fontWeight: FontWeight.bold),
+          maxLines: titleMaxLine,
+          overflow: titleMaxLine != null ? overflow : null,
+        ),
+        subtitle: (subtitle != null)
+            ? Text(
+                subtitle!,
+                style: subtitleStyle ?? Theme.of(context).textTheme.bodyMedium!,
+                maxLines: subtitleMaxLine,
+                overflow: subtitleMaxLine != null ? TextOverflow.ellipsis : null,
+              )
+            : null,
+        trailing: (trailing != null) ? trailing : Icon(Icons.navigate_next),
+      ),
+    );
+  }
+}
+
+class IconStyle {
+  Color? iconsColor;
+  bool? withBackground;
+  Color? backgroundColor;
+  double? borderRadius;
+
+  IconStyle({
+    iconsColor = Colors.white,
+    withBackground = true,
+    backgroundColor = Colors.blue,
+    borderRadius = 8,
+  })  : this.iconsColor = iconsColor,
+        this.withBackground = withBackground,
+        this.backgroundColor = backgroundColor,
+        this.borderRadius = double.parse(borderRadius!.toString());
 }

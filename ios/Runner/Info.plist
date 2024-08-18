@@ -61,6 +61,8 @@
 	<string>ca-app-pub-7861255216779015~2822675009</string>
 	<key>GIDClientID</key>
 	<string>1092869368728-ohvh2c0dvada05plso3qqd4gkqhvh7j7.apps.googleusercontent.com</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>kakaokompassauth</string>
@@ -71,11 +73,14 @@
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<!-- 네이버 로그인 셋팅 -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
+     	<true/>
+		<!-- <key>io.flutter.embedded_views_preview</key>
+		<true/> -->
 		<key>NSExceptionDomains</key>
 		<dict>
 			<key>naver.com</key>
@@ -94,17 +99,6 @@
 			</dict>
 		</dict>
 	</dict>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
-	<key>naverConsumerKey</key>
-	<string>iC9RuDfC4wmdwHXS02Sa</string>
-	<key>naverConsumerSecret</key>
-	<string>VYG6_hVGkl</string>
-	<key>naverServiceAppName</key>
-	<string>SkySnap</string>
-	<key>naverServiceAppUrlScheme</key>
-	<string>com.codelabtiger.skysnap</string>
-	
 	<key>NSCameraUsageDescription</key>
 	<string>App needs access to photo lib for profile images</string>
 	<key>NSLocationAlwaysUsageDescription</key>
@@ -115,6 +109,10 @@
 	<string>your usage description here</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>To capture profile photo please grant camera access</string>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	</array>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>
@@ -342,5 +340,13 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>naverConsumerKey</key>
+	<string>iC9RuDfC4wmdwHXS02Sa</string>
+	<key>naverConsumerSecret</key>
+	<string>VYG6_hVGkl</string>
+	<key>naverServiceAppName</key>
+	<string>SkySnap</string>
+	<key>naverServiceAppUrlScheme</key>
+	<string>com.codelabtiger.skysnap</string>
 </dict>
 </plist>

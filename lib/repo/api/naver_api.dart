@@ -75,7 +75,7 @@ class NaverApi with SecureStorage {
     }
   }
 
-  void logOut() async {
+  Future<void> logOut() async {
     try {
       // await FlutterNaverLogin.logOut();
       await FlutterNaverLogin.logOutAndDeleteToken();

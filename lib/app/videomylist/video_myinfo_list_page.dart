@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:project1/app/videomylist/Video_myScreen_page.dart';
+import 'package:project1/app/videomylist/Video_myScreen_page2.dart';
 import 'package:project1/app/videomylist/cntr/video_myinfo_list_cntr.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/utils/log_utils.dart';
@@ -47,6 +48,7 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
   void dispose() {
     _controller.dispose();
     scrollController.dispose();
+    Get.find<VideoMyinfoListCntr>().videoMyListCntr.close();
 
     super.dispose();
   }
@@ -125,19 +127,21 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
         scrollDirection: Axis.vertical,
         itemCount: data.length,
         physics: const AlwaysScrollableScrollPhysics(),
-        onPageChanged: (int position) {
-          lo.g('page changed. current: $position');
+        onPageChanged: (int? inx) {
+          if (inx == null) return;
 
-          Get.find<VideoMyinfoListCntr>().currentIndex.value = position;
-          Get.find<VideoMyinfoListCntr>().getMoreData(position, data.length);
+          Get.find<VideoMyinfoListCntr>().getMoreData(inx, data.length);
         },
         itemBuilder: (context, i) {
           // if (Get.find<VideoMyinfoListCntr>().isLoadingMore.value && Get.find<VideoMyinfoListCntr>().currentIndex.value == data.length) {
           //   return Utils.progressbar();
           // }
-          lo.g(' data.length : ${data.length} : i : $i');
+          PageStorageKey key = PageStorageKey('key_$i');
+          // if (i < 2) {
+          //   return VideoMySreenPage2(key: key, index: i, data: data[i]);
+          // }
 
-          return VideoMySreenPage(data: data[i], index: i);
+          return VideoMySreenPage(key: key, data: data[i], index: i);
         });
   }
 }

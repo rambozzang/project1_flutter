@@ -1,7 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gemini/flutter_gemini.dart';
+// import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:gap/gap.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
@@ -36,6 +36,7 @@ class _WeatherPageState extends State<WeatherPage> with TickerProviderStateMixin
   // FloatingSearchBarController fsc = FloatingSearchBarController();
   final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
 
+  ValueNotifier<bool> isAdLoading = ValueNotifier<bool>(false);
   @override
   void initState() {
     super.initState();
@@ -44,34 +45,34 @@ class _WeatherPageState extends State<WeatherPage> with TickerProviderStateMixin
 
   Future<void> _loadAd() async {
     await AdManager().loadBannerAd('WeathPage');
-    setState(() {}); // 광고 로드 후 UI 업데이트
+    isAdLoading.value = true;
   }
 
   Future<void> requestWeather() async {
     await Get.find<WeatherCntr>().getWeatherData();
   }
 
-  Future<void> requesGemini(Position position) async {
-    final gemini = Gemini.instance;
+  // Future<void> requesGemini(Position position) async {
+  //   final gemini = Gemini.instance;
 
-    // 온도
-    double? temp = Get.find<WeatherCntr>().oneCallCurrentWeather.value!.temp;
-    //흐림정도
-    int? clouds = Get.find<WeatherCntr>().additionalWeatherData.value.clouds;
-    // 바람
-    String windSpeed = '${Get.find<WeatherCntr>().oneCallCurrentWeather.value!.wind_speed}m/s';
+  //   // 온도
+  //   double? temp = Get.find<WeatherCntr>().oneCallCurrentWeather.value!.temp;
+  //   //흐림정도
+  //   int? clouds = Get.find<WeatherCntr>().additionalWeatherData.value.clouds;
+  //   // 바람
+  //   String windSpeed = '${Get.find<WeatherCntr>().oneCallCurrentWeather.value!.wind_speed}m/s';
 
-    String? uv = Get.find<WeatherCntr>().additionalWeatherData.value.uvi.toString();
-    String? rain = '${Get.find<WeatherCntr>().additionalWeatherData.value.precipitation}mm';
+  //   String? uv = Get.find<WeatherCntr>().additionalWeatherData.value.uvi.toString();
+  //   String? rain = '${Get.find<WeatherCntr>().additionalWeatherData.value.precipitation}mm';
 
-    Get.find<WeatherCntr>().geminiResult.value = 'Ai....';
-    gemini.streamGenerateContent('현재 온도 $temp°C , 바람 $windSpeed mm , UV지수 $uv , 강수량 $rain 이 날씨에 맞는 옷차림?').listen((value) {
-      // gemini.streamGenerateContent('현재 ${Get.find<WeatherCntr>().currentWeather.value?.main?.temp} C 온도에  옷차림은 어떻게 할까요?').listen((value) {
-      Get.find<WeatherCntr>().geminiResult.value = value.output!;
-    }).onError((e) {
-      log('streamGenerateContent exception :   ${e.toString()}');
-    });
-  }
+  //   Get.find<WeatherCntr>().geminiResult.value = 'Ai....';
+  //   gemini.streamGenerateContent('현재 온도 $temp°C , 바람 $windSpeed mm , UV지수 $uv , 강수량 $rain 이 날씨에 맞는 옷차림?').listen((value) {
+  //     // gemini.streamGenerateContent('현재 ${Get.find<WeatherCntr>().currentWeather.value?.main?.temp} C 온도에  옷차림은 어떻게 할까요?').listen((value) {
+  //     Get.find<WeatherCntr>().geminiResult.value = value.output!;
+  //   }).onError((e) {
+  //     log('streamGenerateContent exception :   ${e.toString()}');
+  //   });
+  // }
 
   @override
   void dispose() {
@@ -196,10 +197,10 @@ class _WeatherPageState extends State<WeatherPage> with TickerProviderStateMixin
                   const MainWeatherDetail(),
                   const SizedBox(height: 16.0),
                   // 24시간 예보 / 24HourForecast
-                  const TwentyFourHourForecast(),
+                  // const TwentyFourHourForecast(),
                   const SizedBox(height: 18.0),
                   // 주간예보 / 7일 예보
-                  const SevenDayForecast(),
+                  // const SevenDayForecast(),
                   const SizedBox(height: 28.0),
                   const SizedBox(
                       height: 458.0,
@@ -226,7 +227,12 @@ class _WeatherPageState extends State<WeatherPage> with TickerProviderStateMixin
                   const SizedBox(height: 38.0),
                   // Ads 패딩 적용
                   // FullWidthBannerAd(bannerAd: AdManager.instance.weatherPageBannerAd, sidePadding: 40.0),
-                  const BannerAdWidget(screenName: 'WeathPage')
+                  ValueListenableBuilder<bool>(
+                      valueListenable: isAdLoading,
+                      builder: (context, value, child) {
+                        if (!value) return const SizedBox.shrink();
+                        return const BannerAdWidget(screenName: 'WeathPage');
+                      })
                 ],
               ),
               // CustomSearchBar(fsc: fsc),

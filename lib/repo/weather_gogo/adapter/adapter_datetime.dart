@@ -31,19 +31,6 @@ class DateTimeAdapter {
     }
   }
 
-  /// 초단기 실황 DateTime
-  // DateTime getSuperNctDate(DateTime now) {
-  //   // 40분 이전이면 현재 시보다 1시간 전 `base_time`을 요청한다.
-  //   if (now.minute <= 40) {
-  //     // 단. 0시 40분 이면 `baseDate`는 전날이고 `baseTime`은 23:00이다.
-  //     if (now.hour == 0) return _hour23(now);
-
-  //     return nowDate(hour: now.hour - 1, minute: 00);
-  //   }
-
-  //   //40분 이후면 현재 시와 같은 `base_time`을 요청한다.
-  //   return nowDate(minute: 00);
-  // }
   // 초단기실황 호출시간 계산 함수
   DateTime getSuperNctDate(DateTime now) {
     if (now.minute < 30) {
@@ -60,20 +47,6 @@ class DateTimeAdapter {
       return DateTime(now.year, now.month, now.day, now.hour, 30);
     }
   }
-
-  // /// 초단기 실황 YesterDay DateTime
-  // DateTime getSuperNctYesterDayDate(DateTime now) {
-  //   // 40분 이전이면 현재 시보다 1시간 전 `base_time`을 요청한다.
-  //   if (now.minute <= 40) {
-  //     // 단. 0시 40분 이면 `baseDate`는 전날이고 `baseTime`은 23:00이다.
-  //     if (now.hour == 0) return nowDate(day: now.day - 1, hour: 24, minute: 00);
-
-  //     return nowDate(hour: now.hour - 1, minute: 00);
-  //   }
-
-  //   //40분 이후면 현재 시와 같은 `base_time`을 요청한다.
-  //   return nowDate(day: now.day - 1, minute: 00);
-  // }
 
   /// 단기 예보 DateTime
   DateTime getFctDate(DateTime now) {

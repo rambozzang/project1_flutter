@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
+import 'package:project1/app/weathergogo/naver_scrapping_page.dart';
 import 'package:project1/repo/weather_accu/accu_repo.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/weather_gogo/interface/imp_fct_repository.dart';
@@ -27,6 +29,7 @@ import 'package:project1/repo/search/camping/camping_repo.dart';
 import 'package:project1/repo/search/camping/camping_res_data.dart';
 import 'package:project1/repo/search/school/school_repo.dart';
 import 'package:project1/repo/search/school/school_res_data.dart';
+import 'package:project1/repo/weather_gogo/repository/weather_alert_repo.dart';
 import 'package:project1/repo/weather_gogo/repository/weather_gogo_caching.dart';
 import 'package:project1/repo/weather_gogo/repository/weather_gogo_repo.dart';
 import 'package:project1/utils/log_utils.dart';
@@ -278,6 +281,19 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
     }
   }
 
+  // 특보예보
+  void getAlertJson() async {
+    try {
+      WeatherService weatherService = WeatherService();
+      List<WeatherAlert> weatherAlertList = await weatherService.getWeatherData<List<WeatherAlert>>(
+          const LatLng(37.5546788388674, 126.970606917394), ForecastType.weatherAlert);
+
+      lo.g(weatherAlertList.toString());
+    } catch (e) {
+      Lo.g('특보예보 가져오기 오류 : $e');
+    }
+  }
+
   // accu weather
   void getAccWeatherCast() async {
     try {
@@ -300,99 +316,134 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
   Widget build(BuildContext context) {
     return Scaffold(
       // backgroundColor: Colors.black,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ElevatedButton(
-              onPressed: () => Get.toNamed('/WeatherComPage'),
-              child: const Text('WeatherComPage '),
-            ),
-            ElevatedButton(
-              onPressed: () => Get.toNamed('/WeathgergogoPage'),
-              child: const Text('신규 페이지 '),
-            ),
-            ElevatedButton(
-              onPressed: () => test(),
-              child: const Text('기상청 날씨 가져오기 '),
-            ),
-            ElevatedButton(
-              onPressed: () => Get.toNamed('/JoinPage'),
-              child: const Text('회원가입 화면 '),
-            ),
-            ElevatedButton(
-              onPressed: () => Get.toNamed('/AuthPage'),
-              child: const Text('로그인 로딩 화면 '),
-            ),
-            Row(
-              children: [
-                ElevatedButton(
-                  onPressed: () => Utils.bottomNotiAlert(context, '최신 버전 업데이트', '최신 버전이 있습니다. 플레이스토어로 이동합니다.'),
-                  child: const Text('초기화면 알림'),
-                ),
-                ElevatedButton(
-                  onPressed: () => Utils.appUpdateAlert(context, 'https://www.daum.net'),
-                  child: const Text('초기화면 알림'),
-                ),
-              ],
-            ),
-            ElevatedButton(
-              onPressed: () => getCampingData('서울'),
-              child: const Text('캠피장'),
-            ),
-            ElevatedButton(
-              onPressed: () => getSchoolata('선덕', '고등학교'),
-              child: const Text('학교'),
-            ),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(
+                height: 20,
+              ),
+              ElevatedButton(
+                onPressed: () => Get.to(NaverScrappingPage()),
+                child: const Text('NaverScraPpingPage '),
+              ),
+              ElevatedButton(
+                onPressed: () =>
+                    Get.find<WeatherGogoCntr>().fetchYesterDayWeather(Get.find<WeatherGogoCntr>().currentLocation.value!.latLng),
+                child: const Text('어제날씨조회 '),
+              ),
+              ElevatedButton(
+                onPressed: () => Get.find<WeatherGogoCntr>().fetchSuperNct(Get.find<WeatherGogoCntr>().currentLocation.value!.latLng),
+                child: const Text('초단기실황 '),
+              ),
+              ElevatedButton(
+                onPressed: () => Get.find<WeatherGogoCntr>().fetchSuperFct(Get.find<WeatherGogoCntr>().currentLocation.value!.latLng),
+                child: const Text('초단기예보 '),
+              ),
+              ElevatedButton(
+                onPressed: () => Get.find<WeatherGogoCntr>().fetchFct(Get.find<WeatherGogoCntr>().currentLocation.value!.latLng),
+                child: const Text('단기예보 '),
+              ),
+              ElevatedButton(
+                onPressed: () => Get.toNamed('/WeatherComPage'),
+                child: const Text('WeatherComPage '),
+              ),
+              ElevatedButton(
+                onPressed: () => Get.toNamed('/WeathgergogoPage'),
+                child: const Text('신규 페이지 '),
+              ),
+              ElevatedButton(
+                onPressed: () => Get.toNamed('/AgreePage/${Get.find<AuthCntr>().custId}'),
+                child: const Text('동의 화면 페이지 '),
+              ),
+              ElevatedButton(
+                onPressed: () => test(),
+                child: const Text('기상청 날씨 가져오기 '),
+              ),
+              ElevatedButton(
+                onPressed: () => Get.toNamed('/JoinPage'),
+                child: const Text('회원가입 화면 '),
+              ),
+              ElevatedButton(
+                onPressed: () => Get.toNamed('/AuthPage'),
+                child: const Text('로그인 로딩 화면 '),
+              ),
+              Row(
                 children: [
                   ElevatedButton(
-                    onPressed: () => getSuperNctCast(),
-                    child: const Text('초단기실황'),
+                    onPressed: () => Utils.bottomNotiAlert(context, '최신 버전 업데이트', '최신 버전이 있습니다. 플레이스토어로 이동합니다.'),
+                    child: const Text('초기화면 알림'),
                   ),
                   ElevatedButton(
-                    onPressed: () => getSuperFctCast(),
-                    child: const Text('초단기'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => getNctCast(),
-                    child: const Text('단기'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => getFctVersion(),
-                    child: const Text('예보버전'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => getMidFctJson(),
-                    child: const Text('중기육상'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => getMidTaJson(),
-                    child: const Text('중기기온'),
+                    onPressed: () => Utils.appUpdateAlert(context, 'https://www.daum.net'),
+                    child: const Text('초기화면 알림'),
                   ),
                 ],
               ),
-            ),
-            ElevatedButton(onPressed: () => aaa(), child: const Text('video')),
-            Container(
-                width: 210,
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(5),
+              ElevatedButton(
+                onPressed: () => getCampingData('서울'),
+                child: const Text('캠피장'),
+              ),
+              ElevatedButton(
+                onPressed: () => getSchoolata('선덕', '고등학교'),
+                child: const Text('학교'),
+              ),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => getSuperNctCast(),
+                      child: const Text('초단기실황'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => getSuperFctCast(),
+                      child: const Text('초단기'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => getNctCast(),
+                      child: const Text('단기'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => getFctVersion(),
+                      child: const Text('예보버전'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => getMidFctJson(),
+                      child: const Text('중기육상'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => getMidTaJson(),
+                      child: const Text('중기기온'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => getAlertJson(),
+                      child: const Text('특보'),
+                    ),
+                  ],
                 ),
-                child: ValueListenableBuilder<String>(
-                  valueListenable: result,
-                  builder: (context, value, child) {
-                    return Text(
-                      value,
-                      style: const TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
-                    );
-                  },
-                )),
-          ],
+              ),
+              ElevatedButton(onPressed: () => aaa(), child: const Text('video')),
+              Container(
+                  width: 210,
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: ValueListenableBuilder<String>(
+                    valueListenable: result,
+                    builder: (context, value, child) {
+                      return Text(
+                        value,
+                        style: const TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
+                      );
+                    },
+                  )),
+            ],
+          ),
         ),
       ),
     );

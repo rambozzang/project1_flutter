@@ -80,8 +80,8 @@ class BoardListPageState extends State<BoardListPage> with AutomaticKeepAliveCli
 
       BoardRepo repo = BoardRepo();
 
-      ResData res = await repo.getSearchBoard(Get.find<WeatherGogoCntr>().positionData.latitude.toString(),
-          Get.find<WeatherGogoCntr>().positionData.latitude.toString(), boardPageNum, boardageSize, searchWord);
+      ResData res = await repo.getSearchBoard(Get.find<WeatherGogoCntr>().positionData.value!.latitude.toString(),
+          Get.find<WeatherGogoCntr>().positionData.value!.latitude.toString(), boardPageNum, boardageSize, searchWord);
 
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
@@ -336,7 +336,7 @@ class BoardListPageState extends State<BoardListPage> with AutomaticKeepAliveCli
                             ),
                           ),
                           Text(
-                            Utils.timeage(list[index].crtDtm.toString()),
+                            '${Utils.timeage(list[index].crtDtm.toString())}전',
                             style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w400, color: Colors.black),
                           ),
                           // Text(

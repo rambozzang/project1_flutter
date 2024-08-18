@@ -35,8 +35,10 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace "com.codelabtiger.skysnap"
     compileSdk 34 // flutter.compileSdkVersion
+    compileSdkVersion 34
     // ndkVersion flutter.ndkVersion
-    ndkVersion "25.2.9519653"
+    // ndkVersion "25.2.9519653"
+    ndkVersion "26.1.10909125"
 
     compileOptions {
         coreLibraryDesugaringEnabled true
@@ -64,8 +66,9 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdk 21
-        minSdkVersion 23
+        minSdkVersion 24 // 23 -> 24 ffmpeg_kit_flutter 때문에 올린다.
         targetSdk 34
+        targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
 
@@ -79,32 +82,28 @@ android {
         release {
             keyAlias keystoreProperties['keyAlias']
             keyPassword keystoreProperties['keyPassword']
-            storeFile file(keystoreProperties['storeFile'])
+            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
             storePassword keystoreProperties['storePassword']
         }
     }
 
     buildTypes {
-      
+        debug {
+            signingConfig signingConfigs.debug
+        }
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            // signingConfig signingConfigs.release
-            signingConfig signingConfigs.release
-             // ProGuard 활성화
             minifyEnabled true
             shrinkResources true
-
+            // Signing with the debug keys for now, so `flutter run --release` works.
+            signingConfig signingConfigs.release
             // ProGuard 규칙 파일
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-
             //압축
              packagingOptions {
                 jniLibs {
                     useLegacyPackaging = true
                 }
             }
-
         }
     }
 }
@@ -114,14 +113,7 @@ flutter {
 }
 
 dependencies {
-    // implementation('com.google.android.exoplayer:exoplayer:2.19.1')
-    //  implementation 'com.google.android.exoplayer:exoplayer-core:2.19.1'
-    //     implementation 'com.google.android.exoplayer:exoplayer-hls:2.19.1'
-    //     implementation 'com.google.android.exoplayer:exoplayer-dash:2.19.1'
-    //     implementation 'com.google.android.exoplayer:exoplayer-smoothstreaming:2.19.1'
 
-    // 20240601 추가
-    
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.2.2'
@@ -138,5 +130,15 @@ dependencies {
 
     // admob
     implementation("com.google.android.gms:play-services-ads:22.6.0")
+    
+    //exoplayer
+    // implementation 'com.google.android.exoplayer:exoplayer-core:2.19.1'
+    // implementation 'com.google.android.exoplayer:exoplayer-dash:2.19.1'
+    // implementation 'com.google.android.exoplayer:exoplayer-hls:2.19.1'
+    // implementation 'com.google.android.exoplayer:exoplayer-ui:2.19.1'
+    // implementation 'com.google.android.exoplayer:exoplayer-smoothstreaming:2.19.1'
+
+     implementation project(':video_player_android')
+    
 
 }

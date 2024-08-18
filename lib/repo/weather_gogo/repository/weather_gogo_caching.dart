@@ -1,4 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:ui';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:project1/repo/weather_gogo/adapter/adapter_map.dart';
@@ -18,7 +22,8 @@ enum ForecastType {
   superFct, // 초단기예보
   fct, // 단기예보
   midFctLand, // 중기예보(육상)
-  midTa // 중기예보(기온)
+  midTa, // 중기예보(기온)
+  weatherAlert // 새로운 기상 특보 타입 추가
 }
 
 /// 날씨 데이터 캐싱을 관리하는 클래스
@@ -57,14 +62,17 @@ class WeatherCache {
       if (cachedJson != null) {
         final cachedData = jsonDecode(cachedJson);
         final cachedTime = DateTime.parse(cachedData['timestamp']);
-        lo.g('[CACHING] 캐시에서 데이터 로드 cachedTime: ${cachedTime.toString()}');
+
         if (_isCacheValid(cachedTime, type)) {
           final decodedData = jsonDecode(cachedData['data']);
+          // lo.g('[CACHING] 캐시에서 데이터 로드 : ${cachedTime.toString()} : ${type.toString()}');
           return _convertData<T>(decodedData);
         }
+        return null;
       }
     } catch (e) {
       lo.g('Error retrieving weather data from cache: $e');
+      return null;
     }
     return null;
   }
@@ -118,16 +126,24 @@ class WeatherCache {
   DateTime _getNextUpdateTime(DateTime cachedTime, ForecastType type) {
     switch (type) {
       case ForecastType.superNctYesterDay:
-      case ForecastType.superNct:
         return _getNextHourlyUpdateTime(cachedTime, 40);
+      case ForecastType.superNct:
+        return _getNextSuperNctUpdateTime(cachedTime);
       case ForecastType.superFct:
-        return _getNextHourlyUpdateTime(cachedTime, 45);
+        return _getNextSuperFctUpdateTime(cachedTime);
       case ForecastType.fct:
-        return _getNextSpecificHourUpdateTime(cachedTime, [2, 5, 8, 11, 14, 17, 20, 23]);
+        return _getNextFctUpdateTime(cachedTime);
       case ForecastType.midFctLand:
       case ForecastType.midTa:
-        return _getNextSpecificHourUpdateTime(cachedTime, [6, 18]);
+        return _getNextMidFctUpdateTime(cachedTime);
+      case ForecastType.weatherAlert:
+        return _getNextWeatherAlertUpdateTime(cachedTime);
     }
+  }
+
+  DateTime _getNextWeatherAlertUpdateTime(DateTime cachedTime) {
+    // 기상 특보는 수시로 업데이트될 수 있으므로, 30분마다 갱신하도록 설정
+    return cachedTime.add(const Duration(minutes: 30));
   }
 
   DateTime _getNextHourlyUpdateTime(DateTime cachedTime, int minute) {
@@ -137,6 +153,48 @@ class WeatherCache {
     }
     return nextUpdate;
   }
+
+  DateTime _getNextSuperNctUpdateTime(DateTime cachedTime) {
+    // 초단기실황: 매시 40분 이후 업데이트
+    return _getNextHourlyUpdateTime(cachedTime, 40);
+  }
+
+  DateTime _getNextSuperFctUpdateTime(DateTime cachedTime) {
+    // 초단기예보: 매시 45분 이후 업데이트
+    return _getNextHourlyUpdateTime(cachedTime, 45);
+  }
+
+  DateTime _getNextFctUpdateTime(DateTime cachedTime) {
+    // 단기예보: 02:10, 05:10, 08:10, 11:10, 14:10, 17:10, 20:10, 23:10 업데이트
+    var updateHours = [2, 5, 8, 11, 14, 17, 20, 23];
+    var nextHour = updateHours.firstWhere((hour) => hour > cachedTime.hour, orElse: () => updateHours.first);
+
+    var nextUpdate = DateTime(cachedTime.year, cachedTime.month, cachedTime.day, nextHour, 10);
+    if (nextHour <= cachedTime.hour && cachedTime.minute >= 10) {
+      nextUpdate = nextUpdate.add(const Duration(days: 1));
+    }
+    return nextUpdate;
+  }
+
+  DateTime _getNextMidFctUpdateTime(DateTime cachedTime) {
+    // 중기예보: 06:00, 18:00 업데이트
+    var updateHours = [6, 18];
+    var nextHour = updateHours.firstWhere((hour) => hour > cachedTime.hour, orElse: () => updateHours.first);
+
+    var nextUpdate = DateTime(cachedTime.year, cachedTime.month, cachedTime.day, nextHour);
+    if (nextHour <= cachedTime.hour) {
+      nextUpdate = nextUpdate.add(const Duration(days: 1));
+    }
+    return nextUpdate;
+  }
+
+  // DateTime _getNextHourlyUpdateTime(DateTime cachedTime, int minute) {
+  //   var nextUpdate = DateTime(cachedTime.year, cachedTime.month, cachedTime.day, cachedTime.hour, minute);
+  //   if (cachedTime.minute >= minute) {
+  //     nextUpdate = nextUpdate.add(const Duration(hours: 1));
+  //   }
+  //   return nextUpdate;
+  // }
 
   DateTime _getNextSpecificHourUpdateTime(DateTime cachedTime, List<int> updateHours) {
     var nextHour = updateHours.firstWhere((hour) => hour > cachedTime.hour, orElse: () => updateHours.first);
@@ -158,25 +216,49 @@ class WeatherService {
       // 캐시 확인
       final cachedData = await _cache.getWeatherData<T>(location, type);
       if (cachedData != null) {
-        lo.g('[CACHING] 캐시에서 데이터 로드: ${type.toString()}');
+        lo.g('[CACHING] 캐시에서 데이터 로드 : ${type.toString()}');
         return cachedData;
       }
 
       // API 호출
-      lo.g('[CACHING] API에서 데이터 로드: ${type.toString()}');
-      final result = await _callWeatherAPI<T>(location, type);
+      // RootIsolateToken 생성
+      final RootIsolateToken rootIsolateToken = RootIsolateToken.instance!;
+
+      // API 호출 및 데이터 처리는 백그라운드 Isolate에서 수행
+      final result = await compute(
+        _callWeatherAPI<T>,
+        _FetchParams(location, type, rootIsolateToken),
+      );
+      lo.g('[CACHING] API에서 데이터 로드 : ${type.toString()}');
+
+      if (result == null || result is List && result.isEmpty) {
+        // sleep(const Duration(milliseconds: 500));
+        // getWeatherData<T>(location, type);
+        throw Exception('Api 호출 결과값이 Null 입니다. ');
+      }
+      if (type == ForecastType.superNctYesterDay) {
+        final list = (result as T);
+        if ((list as List).length < 22) {
+          throw Exception('어제 API 조회 총 갯수가 20보다 작습니다.');
+        }
+      }
       // 새 데이터 캐싱
       await _cache.saveWeatherData<T>(location, type, result);
 
       return result;
     } catch (e) {
-      lo.g('Error fetching weather data for ${type.toString()}: $e');
+      lo.e('Error getWeatherData() data for ${type.toString()}: $e');
       rethrow;
     }
   }
 
   /// 날씨 API 호출
-  Future<T> _callWeatherAPI<T>(LatLng location, ForecastType type) async {
+  Future<T> _callWeatherAPI<T>(_FetchParams params) async {
+    final location = params.location;
+    final type = params.type;
+    // 백그라운드 Isolate에서 플랫폼 채널 초기화
+    BackgroundIsolateBinaryMessenger.ensureInitialized(params.rootIsolateToken);
+
     switch (type) {
       case ForecastType.superNctYesterDay:
         return await _repo.getYesterDayJson(location, isLog: true, isChache: false) as T;
@@ -190,8 +272,18 @@ class WeatherService {
         return await _repo.getMidFctJson(location, isLog: true) as T;
       case ForecastType.midTa:
         return await _repo.getMidTaJson(location, isLog: true) as T;
+      case ForecastType.weatherAlert:
+        return await _repo.getSpecialFctJson(location, isLog: true) as T;
       default:
         throw ArgumentError('Invalid forecast type: $type');
     }
   }
+}
+
+class _FetchParams {
+  final LatLng location;
+  final ForecastType type;
+  final RootIsolateToken rootIsolateToken;
+
+  _FetchParams(this.location, this.type, this.rootIsolateToken);
 }

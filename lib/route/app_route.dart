@@ -27,8 +27,9 @@ import 'package:project1/app/setting/setting_page.dart';
 import 'package:project1/app/test/test_dio_page.dart';
 import 'package:project1/app/weather/page/sevenday_detail_page.dart';
 import 'package:project1/app/weather/page/weather_page.dart';
-import 'package:project1/app/weatherCom/cntr/weather_controller.dart';
+import 'package:project1/app/weatherCom/cntr/weather_com_controller.dart';
 import 'package:project1/app/weatherCom/weather_com_page.dart';
+import 'package:project1/app/weathergogo/24_page.dart';
 import 'package:project1/app/weathergogo/weathergogo_page.dart';
 import 'package:project1/app/webview/weather_webview.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
@@ -206,19 +207,24 @@ abstract class AppPages {
     ),
     GetPage(
       name: '/AgreePage/:custId',
-      page: () => AgreePage(),
+      page: () => const AgreePage(),
       // transition: Transition.downToUp,
     ),
     GetPage(
       name: '/WeathgergogoPage',
-      page: () => WeathgergogoPage(),
+      page: () => const WeathgergogoPage(),
       // binding: WeatherGogoCntrBinding(),
       // transition: Transition.downToUp,
     ),
     GetPage(
       name: '/WeatherComPage',
-      page: () => const WeatherComPage(),
-      binding: WeatherControllerBinding(),
+      page: () => WeatherComPage(),
+      binding: WeatherComControllerBinding(),
+      // transition: Transition.downToUp,
+    ),
+    GetPage(
+      name: '/T24Page',
+      page: () => T24Page(),
       // transition: Transition.downToUp,
     ),
   ];

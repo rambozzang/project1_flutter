@@ -2,7 +2,7 @@
 
 buildscript {
     // ext.kotlin_version = '1.9.24'
-    ext.kotlin_version = '2.0.0'   // settings.gradle 파일의 버전을 맞춰준다.
+    ext.kotlin_version = '2.0.10'   // settings.gradle 파일의 버전을 맞춰준다.
     // ext.kotlin_version = '1.9.20'
     //ext.kotlin_version = '1.7.20'
      repositories {
@@ -30,6 +30,16 @@ allprojects {
 
 rootProject.buildDir = '../build'
 subprojects {
+    // flutte-3.24시 flutter_Naver_login  resource android:attr/lStar not found. 오류 대체용 코드
+    afterEvaluate { project ->
+        if (project.plugins.hasPlugin("com.android.application") ||
+                project.plugins.hasPlugin("com.android.library")) {
+            project.android {
+                compileSdkVersion 34
+                buildToolsVersion "34.0.0"
+            }
+        }
+    }
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
 // subprojects {

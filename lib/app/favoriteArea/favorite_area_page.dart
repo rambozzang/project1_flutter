@@ -201,21 +201,22 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(
-      //   forceMaterialTransparency: true,
-      //   backgroundColor: Colors.transparent,
-      //   titleSpacing: 0,
-      //   elevation: 0,
-      //   centerTitle: false,
-      //   title: const Text(
-      //     '관심지역 등록',
-      //     style: TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.w600),
-      //   ),
-      // ),
+      appBar: AppBar(
+        forceMaterialTransparency: true,
+        backgroundColor: Colors.transparent,
+        titleSpacing: 0,
+        elevation: 0,
+        centerTitle: false,
+        title: const Text(
+          '관심지역 등록',
+          // style: TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.w600),
+        ),
+      ),
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: EdgeInsets.only(left: 10, right: 10, top: Platform.isIOS ? kToolbarHeight : kToolbarHeight - 30, bottom: 18),
+            // padding: EdgeInsets.only(left: 10, right: 10, top: Platform.isIOS ? kToolbarHeight : kToolbarHeight - 30, bottom: 18),
+            padding: const EdgeInsets.only(left: 10, right: 10, top: 10),
             // physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
@@ -295,6 +296,7 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
                             width: 90,
                             child: CustomButton(
                                 text: '등록하기',
+                                isEnable: true,
                                 listColors: const [
                                   Color.fromARGB(255, 36, 77, 158),
                                   Color.fromARGB(255, 35, 81, 172),
@@ -344,6 +346,7 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
                       width: 80,
                       child: CustomButton(
                           text: '등록하기',
+                          isEnable: true,
                           listColors: const [
                             Color.fromARGB(255, 36, 77, 158),
                             Color.fromARGB(255, 35, 81, 172),

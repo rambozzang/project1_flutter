@@ -468,7 +468,7 @@ class SupabaseChatCore {
           lo.g('Postgrest Error details: ${error.details}');
           lo.g('Postgrest Error hint: ${error.hint}');
         }
-        roomsSubject.addError(error);
+        // roomsSubject.addError(error);
       }
     }
 

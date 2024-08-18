@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:project1/utils/log_utils.dart';
 
 /*
  *  Local Storage 저장 내용
@@ -15,7 +16,7 @@ mixin SecureStorage {
 
   // 사용자 ID 저장(수정)
   Future<bool> saveCustId(String custId) async {
-    debugPrint("[Storage Action] : saveCustId('$custId')");
+    lo.g("[Storage Action] : saveCustId('$custId')");
     await storage.write(key: "CUST_ID", value: custId);
     return true;
   }
@@ -23,7 +24,7 @@ mixin SecureStorage {
   // 사용자 ID 조회
   Future<String?> getCustId() async {
     String? custId = await storage.read(key: "CUST_ID");
-    debugPrint("[Storage Action] : getCustId('$custId')");
+    lo.g("[Storage Action] : getCustId('$custId')");
     return custId;
   }
 

@@ -17,7 +17,7 @@ class CustomButton extends StatelessWidget {
 
   CustomButton({
     super.key,
-    this.isEnable = true,
+    this.isEnable = false,
     this.isProgressing = false,
     required this.text,
     required this.type,
@@ -80,8 +80,8 @@ class CustomButton extends StatelessWidget {
     // const Color(0xFF5A4FCF), // 슬레이트 블루
     // const Color(0xFF5A4FCC), // 미디엄 슬레이트 블루
 
-    const Color.fromARGB(255, 36, 77, 158),
-    const Color.fromARGB(255, 35, 81, 172),
+    const Color.fromARGB(255, 44, 89, 181),
+    const Color.fromARGB(255, 47, 99, 203),
 
     // const Color.fromARGB(255, 36, 77, 158),
     // const Color.fromARGB(255, 35, 81, 172),
@@ -136,12 +136,18 @@ class CustomButton extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(7),
               border: Border.all(color: Colors.transparent),
-              // color: isEnable ? Colors.blue[700] : Colors.grey[300],
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: listColors ?? listDefColors!,
-              ),
+              //  color: isEnable ? Colors.blue[700] : Colors.grey[300],
+              gradient: isEnable
+                  ? LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: listColors ?? listDefColors!,
+                    )
+                  : const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [Colors.grey, Color.fromARGB(255, 119, 118, 118)],
+                    ),
             ),
             child: Center(
               child: isProgressing

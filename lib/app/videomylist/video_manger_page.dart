@@ -147,7 +147,7 @@ class _VideoManagePageState extends State<VideoManagePage> {
                           ),
                         ),
                   const Spacer(),
-                  CustomButton(text: ' 수정 완료 ', type: 'XS', onPressed: () => save())
+                  CustomButton(text: ' 수정 완료 ', type: 'XS', isEnable: true, onPressed: () => save())
                 ],
               ),
             ),

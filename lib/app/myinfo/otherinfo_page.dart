@@ -17,6 +17,7 @@ import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/board/data/cust_count_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
+import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/cust_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
@@ -77,6 +78,8 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
   late String? custId;
   late CustData? custData;
 
+  final ValueNotifier<bool> isBlocked = ValueNotifier<bool>(false);
+
   @override
   void initState() {
     super.initState();
@@ -97,6 +100,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
         RootCntr.to.bottomBarStreamController.sink.add(true);
       }
     });
+    checkBlock(custId!);
   }
 
   // Future<void> getInitUserData() => getUserData(custId!);
@@ -121,6 +125,19 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
   //   }
   // }
 
+  Future<void> checkBlock(String otherCustId) async {
+    try {
+      CustRepo repo = CustRepo();
+      ResData res = await repo.checkBlock(otherCustId);
+      isBlocked.value = res.data;
+      if (isBlocked.value) {
+        Utils.alert('이 사용자는 차단되어 있습니다.');
+      }
+    } catch (e) {
+      lo.g('checkBlock 오류: $e');
+    }
+  }
+
   Future<void> getInitCountData() => getCountData(custId!);
 
   Future<void> getCountData(String custId) async {
@@ -137,7 +154,9 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
       nickNm.value = data.custInfo!.nickNm.toString();
       myCountCntr.sink.add(ResStream.completed(data));
     } catch (e) {
-      Utils.alert(e.toString());
+      if (myCountCntr.isClosed) {
+        return;
+      }
       myCountCntr.sink.add(ResStream.error(e.toString()));
     }
   }
@@ -155,11 +174,13 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
         Utils.alert(res.msg.toString());
         return;
       }
-      print(res.data);
+
       List<BoardWeatherListData> list = ((res.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
       myVideoListCntr.sink.add(ResStream.completed(list));
     } catch (e) {
-      Utils.alert(e.toString());
+      if (myVideoListCntr.isClosed) {
+        return;
+      }
       myVideoListCntr.sink.add(ResStream.error(e.toString()));
     }
   }
@@ -177,7 +198,9 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
       List<BoardWeatherListData> list = ((res.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
       followVideoListCntr.sink.add(ResStream.completed(list));
     } catch (e) {
-      Utils.alert(e.toString());
+      if (followVideoListCntr.isClosed) {
+        return;
+      }
       followVideoListCntr.sink.add(ResStream.error(e.toString()));
     }
   }
@@ -188,8 +211,8 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
     String title = "팔로우 하시겠습니까?";
     Utils.showConfirmDialog("확인", title, BackButtonBehavior.none, confirm: () async {
       Lo.g('cancel');
-      Get.find<VideoListCntr>().follow(cudtId.toString());
-      getInitCountData();
+      final result = await Get.find<VideoListCntr>().follow(cudtId.toString());
+      result ? getInitCountData() : null;
     }, cancel: () async {
       Lo.g('cancel');
     }, backgroundReturn: () {});
@@ -201,11 +224,44 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
     String title = "팔로우 취소하시겠습니까?";
     Utils.showConfirmDialog("취소", title, BackButtonBehavior.none, confirm: () async {
       Lo.g('cancel');
-      Get.find<VideoListCntr>().followCancle(cudtId.toString());
-      getInitCountData();
+      final result = await Get.find<VideoListCntr>().followCancle(cudtId.toString());
+      result ? getInitCountData() : null;
     }, cancel: () async {
       Lo.g('cancel');
     }, backgroundReturn: () {});
+  }
+
+  Future<void> block() async {
+    try {
+      BoardRepo repo = BoardRepo();
+
+      ResData res = await repo.saveSingo('0', '08', custId!, '프폴필에서 차단');
+      if (res.code != '00') {
+        Utils.alert('다시 시도해주세요.');
+      }
+      Utils.alert('차단이 완료되었습니다.');
+      Get.find<VideoListCntr>().getData();
+    } catch (e) {
+      Lo.g('saveReply() error : $e');
+      Utils.alert("다시 시도해주세요.");
+    }
+  }
+
+  // 차단해제
+  Future<void> unBlock() async {
+    try {
+      CustRepo repo = CustRepo();
+      ResData res = await repo.unBlock(custId!);
+      if (res.code != '00') {
+        Utils.alert(res.msg.toString());
+        return;
+      }
+      Utils.alert('차단이 해제되었습니다.');
+      isBlocked.value = false;
+      // getInitCountData();
+    } catch (e) {
+      Utils.alert(e.toString());
+    }
   }
 
   @override
@@ -279,11 +335,12 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
             String followyn = data.followYn.toString();
 
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 60.0),
+              padding: const EdgeInsets.symmetric(horizontal: 10.0),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Expanded(
-                    flex: 4,
+                  SizedBox(
+                    width: 90,
                     child: CustomButton(
                       text: followyn == 'Y' ? '팔로잉 취소' : '팔로우 하기',
                       type: 'S',
@@ -291,68 +348,88 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                       isEnable: true,
                       listColors: [
                         followyn == 'Y' ? const Color(0xFF3A3F65) : const Color.fromARGB(255, 169, 175, 214),
-                        followyn == 'Y' ? const Color(0xFF1E2238) : const Color.fromARGB(255, 188, 195, 233),
+                        // followyn == 'Y' ? const Color(0xFF1E2238) : const Color.fromARGB(255, 188, 195, 233),
                         followyn == 'Y' ? const Color(0xFF414766) : const Color.fromARGB(255, 171, 175, 193),
                       ],
                       onPressed: () => followyn == 'Y' ? cancleFollow(data.custId.toString()) : addFollow(data.custId.toString()),
                     ),
-                    // child: ElevatedButton(
-                    //   onPressed: () => data.followYn == 'Y' ? cancleFollow(data.custId.toString()) : addFollow(data.custId.toString()),
-                    //   clipBehavior: Clip.none,
-                    //   style: ElevatedButton.styleFrom(
-                    //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-                    //     elevation: 0.5,
-                    //     minimumSize: const Size(0, 0),
-                    //     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    //     backgroundColor: data.followYn.toString() == 'N' ? Colors.transparent : Colors.white,
-                    //     // backgroundColor: widget.data.followYn.toString().contains('N') ? Colors.black : Colors.white,
-                    //     shape: RoundedRectangleBorder(
-                    //         borderRadius: BorderRadius.circular(10.0), side: const BorderSide(color: Colors.white, width: 0.7)),
-                    //   ),
-                    //   child: Text(
-                    //     data.followYn.toString() == 'N' ? '팔로우' : '팔로잉',
-                    //     // widget.data.followYn.toString().contains('N') ? '팔로우' : '팔로잉',
-                    //     style: TextStyle(
-                    //       color: data.followYn.toString().contains('N') ? Colors.white : Colors.black,
-                    //       fontSize: 14,
-                    //     ),
-                    //   ),
-                    // ),
                   ),
                   const Gap(15),
-                  Expanded(
-                      flex: 4,
-                      child: CustomButton(
-                          text: '대화하기',
-                          type: 'S',
-                          heightValue: 40,
-                          isEnable: true,
-                          onPressed: () async {
-                            types.User otherUser = types.User(
-                                id: data!.chatId.toString(), firstName: data!.nickNm.toString(), imageUrl: data!.profilePath.toString());
+                  ValueListenableBuilder<bool>(
+                      valueListenable: isBlocked,
+                      builder: (context, value, snapshot) {
+                        if (value) {
+                          return const SizedBox.shrink();
+                        }
+                        return SizedBox(
+                          width: 90,
+                          child: CustomButton(
+                            text: '대화하기',
+                            type: 'S',
+                            heightValue: 40,
+                            isEnable: true,
+                            onPressed: () async {
+                              types.User otherUser = types.User(
+                                  id: data!.chatId.toString(), firstName: data!.nickNm.toString(), imageUrl: data!.profilePath.toString());
 
-                            final room = await SupabaseChatCore.instance.createRoom(otherUser);
-                            Get.to(ChatPage(room: room));
-                            // await Navigator.of(context).push(
-                            //   MaterialPageRoute(
-                            //     builder: (context) => ChatPage(
-                            //       room: room,
-                            //     ),
-                            //   ),
-                            // );
-                          },
-                          suffixIcon: const Padding(
-                            padding: EdgeInsets.only(left: 3.0),
-                            child: Icon(
-                              Icons.arrow_circle_right_outlined,
-                              color: Colors.white,
-                              size: 19,
+                              final room = await SupabaseChatCore.instance.createRoom(otherUser);
+                              Get.to(ChatPage(room: room));
+                            },
+                            suffixIcon: Padding(
+                              padding: const EdgeInsets.only(left: 3.0),
+                              child: Icon(
+                                value ? Icons.warning : Icons.arrow_circle_right_outlined,
+                                color: Colors.white,
+                                size: 19,
+                              ),
                             ),
+                            listColors: const [
+                              Colors.indigo,
+                              Colors.indigo,
+                            ],
                           ),
-                          listColors: const [
-                            Colors.indigo,
-                            Colors.indigo,
-                          ])),
+                        );
+                      }),
+                  const Gap(15),
+                  ValueListenableBuilder<bool>(
+                      valueListenable: isBlocked,
+                      builder: (context, value, snapshot) {
+                        return SizedBox(
+                          width: 90,
+                          child: CustomButton(
+                            text: value ? '차단해제' : '차단하기',
+                            type: 'S',
+                            heightValue: 40,
+                            isEnable: true,
+                            onPressed: () async {
+                              Utils.showConfirmDialog(
+                                  value ? '차단해제' : '차단하기', value ? '차단해제하시겠습니까>' : '차단 하시겠습니까?', BackButtonBehavior.none,
+                                  confirm: () async {
+                                if (value) {
+                                  await unBlock();
+                                } else {
+                                  await block();
+                                }
+                                isBlocked.value = !value;
+                              }, cancel: () async {
+                                Lo.g('cancel');
+                              }, backgroundReturn: () {});
+                            },
+                            suffixIcon: const Padding(
+                              padding: EdgeInsets.only(left: 3.0),
+                              child: Icon(
+                                Icons.warning,
+                                color: Colors.white,
+                                size: 19,
+                              ),
+                            ),
+                            listColors: const [
+                              const Color(0xFFFF9900),
+                              const Color(0xFFFF9900),
+                            ],
+                          ),
+                        );
+                      }),
                 ],
               ),
             );

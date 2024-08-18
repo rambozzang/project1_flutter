@@ -6,20 +6,27 @@ import 'dart:math' as math;
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:project1/app/weather/theme/colors.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
-import 'package:project1/app/weathergogo/cntr/data/current_weather_data.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 
 class DetailMainPage extends StatelessWidget {
-  const DetailMainPage({Key? key}) : super(key: key);
+  const DetailMainPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<WeatherGogoCntr>(
-      builder: (cntr) {
-        final currentWeather = cntr.currentWeather.value;
-        if (currentWeather == CurrentWeatherData()) {
-          return const SizedBox(height: 1);
-        }
+    // return GetBuilder<WeatherGogoCntr>(
+    //   builder: (cntr) {
+    //     final currentWeather = cntr.currentWeather;
+    //     if (cntr.isLoading.value) {
+    //       return const Center(
+    //           child: Text(
+    //         '....',
+    //         style: TextStyle(color: Colors.white),
+    //       ));
+    //     }
+    final controller = Get.find<WeatherGogoCntr>();
+
+    return Obx(
+      () {
         return Container(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           decoration: BoxDecoration(
@@ -29,21 +36,22 @@ class DetailMainPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              const SizedBox(height: 10.0),
               _buildInfoRow([
                 _buildInfoTile(
                   icon: PhosphorIconsRegular.cloud,
                   title: '강수확률',
-                  data: '${currentWeather?.rainPo}%',
+                  data: '${controller.currentWeather.value.rainPo ?? 0}%',
                 ),
                 _buildInfoTile(
                   icon: PhosphorIconsRegular.drop,
                   title: '강수량1h',
-                  data: '${currentWeather?.rain1h}mm',
+                  data: '${controller.currentWeather.value.rain1h ?? 0}mm',
                 ),
                 _buildInfoTile(
-                  icon: PhosphorIconsRegular.sun,
-                  title: '풍향',
-                  data: '${currentWeather?.deg ?? 0.0}',
+                  icon: PhosphorIconsRegular.navigationArrow,
+                  title: '풍 향',
+                  data: '${controller.currentWeather.value.deg ?? 0.0}',
                   isWindDirection: true,
                 ),
               ]),
@@ -57,17 +65,19 @@ class DetailMainPage extends StatelessWidget {
                 _buildInfoTile(
                   icon: PhosphorIconsRegular.wind,
                   title: '바 람',
-                  data: '${currentWeather?.speed}m/s',
+                  data: '${controller.currentWeather.value.speed ?? 0}m/s',
                 ),
                 _buildInfoTile(
                   icon: PhosphorIconsRegular.dropHalfBottom,
                   title: '습 도',
-                  data: '${currentWeather!.humidity}%',
+                  data: '${controller.currentWeather.value.humidity ?? 0}%',
                 ),
                 _buildInfoTile(
-                  icon: PhosphorIconsRegular.thermometerSimple,
-                  title: '기준시각',
-                  data: '${currentWeather.fcsTime.toString().substring(0, 2)}:${currentWeather.fcsTime.toString().substring(2, 4)}',
+                  icon: PhosphorIconsRegular.clock,
+                  title: '발표시각',
+                  data: controller.currentWeather.value.fcsTime == null
+                      ? ''
+                      : '${controller.currentWeather.value.fcsTime.toString().substring(0, 2)}:${controller.currentWeather.value.fcsTime.toString().substring(2, 4)}',
                 ),
               ]),
             ],

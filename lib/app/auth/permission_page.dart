@@ -32,7 +32,12 @@ class PermissionHandler {
     if (locationPermission == LocationPermission.denied || locationPermission == LocationPermission.deniedForever) {
       locationPermission = await Geolocator.requestPermission();
       if (locationPermission == LocationPermission.denied || locationPermission == LocationPermission.deniedForever) {
-        await openAppSettings().then((value) => handleLocationPermission()).catchError((e) => lo.g('openAppSettings error: $e'));
+        // Utils.showConfirmDialog('위치 권한은 필수입니다.', '위치 설정을 변경 권한 > 위치 해주세요!', BackButtonBehavior.none, cancel: () {}, confirm: () async {
+        //   await openAppSettings();
+        // }, backgroundReturn: () async {
+        //   handleLocationPermission();
+        // });
+        showLocationExplanationDialog();
       }
     }
   }
@@ -43,10 +48,10 @@ class PermissionHandler {
         title: const Text('위치 권한 필요'),
         content: const Text('정확한 서비스 제공을 위해 위치 권한이 필요합니다. 권한을 허용하시겠습니까?'),
         actions: [
-          TextButton(
-            child: const Text('나중에'),
-            onPressed: () => Get.back(result: false),
-          ),
+          // TextButton(
+          //   child: const Text('나중에'),
+          //   onPressed: () => Get.back(result: false),
+          // ),
           TextButton(
             child: const Text('허용'),
             onPressed: () => Get.back(result: true),
@@ -57,7 +62,10 @@ class PermissionHandler {
 
     if (result == true) {
       var newStatus = await Permission.location.request();
-      if (newStatus.isPermanentlyDenied) {
+      lo.g('newStatus.isGranted  : ${newStatus.isGranted}');
+      lo.g('newStatus.isPermanentlyDenied  : ${newStatus.isPermanentlyDenied}');
+      lo.g('newStatus.isDenied  : ${newStatus.isDenied}');
+      if (newStatus.isPermanentlyDenied || newStatus.isDenied) {
         await showOpenSettingsDialog('위치');
       }
     }

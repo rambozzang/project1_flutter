@@ -5,12 +5,15 @@
     <uses-feature android:name="android.hardware.camera2" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
     <uses-feature android:name="android.hardware.camera.flash" android:required="false" />
+
+      
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
     
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />     
+    <!-- <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />      -->
     <uses-permission android:name="android.permission.FLASHLIGHT" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
 
@@ -23,7 +26,7 @@
 
 
 
-
+    <!-- android:debuggable="false" -->
     <application
         android:label="SkySnap"
         android:name="${applicationName}"
@@ -97,7 +100,7 @@
         <!-- Impeller -->
         <!-- <meta-data
             android:name="io.flutter.embedding.android.EnableImpeller"
-            android:value="true" />   -->
+            android:value="true" />  -->
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

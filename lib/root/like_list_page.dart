@@ -131,7 +131,7 @@ class _LikeListPageState extends State<LikeListPage> with AutomaticKeepAliveClie
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // buildSearchInputBox(),
-                const Text('내가 좋아요한 리스트'),
+                const Text('내가 좋아요를 누른 리스트'),
                 Container(child: Utils.commonStreamList<BoardWeatherListData>(likeVideoListCntr, getLikeFeeds, getLikeBoard)),
               ],
             ),
@@ -289,7 +289,7 @@ class _LikeListPageState extends State<LikeListPage> with AutomaticKeepAliveClie
                             ),
                           ),
                           Text(
-                            Utils.timeage(list[index].crtDtm.toString()),
+                            '${Utils.timeage(list[index].crtDtm.toString())}전',
                             style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w400, color: Colors.black),
                           ),
                           // Text(

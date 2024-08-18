@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/weather/widgets/customShimmer.dart';
@@ -29,6 +30,7 @@ import 'package:image_picker/image_picker.dart';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:project1/widget/custom_button.dart';
+import 'package:project1/widget/custom_icon_button.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:share_plus/share_plus.dart';
@@ -85,6 +87,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
 
   //
   final ValueNotifier<bool> isLoading = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> isEnbleTagBtn = ValueNotifier<bool>(false);
 
   late TabController tabController;
 
@@ -93,11 +96,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
   @override
   void initState() {
     super.initState();
-    getCountData();
-    getInitMyBoard();
-    getInitFollowBoard();
-    getTag();
-    getLocalTag();
+    fetchAllData();
     textFocus.addListener(() {
       if (textFocus.hasFocus) {
         RootCntr.to.bottomBarStreamController.sink.add(false);
@@ -125,6 +124,16 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
       //   }
       // }
     });
+  }
+
+  Future<void> fetchAllData() async {
+    await Future.wait([
+      getCountData(),
+      getInitMyBoard(),
+      getInitFollowBoard(),
+      getTag(),
+      getLocalTag(),
+    ]);
   }
 
   Future<void> getCountData() async {
@@ -360,6 +369,16 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
 
   // 관심태그 추가
   Future<void> addTag(String tagNm) async {
+    if (tagNm.length < 2) {
+      Utils.alert('태그는 두글자 이상 입력해주세요.');
+      return;
+    }
+    if (tagNm.length > 10) {
+      tagController.text = tagController.text.substring(0, 10);
+      Utils.alert('태그는 10자 이내로 입력해주세요.');
+      return;
+    }
+
     try {
       CustRepo repo = CustRepo();
       _taglist.add(tagNm);
@@ -438,22 +457,23 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     super.build(context);
     return NotificationListener<UserScrollNotification>(
       onNotification: (notification) {
-        lo.g('4444=> ${notification.direction} == ${notification.depth}');
         if (notification.depth >= 2) {
           // if (notification.direction == ScrollDirection.reverse) {
-          lo.g('4444=> ${notification.metrics.pixels} == ${notification.metrics.maxScrollExtent}');
 
           if (notification.metrics.pixels == notification.metrics.maxScrollExtent) {
             if (!isMyBoardLastPage && tabController.index == 0) {
               myboardPageNum++;
               isMyBoardMoreLoading.value = true;
+
               getMyBoard(myboardPageNum);
             }
             if (!isFollowLastPage && tabController.index == 1) {
               followboardPageNum++;
               isFollowMoreLoading.value = true;
+
               getFollowBoard(followboardPageNum);
             }
+            getCountData();
           }
           // }
         }
@@ -651,16 +671,25 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
               const Text('*리스트 구성 기준.', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12, color: Colors.black54)),
               const Gap(10),
               SizedBox(
-                height: 35,
-                width: 60,
+                height: 30,
+                width: 55,
                 child: IconButton(
                     padding: const EdgeInsets.all(0),
                     constraints: const BoxConstraints(),
                     style: ButtonStyle(
-                      shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-                      padding: WidgetStateProperty.all(EdgeInsets.zero),
-                      backgroundColor: WidgetStateProperty.all(Colors.grey[500]),
-                    ),
+                        shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                        padding: WidgetStateProperty.all(EdgeInsets.zero),
+                        backgroundColor: WidgetStateProperty.all(
+                          // const Color.fromARGB(255, 116, 150, 195),
+                          // const Color.fromARGB(255, 110, 169, 86),
+                          // const Color.fromARGB(255, 84, 98, 167),
+                          // const Color.fromARGB(255, 103, 103, 103),
+                          // Colors.indigo[400]
+                          //Color.fromARGB(255, 50, 125, 237)
+                          // const Color.fromARGB(255, 231, 171, 87),
+                          const Color.fromARGB(255, 95, 96, 103),
+                        ),
+                        shadowColor: const WidgetStatePropertyAll(Color.fromARGB(255, 50, 125, 237))),
                     onPressed: () async => await Get.toNamed('/FavoriteAreaPage')!.then((value) => getLocalTag()),
                     icon: const Icon(
                       Icons.add,
@@ -776,15 +805,25 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
               const Text('*리스트 구성 기준.', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12, color: Colors.black54)),
               const Gap(10),
               SizedBox(
-                height: 35,
-                width: 60,
+                height: 30,
+                width: 55,
                 child: IconButton(
                     padding: const EdgeInsets.all(0),
                     constraints: const BoxConstraints(),
                     style: ButtonStyle(
-                      shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                      shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(7))),
                       padding: WidgetStateProperty.all(EdgeInsets.zero),
-                      backgroundColor: WidgetStateProperty.all(Colors.grey[500]),
+                      elevation: WidgetStateProperty.all(7),
+                      backgroundColor: WidgetStateProperty.all(
+                        // const Color.fromARGB(255, 110, 169, 86),
+                        // const Color.fromARGB(255, 74, 86, 146),
+                        // const Color.fromARGB(255, 84, 98, 167),
+                        // const Color(0xFFFF9900),
+                        // const Color.fromARGB(255, 103, 103, 103),
+                        // Colors.indigo[400]
+                        const Color.fromARGB(255, 95, 96, 103),
+                        // const Color.fromARGB(255, 239, 188, 134),
+                      ),
                     ),
                     onPressed: () {
                       showProfileModifyModal();
@@ -1014,8 +1053,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                             ),
                             Icon(
                               Icons.arrow_forward_ios,
-                              size: 16.0,
-                              color: Colors.purple,
+                              size: 15.0,
+                              color: Colors.black54,
                             ),
                           ],
                         ),
@@ -1173,6 +1212,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
           crossAxisCount: 3,
           mainAxisSpacing: 4,
           crossAxisSpacing: 4,
+          shrinkWrap: true,
           // controller: followboardScrollCtrl,
           // physics: const NeverScrollableScrollPhysics(),
           // gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 1.0, mainAxisSpacing: 1.0),
@@ -1186,7 +1226,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                 });
               },
               child: Container(
-                height: (index % 5 + 1) * 60,
+                height: 150 + ((index % 5) * 40),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade300,
                   borderRadius: BorderRadius.circular(10.0),
@@ -1359,6 +1399,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         onPressed: () {
+                          tagController.text = '';
                           Navigator.pop(context);
                         },
                         icon: const Icon(Icons.close),
@@ -1386,6 +1427,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                         focusNode: textFocus,
                         autofocus: true,
                         maxLines: 1,
+                        // maxLength: 20,
                         style: const TextStyle(decorationThickness: 0), // 한글밑줄제거
                         decoration: InputDecoration(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
@@ -1409,8 +1451,20 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                           label: const Text("Tag 를 입력해주세요."),
                           labelStyle: const TextStyle(color: Colors.black38),
                         ),
+                        onChanged: (value) {
+                          // value 값이 2에서 10인경우 활성화
+                          if (value.length >= 2 && value.length <= 10) {
+                            isEnbleTagBtn.value = true;
+                          } else {
+                            isEnbleTagBtn.value = false;
+                          }
+
+                          if (value.length > 10) {
+                            tagController.text = value.substring(0, 10);
+                            Utils.alert('태그는 10자 이내로 입력해주세요.');
+                          }
+                        },
                         onFieldSubmitted: (text) {
-                          // Perform search
                           addTag(text);
                           tagController.text = '';
                           Navigator.pop(context);
@@ -1418,15 +1472,19 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                       ),
                     ),
                     const Spacer(),
-                    CustomButton(
-                        text: '등록하기',
-                        type: 'XL',
-                        heightValue: 55,
-                        isEnable: true,
-                        onPressed: () {
-                          addTag(tagController.text);
-                          tagController.text = '';
-                          Navigator.pop(context);
+                    ValueListenableBuilder<bool>(
+                        valueListenable: isEnbleTagBtn,
+                        builder: (context, value, child) {
+                          return CustomButton(
+                              text: '등록하기',
+                              type: 'XL',
+                              heightValue: 55,
+                              isEnable: value,
+                              onPressed: () {
+                                addTag(tagController.text);
+                                tagController.text = '';
+                                Navigator.pop(context);
+                              });
                         }),
                     const Gap(23)
                   ]),

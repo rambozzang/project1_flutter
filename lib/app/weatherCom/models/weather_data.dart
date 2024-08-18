@@ -15,13 +15,13 @@ class WeatherData {
     required this.source,
   });
 
-  factory WeatherData.fromJson(Map<String, dynamic> json, String source) {
+  factory WeatherData.fromJson(Map<String, dynamic> json) {
     return WeatherData(
       time: DateTime.parse(json['time']),
       temperature: json['temperature'].toDouble(),
       humidity: json['humidity'].toDouble(),
       rainProbability: json['rainProbability'].toDouble(),
-      source: source,
+      source: json['source'],
     );
   }
 

@@ -194,4 +194,16 @@ class CustRepo {
       return AuthDio.instance.dioException(e);
     } finally {}
   }
+
+  //나를 차단 해제 삭제(08)
+  Future<ResData> unBlock(String custId) async {
+    final dio = await AuthDio.instance.getDio(debug: true);
+    try {
+      var url = '${UrlConfig.baseURL}/cust/deleteBlock?custId=$custId';
+      Response response = await dio.post(url);
+      return AuthDio.instance.dioResponse(response);
+    } on DioException catch (e) {
+      return AuthDio.instance.dioException(e);
+    } finally {}
+  }
 }

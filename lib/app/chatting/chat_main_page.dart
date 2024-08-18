@@ -11,6 +11,9 @@ import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/admob/banner_ad_widget.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
+import 'package:project1/app/videolist/video_sigo_page.dart';
+import 'package:project1/repo/board/board_repo.dart';
+import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
@@ -34,6 +37,7 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
   StreamController<User> _userController = StreamController<User>.broadcast();
 
   User? _user;
+  ValueNotifier<bool> isAdLoading = ValueNotifier<bool>(false);
 
   List<String> roomlist = [];
   @override
@@ -52,7 +56,7 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
 
   Future<void> _loadAd() async {
     await AdManager().loadBannerAd('AlramPage2');
-    setState(() {}); // 광고 로드 후 UI 업데이트
+    isAdLoading.value = true;
   }
 
   Future<void> initSupaBaseSession() async {
@@ -192,18 +196,6 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
           ),
           shape: BoxShape.circle,
         ),
-        //   child: CircleAvatar(
-        //     backgroundColor: hasImage ? Colors.transparent : color,
-        //     backgroundImage: hasImage ? CachedNetworkImageProvider(room.imageUrl!) : null,
-        //     radius: 20,
-        //     child: !hasImage
-        //         ? Text(
-        //             name.isEmpty ? '' : name[0].toUpperCase(),
-        //             style: const TextStyle(color: Colors.white),
-        //           )
-        //         : null,
-        //   ),
-        // );
         child: Container(
           height: 45,
           width: 45,
@@ -284,9 +276,6 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    // _userController.stream.listen((event) {
-    //   lo.g(' ._userController() > event : $event');
-    // });
 
     return Scaffold(
       body: RefreshIndicator(
@@ -296,7 +285,12 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
         child: Column(
           children: [
             const Gap(10),
-            const SizedBox(width: double.infinity, child: Center(child: BannerAdWidget(screenName: 'AlramPage2'))),
+            ValueListenableBuilder<bool>(
+                valueListenable: isAdLoading,
+                builder: (context, value, child) {
+                  if (!value) return const SizedBox.shrink();
+                  return const SizedBox(width: double.infinity, child: Center(child: BannerAdWidget(screenName: 'AlramPage2')));
+                }),
             const Gap(10),
             Expanded(
               child: StreamBuilder<List<types.Room>>(
@@ -328,7 +322,7 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
                     return Container(
                       alignment: Alignment.center,
                       margin: const EdgeInsets.only(bottom: 200),
-                      child: const Text('유효한 대화방이 없습니다.'),
+                      child: const Text('대화방이 없습니다.'),
                     );
                   }
 
@@ -353,32 +347,10 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
           ],
         ),
       ),
-
-      // Container(
-      //       alignment: Alignment.center,
-      //       margin: const EdgeInsets.only(
-      //         bottom: 200,
-      //       ),
-      //       child: Column(
-      //         mainAxisAlignment: MainAxisAlignment.center,
-      //         children: [
-      //           const Text('메시지 서버 재접속이 필요합니다.'),
-      //           TextButton(
-      //             onPressed: () => initializeFlutterFire(),
-      //             child: const Text('Refresh'),
-      //           ),
-      //         ],
-      //       ),
-      //     )
     );
   }
 
   buildItem(types.Room room) {
-    // if (roomlist.contains(room.id)) {
-    //   return const SizedBox.shrink();
-    // }
-    // roomlist.add(room.id);
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
       child: Row(
@@ -388,55 +360,49 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
           _buildAvatar(room),
           const Gap(10),
           Expanded(
-            child: ElevatedButton(
-              clipBehavior: Clip.none,
-              style: ElevatedButton.styleFrom(
-                shadowColor: Colors.transparent,
-                // fixedSize: Size(0, 0),
-                // minimumSize: Size.zero, // Set this
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 7),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: const VisualDensity(horizontal: 0, vertical: 0),
-                elevation: 3,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                backgroundColor: Colors.transparent,
-                alignment: Alignment.centerLeft,
-              ),
-              onPressed: () {
-                Get.to(ChatPage(room: room));
-                // Navigator.of(context).push(
-                //   MaterialPageRoute(
-                //     fullscreenDialog: true,
-                //     builder: (context) => ChatPage(room: room),
-                //   ),
-                // );
+            child: GestureDetector(
+              onLongPress: () {
+                _showRoomOptions(room);
               },
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    room.name.toString(),
-                    softWrap: true,
-                    // overflow: TextOverflow.fade,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black),
+              child: ElevatedButton(
+                clipBehavior: Clip.none,
+                style: ElevatedButton.styleFrom(
+                  shadowColor: Colors.transparent,
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 7),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: const VisualDensity(horizontal: 0, vertical: 0),
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(5),
                   ),
-                  Text(
-                    room.lastMessages!.isNotEmpty ? (room.lastMessages!.first as types.TextMessage).text : '',
-                    softWrap: true,
-                    // overflow: TextOverflow.fade,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87),
-                  ),
-                ],
+                  backgroundColor: Colors.transparent,
+                  alignment: Alignment.centerLeft,
+                ),
+                onPressed: () {
+                  Get.to(ChatPage(room: room));
+                },
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      room.name.toString(),
+                      softWrap: true,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black),
+                    ),
+                    Text(
+                      room.lastMessages!.isNotEmpty ? (room.lastMessages!.first as types.TextMessage).text : '',
+                      softWrap: true,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-          // const Spacer(),
           const Gap(10),
-
           Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
                 timeago.format(
@@ -447,18 +413,18 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
               const Gap(5),
               (room.lastMessages?.first.author.id != _user?.id && room.metadata!['unreadCount'] != 0)
                   ? Container(
-                      // height: 19,
                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                       decoration: BoxDecoration(
                         color: Colors.red,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         '${room.metadata!['unreadCount']}',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
                       ),
                     )
                   : const SizedBox.shrink(),
+              const Gap(10),
             ],
           ),
         ],
@@ -466,84 +432,69 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
     );
   }
 
-  Widget buildUserState() {
-    return SizedBox.shrink();
-    // return StreamBuilder<User>(
-    //     stream: _userController.stream,
-    //     builder: (context, snapshot) {
-    //       if (snapshot.hasError) {
-    //         return const Padding(
-    //           padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-    //           child: Column(
-    //             crossAxisAlignment: CrossAxisAlignment.end,
-    //             children: [
-    //               Positioned(child: Text("Error", style: TextStyle(color: Colors.green, fontSize: 12))),
-    //               Divider(
-    //                 height: 3,
-    //                 thickness: 3,
-    //                 color: Colors.red,
-    //               ),
-    //             ],
-    //           ),
-    //         );
-    //       }
+  void _showRoomOptions(types.Room room) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('채팅방 옵션'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: Text('방 나가기'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _leaveRoom(room);
+                },
+              ),
+              ListTile(
+                title: Text('차단하기'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _blockUser(room);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-    //       if (!snapshot.hasData) {
-    //         return Container(
-    //           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-    //           child: const Text('Loading...'),
-    //         );
-    //       }
-    //       // return const SizedBox(height: 16);
-    //       return const Padding(
-    //         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-    //         child: Column(
-    //           crossAxisAlignment: CrossAxisAlignment.end,
-    //           children: [
-    //             Positioned(child: Text("Online", style: TextStyle(color: Colors.green, fontSize: 12))),
-    //             Divider(
-    //               height: 3,
-    //               thickness: 3,
-    //               color: Colors.green,
-    //             ),
-    //           ],
-    //         ),
-    //       );
-    //       User data = snapshot.data!;
-    //       // return Container(
-    //       //   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-    //       //   child: Row(
-    //       //     children: [
-    //       //       Text(
-    //       //         data.email ?? '',
-    //       //         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
-    //       //       ),
-    //       //       const Spacer(),
-    //       //       IconButton(
-    //       //         icon: const Icon(
-    //       //           Icons.person,
-    //       //         ),
-    //       //         onPressed: _user == null
-    //       //             ? null
-    //       //             : () {
-    //       //                 Navigator.of(context).push(
-    //       //                   MaterialPageRoute(
-    //       //                     fullscreenDialog: true,
-    //       //                     builder: (context) => const UsersPage(),
-    //       //                   ),
-    //       //                 );
-    //       //               },
-    //       //       ),
-    //       //       TextButton(
-    //       //         onPressed: () => initSupaBaseSession(),
-    //       //         child: const Icon(
-    //       //           Icons.refresh,
-    //       //           color: Colors.black,
-    //       //         ),
-    //       //       ),
-    //       //     ],
-    //       //   ),
-    //       // );
-    //     });
+  void _leaveRoom(types.Room room) async {
+    // 방 나가기 로직 구현
+    try {
+      await SupabaseChatCore.instance.leaveRoom(room.id);
+      Utils.alert('채팅방에서 나왔습니다.');
+      setState(() {}); // 리스트 갱신
+    } catch (e) {
+      Utils.alert('방 나가기 실패: $e');
+    }
+  }
+
+  void _blockUser(types.Room room) async {
+    String otherCustId = '';
+    // 차단하기 로직 구현
+    // 이 부분은 실제 차단 기능 구현에 따라 달라질 수 있습니다.
+    for (var user in room.users) {
+      lo.g("user.id : ${user.id}");
+      if (user.id != AuthCntr.to.resLoginData.value.chatId) {
+        otherCustId = user?.metadata?['custId'] ?? '';
+      }
+    }
+    BoardRepo repo = BoardRepo();
+    String reason = '채팅방목록에서 차단';
+    String boardId = '';
+    // dropdownValue 07 이면 사용자신고(거절) 이므로 boardID 대신 상대방 custId를 넘긴다.
+    // boardId = dropdownValue == '07' ? widget.crtCustId : boardId;
+    await repo.saveSingo(boardId, otherCustId, otherCustId, reason);
+    Utils.alert('차단이 완료되었습니다.');
+
+    setState(() {}); // 리스트 갱신
+  }
+
+  Widget buildUserState() {
+    return const SizedBox.shrink();
   }
 }

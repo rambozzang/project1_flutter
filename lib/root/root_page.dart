@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:app_version_update/app_version_update.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -67,7 +66,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     Get.put(VideoListCntr());
-    checkAppVersion();
+    // checkAppVersion();
 
     // initFirebase();
 
@@ -80,25 +79,6 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     //   Utils.bottomNotiAlert(context, '신기능 추가', '날씨 예보 비교 기능 추가되었습니다.');
     // });
   }
-
-  // Future<void> initFirebase() async {
-  //   if (Platform.isIOS) {
-  //     await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-  //       alert: true,
-  //       badge: true,
-  //       sound: true,
-  //     );
-  //     await FirebaseMessaging.instance.requestPermission(
-  //       alert: true,
-  //       announcement: false,
-  //       badge: true,
-  //       carPlay: false,
-  //       criticalAlert: false,
-  //       provisional: false,
-  //       sound: true,
-  //     );
-  //   }
-  // }
 
   Future<void> checkAppVersion() async {
     try {

@@ -21,6 +21,7 @@ import 'package:project1/repo/weather_gogo/models/response/midta_fct/midta_fct_r
 import 'package:project1/repo/weather_gogo/models/response/super_fct/super_fct_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_nct/super_nct_model.dart';
 import 'package:project1/repo/weather_gogo/repository/midland_fct_repo.dart';
+import 'package:project1/repo/weather_gogo/repository/weather_alert_repo.dart';
 import 'package:project1/utils/log_utils.dart';
 
 // https://www.data.go.kr/iim/api/selectAPIAcountView.do
@@ -52,6 +53,7 @@ class WeatherGogoRepo {
     //위경도를 기상청 좌료로 변경
     //  제주도 126.54587355630036 33.379777816446165 - > nx: 54, ny: 36
     //  서울역 126.970606917394 37.5546788388674 ->  nx: 61, ny: 127
+    //  서울 홍제 x=126.944267&y=37.588688 => =59&ny=127
     MapAdapter changeMap = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
 
     Weather weather = Weather(
@@ -235,4 +237,19 @@ class WeatherGogoRepo {
       return null;
     }
   }
+
+  // 특보 예보 - 기온 정보 정보
+  Future<List<WeatherAlert>> getSpecialFctJson(LatLng latLng, {isLog = true}) async {
+    try {
+      WeatherAlertAPI weatherAlertAPI = WeatherAlertAPI();
+      // regId 구하기
+      List<WeatherAlert> list = await weatherAlertAPI.getWeatherAlerts();
+      return list;
+    } catch (e) {
+      lo.g(e.toString());
+      return [];
+    }
+  }
+
+  //
 }

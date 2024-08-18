@@ -119,7 +119,7 @@ class FirebaseService {
     // forgraound 에서 클릭시
     flutterLocalNotificationsPlugin.initialize(
       InitializationSettings(
-        android: const AndroidInitializationSettings("@mipmap/skysnap"),
+        android: const AndroidInitializationSettings("@mipmap/ic_launcher"),
         iOS: initializationSettingsDarwin,
       ),
       onDidReceiveNotificationResponse: notificationTapBackground,

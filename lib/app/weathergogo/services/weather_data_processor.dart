@@ -1,10 +1,14 @@
+import 'package:get/get.dart';
 import 'package:project1/app/weathergogo/cntr/data/current_weather_data.dart';
 import 'package:project1/app/weathergogo/cntr/data/daily_weather_data.dart';
 import 'package:project1/app/weathergogo/cntr/data/hourly_weather_data.dart';
+import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/weather_gogo/models/response/fct/fct_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/midland_fct/midlan_fct_res.dart';
 import 'package:project1/repo/weather_gogo/models/response/midta_fct/midta_fct_res.dart';
+import 'package:project1/repo/weather_gogo/models/response/super_fct/super_fct_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_nct/super_nct_model.dart';
+import 'package:project1/utils/log_utils.dart';
 
 class WeatherDataProcessor {
   // 프라이빗 생성자
@@ -12,6 +16,57 @@ class WeatherDataProcessor {
 
   // 정적 인스턴스
   static final WeatherDataProcessor instance = WeatherDataProcessor._();
+
+  (List<HourlyWeatherData>, List<HourlyWeatherData>) synchronizeWeatherData(
+      List<HourlyWeatherData> todayData, List<HourlyWeatherData> yesterdayData) {
+    if (todayData.isEmpty || yesterdayData.isEmpty) {
+      return (todayData, yesterdayData);
+    }
+
+    // List<HourlyWeatherData> todayData = [
+    //   // HourlyWeatherData(temp: 24.8, sky: '', rain: '', rainPo: null, date: DateTime.parse('2024-08-16 22:00:00.000')),
+    //   HourlyWeatherData(temp: 24.8, sky: '', rain: '', rainPo: null, date: DateTime.parse('2024-08-16 23:00:00.000')),
+    //   HourlyWeatherData(temp: 24.8, sky: '', rain: '', rainPo: null, date: DateTime.parse('2024-08-17 00:00:00.000')),
+    //   HourlyWeatherData(temp: 24.8, sky: '', rain: '', rainPo: null, date: DateTime.parse('2024-08-17 01:00:00.000')),
+    //   HourlyWeatherData(temp: 24.8, sky: '', rain: '', rainPo: null, date: DateTime.parse('2024-08-17 02:00:00.000')),
+    //   HourlyWeatherData(temp: 24.8, sky: '', rain: '', rainPo: null, date: DateTime.parse('2024-08-17 03:00:00.000')),
+    //   HourlyWeatherData(temp: 24.8, sky: '', rain: '', rainPo: null, date: DateTime.parse('2024-08-17 04:00:00.000')),
+    //   HourlyWeatherData(temp: 24.8, sky: '', rain: '', rainPo: null, date: DateTime.parse('2024-08-17 05:00:00.000')),
+    //   HourlyWeatherData(temp: 24.8, sky: '', rain: '', rainPo: null, date: DateTime.parse('2024-08-17 06:00:00.000')),
+    //   HourlyWeatherData(temp: 24.8, sky: '', rain: '', rainPo: null, date: DateTime.parse('2024-08-17 07:00:00.000')),
+    // ];
+    // List<HourlyWeatherData> yesterdayData = [
+    //   // HourlyWeatherData(temp: 24.8, sky: '', rain: '', rainPo: null, date: DateTime.parse('2024-08-15 23:00:00.000')),
+    //   // HourlyWeatherData(temp: 24.8, sky: '', rain: '', rainPo: null, date: DateTime.parse('2024-08-16 00:00:00.000')),
+    //   HourlyWeatherData(temp: 24.8, sky: '', rain: '', rainPo: null, date: DateTime.parse('2024-08-16 01:00:00.000')),
+    //   HourlyWeatherData(temp: 24.8, sky: '', rain: '', rainPo: null, date: DateTime.parse('2024-08-16 02:00:00.000')),
+    //   HourlyWeatherData(temp: 24.8, sky: '', rain: '', rainPo: null, date: DateTime.parse('2024-08-16 03:00:00.000')),
+    //   HourlyWeatherData(temp: 24.8, sky: '', rain: '', rainPo: null, date: DateTime.parse('2024-08-16 04:00:00.000')),
+    // ];
+
+    // 1. 오늘 데이터와 어제 데이터의 첫 번째 데이터의 시간을 비교
+    DateTime todayStart = todayData.first.date;
+    DateTime yesterdayStart = yesterdayData.first.date;
+    DateTime yesterdayStartPlus = yesterdayStart.add(const Duration(days: 1));
+    bool isTodayLater = todayStart.isAfter(yesterdayStartPlus);
+    // Lo.g('오늘 데이터 :  ${todayStart}, 어제 데이터 ${yesterdayStartPlus}  비교시 ${isTodayLater}');
+    // 2. 더 과거 데이터를 가지는 List 데이터를 삭제
+    //    다른 List 데이터의 첫 번째 데이터의 시간과 비교하여 더 과거 데이터를 가지는 List 데이터를 삭제
+
+    // 어제 데이터를 삭제
+    if (isTodayLater) {
+      while (yesterdayData.isNotEmpty && yesterdayData.first.date.isBefore(todayStart.subtract(const Duration(days: 1)))) {
+        yesterdayData.removeAt(0);
+      }
+    } else {
+      // 오늘 데이터를 삭제
+      while (todayData.isNotEmpty && todayData.first.date.isBefore(yesterdayStart.add(const Duration(days: 1)))) {
+        todayData.removeAt(0);
+      }
+    }
+
+    return (todayData, yesterdayData);
+  }
 
   List<SevenDayWeather> processShortTermForecastToDaily(List<ItemFct> forecastItems, {double? lat, double? lon, String? cityName}) {
     Map<String, SevenDayWeather> dailyMap = {};
@@ -65,6 +120,7 @@ class WeatherDataProcessor {
           break;
         case 'POP':
           timeData.rainPo = item.fcstValue;
+
           break;
       }
     }
@@ -75,14 +131,63 @@ class WeatherDataProcessor {
     return dailyList.take(3).toList();
   }
 
-  //24시가지 날씨 정보 파싱처리
-  List<HourlyWeatherData> processShortTermForecast(List<ItemFct> forecastItems) {
+  //1~ 6시까지 날씨 정보 파싱처리
+  List<HourlyWeatherData> processSuperShortTermForecast(List<ItemSuperFct> forecastItems) {
     Map<DateTime, HourlyWeatherData> hourlyMap = {};
 
     for (var item in forecastItems) {
       DateTime forecastDate = DateTime.parse('${item.fcstDate} ${item.fcstTime}');
 
-      // ???? 무슨의미지?
+      // 껍데이 만들어놓구 아래서 셋팅
+      if (!hourlyMap.containsKey(forecastDate)) {
+        hourlyMap[forecastDate] = HourlyWeatherData(
+          temp: 0,
+          sky: '',
+          date: forecastDate,
+          rainPo: '99.99',
+        );
+      }
+
+      switch (item.category) {
+        case 'T1H':
+          hourlyMap[forecastDate]!.temp = double.parse(item.fcstValue!);
+          break;
+        case 'SKY':
+          hourlyMap[forecastDate]!.sky = item.fcstValue!;
+          break;
+        case 'PTY':
+          hourlyMap[forecastDate]!.rain = item.fcstValue!;
+          break;
+      }
+    }
+
+    List<HourlyWeatherData> hourlyList = hourlyMap.values.toList();
+    hourlyList.sort((a, b) => a.date.compareTo(b.date));
+
+    // 최대 24개의 항목만 반환
+    return hourlyList.toList();
+  }
+
+  //7~ 24시가지 날씨 정보 파싱처리
+  List<HourlyWeatherData> processShortTermForecast(List<ItemFct> forecastItems) {
+    Map<DateTime, HourlyWeatherData> hourlyMap = {};
+    // 현재시점의  강수확률 셋팅
+    int index = 0;
+    for (var item in forecastItems) {
+      DateTime forecastDate = DateTime.parse('${item.fcstDate} ${item.fcstTime}');
+
+      // 강수확률의 경우 현재시점의 데이터를 저장
+      if (index == 0 && item.category == 'POP') {
+        Get.find<WeatherGogoCntr>().currentWeather.value.rainPo = item.fcstValue!;
+      }
+      index++;
+
+      // 6시간 이후의 데이터만 사용
+      if (forecastDate.isBefore(DateTime.now().add(const Duration(hours: 5)))) {
+        continue;
+      }
+
+      // 먼저 날짜를 키로 하는 데이터가 없으면 생성
       if (!hourlyMap.containsKey(forecastDate)) {
         hourlyMap[forecastDate] = HourlyWeatherData(
           temp: 0,
@@ -102,6 +207,7 @@ class WeatherDataProcessor {
           hourlyMap[forecastDate]!.rain = item.fcstValue!;
         case 'POP':
           hourlyMap[forecastDate]!.rainPo = item.fcstValue!;
+
           break;
       }
     }
@@ -110,7 +216,8 @@ class WeatherDataProcessor {
     hourlyList.sort((a, b) => a.date.compareTo(b.date));
 
     // 최대 24개의 항목만 반환
-    return hourlyList.take(24).toList();
+    return hourlyList.toList();
+    // return hourlyList.take(24).toList();
   }
 
   // 중기 예보 조합 최종 sevendayWeather에 적재
@@ -118,8 +225,9 @@ class WeatherDataProcessor {
       {double? lat, double? lon, String? cityName}) {
     List<SevenDayWeather> midTermList = [];
 
+    int afterday = 3;
     // 시작 날짜 계산 (오늘로부터 3일 후)
-    DateTime startDate = DateTime.now().add(Duration(days: 3));
+    DateTime startDate = DateTime.now().add(Duration(days: afterday));
 
     for (int i = 0; i < 5; i++) {
       // 중기 예보는 5일치 데이터를 제공 (3일 후부터 7일 후까지)
@@ -135,14 +243,14 @@ class WeatherDataProcessor {
       );
 
       // 아침 데이터 설정
-      weatherData.morning.skyDesc = _getSkyState(landForecast, i + 3, isAm: true);
-      weatherData.morning.rainPo = _getRainProbability(landForecast, i + 3, isAm: true).toString();
-      weatherData.morning.minTemp = _getTemperature(taForecast, 'taMin${i + 3}');
+      weatherData.morning.skyDesc = _getSkyState(landForecast, i + afterday, isAm: true);
+      weatherData.morning.rainPo = _getRainProbability(landForecast, i + afterday, isAm: true).toString();
+      weatherData.morning.minTemp = _getTemperature(taForecast, 'taMin${i + afterday}');
 
       // 오후 데이터 설정
-      weatherData.afternoon.skyDesc = _getSkyState(landForecast, i + 3, isAm: false);
-      weatherData.afternoon.rainPo = _getRainProbability(landForecast, i + 3, isAm: false).toString();
-      weatherData.afternoon.maxTemp = _getTemperature(taForecast, 'taMax${i + 3}');
+      weatherData.afternoon.skyDesc = _getSkyState(landForecast, i + afterday, isAm: false);
+      weatherData.afternoon.rainPo = _getRainProbability(landForecast, i + afterday, isAm: false).toString();
+      weatherData.afternoon.maxTemp = _getTemperature(taForecast, 'taMax${i + afterday}');
 
       // 공통 데이터 설정
       weatherData.morning.temp = weatherData.morning.minTemp;
@@ -340,23 +448,23 @@ class WeatherDataProcessor {
     switch (pty) {
       case 1: // 비
       case 2: // 비/눈
-        return assetPath + 'day_rain.json';
+        return '${assetPath}day_rain.json';
       case 3: // 눈
-        return assetPath + 'day_snow.json';
+        return '${assetPath}day_snow.json';
       case 4: // 소나기
-        return assetPath + 'day_rain.json';
+        return '${assetPath}day_rain.json';
     }
 
     // 하늘 상태
     switch (sky) {
       case 1: // 맑음
-        return assetPath + 'sun.json';
+        return '${assetPath}sun.json';
       case 3: // 구름많음
-        return assetPath + 'day_cloudy.json';
+        return '${assetPath}day_cloudy.json';
       case 4: // 흐림
-        return assetPath + 'day_cloudy.json';
+        return '${assetPath}day_cloudy.json';
       default: // 기본값 (알 수 없는 상태)
-        return assetPath + 'day_cloudy.json';
+        return '${assetPath}day_cloudy.json';
     }
   }
 
@@ -379,39 +487,39 @@ class WeatherDataProcessor {
       case 'SKY': // 하늘상태 (Sky condition)
         switch (value) {
           case 1:
-            return assetPath + 'sun.json'; // 맑음 (Clear)
+            return '${assetPath}sun.json'; // 맑음 (Clear)
           case 3:
-            return assetPath + 'day_cloudy.json'; // 구름많음 (Mostly Cloudy)
+            return '${assetPath}day_cloudy.json'; // 구름많음 (Mostly Cloudy)
           case 4:
-            return assetPath + 'day_cloudy.json'; // 흐림 (Cloudy)
+            return '${assetPath}day_cloudy.json'; // 흐림 (Cloudy)
           default:
-            return assetPath + 'day_cloudy.json'; // 기본값 (Default)
+            return '${assetPath}day_cloudy.json'; // 기본값 (Default)
         }
 
       case 'PTY': // 강수형태 (Precipitation type)
         switch (value) {
           case 0:
-            return assetPath + 'sun.json'; // 없음 (None)
+            return '${assetPath}sun.json'; // 없음 (None)
           case 1:
-            return assetPath + 'day_rain.json'; // 비 (Rain)
+            return '${assetPath}day_rain.json'; // 비 (Rain)
           case 2:
-            return assetPath + 'day_snow.json'; // 비/눈 (Rain/Snow)
+            return '${assetPath}day_snow.json'; // 비/눈 (Rain/Snow)
           case 3:
-            return assetPath + 'day_snow.json'; // 눈 (Snow)
+            return '${assetPath}day_snow.json'; // 눈 (Snow)
           case 4:
-            return assetPath + 'day_rain.json'; // 소나기 (Shower)
+            return '${assetPath}day_rain.json'; // 소나기 (Shower)
           case 5:
-            return assetPath + 'day_rain.json'; // 빗방울 (Drizzle)
+            return '${assetPath}day_rain.json'; // 빗방울 (Drizzle)
           case 6:
-            return assetPath + 'day_snow.json'; // 빗방울눈날림 (Drizzle/Flurry)
+            return '${assetPath}day_snow.json'; // 빗방울눈날림 (Drizzle/Flurry)
           case 7:
-            return assetPath + 'day_snow.json'; // 눈날림 (Flurry)
+            return '${assetPath}day_snow.json'; // 눈날림 (Flurry)
           default:
-            return assetPath + 'day_cloudy.json'; // 기본값 (Default)
+            return '${assetPath}day_cloudy.json'; // 기본값 (Default)
         }
 
       default:
-        return assetPath + 'day_cloudy.json'; // 알 수 없는 카테고리 (Unknown category)
+        return '${assetPath}day_cloudy.json'; // 알 수 없는 카테고리 (Unknown category)
     }
   }
 
@@ -423,27 +531,27 @@ class WeatherDataProcessor {
     // 예보 상태에 따른 아이콘 매핑
     switch (forecastState.toLowerCase()) {
       case '맑음':
-        return assetPath + 'sun.json';
+        return '${assetPath}sun.json';
       case '구름많음':
-        return assetPath + 'day_cloudy.json';
+        return '${assetPath}day_cloudy.json';
       case '구름많고 비':
       case '구름많고 비/눈':
       case '구름많고 소나기':
-        return assetPath + 'day_rain.json';
+        return '${assetPath}day_rain.json';
       case '구름많고 눈':
       case '구름많고 진눈깨비':
-        return assetPath + 'day_snow.json';
+        return '${assetPath}day_snow.json';
       case '흐림':
-        return assetPath + 'day_cloudy.json';
+        return '${assetPath}day_cloudy.json';
       case '흐리고 비':
       case '흐리고 비/눈':
       case '흐리고 소나기':
-        return assetPath + 'day_rain.json';
+        return '${assetPath}day_rain.json';
       case '흐리고 눈':
       case '흐리고 진눈깨비':
-        return assetPath + 'day_snow.json';
+        return '${assetPath}day_snow.json';
       default:
-        return assetPath + 'failiure.json';
+        return '${assetPath}failiure.json';
     }
   }
 }

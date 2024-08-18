@@ -12,7 +12,6 @@ import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/search/cctv_page.dart';
 import 'package:project1/app/search/cntr/map_cntr.dart';
 import 'package:project1/app/search/map_search_page.dart';
-import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/app/weather/models/geocode.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
@@ -22,7 +21,6 @@ import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:syncfusion_flutter_sliders/sliders.dart';
 import 'package:text_scroll/text_scroll.dart';
 import 'package:video_player/video_player.dart';
 import 'package:http/http.dart' as http;
@@ -51,17 +49,26 @@ class _MapPageState extends State<MapPage> {
   @override
   void initState() {
     super.initState();
-    topheight = Platform.isIOS ? 55 : 25;
+    topheight = Platform.isIOS ? 55 : 0;
   }
 
   // 동영상 비디오 재생
-  Future<void> videoPlay(String videoPath) async {
+  Future<void> videoPlay(String boardId, String videoPath) async {
+    final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
+    final lastModified = _formatHttpDate(sevenDaysAgo);
+
     initialized = false;
     videoCntroller = VideoPlayerController.networkUrl(Uri.parse(videoPath.toString()),
         httpHeaders: {
           'Connection': 'keep-alive',
-          'Cache-Control': 'max-age=3600',
+          'Cache-Control': 'max-age=3600, stale-while-revalidate=86400',
+          'Etg': boardId.toString(),
+          'Last-Modified': lastModified,
+          'If-None-Match': boardId.toString(),
+          'If-Modified-Since': lastModified,
+          'Vary': 'Accept-Encoding, User-Agent',
         },
+        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true, allowBackgroundPlayback: false),
         formatHint: VideoFormat.hls)
       ..initialize().then((_) {
         if (mounted) {
@@ -74,10 +81,24 @@ class _MapPageState extends State<MapPage> {
       });
   }
 
+  String _formatHttpDate(DateTime date) {
+    // Format the date as per HTTP-date format defined in RFC7231
+    // Example: Tue, 15 Nov 1994 08:12:31 GMT
+    final weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final weekDay = weekDays[date.weekday - 1];
+    final month = months[date.month - 1];
+    return '$weekDay, ${date.day.toString().padLeft(2, '0')} $month ${date.year} '
+        '${date.hour.toString().padLeft(2, '0')}:'
+        '${date.minute.toString().padLeft(2, '0')}:'
+        '${date.second.toString().padLeft(2, '0')} GMT';
+  }
+
   // 카카오 검색창에서 검색후 클릭시 위치로 이동
   Future<void> locationUpdate(GeocodeData geocodeData) async {
     NLatLng currentCoord = NLatLng(geocodeData.latLng.latitude, geocodeData.latLng.longitude);
-    final locationOverlay = Get.find<MapCntr>().mapController.getLocationOverlay();
+    var mapCntr = Get.find<MapCntr>();
+    final locationOverlay = mapCntr.mapController.getLocationOverlay();
     const iconImage = NOverlayImage.fromAssetImage('assets/images/map/default_pin.png');
     locationOverlay
       ..setIcon(iconImage)
@@ -89,7 +110,7 @@ class _MapPageState extends State<MapPage> {
 
     final cameraUpdate = NCameraUpdate.withParams(target: currentCoord)
       ..setAnimation(animation: NCameraAnimation.linear, duration: const Duration(milliseconds: 500)); // 2초는 너무 길 수도 있어요.
-    await Get.find<MapCntr>().mapController.updateCamera(cameraUpdate);
+    await mapCntr.mapController.updateCamera(cameraUpdate);
 
     final marker = NMarker(
       id: geocodeData.latLng.longitude.toString(),
@@ -100,8 +121,8 @@ class _MapPageState extends State<MapPage> {
       caption: NOverlayCaption(text: geocodeData.name.toString()),
     );
 
-    marker.openInfoWindow(NInfoWindow.onMarker(offsetX: 10, id: marker.info.id, text: geocodeData.name));
-    Get.find<MapCntr>().mapController.addOverlay(marker);
+    // marker.openInfoWindow(NInfoWindow.onMarker(offsetX: 10, id: marker.info.id, text: geocodeData.name));
+    mapCntr.mapController.addOverlay(marker);
     buildMarker(context);
   }
 
@@ -157,7 +178,8 @@ class _MapPageState extends State<MapPage> {
   // 상단 앱바
   Widget buildTop() {
     return Positioned(
-        top: topheight, // kToolbarHeight, // topheight,
+        // top: topheight,
+        top: MediaQuery.of(context).padding.top + 200,
         left: 10,
         right: 10,
         child: Row(
@@ -238,7 +260,7 @@ class _MapPageState extends State<MapPage> {
   // 우측 하단 버튼
   Widget buildBottom() {
     return Positioned(
-        bottom: 100,
+        bottom: 50,
         right: 16,
         child: Column(
           children: [
@@ -309,10 +331,11 @@ class _MapPageState extends State<MapPage> {
   // 일반 동영상 마커 생성 하기
   Future<void> buildMarker(BuildContext context) async {
     Size size = const Size(45, 60);
+    var mapCntr = Get.find<MapCntr>();
 
     var (southWest, northEast) = await getbounds();
     // 현재 그려진 마커 삭제
-    Get.find<MapCntr>().mapController.clearOverlays();
+    mapCntr.mapController.clearOverlays();
 
     BoardRepo boardRepo = BoardRepo();
     ResData resListData = await boardRepo.searchBoardListByMaplonlatAndDay(southWest, northEast, seachDay, 0, 200);
@@ -337,13 +360,13 @@ class _MapPageState extends State<MapPage> {
         captionOffset: 10,
         caption: NOverlayCaption(text: element.nickNm.toString()),
       );
-      Get.find<MapCntr>().mapController.addOverlay(marker);
+      mapCntr.mapController.addOverlay(marker);
       final onMarkerInfoWindow =
           NInfoWindow.onMarker(offsetX: 0, id: marker.info.id, text: "${element.nickNm}·${Utils.timeage(element.crtDtm.toString())}");
 
       marker.openInfoWindow(onMarkerInfoWindow);
       marker.setOnTapListener((overlay) async {
-        videoPlay(element.videoPath.toString());
+        videoPlay(element.boardId.toString(), element.videoPath.toString());
         onShowDialog(context, element);
       });
     });

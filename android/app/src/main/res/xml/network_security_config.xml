@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">cctvsec.ktict.co.kr</domain>
+        <domain includeSubdomains="true">https://customer-r151saam0lb88khc.cloudflarestream.com</domain>
+        <domain includeSubdomains="true">https://apis.data.go.kr</domain>
         <domain includeSubdomains="true">http://cctvsec.ktict.co.kr</domain>
         <domain includeSubdomains="true">https://cctvsec.ktict.co.kr</domain>
-  
+      
     </domain-config>
 </network-security-config>

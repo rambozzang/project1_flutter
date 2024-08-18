@@ -122,7 +122,7 @@ class _SigoPageState extends State<SigoPage> {
     try {
       BoardRepo repo = BoardRepo();
 
-      String reason = '${replyController.text}';
+      String reason = replyController.text;
 
       String boardId = widget.boardId.toString();
 
@@ -305,6 +305,7 @@ class _SigoPageState extends State<SigoPage> {
               child: CustomButton(
                   text: '신고 완료',
                   type: 'L',
+                  isEnable: true,
                   onPressed: () async {
                     await saveSigo();
                   }),

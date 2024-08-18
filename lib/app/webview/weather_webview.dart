@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
+import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 
 class WeatherWebView extends StatefulWidget {
@@ -20,7 +20,7 @@ class _WeatherWebViewState extends State<WeatherWebView> with AutomaticKeepAlive
   @override
   bool get wantKeepAlive => true;
 
-  InAppWebViewController? webViewController;
+  late final InAppWebViewController webViewController;
   late final InAppWebViewSettings settings;
 
   final String baseUrl = 'https://earth.nullschool.net/#current/wind/surface/level/orthographic=127.20,36.33,2780/loc=';
@@ -36,6 +36,7 @@ class _WeatherWebViewState extends State<WeatherWebView> with AutomaticKeepAlive
   void _initializeSettings() {
     settings = InAppWebViewSettings(
       isInspectable: kDebugMode,
+      useHybridComposition: true,
       mediaPlaybackRequiresUserGesture: false,
       allowsInlineMediaPlayback: true,
       iframeAllow: "camera; microphone",
@@ -44,7 +45,24 @@ class _WeatherWebViewState extends State<WeatherWebView> with AutomaticKeepAlive
       useShouldOverrideUrlLoading: true,
       javaScriptEnabled: true,
       cacheEnabled: true,
+      clearCache: true,
       transparentBackground: true,
+      allowsAirPlayForMediaPlayback: true,
+      javaScriptCanOpenWindowsAutomatically: true, // 팝업 여부
+      supportMultipleWindows: true, // 멀티 윈도우 허용
+      allowsBackForwardNavigationGestures: true,
+      limitsNavigationsToAppBoundDomains: false,
+      applePayAPIEnabled: false,
+      useShouldInterceptAjaxRequest: true,
+      useShouldInterceptFetchRequest: true,
+      contentBlockers: [
+        ContentBlocker(
+          trigger: ContentBlockerTrigger(
+            urlFilter: ".*",
+          ),
+          action: ContentBlockerAction(type: ContentBlockerActionType.CSS_DISPLAY_NONE, selector: ".selector-to-block"),
+        ),
+      ],
     );
   }
 
@@ -56,7 +74,7 @@ class _WeatherWebViewState extends State<WeatherWebView> with AutomaticKeepAlive
 
   @override
   void dispose() {
-    webViewController?.dispose();
+    webViewController.dispose();
     super.dispose();
   }
 
@@ -64,6 +82,7 @@ class _WeatherWebViewState extends State<WeatherWebView> with AutomaticKeepAlive
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
+      key: GlobalKey(),
       backgroundColor: const Color(0xFF262B49),
       body: Stack(
         children: [
@@ -77,15 +96,18 @@ class _WeatherWebViewState extends State<WeatherWebView> with AutomaticKeepAlive
   Widget _buildWebView() {
     return GetBuilder<WeatherGogoCntr>(
       builder: (weatherProv) {
-        if (weatherProv.currentLocation.value?.latLng.longitude == null) {
+        if (weatherProv.currentLocation.value.latLng.longitude == 0.0) {
           return Center(child: Utils.progressbar(color: Colors.white));
         }
 
-        openUrl = '$baseUrl${weatherProv.currentLocation.value?.latLng.longitude},${weatherProv.currentLocation.value?.latLng.latitude}';
+        final openUrl =
+            WebUri('$baseUrl${weatherProv.currentLocation.value?.latLng.longitude},${weatherProv.currentLocation.value?.latLng.latitude}');
+
+        openUrl.forceToStringRawValue = true;
 
         return InAppWebView(
           key: webViewKey,
-          initialUrlRequest: URLRequest(url: WebUri(openUrl!)),
+          initialUrlRequest: URLRequest(url: openUrl),
           initialSettings: settings,
           onWebViewCreated: (controller) {
             webViewController = controller;
@@ -95,9 +117,12 @@ class _WeatherWebViewState extends State<WeatherWebView> with AutomaticKeepAlive
           },
           onLoadStop: (controller, url) {
             // 로딩 완료 시 처리
+            lo.e("WebView 시작");
           },
           onReceivedError: (controller, request, error) {
-            print("WebView Error: $error");
+            lo.e("WebView Error: $error");
+            lo.e("Error URL: ${request.url}");
+            lo.e("Error Description: ${error.description}");
             // 에러 처리 로직 추가
           },
           // gestureRecognizers: Set()..add(Factory<VerticalDragGestureRecognizer>(() => VerticalDragGestureRecognizer())),

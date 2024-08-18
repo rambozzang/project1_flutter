@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cached_network_image/cached_network_image.dart';
 // import 'package:chips_choice/chips_choice.dart';
 import 'package:dio/dio.dart';
@@ -56,6 +58,8 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
   TextEditingController searchController = TextEditingController();
   FocusNode textFocus = FocusNode();
 
+  ValueNotifier<bool> isAdLoading = ValueNotifier<bool>(false);
+
   @override
   void initState() {
     super.initState();
@@ -87,7 +91,7 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
 
   Future<void> _loadAd() async {
     await AdManager().loadBannerAd('SeachPage');
-    setState(() {}); // 광고 로드 후 UI 업데이트
+    isAdLoading.value = true;
   }
 
   void goSearchPage(String searchWord) async {
@@ -209,7 +213,12 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
             const Gap(20),
             buildCommon('급등 검색어', 2, suddenlylist),
             const Gap(20),
-            const Center(child: BannerAdWidget(screenName: 'SeachPage')),
+            ValueListenableBuilder<bool>(
+                valueListenable: isAdLoading,
+                builder: (context, value, child) {
+                  if (!value) return const SizedBox.shrink();
+                  return const Center(child: BannerAdWidget(screenName: 'SeachPage'));
+                }),
             const Gap(20),
             buildCommon('지하철 검색어', 3, subwaylist),
 
@@ -250,82 +259,83 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
 
   // 날ㅆ씨 정보
   Widget buildTodayWeather() {
-    return Container(
-      height: 80,
-      margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 0),
-      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.6),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(7),
-            margin: const EdgeInsets.all(0),
-            decoration: BoxDecoration(color: Colors.red[300], borderRadius: const BorderRadius.all(Radius.circular(40))),
-            child: Text(
-              '${Get.find<WeatherGogoCntr>().currentWeather.value?.temp ?? 0}°C',
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-            ),
+    // final controller = Get.find<WeatherGogoCntr>();
+    return Obx(() => Container(
+          height: 80,
+          margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 0),
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(15),
           ),
-          Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              // Container(
+              //   padding: const EdgeInsets.all(7),
+              //   margin: const EdgeInsets.all(0),
+              //   decoration: BoxDecoration(color: Colors.red[300], borderRadius: const BorderRadius.all(Radius.circular(40))),
+              //   child: Text(
+              //     '${Get.find<WeatherGogoCntr>().currentWeather.value.temp ?? 0}°C',
+              //     style: const TextStyle(color: Colors.white, fontSize: 13),
+              //   ),
+              // ),
               Lottie.asset(
-                WeatherDataProcessor.instance.getWeatherGogoImage(Get.find<WeatherGogoCntr>().currentWeather.value!.sky.toString(),
-                    Get.find<WeatherGogoCntr>().currentWeather.value!.rain.toString()),
-                height: 138.0,
-                width: 138.0,
+                WeatherDataProcessor.instance.getWeatherGogoImage(Get.find<WeatherGogoCntr>().currentWeather.value.sky.toString(),
+                    Get.find<WeatherGogoCntr>().currentWeather.value.rain.toString()),
+                height: 128.0,
+                width: 90.0,
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    '${Get.find<WeatherGogoCntr>().currentWeather.value!.temp ?? 0}°',
+                    '${Get.find<WeatherGogoCntr>().currentWeather.value.temp ?? 0}°',
                     style: const TextStyle(fontSize: 20, color: Colors.white),
                   ),
+                  Flexible(
+                    child: Text(
+                      Get.find<WeatherGogoCntr>().currentWeather.value.description ?? '',
+                      style: const TextStyle(fontSize: 13, color: Colors.white),
+                    ),
+                  )
+                ],
+              ),
+              const Spacer(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
                   Text(
-                    Get.find<WeatherGogoCntr>().currentWeather.value!.description!.toString(),
+                    '${Get.find<WeatherGogoCntr>().sevenDayWeather[0].morning.minTemp ?? 0}°/${Get.find<WeatherGogoCntr>().sevenDayWeather[0].afternoon.maxTemp ?? 0}°',
                     style: const TextStyle(fontSize: 13, color: Colors.white),
+                  ),
+                  // Text(
+                  //   '8°C/9°C',
+                  //   style: TextStyle(fontSize: 13, color: Colors.white),
+                  // ),
+                  Flexible(
+                    child: Text(
+                      Get.find<WeatherGogoCntr>().currentLocation.value.name ?? '',
+                      style: const TextStyle(fontSize: 13, color: Colors.white),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      const Icon(Icons.alarm, color: Colors.white, size: 13),
+                      Text(
+                        '${Get.find<WeatherGogoCntr>().lastUpdated.value?.toString().substring(11, 16)}',
+                        style: const TextStyle(fontSize: 10, color: Colors.white),
+                      ),
+                    ],
                   )
                 ],
               )
             ],
           ),
-          const Spacer(),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '${Get.find<WeatherGogoCntr>().sevenDayWeather[0].morning.minTemp ?? 0}°/${Get.find<WeatherGogoCntr>().sevenDayWeather[0].afternoon.maxTemp ?? 0}°',
-                style: const TextStyle(fontSize: 13, color: Colors.white),
-              ),
-              // Text(
-              //   '8°C/9°C',
-              //   style: TextStyle(fontSize: 13, color: Colors.white),
-              // ),
-              Text(
-                Get.find<WeatherGogoCntr>().currentLocation.value!.name.toString(),
-                style: const TextStyle(fontSize: 13, color: Colors.white),
-              ),
-              Row(
-                children: [
-                  const Icon(Icons.alarm, color: Colors.white, size: 13),
-                  Text(
-                    '${Get.find<WeatherGogoCntr>().lastUpdated.value?.toString().substring(11, 16)}',
-                    style: const TextStyle(fontSize: 10, color: Colors.white),
-                  ),
-                ],
-              )
-            ],
-          )
-        ],
-      ),
-    );
+        ));
   }
 
   Widget buildWeatherInfoImg() {
@@ -410,7 +420,9 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
                     verticalDirection: VerticalDirection.down,
                     runAlignment: WrapAlignment.start,
                     alignment: WrapAlignment.start,
-                    children: value.map((e) => buildChip3(e, colorNo)).toList(),
+                    children: value.map((e) {
+                      return buildChip3(e, 0);
+                    }).toList(),
                   );
                 }),
             // Using [extraOnToggle]
@@ -551,8 +563,7 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
     return InkWell(
         onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/0/${Uri.encodeComponent(label)}'),
         child: Chip(
-          backgroundColor: const Color.fromARGB(
-              255, 81, 94, 165), //  const Color(0xFF262B49), // Colors.indigo[300], // colorMap[8]?['textColor'] ?? Colors.indigo[300],
+          backgroundColor: colorMap[colorMap ?? 8]?['textColor'] ?? Colors.indigo[300], //  const Color.fromARGB(255, 81, 94, 165),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: const BorderSide(color: Colors.transparent),

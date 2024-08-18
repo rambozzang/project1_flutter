@@ -1,9 +1,13 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:project1/app/%08join/ConstellationPainter.dart';
+import 'package:project1/app/%08join/TwinklingStar.dart';
 import 'package:project1/repo/api/apple_api.dart';
 import 'package:project1/repo/api/google_api.dart';
 import 'package:project1/repo/api/kakao_api.dart';
@@ -20,13 +24,153 @@ class JoinPage extends StatefulWidget {
   State<JoinPage> createState() => _JoinPageState();
 }
 
-class _JoinPageState extends State<JoinPage> {
+class _JoinPageState extends State<JoinPage> with SingleTickerProviderStateMixin {
   // 로딩 상태를 관리하는 ValueNotifier
   final ValueNotifier<bool> isLoading = ValueNotifier<bool>(false);
+  List<MovingConstellations> constellations = [];
+  Timer? _animationTimer;
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  List<TwinklingStar> twinklingStars = [];
+
+  void createConstellations() {
+    constellations = [
+      MovingConstellations(
+          190,
+          180,
+          [
+            const Offset(0.6, 0.2),
+            const Offset(0.62, 0.25),
+            const Offset(0.64, 0.3),
+            const Offset(0.58, 0.28),
+            const Offset(0.66, 0.28),
+            const Offset(0.6, 0.35),
+            const Offset(0.64, 0.35),
+          ],
+          rotationSpeed: 0.03),
+      /** 카시오페이 */
+      MovingConstellations(
+          40,
+          30,
+          [
+            const Offset(20, 40),
+            const Offset(60, 20),
+            const Offset(100, 60),
+            const Offset(140, 20),
+            const Offset(180, 40),
+          ],
+          rotationSpeed: 0.077),
+      /** 북두실청 */
+      MovingConstellations(
+          40,
+          430,
+          [
+            const Offset(20, 80),
+            const Offset(40, 60),
+            const Offset(60, 50),
+            const Offset(80, 40),
+            const Offset(100, 30),
+            const Offset(110, 50),
+            const Offset(120, 70),
+          ],
+          rotationSpeed: 0.077),
+      /**사자 자리 */
+      MovingConstellations(
+          200,
+          400,
+          [
+            const Offset(40, 40),
+            const Offset(120, 40),
+            const Offset(120, 120),
+            const Offset(40, 120),
+            const Offset(40, 40),
+            const Offset(80, 80),
+          ],
+          rotationSpeed: 0.055),
+      /**곰 자리 */
+      MovingConstellations(
+          140,
+          300,
+          [
+            const Offset(40, 40),
+            const Offset(60, 32),
+            const Offset(80, 40),
+            const Offset(100, 60),
+            const Offset(120, 80),
+            const Offset(140, 72),
+            const Offset(160, 88),
+          ],
+          rotationSpeed: 0.09),
+      MovingConstellations(
+          60,
+          160,
+          [
+            const Offset(40, 20),
+            const Offset(60, 40),
+            const Offset(80, 60),
+            const Offset(100, 80),
+            const Offset(120, 100),
+            const Offset(70, 70),
+            const Offset(90, 70),
+            const Offset(20, 80),
+            const Offset(140, 80),
+          ],
+          rotationSpeed: 0.09),
+    ];
+  }
+
+  void startObjectMovement() {
+    _animationTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (mounted) {
+        updateObjectPositions();
+        updateStarPositions();
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  void updateObjectPositions() {
+    setState(() {
+      constellations.forEach((constellation) {
+        constellation.move();
+      });
+    });
+  }
 
   @override
   void initState() {
     super.initState();
+    createConstellations();
+
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 950),
+      vsync: this,
+    )..repeat(reverse: true);
+    _animation = Tween(begin: 0.0, end: 1.0).animate(_controller);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    createTwinklingStars();
+    startObjectMovement();
+  }
+
+  void createTwinklingStars() {
+    for (int i = 0; i < 100; i++) {
+      twinklingStars.add(TwinklingStar(
+          Random().nextDouble() * MediaQuery.of(context).size.width, Random().nextDouble() * MediaQuery.of(context).size.height));
+    }
+  }
+
+  void updateStarPositions() {
+    setState(() {
+      twinklingStars.forEach((star) {
+        star.twinkle();
+      });
+    });
   }
 
   // 소셜 로그인 처리 함수
@@ -66,13 +210,30 @@ class _JoinPageState extends State<JoinPage> {
   }
 
   @override
+  void dispose() {
+    _animationTimer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: ExactAssetImage('assets/images/girl-6356393_640.jpg'),
-            fit: BoxFit.cover,
+          // gradient: LinearGradient(
+          //   begin: Alignment.topCenter,
+          //   end: Alignment.bottomCenter,
+          //   colors: [Color(0xFF1E3C72), Color(0xFF2A5298)],
+          // ),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF0D1B2A),
+              Color(0xFF1B263B),
+              Color(0xFF2A3B50),
+            ],
           ),
         ),
         child: BackdropFilter(
@@ -101,6 +262,28 @@ class _JoinPageState extends State<JoinPage> {
               ),
               // 로딩 인디케이터
               _buildLoadingIndicator(),
+              ...constellations.map((constellation) => Positioned(
+                    left: constellation.x,
+                    top: constellation.y,
+                    child: CustomPaint(
+                      painter: constellation.constellationPainter,
+                    ),
+                  )),
+              ...twinklingStars.map((star) => Positioned(
+                    left: star.x,
+                    top: star.y,
+                    child: Opacity(
+                      opacity: star.opacity,
+                      child: Container(
+                        width: star.opacity * 5,
+                        height: star.opacity * 5,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  )),
             ],
           ),
         ),
@@ -162,6 +345,21 @@ class _JoinPageState extends State<JoinPage> {
             if (Platform.isIOS) ...[const Gap(20), _buildSocialLoginButton('apple', "assets/login/apple_login.png", '애플')]
           ],
         ),
+        const Gap(5),
+        FadeTransition(
+          opacity: _animation,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(95, 1, 22, 50),
+              borderRadius: BorderRadius.circular(7),
+            ),
+            child: const Text(
+              '💥ISFP도 1.8초면 쌉가능🐯',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        )
       ],
     );
   }

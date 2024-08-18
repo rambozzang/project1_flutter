@@ -49,6 +49,7 @@ class _PrivacyPolicyDialogState extends State<PrivacyPolicyDialog> {
         CustomButton(
           text: '동의 확인',
           type: 'L',
+          isEnable: true,
           onPressed: () {
             if (authCntr.privacyPolicyAgreed.value && authCntr.termsOfServiceAgreed.value) {
               Get.back(result: true);

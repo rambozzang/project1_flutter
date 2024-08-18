@@ -5,6 +5,7 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:gap/gap.dart';
@@ -13,6 +14,7 @@ import 'package:giffy_dialog/giffy_dialog.dart';
 import 'package:hashtagable_v3/hashtagable.dart';
 import 'package:like_button/like_button.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/videolist/cntr/M3u8Parsing.dart';
 
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/app/videocomment/comment_page.dart';
@@ -52,6 +54,7 @@ class VideoScreenPage2State extends State<VideoScreenPage2> {
   final ValueNotifier<bool> isPlay = ValueNotifier<bool>(true);
   final ValueNotifier<double> progress = ValueNotifier<double>(0.0);
   final ValueNotifier<String> isFollowed = ValueNotifier<String>('N');
+  final ValueNotifier<String> timeDesc = ValueNotifier<String>('0ms');
 
   Duration position = Duration.zero;
   final double bottomHeight = Platform.isIOS ? 92.0 : 80.0;
@@ -60,15 +63,24 @@ class VideoScreenPage2State extends State<VideoScreenPage2> {
 
   @override
   void initState() {
+    _initializeVideo();
     super.initState();
     loadingImageIndex = Random().nextInt(6);
     isFollowed.value = widget.data.followYn.toString();
-    _initializeVideo();
+  }
+
+  String _getFinalUrl() {
+    return Platform.isAndroid ? widget.data.videoPath.toString().replaceAll('m3u8', 'm3u8') : widget.data.videoPath.toString();
   }
 
   Future<void> _initializeVideo() async {
+    final stopwatch = Stopwatch()..start();
+
+    final String masterPlaylistUrl = widget.data.videoPath.toString();
+    // final String lowestQualityStreamUrl = await M3U8Parser.getLowestQualityStreamUrl(masterPlaylistUrl);
     final String finalUrl = _getFinalUrl();
-    final VideoFormat format = Platform.isAndroid ? VideoFormat.dash : VideoFormat.hls;
+    final VideoFormat format = Platform.isAndroid ? VideoFormat.hls : VideoFormat.hls;
+    lo.g('VideoPlayer2 initialization finalUrl: ${finalUrl}');
 
     try {
       _controller = VideoPlayerController.networkUrl(
@@ -86,6 +98,10 @@ class VideoScreenPage2State extends State<VideoScreenPage2> {
         ..addListener(_videoListener);
 
       initialized.value = true;
+      lo.g('VideoPlayer2 initialization time: ${stopwatch.elapsedMilliseconds}ms');
+      timeDesc.value = '${stopwatch.elapsedMilliseconds}ms';
+
+      _controller.pause();
     } catch (e) {
       print('Error initializing video: $e');
     }
@@ -99,10 +115,6 @@ class VideoScreenPage2State extends State<VideoScreenPage2> {
     if (isPlay.value) {
       _updateCount();
     }
-  }
-
-  String _getFinalUrl() {
-    return Platform.isAndroid ? widget.data.videoPath.toString().replaceAll('m3u8', 'mpd') : widget.data.videoPath.toString();
   }
 
   Map<String, String> _getHttpHeaders() {
@@ -293,17 +305,17 @@ class VideoScreenPage2State extends State<VideoScreenPage2> {
       child: Container(
         decoration: BoxDecoration(
           image: DecorationImage(
-            //  image: CachedNetworkImageProvider(widget.data.thumbnailPath.toString()),
-            image: ExactAssetImage(
-              'assets/images/$loadingImageIndex.jpg',
-            ),
+            image: CachedNetworkImageProvider(widget.data.thumbnailPath.toString()),
+            // image: ExactAssetImage(
+            //   'assets/images/$loadingImageIndex.jpg',
+            // ),
             fit: BoxFit.cover,
           ),
         ),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 35.0, sigmaY: 35.0),
-          child: const Text("", style: TextStyle(color: Colors.white, fontSize: 9)),
-        ),
+        // child: BackdropFilter(
+        //   filter: ImageFilter.blur(sigmaX: 35.0, sigmaY: 35.0),
+        //   child: const Text("", style: TextStyle(color: Colors.white, fontSize: 9)),
+        // ),
       ),
     );
   }
@@ -491,6 +503,15 @@ class VideoScreenPage2State extends State<VideoScreenPage2> {
       right: 0,
       child: Column(
         children: [
+          if (kDebugMode) ...[
+            ValueListenableBuilder<String>(
+              valueListenable: timeDesc,
+              builder: (context, value, child) {
+                return Text('2: $value', style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600));
+              },
+            ),
+            const Gap(10),
+          ],
           IgnorePointer(
             ignoring: widget.data.custId.toString() == AuthCntr.to.custId.value.toString() ? true : false,
             child: LikeButton(
@@ -573,9 +594,6 @@ class VideoScreenPage2State extends State<VideoScreenPage2> {
             widget.data.viewCnt.toString(),
             style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
           ),
-          // IconButton(
-          //     icon: const Icon(Icons.report_gmailerrorred, color: Colors.white),
-          //     onPressed: () => SigoPageSheet().open(context, widget.data.boardId.toString())),
           const Gap(10),
           // const Text(
           //   '조회수',

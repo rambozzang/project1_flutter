@@ -14,24 +14,26 @@ import '../models/dailyWeather.dart';
 import '../theme/textStyle.dart';
 
 class SevendayDetailPage extends StatefulWidget {
-  static const routeName = '/sevenDayForecast';
-  final int initialIndex;
-
   const SevendayDetailPage({
     super.key,
     this.initialIndex = 0,
   });
+
+  static const routeName = '/sevenDayForecast';
+
+  final int initialIndex;
 
   @override
   State<SevendayDetailPage> createState() => _SevendayDetailPageState();
 }
 
 class _SevendayDetailPageState extends State<SevendayDetailPage> {
-  int _selectedIndex = 0;
-  late final ScrollController _scrollController;
-  static const double _itemWidth = 24.0;
   static const double _horizontalPadding = 12.0;
+  static const double _itemWidth = 24.0;
   static const double _selectedWidth = 24.0;
+
+  late final ScrollController _scrollController;
+  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -378,15 +380,16 @@ class _SevendayDetailPageState extends State<SevendayDetailPage> {
 }
 
 class _ForecastDetailInfoTile extends StatelessWidget {
-  final String title;
-  final String data;
-  final Widget icon;
   const _ForecastDetailInfoTile({
     super.key,
     required this.title,
     required this.data,
     required this.icon,
   });
+
+  final String data;
+  final Widget icon;
+  final String title;
 
   @override
   Widget build(BuildContext context) {

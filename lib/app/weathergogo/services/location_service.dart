@@ -22,10 +22,11 @@ class LocationService {
       localName = localNm3 == '' ? '$localNm1, $localNm2' : '$localNm2, $localNm3';
       return (localNm1, localName);
     } catch (e) {
-      Lo.g('동네이름 조회 오류 : $e');
+      Lo.g('동네이름 조회 오류 ${posi.latitude} , ${posi.longitude}: $e');
       return ('', localName);
     }
   }
+  //  37.4462920026041 , 126.372737043106:
 
   // 미세먼지 가져오기
   Future<MistViewData?> getMistData(String localName) async {

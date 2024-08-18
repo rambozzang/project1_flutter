@@ -1,11 +1,13 @@
 import 'dart:io';
 // import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:bot_toast/bot_toast.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:hashtagable_v3/hashtagable.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/weather/models/geocode.dart';
 import 'package:project1/repo/board/data/board_save_data.dart';
 import 'package:project1/repo/board/data/board_save_main_data.dart';
@@ -18,7 +20,7 @@ import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_button.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
-import 'package:video_compress/video_compress.dart';
+// import 'package:video_compress/video_compress.dart';
 import 'package:video_player/video_player.dart';
 
 // 동영상 압축 FFmpeg로 동영상 압축하기
@@ -35,7 +37,7 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
   final TextEditingController hashTagController = TextEditingController();
 
   // late Subscription _subscription;
-  late MediaInfo? pickedFile;
+  // late MediaInfo? pickedFile;
 
   final ValueNotifier<CurrentWeather?> currentWeather = ValueNotifier<CurrentWeather?>(null);
 
@@ -43,12 +45,9 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
   final ValueNotifier<TotalData?> totalData = ValueNotifier<TotalData?>(null);
 
   final ValueNotifier<bool> isUploading = ValueNotifier<bool>(false);
-  final ValueNotifier<double> uploadingPercentage1 = ValueNotifier<double>(0.0);
-  final ValueNotifier<double> uploadingPercentage2 = ValueNotifier<double>(0.0);
 
-  final ValueNotifier<double> progress = ValueNotifier<double>(0.0);
   late Position? position;
-  final ValueNotifier<bool> isCompress = ValueNotifier<bool>(true);
+
   late String? thumbnailFile;
   BoardSaveData boardSaveData = BoardSaveData();
 
@@ -61,12 +60,12 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
 
+  final ValueNotifier<bool> soundOff = ValueNotifier<bool>(false);
+
   @override
   void initState() {
     super.initState();
     // currentWeather.value = widget.currentWeather;
-
-    initializeVideo();
 
     _controller = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -81,8 +80,16 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
     );
 
     WidgetsBinding.instance!.addPostFrameCallback((_) {
+      initializeVideo();
       getDate();
     });
+  }
+
+  Future<void> _retryInitialization() async {
+    // await _videoController.dispose();
+    lo.g('retryInitialization');
+    await Future.delayed(const Duration(seconds: 1));
+    initializeVideo();
   }
 
   void _toggleCheckbox() {
@@ -99,8 +106,11 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
 
   void initializeVideo() async {
     try {
-      lo.g("initializeVideo() widget.videoFile : ${widget.videoFile}");
-      _videoController = VideoPlayerController.file(widget.videoFile);
+      lo.g("initializeVideo() widget.videoFile : ${widget.videoFile.path}");
+      _videoController = VideoPlayerController.file(
+        widget.videoFile,
+        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: false, allowBackgroundPlayback: false),
+      );
       await _videoController.initialize().then((a) {
         setState(() {
           _videoController.setLooping(true);
@@ -108,6 +118,14 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
           initVideo = true;
           durationOfVideo = _videoController.value.duration;
         });
+      });
+
+      _videoController.addListener(() {
+        if (_videoController.value.hasError) {
+          lo.g('Video error: ${_videoController.value.errorDescription}');
+          // 4. 재시도 로직
+          _retryInitialization();
+        }
       });
     } catch (e) {
       Utils.alert("비디오초기화 오류 : $e");
@@ -130,6 +148,7 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
       Utils.alert("현지 위치정보 수신중입니다. 수신완료 후 다시 시도해주세요.");
       return;
     }
+
     isUploading.value = true;
 
     try {
@@ -186,8 +205,6 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
     } catch (e) {
       debugPrint(e.toString());
       isUploading.value = false;
-      uploadingPercentage1.value = 0.0;
-      uploadingPercentage2.value = 0.0;
     }
   }
 
@@ -206,7 +223,11 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
 
   @override
   void dispose() {
+    _videoController.pause();
     _videoController.dispose();
+    _controller.dispose();
+    hashTagController.dispose();
+    isUploading.dispose();
 
     super.dispose();
     //실제 Root 페이지 에서 동영상 업로드 처리
@@ -282,7 +303,28 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
                                         // ignore: unnecessary_string_interpolations
                                         child: Text('${formatMilliseconds(durationOfVideo.inMilliseconds)}',
                                             style: const TextStyle(fontSize: 12, color: Colors.white)),
-                                      )
+                                      ),
+                                      Positioned(
+                                        top: 5,
+                                        right: 0,
+                                        child: ValueListenableBuilder<bool>(
+                                            valueListenable: soundOff,
+                                            builder: (context, value, snapshot) {
+                                              return IconButton(
+                                                onPressed: () {
+                                                  if (value) {
+                                                    _videoController.setVolume(1); // 소리 켜기
+                                                  } else {
+                                                    _videoController.setVolume(0); // 소리 끄기
+                                                  }
+                                                  soundOff.value = !value;
+                                                },
+                                                icon: value
+                                                    ? const Icon(Icons.volume_off_outlined, color: Colors.white)
+                                                    : const Icon(Icons.volume_up_outlined, color: Colors.white),
+                                              );
+                                            }),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -302,31 +344,70 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    Row(
+                                      children: [
+                                        SizedBox(
+                                          width: 25,
+                                          child: CircleAvatar(
+                                            radius: 16,
+                                            backgroundColor: Colors.grey[100],
+                                            child: ClipOval(
+                                              child: CachedNetworkImage(
+                                                cacheKey: Get.find<AuthCntr>().resLoginData.value.custId.toString(),
+                                                imageUrl: Get.find<AuthCntr>()
+                                                    .resLoginData
+                                                    .value
+                                                    .profilePath
+                                                    .toString(), //  'https://picsum.photos/200/300',
+                                                width: 23,
+                                                height: 23,
+                                                fit: BoxFit.cover,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const Gap(5),
+                                        Flexible(
+                                          child: Text(Get.find<AuthCntr>().resLoginData.value.nickNm.toString(),
+                                              overflow: TextOverflow.clip,
+                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)),
+                                        ),
+                                      ],
+                                    ),
+                                    const Divider(),
+                                    const SizedBox(height: 10),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 7),
+                                      padding: const EdgeInsets.all(4),
                                       decoration: BoxDecoration(
                                         color: Colors.grey.withOpacity(0.2),
                                         borderRadius: BorderRadius.circular(5),
                                       ),
                                       child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Container(
-                                              padding: const EdgeInsets.all(2),
+                                              padding: const EdgeInsets.all(4),
                                               decoration: BoxDecoration(
                                                 color: Colors.green.withOpacity(0.9),
                                                 borderRadius: BorderRadius.circular(5),
                                               ),
                                               child: const Icon(Icons.location_on, color: Colors.white, size: 15)),
                                           const SizedBox(width: 5),
-                                          Text(cntr.currentLocation.value!.name,
-                                              style: const TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold)),
+                                          Flexible(
+                                            child: Text(cntr.currentLocation.value!.name,
+                                                overflow: TextOverflow.clip,
+                                                style: const TextStyle(fontSize: 13, color: Colors.black, fontWeight: FontWeight.bold)),
+                                          ),
                                         ],
                                       ),
                                     ),
                                     Row(
                                       children: [
-                                        Text('${cntr.currentWeather.value!.temp!.split('.')[0]}°C',
-                                            style: const TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold)),
+                                        Text('현재온도 : ${cntr.currentWeather.value.temp!.split('.')[0]}°C',
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.black,
+                                            )),
                                         // CachedNetworkImage(
                                         //   cacheKey: cntr.currentWeather.value?.weather![0].icon ?? '10n',
                                         //   width: 50,
@@ -348,11 +429,11 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
                                       ],
                                     ),
                                     Text(
-                                      cntr.currentWeather.value!.rainDesc!,
-                                      style: const TextStyle(fontSize: 15, color: Colors.black),
+                                      cntr.currentWeather.value.description ?? '-',
+                                      style: const TextStyle(fontSize: 14, color: Colors.black),
                                       overflow: TextOverflow.clip,
                                     ),
-                                    const Gap(6),
+                                    const Gap(15),
                                     cntr.mistData.value!.mist10Grade.toString() == 'null'
                                         ? const Text('미세먼지 정보가 없습니다.', style: TextStyle(fontSize: 13, color: Colors.black87))
                                         : RichText(
@@ -395,8 +476,8 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
                         maxLines: 4,
                         decoration: InputDecoration(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
-                          hintText: "내용을 입력해주세요! #태그1 #태그2 #태그3",
-                          //   hintStyle: TextStyle(fontSize: 15, color: Colors.grey),
+                          hintText: "내용을 입력해주세요! \n#태그1 #태그2 #태그3",
+                          hintStyle: const TextStyle(fontSize: 15, color: Colors.grey),
                           border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(5),
                               borderSide: const BorderSide(color: Color.fromARGB(255, 59, 104, 81), width: 1.0)),
@@ -481,42 +562,6 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
                   ),
                 ),
               ),
-              ValueListenableBuilder<double>(
-                  valueListenable: uploadingPercentage1,
-                  builder: (context, value, child) {
-                    return Stack(
-                      children: [
-                        Container(
-                          height: 5,
-                          width: MediaQuery.of(context).size.width,
-                          color: Colors.grey[200],
-                        ),
-                        Container(
-                          height: 5,
-                          width: MediaQuery.of(context).size.width * (value / 100),
-                          color: const Color(0xFFEA3799),
-                        ),
-                      ],
-                    );
-                  }),
-              ValueListenableBuilder<double>(
-                  valueListenable: uploadingPercentage2,
-                  builder: (context, value, child) {
-                    return Stack(
-                      children: [
-                        Container(
-                          height: 5,
-                          width: MediaQuery.of(context).size.width,
-                          color: Colors.grey[200],
-                        ),
-                        Container(
-                          height: 5,
-                          width: MediaQuery.of(context).size.width * (value / 100),
-                          color: const Color.fromARGB(255, 34, 39, 133),
-                        ),
-                      ],
-                    );
-                  }),
               ValueListenableBuilder<bool>(
                   valueListenable: isUploading,
                   builder: (context, value, child) {
@@ -567,13 +612,13 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
               ValueListenableBuilder<bool>(
                 valueListenable: isUploading,
                 builder: (context, value, child) {
-                  return CustomButton(
+                  return Obx(() => CustomButton(
                       text: !value ? '등록하기' : '처리중..',
                       type: 'L',
-                      // isEnable: !value,
+                      isEnable: Get.find<WeatherGogoCntr>().isLoading.value == false,
                       widthValue: 120,
                       heightValue: 50,
-                      onPressed: () => !value ? upload() : Utils.alert('처리중입니다..'));
+                      onPressed: () => !value ? upload() : Utils.alert('처리중입니다..')));
                 },
               ),
             ],
@@ -691,7 +736,7 @@ class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage> {
                 child: VideoPlayer(widget.videoPlayerController),
               );
             } else {
-              return const Text('waiting for video to load');
+              return const Text('');
             }
           },
         ),
