@@ -66,7 +66,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     Get.put(VideoListCntr());
-    // checkAppVersion();
+    checkAppVersion();
 
     // initFirebase();
 

@@ -42,7 +42,7 @@ class _Twenty4PageState extends State<Twenty4Page> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(color: Color(0xFF262B49)),
+      // decoration: const BoxDecoration(color: Color(0xFF262B49)),
       // padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,7 +220,7 @@ class _Twenty4PageState extends State<Twenty4Page> {
           width: hourlyItemWidth,
           padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 1.0),
           decoration: BoxDecoration(
-            color: index % 2 == 0 ? const Color(0xFF1B263B) : Colors.transparent,
+            color: index % 2 == 0 ? const Color.fromARGB(255, 31, 46, 75) : Colors.transparent,
             border: data.date.hour == 0 ? Border(left: BorderSide(color: Colors.white.withOpacity(0.5))) : null,
           ),
           child: Column(

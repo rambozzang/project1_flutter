@@ -77,24 +77,45 @@ class _AgreePageState extends State<AgreePage> {
     );
   }
 
-  void complated() async {
-    // await handleNotificationPermission();
-    PermissionHandler handler = PermissionHandler();
-    await handler.complated();
-    isLoading.value = true;
+  // void completed() async {
+  //   // await handleNotificationPermission();
+  //   PermissionHandler handler = PermissionHandler();
+  //   await handler.completed();
+  //   isLoading.value = true;
 
-    // Get.back(result: true);
-    ResData resData = await Get.find<AuthCntr>().signUpProc(custId);
-    if (resData.code != "00") {
-      Utils.alert(resData.msg.toString());
-      // 3초 딜레이
-      await Future.delayed(const Duration(milliseconds: 2000), () {
-        Get.offAllNamed('/JoinPage');
-      }); // To preven
+  //   // Get.back(result: true);
+  //   ResData resData = await Get.find<AuthCntr>().signUpProc(custId);
+  //   if (resData.code != "00") {
+  //     Utils.alert(resData.msg.toString());
+  //     // 3초 딜레이
+  //     await Future.delayed(const Duration(milliseconds: 2000), () {
+  //       Get.offAllNamed('/JoinPage');
+  //     });
+  //     return;
+  //   }
+  //   Get.offAllNamed('/AuthPage');
+  // }
+  void completed() async {
+    try {
+      isLoading.value = true;
 
-      return;
+      PermissionHandler handler = PermissionHandler();
+      await handler.completed();
+
+      ResData resData = await Get.find<AuthCntr>().signUpProc(custId);
+
+      if (resData.code != "00") {
+        throw Exception(resData.msg.toString());
+      }
+
+      Get.offAllNamed('/AuthPage');
+    } catch (e) {
+      Utils.alert(e.toString());
+      await Future.delayed(const Duration(milliseconds: 2000));
+      Get.offAllNamed('/JoinPage');
+    } finally {
+      isLoading.value = false;
     }
-    Get.offAllNamed('/AuthPage');
   }
 
   @override
@@ -202,12 +223,12 @@ class _AgreePageState extends State<AgreePage> {
                     ElevatedButton(
                       onPressed: allChecked
                           ? () {
-                              complated();
+                              completed();
                             }
                           : null,
                       style: ElevatedButton.styleFrom(
                         foregroundColor: Colors.white,
-                        backgroundColor: Color.fromARGB(255, 47, 54, 95),
+                        backgroundColor: const Color.fromARGB(255, 47, 54, 95),
                         minimumSize: const Size(double.infinity, 50),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),

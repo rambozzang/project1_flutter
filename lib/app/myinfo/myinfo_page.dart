@@ -13,6 +13,8 @@ import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/weather/widgets/customShimmer.dart';
+import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
+import 'package:project1/app/weathergogo/weathergogo_page.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/board/data/cust_count_data.dart';
@@ -127,13 +129,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
   }
 
   Future<void> fetchAllData() async {
-    await Future.wait([
-      getCountData(),
-      getInitMyBoard(),
-      getInitFollowBoard(),
-      getTag(),
-      getLocalTag(),
-    ]);
+    await Future.wait([getCountData(), getInitMyBoard(), getInitFollowBoard(), getTag(), Get.find<WeatherGogoCntr>().getLocalTag()]);
   }
 
   Future<void> getCountData() async {
@@ -174,6 +170,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         // isMyBoardLastPage = true;
+        myVideoListCntr.sink.add(ResStream.error(res.msg.toString()));
         return;
       }
       print(res.data);
@@ -209,6 +206,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
           await repo.getFollowBoard(Get.find<AuthCntr>().resLoginData.value.custId.toString(), followboardPageNum, followboardageSize);
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
+        followVideoListCntr.sink.add(ResStream.error(res.msg.toString()));
         return;
       }
       print(res.data);
@@ -358,7 +356,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
         return;
       }
       if (tagType == 'LOCAL') {
-        getLocalTag();
+        Get.find<WeatherGogoCntr>().getLocalTag();
       }
       // Utils.alert('삭제되었습니다.');
       //  getTag();
@@ -415,24 +413,6 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
       _taglist = (res.data as List).map((e) => e['id']['tagNm'].toString()).toList();
 
       tagStream.sink.add(ResStream.completed(_taglist));
-    } catch (e) {
-      Utils.alert(e.toString());
-      // myCountCntr.sink.add(ResStream.error(e.toString()));
-    }
-  }
-
-  // 관심지역 조회
-  Future<void> getLocalTag() async {
-    try {
-      CustRepo repo = CustRepo();
-
-      ResData res = await repo.getTagList(AuthCntr.to.resLoginData.value.custId.toString(), 'LOCAL');
-      if (res.code != '00') {
-        Utils.alert(res.msg.toString());
-        return;
-      }
-
-      areaStream.sink.add(ResStream.completed((res.data as List).map((e) => e['id']['tagNm'].toString()).toList()));
     } catch (e) {
       Utils.alert(e.toString());
       // myCountCntr.sink.add(ResStream.error(e.toString()));
@@ -501,7 +481,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
 
                   getInitFollowBoard();
                   getTag();
-                  getLocalTag();
+                  Get.find<WeatherGogoCntr>().getLocalTag();
                 },
                 child: NestedScrollView(
                   controller: mainScrollController,
@@ -668,7 +648,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
             children: [
               const Text('관심지역', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
               const Spacer(),
-              const Text('*리스트 구성 기준.', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12, color: Colors.black54)),
+              const Text('*리스트 구성 기준', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12, color: Colors.black54)),
               const Gap(10),
               SizedBox(
                 height: 30,
@@ -690,7 +670,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                           const Color.fromARGB(255, 95, 96, 103),
                         ),
                         shadowColor: const WidgetStatePropertyAll(Color.fromARGB(255, 50, 125, 237))),
-                    onPressed: () async => await Get.toNamed('/FavoriteAreaPage')!.then((value) => getLocalTag()),
+                    onPressed: () async =>
+                        await Get.toNamed('/FavoriteAreaPage')!.then((value) => Get.find<WeatherGogoCntr>().getLocalTag()),
                     icon: const Icon(
                       Icons.add,
                       size: 20,
@@ -723,66 +704,58 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
           const Gap(10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: StreamBuilder<ResStream<List<String>>>(
-                stream: areaStream.stream,
-                builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    if (snapshot.data!.status == Status.COMPLETED) {
-                      List<String> list = snapshot.data!.data!;
-                      if (list.isEmpty) {
-                        return Container(
-                          padding: const EdgeInsets.all(20),
-                          alignment: Alignment.center,
-                          child: Text(
-                            '등록된 관심지역이 없습니다.',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        );
-                      }
-                      return Wrap(
-                        spacing: 6.0,
-                        runSpacing: 6.0,
-                        direction: Axis.horizontal,
-                        crossAxisAlignment: WrapCrossAlignment.start,
-                        verticalDirection: VerticalDirection.down,
-                        runAlignment: WrapAlignment.start,
-                        alignment: WrapAlignment.start,
-                        children: list.map((e) => buildLocalChip(e)).toList(),
-                      );
-                    } else {
-                      return Container(
-                        padding: const EdgeInsets.all(20),
-                        alignment: Alignment.center,
-                        child: Text(
-                          '등록된 관심지역이 없습니다.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      );
-                    }
-                  } else {
-                    // getTag();
-                    return Container(
-                      padding: const EdgeInsets.all(20),
-                      alignment: Alignment.center,
-                      child: Text(
-                        '등록된 관심지역이 없습니다.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    );
-                  }
-                }),
+            child: Obx(() {
+              if (Get.find<WeatherGogoCntr>().areaList.isEmpty) {
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '등록된 관심지역이 없습니다.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                );
+              }
+              return Wrap(
+                spacing: 6.0,
+                runSpacing: 6.0,
+                direction: Axis.horizontal,
+                crossAxisAlignment: WrapCrossAlignment.start,
+                verticalDirection: VerticalDirection.down,
+                runAlignment: WrapAlignment.start,
+                alignment: WrapAlignment.start,
+                children: Get.find<WeatherGogoCntr>().areaList.map((e) => buildLocalChip(e.id!.tagNm.toString())).toList(),
+              );
+            }),
+            // child: StreamBuilder<ResStream<List<String>>>(
+            //     stream: areaStream.stream,
+            //     builder: (context, snapshot) {
+            //       if (snapshot.hasData) {
+            //         if (snapshot.data!.status == Status.COMPLETED) {
+            //           List<String> list = snapshot.data!.data!;
+            //           if (list.isEmpty) {
+
+            //           }
+
+            //         } else {
+            //           return Container(
+            //             padding: const EdgeInsets.all(20),
+            //             alignment: Alignment.center,
+            //             child: Text(
+            //               '등록된 관심지역이 없습니다.',
+            //               style: TextStyle(
+            //                 fontSize: 12,
+            //                 fontWeight: FontWeight.w500,
+            //                 color: Colors.grey.shade600,
+            //               ),
+            //             ),
+            //           );
+            //         }
+            //       }
+            //     }),
           ),
           const Gap(10),
         ],
@@ -802,7 +775,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
             children: [
               const Text('관심태그', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
               const Spacer(),
-              const Text('*리스트 구성 기준.', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12, color: Colors.black54)),
+              const Text('*리스트 구성 기준', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12, color: Colors.black54)),
               const Gap(10),
               SizedBox(
                 height: 30,
@@ -942,21 +915,28 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
             //   () => ImageAvatar(width: 70, url: Get.find<AuthCntr>().resLoginData.value.profilePath!, type: AvatarType.MYSTORY),
             child: Stack(
               children: [
-                Obx(() => Container(
-                    height: 70,
-                    width: 70,
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      // color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(25),
-                      image: DecorationImage(
-                        image: CachedNetworkImageProvider(Get.find<AuthCntr>().resLoginData.value.profilePath.toString()),
-                        fit: BoxFit.cover,
+                Obx(
+                  () => Container(
+                      height: 70,
+                      width: 70,
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(25),
+                        image: Get.find<AuthCntr>().resLoginData.value.profilePath == ''
+                            ? null
+                            : DecorationImage(
+                                image: CachedNetworkImageProvider(Get.find<AuthCntr>().resLoginData.value.profilePath.toString()),
+                                fit: BoxFit.cover,
+                              ),
                       ),
-                    ),
-                    child: Get.find<AuthCntr>().resLoginData.value.profilePath == null
-                        ? const Icon(Icons.person, color: Colors.white)
-                        : null)),
+                      child: Get.find<AuthCntr>().resLoginData.value.profilePath == ''
+                          ? const Icon(
+                              Icons.person,
+                              color: Colors.black,
+                              size: 25,
+                            )
+                          : null),
+                ),
                 Positioned(
                   bottom: -4,
                   right: -4,
@@ -1048,7 +1028,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                         child: const Row(
                           children: [
                             Text(
-                              '프로필 수정',
+                              '회원정보 수정',
                               style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14.0, color: Colors.black),
                             ),
                             Icon(

@@ -6,11 +6,13 @@ class AppleJoinData {
   String? email;
   String? displayName;
   String? chatId;
+  String? deviceId;
   AppleJoinData({
     this.uid,
     this.email,
     this.displayName,
     this.chatId,
+    this.deviceId,
   });
 
   AppleJoinData copyWith({
@@ -18,12 +20,14 @@ class AppleJoinData {
     String? email,
     String? displayName,
     String? chatId,
+    String? deviceId,
   }) {
     return AppleJoinData(
       uid: uid ?? this.uid,
       email: email ?? this.email,
       displayName: displayName ?? this.displayName,
       chatId: chatId ?? this.chatId,
+      deviceId: deviceId ?? this.deviceId,
     );
   }
 
@@ -33,6 +37,7 @@ class AppleJoinData {
       'email': email,
       'displayName': displayName,
       'chatId': chatId,
+      'deviceId': deviceId,
     };
   }
 
@@ -42,6 +47,7 @@ class AppleJoinData {
       email: map['email'] != null ? map['email'] as String : null,
       displayName: map['displayName'] != null ? map['displayName'] as String : null,
       chatId: map['chatId'] != null ? map['chatId'] as String : null,
+      deviceId: map['deviceId'] != null ? map['deviceId'] as String : null,
     );
   }
 
@@ -51,18 +57,22 @@ class AppleJoinData {
 
   @override
   String toString() {
-    return 'AppleJoinData(uid: $uid, email: $email, displayName: $displayName, chatId: $chatId)';
+    return 'AppleJoinData(uid: $uid, email: $email, displayName: $displayName, chatId: $chatId, deviceId: $deviceId)';
   }
 
   @override
   bool operator ==(covariant AppleJoinData other) {
     if (identical(this, other)) return true;
 
-    return other.uid == uid && other.email == email && other.displayName == displayName && other.chatId == chatId;
+    return other.uid == uid &&
+        other.email == email &&
+        other.displayName == displayName &&
+        other.chatId == chatId &&
+        other.deviceId == deviceId;
   }
 
   @override
   int get hashCode {
-    return uid.hashCode ^ email.hashCode ^ displayName.hashCode ^ chatId.hashCode;
+    return uid.hashCode ^ email.hashCode ^ displayName.hashCode ^ chatId.hashCode ^ deviceId.hashCode;
   }
 }

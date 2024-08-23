@@ -131,7 +131,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
       ResData res = await repo.checkBlock(otherCustId);
       isBlocked.value = res.data;
       if (isBlocked.value) {
-        Utils.alert('이 사용자는 차단되어 있습니다.');
+        Utils.alert('사용자가 차단했습니다.');
       }
     } catch (e) {
       lo.g('checkBlock 오류: $e');

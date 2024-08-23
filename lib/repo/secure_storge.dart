@@ -14,6 +14,20 @@ mixin SecureStorage {
     ),
   );
 
+  // device ID 저장
+  Future<bool> saveDeviceId(String deviceId) async {
+    lo.g("[Storage Action] : saveDeviceId('$deviceId')");
+    await storage.write(key: "DEVICE_ID", value: deviceId);
+    return true;
+  }
+
+  // device ID 조회
+  Future<String?> getDeviceId() async {
+    String? deviceId = await storage.read(key: "DEVICE_ID");
+    lo.g("[Storage Action] : getDeviceId('$deviceId')");
+    return deviceId;
+  }
+
   // 사용자 ID 저장(수정)
   Future<bool> saveCustId(String custId) async {
     lo.g("[Storage Action] : saveCustId('$custId')");

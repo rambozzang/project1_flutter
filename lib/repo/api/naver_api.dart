@@ -7,6 +7,7 @@ import 'package:project1/repo/cust/data/naver_join_data.dart';
 import 'package:project1/repo/secure_storge.dart';
 
 import 'package:project1/utils/log_utils.dart';
+import 'package:uuid/uuid.dart';
 
 //  연결 주소 : https://developers.naver.com/docs/login/api/api.md
 class NaverApi with SecureStorage {
@@ -39,6 +40,10 @@ class NaverApi with SecureStorage {
 
       // 채팅서버 회원가입
       naverJoinData.chatId = await chatSignUp(result);
+
+      // deviceID 생성
+      naverJoinData.deviceId = const Uuid().v4();
+      saveDeviceId(naverJoinData.deviceId.toString());
 
       ResData res = await repo.createNaverCust(naverJoinData);
       if (res.code != "00") {

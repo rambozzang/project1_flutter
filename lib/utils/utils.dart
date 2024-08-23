@@ -27,27 +27,37 @@ abstract class Utils {
   static void appUpdateAlert(BuildContext context, String storeUrl) {
     showDialog(
       context: context,
-      // barrierDismissible: false,
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return GiffyDialog.image(
           elevation: 5,
           Image.asset(
             'assets/images/app_update.png',
             height: 200,
-            scale: 0.7,
+            scale: 0.4,
             fit: BoxFit.cover,
           ),
+          shadowColor: Colors.black.withOpacity(0.5),
           title: const Text(
-            '최신 버전 업데이트',
+            '최신 버젼 업데이트',
             textAlign: TextAlign.center,
           ),
           content: Text(
-            Platform.isIOS ? '최신 버전이 있습니다. 앱스토어로 이동합니다.' : '최신 버전이 있습니다.\n플레이스토어로 이동합니다.',
+            Platform.isIOS ? '최신 버전이 있습니다.\n앱스토어로 이동합니다.' : '최신 버전이 있습니다.\n플레이스토어로 이동합니다.',
             textAlign: TextAlign.center,
           ),
           actionsAlignment: MainAxisAlignment.center,
           actions: [
             TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.indigo[400],
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                // minimumSize: const Size(50, 28),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               onPressed: () {
                 launchUrl(Uri.parse(storeUrl));
                 //   Future.delayed(const Duration(milliseconds: 1000), () async {
@@ -59,9 +69,9 @@ abstract class Utils {
                 //   });
               },
               child: const Text(
-                '확 인',
+                '    확 인    ',
                 style: TextStyle(
-                  color: Colors.black,
+                  color: Colors.white,
                   fontSize: 15,
                 ),
               ),

@@ -8,6 +8,7 @@ import 'package:project1/app/weathergogo/cntr/data/current_weather_data.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/weather/data/weather_view_data.dart';
+import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 
 class HeaderMainPage extends GetView<WeatherGogoCntr> {
@@ -26,10 +27,10 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _buildYesterdayInfo(controller.yesterdayDesc.value),
-                  _buildTemperature(controller.currentWeather.value.temp ?? ''),
+                  _buildTemperature(controller.currentWeather.value.temp ?? '0.0'),
                   const Gap(5),
                   Text(
-                    controller.currentWeather.value.description ?? '',
+                    controller.currentWeather.value.description ?? '맑음',
                     style: lightText.copyWith(fontSize: 16),
                   ),
                   _buildAirQualityInfo(controller.mistData),
@@ -44,15 +45,18 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
   }
 
   Widget _buildYesterdayInfo(String? yesterdayDesc) {
-    if (yesterdayDesc == null || yesterdayDesc.isEmpty) return const SizedBox.shrink();
-    return Text(
-      yesterdayDesc,
-      textAlign: TextAlign.left,
-      style: TextStyle(
-        fontSize: 15,
-        color: yesterdayDesc.contains('낮') ? Colors.green : Colors.amber,
-        fontWeight: FontWeight.bold,
-        height: 1,
+    if (yesterdayDesc == null || yesterdayDesc.isEmpty) return const SizedBox(height: 15);
+    return SizedBox(
+      height: 15,
+      child: Text(
+        yesterdayDesc,
+        textAlign: TextAlign.left,
+        style: TextStyle(
+          fontSize: 15,
+          color: yesterdayDesc.contains('낮') ? Colors.green : Colors.amber,
+          fontWeight: FontWeight.bold,
+          height: 1,
+        ),
       ),
     );
   }
@@ -60,14 +64,31 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
   Widget _buildTemperature(String temp) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        Text(
-          temp,
-          style: const TextStyle(
-            fontSize: 56,
-            height: 1,
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 500),
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.4),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: Text(
+            temp.contains('.') ? temp : '$temp.0',
+            key: ValueKey<String>(temp),
+            style: const TextStyle(
+              fontSize: 56,
+              height: 1,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         const Text(
@@ -130,8 +151,14 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
   }
 
   Widget _buildWeatherAnimation(CurrentWeatherData weather) {
+    lo.g('weather.sky: ${weather.sky}, weather.rain: ${weather.rain}');
+
     return LottieBuilder.asset(
-      WeatherDataProcessor.instance.getWeatherGogoImage(
+      // WeatherDataProcessor.instance.getWeatherGogoImage(
+      //   weather.sky?.toString() ?? '',
+      //   weather.rain?.toString() ?? '',
+      // ),
+      WeatherDataProcessor.instance.getFinalWeatherIcon(
         weather.sky?.toString() ?? '',
         weather.rain?.toString() ?? '',
       ),

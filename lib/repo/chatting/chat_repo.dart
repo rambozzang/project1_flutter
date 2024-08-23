@@ -22,7 +22,7 @@ class ChatRepo {
     try {
       resData.code = '99';
 
-      if (data.email == null || data.uid == null || data.firstName == null) {
+      if (data.email == null || data.uid == null) {
         Utils.alert('채팅서버 가입  : email or uid or firstName 필수값 입니다.');
         resData.msg = '채팅서버 가입  : email or uid or firstName 필수값 입니다.';
         return resData;
@@ -36,14 +36,14 @@ class ChatRepo {
       log('supabase Result : ${response.user!.id}');
 
       await SupabaseChatCore.instance.updateUser(
-        types.User(firstName: data.firstName ?? '', id: response.user!.id, lastName: '', imageUrl: data.imageUrl),
+        types.User(firstName: data.firstName ?? data.email!.split('@')[0], id: response.user!.id, lastName: '', imageUrl: data.imageUrl),
       );
       resData.code = '00';
       resData.data = response.user!.id;
       return resData;
     } catch (e) {
       log('supabase signUp Result : $e');
-      Utils.alert(e.toString());
+      // Utils.alert(e.toString());
       resData.msg = e.toString();
       AuthException exception = e as AuthException;
       // 이미 가입자 고객인 경우
