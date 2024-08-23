@@ -88,7 +88,7 @@ class _ChatPageState extends State<ChatPage> {
       ResData res = await repo.checkBlock(otherCustId);
       isBlocked = res.data;
       if (isBlocked) {
-        Utils.alert('이 사용자는 차단되어 있습니다.');
+        Utils.alert('사용자가 차단했습니다.');
       }
     } catch (e) {
       lo.g('checkBlock 오류: $e');
@@ -354,7 +354,7 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
-          backgroundColor: const Color(0xFF262B49), // Colors.black87,
+          backgroundColor: const Color(0xFF262B49), //
           automaticallyImplyLeading: true,
           // systemOverlayStyle: SystemUiOverlayStyle.light,
           // forceMaterialTransparency: true,
@@ -397,7 +397,7 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ],
         ),
-        backgroundColor: const Color(0xFF262B49),
+        backgroundColor: const Color.fromARGB(255, 78, 81, 102), // const Color(0xFF262B49),
         body: StreamBuilder<List<types.Message>>(
             initialData: const [],
             stream: _chatController.messages,
@@ -441,7 +441,7 @@ class _ChatPageState extends State<ChatPage> {
                   sentMessageLinkTitleTextStyle: TextStyle(color: neutral7, fontSize: 16, fontWeight: FontWeight.w800, height: 1.375),
                   receivedEmojiMessageTextStyle: TextStyle(fontSize: 25),
                   inputBorderRadius: BorderRadius.vertical(top: Radius.circular(10)),
-                  backgroundColor: const Color(0xFF262B49), // Colors.black87,
+                  backgroundColor: Color.fromARGB(255, 32, 36, 59), // const Color(0xFF262B49), // Colors.black87,
                   inputTextStyle: TextStyle(
                     color: Colors.black,
                     fontSize: 15,
@@ -485,7 +485,7 @@ class _ChatPageState extends State<ChatPage> {
                 ),
                 isAttachmentUploading: _isAttachmentUploading,
                 messages: snapshot.data ?? [],
-                // customBottomWidget: customTextinputWidget(),
+                //customBottomWidget: customTextinputWidget(),
                 onAttachmentPressed: _handleAttachmentPressed,
                 onMessageTap: _handleMessageTap,
                 onPreviewDataFetched: _handlePreviewDataFetched,

@@ -4,22 +4,26 @@ import 'dart:convert';
 class KakaoJoinData {
   int? id;
   String? chatId;
+  String? deviceId;
 
   KakaoAccount? kakaoAccount;
   KakaoJoinData({
     this.id,
     this.chatId,
+    this.deviceId,
     this.kakaoAccount,
   });
 
   KakaoJoinData copyWith({
     int? id,
     String? chatId,
+    String? deviceId,
     KakaoAccount? kakaoAccount,
   }) {
     return KakaoJoinData(
       id: id ?? this.id,
       chatId: chatId ?? this.chatId,
+      deviceId: deviceId ?? this.deviceId,
       kakaoAccount: kakaoAccount ?? this.kakaoAccount,
     );
   }
@@ -28,6 +32,7 @@ class KakaoJoinData {
     return <String, dynamic>{
       'id': id,
       'chatId': chatId,
+      'deviceId': deviceId,
       'kakaoAccount': kakaoAccount?.toMap(),
     };
   }
@@ -36,6 +41,7 @@ class KakaoJoinData {
     return KakaoJoinData(
       id: map['id'] != null ? map['id'] as int : null,
       chatId: map['chatId'] != null ? map['chatId'] as String : null,
+      deviceId: map['deviceId'] != null ? map['deviceId'] as String : null,
       kakaoAccount: map['kakaoAccount'] != null ? KakaoAccount.fromMap(map['kakaoAccount'] as Map<String, dynamic>) : null,
     );
   }
@@ -45,13 +51,13 @@ class KakaoJoinData {
   factory KakaoJoinData.fromJson(String source) => KakaoJoinData.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
-  String toString() => 'KakaoJoinData(id: $id, chatId: $chatId, kakaoAccount: $kakaoAccount)';
+  String toString() => 'KakaoJoinData(id: $id, chatId: $chatId, deviceId: $deviceId,  kakaoAccount: $kakaoAccount)';
 
   @override
   bool operator ==(covariant KakaoJoinData other) {
     if (identical(this, other)) return true;
 
-    return other.id == id && other.chatId == chatId && other.kakaoAccount == kakaoAccount;
+    return other.id == id && other.chatId == chatId && other.deviceId == deviceId && other.kakaoAccount == kakaoAccount;
   }
 
   @override

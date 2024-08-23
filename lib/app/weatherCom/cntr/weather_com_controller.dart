@@ -7,6 +7,7 @@ import 'package:project1/app/weather/models/oneCallCurrentWeather.dart';
 import 'package:project1/app/weatherCom/api/AccuWeatherClient.dart';
 import 'package:project1/app/weatherCom/api/KmaClient.dart';
 import 'package:project1/app/weatherCom/api/MeClient.dart';
+import 'package:project1/app/weatherCom/api/OpenWeatherMapclient.dart';
 import 'package:project1/app/weatherCom/api/TomorrowClient.dart';
 import 'package:project1/app/weatherCom/api/WeatherApiClient.dart';
 import 'package:project1/app/weatherCom/services/openweathermap_client.dart';
@@ -179,11 +180,14 @@ class WeatherComController extends GetxController {
   // openweathermap 데이터 가져오기
   Future<void> fetchOpenWeatherMap() async {
     try {
-      OpenWheatherRepo repo = OpenWheatherRepo();
-
       LatLng location = Get.find<WeatherGogoCntr>().currentLocation.value!.latLng;
 
-      ResData resData = await repo.getOneCallWeather(location);
+      // OpenWheatherRepo repo = OpenWheatherRepo();
+
+      // ResData resData = await repo.getOneCallWeather(location);
+      Openweathermapclient repo = Openweathermapclient();
+      ResData resData = await repo.getForecast(location);
+
       if (resData.code != '00') {
         Utils.alert(resData.msg.toString());
         return;

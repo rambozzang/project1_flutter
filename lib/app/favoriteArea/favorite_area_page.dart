@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -17,7 +16,6 @@ import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/cust_tag_data.dart';
 import 'package:project1/repo/secure_storge.dart';
-import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_button.dart';

@@ -195,17 +195,16 @@ class _JoinPageState extends State<JoinPage> with SingleTickerProviderStateMixin
           break;
       }
 
-      isLoading.value = false;
-
       if (result.code != "00") {
         Utils.alert("오류가 발생했습니다. 다시 시도해 주세요. ${result.msg}");
+        isLoading.value = false;
         return;
       }
-
-      // Get.offAllNamed('/AuthPage');
+      isLoading.value = false;
       Get.offAllNamed('/AgreePage/${result.data}');
     } catch (e) {
       Utils.alert(e.toString());
+      isLoading.value = false;
     }
   }
 
@@ -355,7 +354,7 @@ class _JoinPageState extends State<JoinPage> with SingleTickerProviderStateMixin
               borderRadius: BorderRadius.circular(7),
             ),
             child: const Text(
-              '💥ISFP도 1.8초면 쌉가능🐯',
+              '💥1.8초면 가입가능🐯',
               style: TextStyle(color: Colors.white),
             ),
           ),
@@ -382,10 +381,10 @@ class _JoinPageState extends State<JoinPage> with SingleTickerProviderStateMixin
             ),
           ),
           const Gap(10),
-          Text(
-            label,
-            style: const TextStyle(color: Colors.white, fontSize: 15),
-          )
+          // Text(
+          //   label,
+          //   style: const TextStyle(color: Colors.white, fontSize: 15),
+          // )
         ],
       ),
     );

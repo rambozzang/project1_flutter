@@ -3,6 +3,9 @@ import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
+import 'package:project1/config/url_config.dart';
+import 'package:project1/repo/api/auth_dio.dart';
+import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/weather_gogo/adapter/adapter_map.dart';
 import 'package:project1/app/weathergogo/services/regioninfo_util.dart';
 import 'package:project1/repo/weather_gogo/interface/imp_fct_repository.dart';
@@ -13,6 +16,7 @@ import 'package:project1/repo/weather_gogo/models/enum/data_type.dart';
 import 'package:project1/repo/weather_gogo/models/request/midland_fct_req.dart';
 import 'package:project1/repo/weather_gogo/models/request/midta_fct_req.dart';
 import 'package:project1/repo/weather_gogo/models/request/weather.dart';
+import 'package:project1/repo/weather_gogo/models/request/weather_cache_req.dart';
 import 'package:project1/repo/weather_gogo/models/request/weather_version.dart';
 import 'package:project1/repo/weather_gogo/models/response/fct/fct_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/fct_version/fct_version_model.dart';
@@ -23,6 +27,7 @@ import 'package:project1/repo/weather_gogo/models/response/super_nct/super_nct_m
 import 'package:project1/repo/weather_gogo/repository/midland_fct_repo.dart';
 import 'package:project1/repo/weather_gogo/repository/weather_alert_repo.dart';
 import 'package:project1/utils/log_utils.dart';
+import 'package:dio/dio.dart' as rdio;
 
 // https://www.data.go.kr/iim/api/selectAPIAcountView.do
 // https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?serviceKey=CeGmiV26lUPH9guq1Lca6UA25Al%2FaZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur%2Bt2iPaL%2FLtEQdZebg%3D%3D&pageNo=1&numOfRows=1000&dataType=JSON&base_date=20240702&base_time=1314&nx=55&ny=127
@@ -251,5 +256,30 @@ class WeatherGogoRepo {
     }
   }
 
-  //
+  // 캐쉬 조회 -  WeatherCacheReq
+  Future<ResData> getWeatherCacheData(String cacheKey) async {
+    final dio = await AuthDio.instance.getDio(debug: false);
+    try {
+      var url = '${UrlConfig.baseURL}/weather/findCache?cacheKey=$cacheKey';
+
+      rdio.Response response = await dio.post(url);
+      return AuthDio.instance.dioResponse(response);
+    } on DioException catch (e) {
+      return AuthDio.instance.dioException(e);
+    } finally {}
+  }
+
+  // 캐쉬 저장
+  Future<ResData> saveWeatherCacheData(WeatherCacheReq data) async {
+    final dio = await AuthDio.instance.getDio(debug: false);
+    try {
+      var url = '${UrlConfig.baseURL}/weather/saveCache';
+
+      log(data.toString());
+      rdio.Response response = await dio.post(url, data: data.toJson());
+      return AuthDio.instance.dioResponse(response);
+    } on DioException catch (e) {
+      return AuthDio.instance.dioException(e);
+    } finally {}
+  }
 }

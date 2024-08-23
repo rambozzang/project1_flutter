@@ -231,7 +231,7 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
             const Gap(20),
             // buildCommon('추천 검색어', recoWordlist),
             // const Gap(20),
-            buildWeatherInfoImg(),
+            // buildWeatherInfoImg(),
             buildTodayWeather(),
             // buildAddmob(),
             // ValueListenableBuilder 만들어서 이미지 가져오기
@@ -563,14 +563,17 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
     return InkWell(
         onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/0/${Uri.encodeComponent(label)}'),
         child: Chip(
-          backgroundColor: colorMap[colorMap ?? 8]?['textColor'] ?? Colors.indigo[300], //  const Color.fromARGB(255, 81, 94, 165),
+          backgroundColor:
+              colorMap[colorMap ?? 8]?['textColor'] ?? const Color.fromARGB(255, 251, 251, 252), //  const Color.fromARGB(255, 81, 94, 165),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: Colors.transparent),
+            side: const BorderSide(color: Colors.grey),
           ),
+
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
           label: Text(
             label,
-            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+            style: const TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.bold),
           ),
           // onDeleted: () async {
           // },

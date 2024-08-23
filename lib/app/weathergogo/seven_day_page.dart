@@ -24,7 +24,7 @@ class _SevenDayPageState extends State<SevenDayPage> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF262B49),
+      // color: const Color(0xFF262B49),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -212,7 +212,7 @@ class _SevenDayPageState extends State<SevenDayPage> {
   Widget _buildListItem(SevenDayWeather weather, int index, BuildContext context) {
     return Material(
       borderRadius: BorderRadius.circular(12.0),
-      color: index.isEven ? Colors.grey.withOpacity(0.1) : Colors.grey.withOpacity(0.2),
+      color: index.isEven ? Colors.grey.withOpacity(0.02) : Colors.grey.withOpacity(0.06),
       child: InkWell(
         borderRadius: BorderRadius.circular(12.0),
         onTap: () => null, // Get.toNamed('/SevendayDetailPage/'),

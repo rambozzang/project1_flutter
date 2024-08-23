@@ -629,7 +629,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
               },
             ),
           ),
-          const Gap(10),
+          const Gap(15),
           SizedBox(
             width: 40,
             height: 30,
@@ -645,7 +645,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
             style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
           ),
 
-          const Gap(10),
+          const Gap(15),
           SizedBox(
             height: 30,
             child: IconButton(

@@ -16,7 +16,7 @@ import 'package:dio/dio.dart';
 class CustRepo {
   // KAKAO 회원가입
   Future<ResData> createKakaoCust(KakaoJoinData data) async {
-    final dio = await AuthDio.instance.getDio(debug: true);
+    final dio = await AuthDio.instance.getDio(debug: false);
     try {
       var url = '${UrlConfig.baseURL}/auth/kakaojoin';
       log(url.toString());
@@ -30,7 +30,7 @@ class CustRepo {
 
   // Naver 회원가입
   Future<ResData> createNaverCust(NaverJoinData data) async {
-    final dio = await AuthDio.instance.getDio(debug: true);
+    final dio = await AuthDio.instance.getDio(debug: false);
     try {
       var url = '${UrlConfig.baseURL}/auth/naverjoin';
 
@@ -44,7 +44,7 @@ class CustRepo {
 
   // Google 회원가입
   Future<ResData> createGoogleCust(GoogleJoinData data) async {
-    final dio = await AuthDio.instance.getDio(debug: true);
+    final dio = await AuthDio.instance.getDio(debug: false);
     try {
       //var url = 'http://localhost:7010/api/auth/googlejoin';
       var url = '${UrlConfig.baseURL}/auth/googlejoin';
@@ -59,7 +59,7 @@ class CustRepo {
 
   // Apple 회원가입
   Future<ResData> createAppleCust(AppleJoinData data) async {
-    final dio = await AuthDio.instance.getDio(debug: true);
+    final dio = await AuthDio.instance.getDio(debug: false);
     try {
       //var url = 'http://localhost:7010/api/auth/googlejoin';
       var url = '${UrlConfig.baseURL}/auth/applejoin';
@@ -74,7 +74,7 @@ class CustRepo {
 
   // 회원정보 수정
   Future<ResData> updateCust(CustUpdataData data) async {
-    final dio = await AuthDio.instance.getDio(debug: true);
+    final dio = await AuthDio.instance.getDio(debug: false);
     try {
       var url = '${UrlConfig.baseURL}/cust/updateCustInfo';
 
@@ -88,7 +88,7 @@ class CustRepo {
 
   // 회원정보 수정
   Future<ResData> getCustInfo(String custId) async {
-    final dio = await AuthDio.instance.getDio(debug: true);
+    final dio = await AuthDio.instance.getDio(debug: false);
     try {
       var url = '${UrlConfig.baseURL}/cust/getCustInfo?custId=$custId';
       Response response = await dio.get(url);
@@ -101,7 +101,7 @@ class CustRepo {
   // 회원탈퇴
   Future<ResData> deleteCust(String custId) async {
     // Delete customer
-    final dio = await AuthDio.instance.getDio(debug: true);
+    final dio = await AuthDio.instance.getDio(debug: false);
     try {
       var url = '${UrlConfig.baseURL}/cust/deleteCust?custId=$custId';
       Response response = await dio.post(url);
@@ -113,7 +113,7 @@ class CustRepo {
 
   // 회원정보 조회
   Future<ResData> login(String custId, String fcmId) async {
-    final dio = await AuthDio.instance.getDio(debug: true);
+    final dio = await AuthDio.instance.getDio(debug: false);
     try {
       var url = '${UrlConfig.baseURL}/auth/login';
       Response response = await dio.post(url, data: {'custId': custId, 'fcmId': fcmId});
@@ -125,7 +125,7 @@ class CustRepo {
 
   // Tag 저장
   Future<ResData> saveTag(CustTagData data) async {
-    final dio = await AuthDio.instance.getDio(debug: true);
+    final dio = await AuthDio.instance.getDio(debug: false);
     try {
       var url = '${UrlConfig.baseURL}/tag/save';
       Response response = await dio.post(url, data: data.toMap());
@@ -137,7 +137,7 @@ class CustRepo {
 
   // Tag 삭제
   Future<ResData> deleteTag(String custId, String tag, String tagType) async {
-    final dio = await AuthDio.instance.getDio(debug: true);
+    final dio = await AuthDio.instance.getDio(debug: false);
     try {
       var url = '${UrlConfig.baseURL}/tag/delete';
       Response response = await dio.post(url, data: {'custId': custId, 'tagType': tagType, 'tagNm': tag});
@@ -149,7 +149,7 @@ class CustRepo {
 
   // Tag 조회
   Future<ResData> getTagList(String custId, String tagType) async {
-    final dio = await AuthDio.instance.getDio(debug: true);
+    final dio = await AuthDio.instance.getDio(debug: false);
     try {
       var url = '${UrlConfig.baseURL}/tag/getTagList?custId=$custId&tagType=$tagType';
       Response response = await dio.post(url);
@@ -161,7 +161,7 @@ class CustRepo {
 
   // 회원 사진 Url 수정
   Future<ResData> modiProfilePath(String custId, String photoUrl) async {
-    final dio = await AuthDio.instance.getDio(debug: true);
+    final dio = await AuthDio.instance.getDio(debug: false);
     try {
       var url = '${UrlConfig.baseURL}/cust/modiProfilePath';
       Response response = await dio.post(url, data: {'custId': custId, 'profilePath': photoUrl});
@@ -173,7 +173,7 @@ class CustRepo {
 
   // ChatID 업데이트 처리
   Future<ResData> updateChatId(String custId, String chatId) async {
-    final dio = await AuthDio.instance.getDio(debug: true);
+    final dio = await AuthDio.instance.getDio(debug: false);
     try {
       var url = '${UrlConfig.baseURL}/cust/updateChatId?custId=$custId&chatId=$chatId';
       Response response = await dio.post(url);
@@ -185,7 +185,7 @@ class CustRepo {
 
   //나를 거부했는지 확인여부
   Future<ResData> checkBlock(String custId) async {
-    final dio = await AuthDio.instance.getDio(debug: true);
+    final dio = await AuthDio.instance.getDio(debug: false);
     try {
       var url = '${UrlConfig.baseURL}/cust/checkBlock?custId=$custId';
       Response response = await dio.post(url);
@@ -197,7 +197,7 @@ class CustRepo {
 
   //나를 차단 해제 삭제(08)
   Future<ResData> unBlock(String custId) async {
-    final dio = await AuthDio.instance.getDio(debug: true);
+    final dio = await AuthDio.instance.getDio(debug: false);
     try {
       var url = '${UrlConfig.baseURL}/cust/deleteBlock?custId=$custId';
       Response response = await dio.post(url);

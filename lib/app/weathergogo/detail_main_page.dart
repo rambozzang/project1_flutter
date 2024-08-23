@@ -30,7 +30,7 @@ class DetailMainPage extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           decoration: BoxDecoration(
-            color: const Color(0xFF262B49),
+            // color: const Color(0xFF262B49),
             borderRadius: BorderRadius.circular(16.0),
           ),
           child: Column(
@@ -39,9 +39,11 @@ class DetailMainPage extends StatelessWidget {
               const SizedBox(height: 10.0),
               _buildInfoRow([
                 _buildInfoTile(
-                  icon: PhosphorIconsRegular.cloud,
-                  title: '강수확률',
-                  data: '${controller.currentWeather.value.rainPo ?? 0}%',
+                  icon: PhosphorIconsRegular.clock,
+                  title: '발표시각',
+                  data: controller.currentWeather.value.fcsTime == null
+                      ? ''
+                      : '${controller.currentWeather.value.fcsTime.toString().substring(0, 2)}:${controller.currentWeather.value.fcsTime.toString().substring(2, 4)}',
                 ),
                 _buildInfoTile(
                   icon: PhosphorIconsRegular.drop,
@@ -73,11 +75,9 @@ class DetailMainPage extends StatelessWidget {
                   data: '${controller.currentWeather.value.humidity ?? 0}%',
                 ),
                 _buildInfoTile(
-                  icon: PhosphorIconsRegular.clock,
-                  title: '발표시각',
-                  data: controller.currentWeather.value.fcsTime == null
-                      ? ''
-                      : '${controller.currentWeather.value.fcsTime.toString().substring(0, 2)}:${controller.currentWeather.value.fcsTime.toString().substring(2, 4)}',
+                  icon: PhosphorIconsRegular.cloud,
+                  title: '낙 뢰',
+                  data: '${controller.currentWeather.value.skyDesc ?? ''}kA',
                 ),
               ]),
             ],

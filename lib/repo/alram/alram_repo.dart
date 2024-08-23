@@ -9,7 +9,7 @@ import 'package:project1/repo/common/res_data.dart';
 class AlramRepo {
   // Alram list 가져오기
   Future<ResData> getAlramList(AlramReqData reqData) async {
-    final dio = await AuthDio.instance.getDio(debug: true);
+    final dio = await AuthDio.instance.getDio(debug: false);
     try {
       var url = '${UrlConfig.baseURL}/comm/searchalram';
 
@@ -22,7 +22,7 @@ class AlramRepo {
 
   // 고객 전체 알람 거부
   Future<ResData> denyCustAlram(String custId, String alramYn) async {
-    final dio = await AuthDio.instance.getDio(debug: true);
+    final dio = await AuthDio.instance.getDio(debug: false);
     try {
       var url = '${UrlConfig.baseURL}/comm/denyCustAlram?custId=$custId&alramYn=$alramYn';
 
@@ -35,7 +35,7 @@ class AlramRepo {
 
   // CustId 로 push 보내기
   Future<ResData> pushByCustId(ChatReqData data) async {
-    final dio = await AuthDio.instance.getDio(debug: true);
+    final dio = await AuthDio.instance.getDio(debug: false);
     try {
       var url = '${UrlConfig.baseURL}/comm/sendByCustId';
       Response response = await dio.post(

@@ -3,12 +3,13 @@ import 'package:project1/config/url_config.dart';
 import 'package:project1/repo/api/auth_dio.dart';
 import 'package:project1/repo/common/res_data.dart';
 
-class LikeRepo {
-  // like 저장
-  Future<ResData> save(String boardId, String custId) async {
+class AlramDenyRepo {
+  // Alram list 가져오기
+  Future<ResData> getDenyalramCdlist() async {
     final dio = await AuthDio.instance.getDio(debug: false);
     try {
-      var url = '${UrlConfig.baseURL}/like/save?boardId=$boardId&custId=$custId';
+      var url = '${UrlConfig.baseURL}/alram/denyalramCdlist';
+
       Response response = await dio.post(url);
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
@@ -16,11 +17,12 @@ class LikeRepo {
     } finally {}
   }
 
-  // like 건수 조회
-  Future<ResData> count(String boardId) async {
+  // alram 거부 추가
+  Future<ResData> adddeny(String alramCd) async {
     final dio = await AuthDio.instance.getDio(debug: false);
     try {
-      var url = '${UrlConfig.baseURL}/like/count?boardId=$boardId';
+      var url = '${UrlConfig.baseURL}/alram/adddeny?alramCd=$alramCd';
+
       Response response = await dio.post(url);
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
@@ -28,11 +30,12 @@ class LikeRepo {
     } finally {}
   }
 
-  // like 삭제
-  Future<ResData> cancle(String boardId) async {
+  // alram 겁부 삭제
+  Future<ResData> deleteAlram(String alramCd) async {
     final dio = await AuthDio.instance.getDio(debug: false);
     try {
-      var url = '${UrlConfig.baseURL}/like/cancle?boardId=$boardId';
+      var url = '${UrlConfig.baseURL}/alram/deletedeny?alramCd=$alramCd';
+
       Response response = await dio.post(url);
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {

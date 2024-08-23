@@ -132,6 +132,16 @@ class WeatherDataProcessor {
   }
 
   //1~ 6시까지 날씨 정보 파싱처리
+  // T1H	기온	℃
+  // RN1	1시간 강수량	범주 (1 mm)
+  // SKY	하늘상태	맑음(1), 구름많음(3), 흐림(4)
+  // UUU	동서바람성분	m/s
+  // VVV	남북바람성분	m/s
+  // REH	습도	%
+  // PTY	강수형태	(초단기) 없음(0), 비(1), 비/눈(2), 눈(3), 빗방울(5), 빗방울눈날림(6), 눈날림(7)
+  // LGT	낙뢰	kA(킬로암페어)
+  // VEC	풍향	deg
+  // WSD	풍속	m/s
   List<HourlyWeatherData> processSuperShortTermForecast(List<ItemSuperFct> forecastItems) {
     Map<DateTime, HourlyWeatherData> hourlyMap = {};
 
@@ -484,18 +494,6 @@ class WeatherDataProcessor {
     String assetPath = 'assets/lottie/';
 
     switch (category) {
-      case 'SKY': // 하늘상태 (Sky condition)
-        switch (value) {
-          case 1:
-            return '${assetPath}sun.json'; // 맑음 (Clear)
-          case 3:
-            return '${assetPath}day_cloudy.json'; // 구름많음 (Mostly Cloudy)
-          case 4:
-            return '${assetPath}day_cloudy.json'; // 흐림 (Cloudy)
-          default:
-            return '${assetPath}day_cloudy.json'; // 기본값 (Default)
-        }
-
       case 'PTY': // 강수형태 (Precipitation type)
         switch (value) {
           case 0:
@@ -514,6 +512,18 @@ class WeatherDataProcessor {
             return '${assetPath}day_snow.json'; // 빗방울눈날림 (Drizzle/Flurry)
           case 7:
             return '${assetPath}day_snow.json'; // 눈날림 (Flurry)
+          default:
+            return '${assetPath}day_cloudy.json'; // 기본값 (Default)
+        }
+
+      case 'SKY': // 하늘상태 (Sky condition)
+        switch (value) {
+          case 1:
+            return '${assetPath}sun.json'; // 맑음 (Clear)
+          case 3:
+            return '${assetPath}day_mostly_cloudy.json'; // 구름많음 (Mostly Cloudy)
+          case 4:
+            return '${assetPath}day_cloudy.json'; // 흐림 (Cloudy)
           default:
             return '${assetPath}day_cloudy.json'; // 기본값 (Default)
         }

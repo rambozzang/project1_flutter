@@ -41,7 +41,7 @@ class SigoPageSheet {
           padding: MediaQuery.of(context).viewInsets,
 
           child: SizedBox(
-              height: 290,
+              height: 550,
               child: SigoPage(
                 contextParent: context,
                 boardId: boardId,
@@ -200,75 +200,89 @@ class _SigoPageState extends State<SigoPage> {
                 icon: const Icon(
                   Icons.close,
                   color: Colors.white,
-                  size: 30,
+                  size: 25,
                 ),
               )
             ],
           ),
-          Row(
+          const Divider(
+            color: Colors.white,
+            thickness: 1,
+          ),
+          const Gap(5),
+          Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               dropdownValue == '08'
-                  ? SizedBox.shrink()
+                  ? const SizedBox.shrink()
                   : const Row(
                       children: [
                         Icon(
                           Icons.warning,
-                          color: Colors.white,
-                          size: 25,
+                          color: Colors.yellow,
+                          size: 19,
                         ),
-                        const Gap(10),
+                        const Gap(3),
                         Text(
-                          '신고 사유 선택',
+                          '신고 사유',
                           style: TextStyle(color: Colors.white, fontSize: 14),
                         ),
                       ],
                     ),
-              const Spacer(),
               StreamBuilder<ResStream<List<CodeRes>>>(
                   stream: streamController.stream,
                   builder: (context, snapshot) {
                     if (snapshot.hasData && snapshot.data!.data != null) {
                       var list = snapshot.data!.data as List<CodeRes>;
-                      return DropdownButton<String>(
-                        value: dropdownValue,
-                        icon: const Icon(Icons.arrow_drop_down),
-                        iconSize: 35,
-                        elevation: 16,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                        // underline: Container(
-                        //   height: 2,
-                        //   color: Colors.deepPurpleAccent,
-                        // ),
-                        isExpanded: false,
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            dropdownValue = newValue!;
-                          });
-                        },
-                        dropdownColor: Colors.black,
-                        items: list.map<DropdownMenuItem<String>>((CodeRes value) {
-                          return DropdownMenuItem<String>(
-                            value: value.code,
-                            child: Text(
-                              value.codeNm.toString(),
-                              style: const TextStyle(color: Colors.white, fontSize: 14),
-                            ),
-                          );
-                        }).toList(),
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6)),
+                        width: 140,
+                        height: 40,
+                        child: DropdownButton<String>(
+                          value: dropdownValue,
+                          icon: const Icon(Icons.arrow_drop_down),
+                          iconSize: 40,
+                          elevation: 16,
+                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          // underline: Container(
+                          //   height: 2,
+                          //   color: Colors.deepPurpleAccent,
+                          // ),
+                          isExpanded: true,
+                          onChanged: (String? newValue) {
+                            lo.g('newValue : $newValue');
+                            setState(() {
+                              dropdownValue = newValue!;
+                            });
+                          },
+                          dropdownColor: Colors.white,
+                          items: list.map<DropdownMenuItem<String>>((CodeRes value) {
+                            return DropdownMenuItem<String>(
+                              value: value.code,
+                              child: Text(
+                                value.codeNm.toString(),
+                                style: value.code == '07' || value.code == '08'
+                                    ? const TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.bold)
+                                    : const TextStyle(color: Colors.black, fontSize: 14),
+                              ),
+                            );
+                          }).toList(),
+                        ),
                       );
                     }
-                    return const SizedBox(width: 30, height: 30, child: CircularProgressIndicator());
+                    return const SizedBox(width: 25, height: 25, child: CircularProgressIndicator());
                   }),
             ],
           ),
-          const Gap(5),
+          const Gap(15),
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                dropdownValue == '08' ? ' 게시물 즉시 차단됨' : '신고 사유 입력(선택)',
+                dropdownValue == '08' ? ' 게시물 즉시 차단됨' : '상세 사유 입력(선택사항)',
                 style: TextStyle(color: dropdownValue == '08' ? Colors.yellow : Colors.white, fontSize: 13),
               ),
               dropdownValue == '07'
@@ -296,6 +310,53 @@ class _SigoPageState extends State<SigoPage> {
                 contentPadding: EdgeInsets.only(left: 10),
               ),
             ),
+          ),
+          const Gap(7),
+          const Text(
+            '신고 사유는 신고 처리에만 사용되며, 신고자에게 공개되지 않습니다.',
+            style: TextStyle(color: Colors.white, fontSize: 12),
+          ),
+          const Gap(13),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '[불법영상 신고] ',
+                style: TextStyle(color: Colors.yellow, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                '동일신고가 5회 이상 발생 시 해당 게시물은 자동 삭제처리됩니다.',
+                style: TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ],
+          ),
+          const Gap(8),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '[사용자 차단] ',
+                style: TextStyle(color: Colors.yellow, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                '해당 사용자 차단 및 모든 게시물도 즉시 차단됩니다.',
+                style: TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ],
+          ),
+          const Gap(8),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '[사용자 신고] ',
+                style: TextStyle(color: Colors.yellow, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                '해당 사용자 차단 및 모든 게시물도 즉시 차단됩니다. 신고사항에 따라 탈퇴 또는 법적인 조치가 진행됩니다.',
+                style: TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ],
           ),
           const Spacer(),
           Center(

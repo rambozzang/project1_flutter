@@ -8,39 +8,34 @@ import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/admob/banner_ad_widget.dart';
-import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/test/rain/RainAnimation.dart';
+import 'package:project1/app/test/snow/SnowAnimation.dart';
 import 'package:project1/app/weather/models/geocode.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
 import 'package:project1/app/weathergogo/appbar_page.dart';
 import 'package:project1/app/weathergogo/detail_main_page.dart';
 import 'package:project1/app/weathergogo/header_main_page.dart';
-import 'package:project1/app/weathergogo/naver_scrapping_page.dart';
 import 'package:project1/app/weathergogo/seven_day_page.dart';
 import 'package:project1/app/weathergogo/twenty4_page.dart';
 import 'package:project1/app/weathergogo/weathergogo_kakao_searchbar.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/app/webview/common_webview.dart';
-import 'package:project1/app/webview/weather_webview.dart';
-import 'package:project1/repo/common/res_data.dart';
-import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/cust_tag_res_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
-import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
 
 class WeathgergogoPage extends StatefulWidget {
   const WeathgergogoPage({super.key});
 
   @override
-  State<WeathgergogoPage> createState() => _WeathgergogoPageState();
+  State<WeathgergogoPage> createState() => WeathgergogoPageState();
 }
 
-class _WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAliveClientMixin<WeathgergogoPage> {
+class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAliveClientMixin<WeathgergogoPage>, TickerProviderStateMixin {
   @override
   bool get wantKeepAlive => true;
 
   final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
-  final RxList<CustagResData> areaList = <CustagResData>[].obs;
 
   // 섹션 리스트 정의
   final List<Widget Function()> sections = [];
@@ -54,7 +49,6 @@ class _WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepA
     super.initState();
     controller = AnimateIconController();
     _loadAd();
-    _getLocalTag();
     _initializeSections();
   }
 
@@ -71,6 +65,7 @@ class _WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepA
       () => _buildWeatherWebView(),
       () => const SizedBox(height: 50),
     ]);
+    Get.find<WeatherGogoCntr>().getLocalTag();
   }
 
   Future<void> _loadAd() async {
@@ -78,40 +73,39 @@ class _WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepA
     isAdLoading.value = true;
   }
 
-  Future<void> _getLocalTag() async {
-    try {
-      CustRepo repo = CustRepo();
-      ResData res = await repo.getTagList(AuthCntr.to.resLoginData.value.custId.toString(), 'LOCAL');
-      if (res.code != '00') {
-        Utils.alert(res.msg.toString());
-        return;
-      }
-      areaList.value = ((res.data) as List).map((data) => CustagResData.fromMap(data)).toList();
-    } catch (e) {
-      Utils.alert(e.toString());
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
-      key: scaffoldKey,
-      backgroundColor: const Color(0xFF262B49),
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        forceMaterialTransparency: true,
-        backgroundColor: Colors.transparent,
-        title: const AppbarPage(),
-      ),
-      body: Stack(
-        children: <Widget>[
-          _buildLazyLoadingContent(),
-          const WeathergogoKakaoSearchPage(),
-          // _buildLoadingIndicator(),
-        ],
-      ),
-    );
+        key: scaffoldKey,
+        backgroundColor: const Color(0xFF262B49),
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          forceMaterialTransparency: true,
+          backgroundColor: Colors.transparent,
+          title: const AppbarPage(),
+        ),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color.fromARGB(255, 29, 33, 56), Color.fromARGB(255, 45, 52, 91)],
+            ),
+          ),
+          child: Stack(
+            children: <Widget>[
+              // 비 애니메이션
+              RainAnimation2(isVisibleNotifier: Get.find<WeatherGogoCntr>().isRainVisibleNotifier),
+              SnowAnimation2(isVisibleNotifier: Get.find<WeatherGogoCntr>().isSnowVisibleNotifier),
+              _buildLazyLoadingContent(),
+
+              const WeathergogoKakaoSearchPage(),
+
+              // _buildLoadingIndicator(),
+            ],
+          ),
+        ));
   }
 
   var physic = Platform.isIOS ? const AlwaysScrollableScrollPhysics() : const BouncingScrollPhysics();
@@ -196,33 +190,10 @@ class _WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepA
                   ],
                 ),
               ),
-              // TextButton(
-              //   style: TextButton.styleFrom(
-              //     backgroundColor: Colors.white12,
-              //     padding: const EdgeInsets.symmetric(horizontal: 0),
-              //     minimumSize: const Size(50, 22),
-              //     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              //     shape: RoundedRectangleBorder(
-              //       borderRadius: BorderRadius.circular(8),
-              //     ),
-              //   ),
-              //   onPressed: () => Get.toNamed('/T24Page'),
-              //   child: Text('T24Page ', style: semiboldText.copyWith(fontSize: 11.0)),
-              // ),
             ],
           ),
         ),
         const Spacer(),
-        // IconButton(
-        //   padding: const EdgeInsets.symmetric(horizontal: 15),
-        //   constraints: const BoxConstraints(),
-        //   style: ButtonStyle(
-        //     padding: WidgetStateProperty.all(EdgeInsets.zero),
-        //     // backgroundColor: WidgetStateProperty.all(Colors.grey[500]),
-        //   ),
-        //   icon: const Icon(Icons.refresh_rounded, color: Colors.amber, size: 24.0),
-        //   onPressed: () => Get.find<WeatherGogoCntr>().getRefreshWeatherData(true),
-        // ),
         AnimateIcons(
           startIcon: Icons.refresh,
           endIcon: Icons.refresh_rounded,
@@ -256,7 +227,7 @@ class _WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepA
         builder: (context, value, child) {
           if (!value) {
             return const SizedBox(
-              height: 70,
+              height: 20,
             );
           }
           return const Center(
@@ -308,16 +279,6 @@ class _WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepA
   }
 
   Widget _buildLoadingIndicator() {
-    // return GetBuilder<WeatherGogoCntr>(
-    //   builder: (cntr) {
-    //     Utils.alert('${cntr.isLoading.value}');
-    //     return CustomIndicatorOffstage(
-    //       isLoading: !cntr.isLoading.value,
-    //       color: const Color(0xFFEA3799),
-    //       opacity: 0.5,
-    //     );
-    //   },
-    // );
     final cntr = Get.find<WeatherGogoCntr>();
     return Obx(() => CustomIndicatorOffstage(
           isLoading: !cntr.isLoading.value,
@@ -332,14 +293,14 @@ class _WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepA
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       width: double.infinity,
       child: Obx(() {
-        if (areaList.isEmpty) {
+        if (Get.find<WeatherGogoCntr>().areaList.isEmpty) {
           return Container(
             padding: const EdgeInsets.symmetric(vertical: 3),
             alignment: Alignment.center,
             child: Row(
               children: [
                 InkWell(
-                    onTap: () async => await Get.toNamed('/FavoriteAreaPage')!.then((value) => _getLocalTag()),
+                    onTap: () async => await Get.toNamed('/FavoriteAreaPage')!.then((value) => Get.find<WeatherGogoCntr>().getLocalTag()),
                     child: const Text('관심지역', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white))),
                 const Gap(3),
                 const Icon(Icons.arrow_circle_right_outlined, color: Colors.white, size: 16),
@@ -361,14 +322,14 @@ class _WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepA
           physics: const AlwaysScrollableScrollPhysics(),
           child: Row(children: [
             InkWell(
-                onTap: () async => await Get.toNamed('/FavoriteAreaPage')!.then((value) => _getLocalTag()),
+                onTap: () async => await Get.toNamed('/FavoriteAreaPage')!.then((value) => Get.find<WeatherGogoCntr>().getLocalTag()),
                 child: const Text('관심지역', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white))),
             const Gap(3),
             InkWell(
-                onTap: () async => await Get.toNamed('/FavoriteAreaPage')!.then((value) => _getLocalTag()),
+                onTap: () async => await Get.toNamed('/FavoriteAreaPage')!.then((value) => Get.find<WeatherGogoCntr>().getLocalTag()),
                 child: const Icon(Icons.arrow_circle_right_outlined, color: Colors.white, size: 16)),
             const Gap(5),
-            ...areaList.map((e) => buildLocalChip(e)).toList(),
+            ...Get.find<WeatherGogoCntr>().areaList.map((e) => buildLocalChip(e)).toList(),
           ]),
         );
       }),
@@ -409,4 +370,44 @@ class _WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepA
           ),
         ));
   }
+}
+
+class RainbowPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromLTRB(0, 0, size.width, size.height);
+    final rainbow = [
+      Colors.red,
+      Colors.orange,
+      Colors.yellow,
+      Colors.green,
+      Colors.blue,
+      Colors.indigo,
+      Colors.purple,
+    ];
+
+    // 검은색 배경 그리기
+    canvas.drawRect(rect, Paint()..color = Colors.black);
+
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width / 14; // 무지개 띠의 두께를 화면 크기에 비례하게 설정
+
+    final center = Offset(size.width / 2, size.height);
+    final radius = size.height * 1.5; // 무지개의 반지름을 화면 높이의 1.5배로 설정
+
+    for (int i = rainbow.length - 1; i >= 0; i--) {
+      paint.color = rainbow[i];
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius - (i * paint.strokeWidth)),
+        pi,
+        pi,
+        false,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

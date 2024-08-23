@@ -227,7 +227,7 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
                         ),
                       ),
                       child: const Text(
-                        '위치기반',
+                        '현위치기준',
                         style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                       ),
                       onPressed: () async {

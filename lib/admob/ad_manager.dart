@@ -16,8 +16,18 @@ class AdManager {
   late final Map<String, String> _adUnitIds;
 
   static Future<void> initialize({required TargetPlatform targetPlatform}) async {
-    await MobileAds.instance.initialize();
-    _instance._adUnitIds = Platform.isIOS ? AdUnitIds.ios : AdUnitIds.android;
+    // await MobileAds.instance.initialize();
+    // _instance._adUnitIds = Platform.isIOS ? AdUnitIds.ios : AdUnitIds.android;
+  }
+
+  bool isTestMode() {
+    if (kDebugMode) {
+      return true;
+    } else {
+      // In a real app, you might want to use a more sophisticated method
+      // to determine if it's in test mode, such as checking for specific device IDs
+      return false;
+    }
   }
 
   Future<void> loadBannerAd(String screenName) async {

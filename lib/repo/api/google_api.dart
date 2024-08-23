@@ -7,6 +7,7 @@ import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/google_join_data.dart';
 import 'package:project1/repo/secure_storge.dart';
 import 'package:project1/utils/log_utils.dart';
+import 'package:uuid/uuid.dart';
 
 class GoogleApi with SecureStorage {
   Future<ResData<String>> signInWithGoogle() async {
@@ -53,6 +54,10 @@ class GoogleApi with SecureStorage {
       // 채팅서버 회원가입
       googleJoinData.chatId = await chatSignUp(googleJoinData);
 
+      // deviceID 생성
+      googleJoinData.deviceId = const Uuid().v4();
+      saveDeviceId(googleJoinData.deviceId.toString());
+
       CustRepo repo = CustRepo();
       res = await repo.createGoogleCust(googleJoinData);
       if (res.code != "00") {
@@ -73,20 +78,15 @@ class GoogleApi with SecureStorage {
   }
 
   Future<String> chatSignUp(GoogleJoinData googleJoinData) async {
-    try {
-      ChatRepo chatRepo = ChatRepo();
-      ChatSignupData chatSignupData = ChatSignupData();
-      chatSignupData.email = googleJoinData.email;
-      chatSignupData.uid = googleJoinData.uid.toString();
-      chatSignupData.firstName = googleJoinData.displayName;
-      chatSignupData.imageUrl = googleJoinData.photoURL;
-      ResData resData1 = await chatRepo.signup(chatSignupData);
+    ChatRepo chatRepo = ChatRepo();
+    ChatSignupData chatSignupData = ChatSignupData();
+    chatSignupData.email = googleJoinData.email;
+    chatSignupData.uid = googleJoinData.uid.toString();
+    chatSignupData.firstName = googleJoinData.displayName;
+    chatSignupData.imageUrl = googleJoinData.photoURL;
+    ResData resData1 = await chatRepo.signup(chatSignupData);
 
-      return resData1.data.toString();
-    } catch (e) {
-      log('chatSignup : $e');
-      return '';
-    }
+    return resData1.data.toString();
   }
 
   Future<void> logOut() async {

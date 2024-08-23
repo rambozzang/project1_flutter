@@ -7,7 +7,11 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/weather/models/geocode.dart';
+import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/repo/cust/cust_repo.dart';
+import 'package:project1/repo/cust/data/cust_tag_res_data.dart';
 import 'package:project1/repo/weather/data/weather_view_data.dart';
 import 'package:project1/app/weathergogo/cntr/data/current_weather_data.dart';
 import 'package:project1/app/weathergogo/cntr/data/daily_weather_data.dart';
@@ -45,6 +49,10 @@ class WeatherGogoCntr extends GetxController {
   final Rx<CurrentWeatherData> currentWeather = CurrentWeatherData().obs;
   final RxList<ItemSuperNct> yesterdayWeather = <ItemSuperNct>[].obs;
   final RxList<HourlyWeatherData> yesterdayHourlyWeather = <HourlyWeatherData>[].obs;
+  final ValueNotifier<bool> isRainVisibleNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> isSnowVisibleNotifier = ValueNotifier<bool>(false);
+
+  final RxList<CustagResData> areaList = <CustagResData>[].obs;
 
   final RxString yesterdayDesc = ''.obs;
   final Rx<double> sevenDayMinTemp = 0.0.obs;
@@ -168,6 +176,13 @@ class WeatherGogoCntr extends GetxController {
       stopwatch = Stopwatch()..start();
       webViewUrl.value = '${webViewUrl.value} + ${location.longitude},${location.latitude},2780/loc=';
       // 5분후 해제
+      Timer(const Duration(minutes: 1), () {
+        isLoading.value = false;
+        isYestdayLoading.value = false;
+      });
+
+      isRainVisibleNotifier.value = false;
+      isSnowVisibleNotifier.value = false;
 
       hourlyWeather.clear();
       sevenDayWeather.clear();
@@ -226,6 +241,27 @@ class WeatherGogoCntr extends GetxController {
     }
   }
 
+  String compareFcsTime(String? time1, String? time2) {
+    if (time1 == null) {
+      return time2!;
+    }
+    if (time2 == null) {
+      return time1!;
+    }
+
+    time1 = time1.replaceAll(':', '');
+    time2 = time2.replaceAll(':', '');
+    int t1 = int.parse(time1);
+    int t2 = int.parse(time2);
+    if (t1 > t2) {
+      return time1;
+    } else if (t1 < t2) {
+      return time2;
+    } else {
+      return time2;
+    }
+  }
+
   int fetchSuperNctreCallCnt = 0;
   // 초단기 실황 가져오기
   Future<void> fetchSuperNct(LatLng location) async {
@@ -235,14 +271,14 @@ class WeatherGogoCntr extends GetxController {
       CurrentWeatherData value = WeatherDataProcessor.instance.parsingSuperNct(itemSuperNctList);
       currentWeather.update((val) {
         val?.temp = value.temp;
-        val?.rain = value.rain;
-        val?.fcsTime = value.fcsTime; // 발표시간
+        // val?.rain = value.rain;
+        val?.fcsTime = compareFcsTime(val.fcsTime, value.fcsTime!); // 발표시간
         val?.fcstDate = value.fcstDate; // 예보시간
         val?.humidity = value.humidity;
         val?.speed = value.speed;
         val?.deg = value.deg;
-        val?.rainDesc = value.rainDesc;
-        val?.rain1h = value.rain1h;
+        // val?.rainDesc = value.rainDesc;
+        // val?.rain1h = value.rain1h;
       });
 
       lo.g('완료!! => fetchSuperNct() time : ${stopwatch.elapsedMilliseconds}ms');
@@ -272,12 +308,36 @@ class WeatherGogoCntr extends GetxController {
       // data.forEach((element) {
       //   lo.g('fetchSuperFct  data  : ${element.toString()}');
       // });
+      // T1H	기온	℃
+      // RN1	1시간 강수량	범주 (1 mm)
+      // SKY	하늘상태	맑음(1), 구름많음(3), 흐림(4)
+      // UUU	동서바람성분	m/s
+      // VVV	남북바람성분	m/s
+      // REH	습도	%
+      // PTY	강수형태	(초단기) 없음(0), 비(1), 비/눈(2), 눈(3), 빗방울(5), 빗방울눈날림(6), 눈날림(7)
+      // LGT	낙뢰	kA(킬로암페어)
+      // VEC	풍향	deg
+      // WSD	풍속	m/s
+
+      //  itemFctList 첫번째로 돌아는 category 가 Rn1 값을 셋팅
+      String rain1h = itemFctList.firstWhere((element) => element.category == 'RN1').fcstValue.toString();
+      String skyDesc = itemFctList.firstWhere((element) => element.category == 'LGT').fcstValue.toString();
+      String weatherDesc = WeatherDataProcessor.instance.combineWeatherCondition(data[0].sky.toString(), data[0].rain.toString());
+      if (weatherDesc.contains('비') || weatherDesc.contains('빗')) {
+        isRainVisibleNotifier.value = true;
+      }
+      if (weatherDesc.contains('눈')) {
+        isSnowVisibleNotifier.value = true;
+      }
 
       currentWeather.update((val) {
-        val?.description = WeatherDataProcessor.instance.combineWeatherCondition(data[0].sky.toString(), data[0].rain.toString());
+        val?.description = weatherDesc;
         val?.sky = data[0].sky;
-        // val?.rain = data[0].rain;
-        val?.fcsTime = itemFctList[0].baseTime; // 발표시간
+        val?.skyDesc = skyDesc;
+        val?.rain1h = rain1h == '강수없음' ? '0' : rain1h;
+        val?.rain = data[0].rain;
+        val?.rainDesc = weatherDesc;
+        val?.fcsTime = compareFcsTime(val.fcsTime, itemFctList[0].baseTime); // 발표시간
       });
 
       hourlyWeather.addAll(data);
@@ -528,6 +588,28 @@ class WeatherGogoCntr extends GetxController {
 
   void handleError(String message, dynamic error) {
     lo.e('$message: $error');
-    Utils.alert('$message\n자세한 내용: $error');
+    // Utils.alert('$message\n자세한 내용: $error');
+  }
+
+  Future<void> getLocalTag() async {
+    try {
+      CustRepo repo = CustRepo();
+      ResData res = await repo.getTagList(AuthCntr.to.resLoginData.value.custId.toString(), 'LOCAL');
+      if (res.code != '00') {
+        Utils.alert(res.msg.toString());
+        return;
+      }
+      areaList.value = ((res.data) as List).map((data) => CustagResData.fromMap(data)).toList();
+    } catch (e) {
+      Utils.alert(e.toString());
+    }
+  }
+
+  void toggleRain() {
+    isRainVisibleNotifier.value = !isRainVisibleNotifier.value;
+  }
+
+  void toggleSnow() {
+    isSnowVisibleNotifier.value = !isSnowVisibleNotifier.value;
   }
 }

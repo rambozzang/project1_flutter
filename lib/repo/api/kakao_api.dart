@@ -11,6 +11,7 @@ import 'package:project1/repo/secure_storge.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as Kakao;
+import 'package:uuid/uuid.dart';
 
 // 카카오 개발문서
 // https://developers.kakao.com/docs/latest/ko/kakaologin/flutter
@@ -112,7 +113,11 @@ class KakaoApi with SecureStorage {
       // 채팅서버 회원가입
       kakaoJoinData.chatId = await chatSignUp(user);
 
-      // 회원 저장
+      // deviceID 생성
+      kakaoJoinData.deviceId = const Uuid().v4();
+      saveDeviceId(kakaoJoinData.deviceId.toString());
+
+      // 회원 저장\
       res = await repo.createKakaoCust(kakaoJoinData);
       if (res.code != "00") {
         // Utils.alert(res.msg.toString());

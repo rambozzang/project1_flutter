@@ -7,7 +7,7 @@ import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 
 class PermissionHandler {
-  Future<void> complated() async {
+  Future<void> completed() async {
     await handlePermissions();
   }
 
@@ -32,11 +32,6 @@ class PermissionHandler {
     if (locationPermission == LocationPermission.denied || locationPermission == LocationPermission.deniedForever) {
       locationPermission = await Geolocator.requestPermission();
       if (locationPermission == LocationPermission.denied || locationPermission == LocationPermission.deniedForever) {
-        // Utils.showConfirmDialog('위치 권한은 필수입니다.', '위치 설정을 변경 권한 > 위치 해주세요!', BackButtonBehavior.none, cancel: () {}, confirm: () async {
-        //   await openAppSettings();
-        // }, backgroundReturn: () async {
-        //   handleLocationPermission();
-        // });
         showLocationExplanationDialog();
       }
     }
@@ -48,10 +43,6 @@ class PermissionHandler {
         title: const Text('위치 권한 필요'),
         content: const Text('정확한 서비스 제공을 위해 위치 권한이 필요합니다. 권한을 허용하시겠습니까?'),
         actions: [
-          // TextButton(
-          //   child: const Text('나중에'),
-          //   onPressed: () => Get.back(result: false),
-          // ),
           TextButton(
             child: const Text('허용'),
             onPressed: () => Get.back(result: true),
@@ -62,9 +53,7 @@ class PermissionHandler {
 
     if (result == true) {
       var newStatus = await Permission.location.request();
-      lo.g('newStatus.isGranted  : ${newStatus.isGranted}');
-      lo.g('newStatus.isPermanentlyDenied  : ${newStatus.isPermanentlyDenied}');
-      lo.g('newStatus.isDenied  : ${newStatus.isDenied}');
+
       if (newStatus.isPermanentlyDenied || newStatus.isDenied) {
         await showOpenSettingsDialog('위치');
       }
@@ -77,10 +66,12 @@ class PermissionHandler {
         title: Text('$permissionName 권한 설정'),
         content: Text('$permissionName 권한이 거부되었습니다. 앱 설정에서 수동으로 권한을 허용해주세요.'),
         actions: [
-          TextButton(
-            child: const Text('나중에'),
-            onPressed: () => Get.back(result: false),
-          ),
+          permissionName == '위치'
+              ? const SizedBox.shrink()
+              : TextButton(
+                  child: const Text('나중에'),
+                  onPressed: () => Get.back(result: false),
+                ),
           TextButton(
             child: const Text('설정으로 이동'),
             onPressed: () => Get.back(result: true),

@@ -6,13 +6,17 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/test/rain/RainAnimation.dart';
+import 'package:project1/app/test/raindrop_page.dart';
+
+import 'package:project1/app/test/snow/SnowAnimation.dart';
+import 'package:project1/app/test/sun_page.dart';
+
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
+import 'package:project1/app/weatherCom/api/OpenWeatherMapclient.dart';
 import 'package:project1/app/weathergogo/naver_scrapping_page.dart';
 import 'package:project1/repo/weather_accu/accu_repo.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
-import 'package:project1/repo/weather_gogo/interface/imp_fct_repository.dart';
-import 'package:project1/repo/weather_gogo/interface/imp_super_fct_repository.dart';
-import 'package:project1/repo/weather_gogo/interface/imp_super_nct_repository.dart';
 import 'package:project1/repo/weather_gogo/models/request/weather.dart';
 import 'package:project1/repo/weather_gogo/models/response/fct/fct_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/fct_version/fct_version_model.dart';
@@ -323,7 +327,58 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(
-                height: 20,
+                height: 60,
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    // fullscreenDialog: true,
+                    builder: (context) => SunlightAnimationPage(),
+                  ));
+                },
+                child: Text('썬 화면'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    // fullscreenDialog: true,
+                    builder: (context) => AnimatedWaterDrops(),
+                  ));
+                },
+                child: Text('눈모듈 화면'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    // fullscreenDialog: true,
+                    builder: (context) => SnowAnimation2(
+                      isVisibleNotifier: ValueNotifier(true),
+                    ),
+                  ));
+                },
+                child: Text('눈모듈 화면'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      // fullscreenDialog: true,
+                      builder: (context) => RainAnimation2(
+                            isVisibleNotifier: ValueNotifier(true),
+                          )));
+                },
+                child: Text('비 모듈 화면'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  await AuthCntr.to.logout();
+                },
+                child: Text('로그아웃'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  await Openweathermapclient().getForecast(const LatLng(37.5546788388674, 126.970606917394));
+                },
+                child: const Text('openweathermapclient '),
               ),
               ElevatedButton(
                 onPressed: () => Get.to(NaverScrappingPage()),

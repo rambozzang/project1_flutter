@@ -4,21 +4,25 @@ import 'dart:convert';
 class NaverJoinData {
   String? stauts;
   String? chatId;
+  String? deviceId;
   NaverAccount? account;
   NaverJoinData({
     this.stauts,
     this.chatId,
+    this.deviceId,
     this.account,
   });
 
   NaverJoinData copyWith({
     String? stauts,
     String? chatId,
+    String? deviceId,
     NaverAccount? account,
   }) {
     return NaverJoinData(
       stauts: stauts ?? this.stauts,
       chatId: chatId ?? this.chatId,
+      deviceId: deviceId ?? this.deviceId,
       account: account ?? this.account,
     );
   }
@@ -27,6 +31,7 @@ class NaverJoinData {
     return <String, dynamic>{
       'stauts': stauts,
       'chatId': chatId,
+      'deviceId': deviceId,
       'account': account?.toMap(),
     };
   }
@@ -35,6 +40,7 @@ class NaverJoinData {
     return NaverJoinData(
       stauts: map['stauts'] != null ? map['stauts'] as String : null,
       chatId: map['chatId'] != null ? map['chatId'] as String : null,
+      deviceId: map['deviceId'] != null ? map['deviceId'] as String : null,
       account: map['account'] != null ? NaverAccount.fromMap(map['account'] as Map<String, dynamic>) : null,
     );
   }
@@ -44,17 +50,21 @@ class NaverJoinData {
   factory NaverJoinData.fromJson(String source) => NaverJoinData.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
-  String toString() => 'NaverJoinData(stauts: $stauts, chatId: $chatId, account: $account)';
+  String toString() {
+    return 'NaverJoinData(stauts: $stauts, chatId: $chatId, deviceId: $deviceId, account: $account)';
+  }
 
   @override
   bool operator ==(covariant NaverJoinData other) {
     if (identical(this, other)) return true;
 
-    return other.stauts == stauts && other.chatId == chatId && other.account == account;
+    return other.stauts == stauts && other.chatId == chatId && other.deviceId == deviceId && other.account == account;
   }
 
   @override
-  int get hashCode => stauts.hashCode ^ chatId.hashCode ^ account.hashCode;
+  int get hashCode {
+    return stauts.hashCode ^ chatId.hashCode ^ deviceId.hashCode ^ account.hashCode;
+  }
 }
 
 class NaverAccount {

@@ -173,21 +173,21 @@ class _SettingPageState extends State<SettingPage> {
                       title: '오픈 소스 라이센스',
                       subtitle: "라이센스 목록",
                     ),
-                    SettingsItem(
-                      onTap: () async {
-                        outAlertDialog(context);
-                      },
-                      icons: Icons.exit_to_app_rounded,
-                      iconStyle: IconStyle(
-                        backgroundColor: Colors.deepOrange,
-                      ),
-                      title: "탈퇴하기",
-                      subtitle: "재가입 불가, 데이터 영구삭재.",
-                      titleStyle: const TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    // SettingsItem(
+                    //   onTap: () async {
+                    //     outAlertDialog(context);
+                    //   },
+                    //   icons: Icons.exit_to_app_rounded,
+                    //   iconStyle: IconStyle(
+                    //     backgroundColor: Colors.deepOrange,
+                    //   ),
+                    //   title: "탈퇴하기",
+                    //   subtitle: "재가입 불가, 데이터 영구삭재.",
+                    //   titleStyle: const TextStyle(
+                    //     color: Colors.red,
+                    //     fontWeight: FontWeight.bold,
+                    //   ),
+                    // ),
                     // 릴리즈 버전에서만 보이는 버튼
                     if (kDebugMode) ...[
                       SettingsItem(

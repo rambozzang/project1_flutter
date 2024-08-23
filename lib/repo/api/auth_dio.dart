@@ -1,7 +1,9 @@
 // auth_dio.dart
 
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/src/response.dart' as R;
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
@@ -18,6 +20,7 @@ import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/utils/StringUtils.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:project1/utils/log_utils.dart';
+import 'package:project1/utils/utils.dart';
 
 class AuthDio {
   // 싱글톤 인스턴스
@@ -72,17 +75,17 @@ class AuthDio {
     // 캐쉬 사용 설정 2
     // dio.interceptors.add(DioCacheInterceptor(options: customCacheOptions));
 
-    // if (debug == true) {
-    //   dio.interceptors.add(PrettyDioLogger(
-    //     requestHeader: true,
-    //     requestBody: true,
-    //     responseBody: true,
-    //     responseHeader: true,
-    //     error: true,
-    //     compact: true,
-    //     maxWidth: 120,
-    //   ));
-    // }
+    if (debug == true) {
+      dio.interceptors.add(PrettyDioLogger(
+        requestHeader: true,
+        requestBody: true,
+        responseBody: true,
+        responseHeader: true,
+        error: true,
+        compact: true,
+        maxWidth: 120,
+      ));
+    }
 
     return dio;
   }
@@ -184,11 +187,13 @@ class AuthDio {
     return naToken;
   }
 
+//c58be7bc-8125-4cdd-a37f-902df1c770ae
   InterceptorsWrapper interceptorsWrapper(dio) {
     return InterceptorsWrapper(onRequest: (options, handler) async {
       try {
         if (!StringUtils.isEmpty(AuthCntr.to.resLoginData.value.accessToken)) {
           options.headers['Authorization'] = 'Bearer ${AuthCntr.to.resLoginData.value.accessToken}';
+          options.headers['Device-ID'] = AuthCntr.to.deviceId;
         }
         return handler.next(options);
       } catch (e) {
@@ -203,6 +208,7 @@ class AuthDio {
           return;
         }
         error.requestOptions.headers['Authorization'] = 'Bearer $naToken';
+        error.requestOptions.headers['Device-ID'] = AuthCntr.to.deviceId;
         dynamic clonedRequest;
         try {
           clonedRequest = await dio.request(error.requestOptions.path,
@@ -225,7 +231,7 @@ class AuthDio {
     return InterceptorsWrapper(onError: (error, handler) async {
       if (error.response?.statusCode != 200) {
         Get.snackbar("리플레쉬 토큰만료!", "토큰이 만료되었습니다. 다시 로그인해주세요!");
-        Get.offAllNamed('/login');
+        AuthCntr.to.logout();
       }
       return handler.next(error);
     });
@@ -262,6 +268,17 @@ class AuthDio {
           return ResData(code: "99", msg: message);
         }
       }
+    }
+
+    if (message.contains('다른 기기에서')) {
+      Utils.showAlertDialog(
+        '2중 로그인',
+        '다른 기기에서 로그인 되었습니다.\n\n더 이상 이 기기에서 사용 할수 없습니다.',
+        '로그 아웃',
+        BackButtonBehavior.ignore,
+        backgroundReturn: () => AuthCntr.to.logout(),
+        confirm: () => AuthCntr.to.logout(),
+      );
     }
 
     return ResData(code: "99", msg: message);

@@ -4,6 +4,8 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/repo/weather_gogo/models/request/weather_cache_req.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:project1/repo/weather_gogo/adapter/adapter_map.dart';
 import 'package:project1/repo/weather_gogo/models/response/fct/fct_model.dart';
@@ -23,27 +25,51 @@ enum ForecastType {
   fct, // 단기예보
   midFctLand, // 중기예보(육상)
   midTa, // 중기예보(기온)
-  weatherAlert // 새로운 기상 특보 타입 추가
+  weatherAlert, // 새로운 기상 특보 타입 추가
+  mistInfo
 }
+
+// 초단기실황: 매시 40분 이후 업데이트
+// 초단기예보: 매시 45분 이후 업데이트
+// 단기예보: 02:10, 05:10, 08:10, 11:10, 14:10, 17:10, 20:10, 23:10 업데이트
+// 중기예보: 06:00, 18:00 업데이트
 
 /// 날씨 데이터 캐싱을 관리하는 클래스
 class WeatherCache {
   static const String _keyPrefix = 'weather_cache_';
+  final WeatherGogoRepo wrepo = WeatherGogoRepo();
 
   /// 날씨 데이터를 캐시에 저장
   Future<void> saveWeatherData<T>(LatLng latLng, ForecastType type, T data) async {
     try {
       MapAdapter changeMap = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
       final location = '${changeMap.x}_${changeMap.y}';
-      final prefs = await SharedPreferences.getInstance();
+      // final prefs = await SharedPreferences.getInstance();
       // 캐쉬 전체 삭제
       // await prefs.clear();
       final key = _getCacheKey(location, type);
-      final cacheData = {
+      final cacheData1 = {
         'data': _dataToJson(data),
         'timestamp': DateTime.now().toIso8601String(),
       };
-      await prefs.setString(key, jsonEncode(cacheData));
+
+      DateTime expiresAt = _calculateExpiresAt(type);
+
+      WeatherCacheReq req = WeatherCacheReq(
+        cacheKey: key,
+        forecastType: type.toString(),
+        cacheData: cacheData1.toString(),
+        contentType: 'application/json',
+        loX: changeMap.x.toString(),
+        loY: changeMap.y.toString(),
+        expiresAt: expiresAt,
+      );
+      ResData resData = await wrepo.saveWeatherCacheData(req);
+      if (resData.code != '00') {
+        lo.g('saveWeatherCacheData() resData.data : ${resData.data}');
+      }
+
+      // await prefs.setString(key, jsonEncode(cacheData));
     } catch (e) {
       lo.g('Error saving weather data to cache: $e');
     }
@@ -54,22 +80,46 @@ class WeatherCache {
     try {
       MapAdapter changeMap = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
       final location = '${changeMap.x}_${changeMap.y}';
-      final prefs = await SharedPreferences.getInstance();
-      // await prefs.clear();
       final key = _getCacheKey(location, type);
-      final cachedJson = prefs.getString(key);
 
-      if (cachedJson != null) {
-        final cachedData = jsonDecode(cachedJson);
-        final cachedTime = DateTime.parse(cachedData['timestamp']);
+      ResData resData = await wrepo.getWeatherCacheData(key);
+      if (resData.code == '00') {
+        var rawString = resData.data['cacheData'];
 
-        if (_isCacheValid(cachedTime, type)) {
-          final decodedData = jsonDecode(cachedData['data']);
-          // lo.g('[CACHING] 캐시에서 데이터 로드 : ${cachedTime.toString()} : ${type.toString()}');
-          return _convertData<T>(decodedData);
-        }
+        RegExp dataRegex = RegExp(r'data: ((\{.+?\})|(\[.+?\])|(".*?"))(?=,\s*timestamp:)');
+
+        RegExp timestampRegex = RegExp(r'timestamp: (.+?)}');
+
+        Match? dataMatch = dataRegex.firstMatch(rawString);
+        Match? timestampMatch = timestampRegex.firstMatch(rawString);
+
+        String dataJsonString = dataMatch!.group(1)!;
+        String timestamp = timestampMatch!.group(1)!;
+
+        // lo.g('dataJsonString : $dataJsonString');
+        // lo.g('timestamp : $timestamp');
+
+        final cachedTime = DateTime.parse(timestamp);
+
+        // if (_isCacheValid(cachedTime, type)) {
+        // dataString을 유효한 JSON으로 변환
+        dataJsonString = dataJsonString.replaceAllMapped(
+          RegExp(r'(\w+):'),
+          (match) => '"${match.group(1)}":',
+        );
+        // 따옴표로 시작하고 끝나는 경우 (이스케이프된 JSON 문자열)
+        // if (dataString.startsWith('"') && dataString.endsWith('"')) {
+        //   // 바깥쪽 따옴표 제거 및 이스케이프 문자 처리
+        //   dataString = dataString.substring(1, dataString.length - 1).replaceAll('\\"', '"');
+        // }
+        dataJsonString = dataJsonString.replaceAll("'", '"');
+        final decodedData = json.decode(dataJsonString);
+        lo.g('[CACHING] 캐시에서 데이터 로드 : ${cachedTime.toString()} : ${type.toString()}');
+        return _convertData<T>(decodedData);
+        //  }
         return null;
       }
+      return null;
     } catch (e) {
       lo.g('Error retrieving weather data from cache: $e');
       return null;
@@ -138,6 +188,8 @@ class WeatherCache {
         return _getNextMidFctUpdateTime(cachedTime);
       case ForecastType.weatherAlert:
         return _getNextWeatherAlertUpdateTime(cachedTime);
+      case ForecastType.mistInfo:
+        return _getNextMistInfoUpdateTime(cachedTime);
     }
   }
 
@@ -164,6 +216,11 @@ class WeatherCache {
     return _getNextHourlyUpdateTime(cachedTime, 45);
   }
 
+  DateTime _getNextMistInfoUpdateTime(DateTime cachedTime) {
+    // 미세먼지: 매시 5분 이후 업데이트
+    return _getNextHourlyUpdateTime(cachedTime, 5);
+  }
+
   DateTime _getNextFctUpdateTime(DateTime cachedTime) {
     // 단기예보: 02:10, 05:10, 08:10, 11:10, 14:10, 17:10, 20:10, 23:10 업데이트
     var updateHours = [2, 5, 8, 11, 14, 17, 20, 23];
@@ -188,20 +245,25 @@ class WeatherCache {
     return nextUpdate;
   }
 
-  // DateTime _getNextHourlyUpdateTime(DateTime cachedTime, int minute) {
-  //   var nextUpdate = DateTime(cachedTime.year, cachedTime.month, cachedTime.day, cachedTime.hour, minute);
-  //   if (cachedTime.minute >= minute) {
-  //     nextUpdate = nextUpdate.add(const Duration(hours: 1));
-  //   }
-  //   return nextUpdate;
-  // }
-
-  DateTime _getNextSpecificHourUpdateTime(DateTime cachedTime, List<int> updateHours) {
-    var nextHour = updateHours.firstWhere((hour) => hour > cachedTime.hour, orElse: () => updateHours.first);
-    if (nextHour <= cachedTime.hour) {
-      return DateTime(cachedTime.year, cachedTime.month, cachedTime.day + 1, nextHour);
+  /// expiresAt 계산
+  DateTime _calculateExpiresAt(ForecastType type) {
+    final now = DateTime.now();
+    switch (type) {
+      case ForecastType.superNctYesterDay:
+      case ForecastType.superNct:
+        return _getNextHourlyUpdateTime(now, 40);
+      case ForecastType.superFct:
+        return _getNextHourlyUpdateTime(now, 45);
+      case ForecastType.fct:
+        return _getNextFctUpdateTime(now);
+      case ForecastType.midFctLand:
+      case ForecastType.midTa:
+        return _getNextMidFctUpdateTime(now);
+      case ForecastType.weatherAlert:
+        return now.add(const Duration(minutes: 30));
+      case ForecastType.mistInfo:
+        return _getNextMistInfoUpdateTime(now);
     }
-    return DateTime(cachedTime.year, cachedTime.month, cachedTime.day, nextHour);
   }
 }
 
