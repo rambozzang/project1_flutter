@@ -41,16 +41,16 @@ class _AuthPageState extends State<AuthPage> {
             }
           }
           return Scaffold(
-            backgroundColor: Color(0xFF262B49),
+            backgroundColor: const Color(0xFF262B49),
             body: Stack(
               children: [
                 Hero(
                   tag: 'bg1',
-                  child: SizedBox(
-                    width: double.infinity,
+                  child: SizedBox.expand(
                     child: Lottie.asset(
                       'assets/login/bg1.json',
                       fit: BoxFit.cover,
+                      renderCache: RenderCache.raster,
                     ),
                   ),
                 ),

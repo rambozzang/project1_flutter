@@ -47,18 +47,18 @@ abstract class AppPages {
     GetPage(
       name: '/AuthPage',
       page: () => const AuthPage(),
-      // binding: AuthBinding(),
+      transition: Transition.native,
     ),
     GetPage(
       name: '/JoinPage',
       page: () => const JoinPage(),
-      transition: Transition.downToUp,
+      transition: Transition.native,
     ),
     GetPage(
       name: '/rootPage',
       page: () => const RootPage(),
       binding: RootCntrBinding(),
-      transition: Transition.fadeIn,
+      transition: Transition.native,
     ),
 
     GetPage(

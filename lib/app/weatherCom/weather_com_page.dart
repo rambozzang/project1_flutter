@@ -10,7 +10,6 @@ import 'package:project1/app/weatherCom/cntr/weather_com_controller.dart';
 import 'package:project1/app/weatherCom/models/weather_data.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/app/weather/helper/utils.dart';
-import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 
 class WeatherComPage extends StatefulWidget {
   const WeatherComPage({super.key});

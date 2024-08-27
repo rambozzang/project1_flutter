@@ -343,49 +343,7 @@ class WeatherGogoCntr extends GetxController {
       String rain1h = itemFctList.firstWhere((element) => element.category == 'RN1').fcstValue.toString();
       String skyDesc = itemFctList.firstWhere((element) => element.category == 'LGT').fcstValue.toString();
       String weatherDesc = WeatherDataProcessor.instance.combineWeatherCondition(data[0].sky.toString(), data[0].rain.toString());
-      if (weatherDesc.contains('비') || weatherDesc.contains('소나기')) {
-        isRainVisibleNotifier.value = true;
-        isRainDropVisibleNotifier.value = false;
-        isSnowVisibleNotifier.value = false;
-        isHazyVisibleNotifier.value = false;
-        isCloudVisibleNotifier.value = false;
-        isDarkCloudVisibleNotifier.value = false;
-      } else if (weatherDesc.contains('빗')) {
-        isRainVisibleNotifier.value = false;
-        isRainDropVisibleNotifier.value = true;
-        isSnowVisibleNotifier.value = false;
-        isHazyVisibleNotifier.value = false;
-        isCloudVisibleNotifier.value = false;
-        isDarkCloudVisibleNotifier.value = false;
-      } else if (weatherDesc.contains('눈')) {
-        isRainVisibleNotifier.value = false;
-        isRainDropVisibleNotifier.value = false;
-        isSnowVisibleNotifier.value = true;
-        isHazyVisibleNotifier.value = false;
-        isCloudVisibleNotifier.value = false;
-        isDarkCloudVisibleNotifier.value = false;
-      } else if (weatherDesc.contains('흐림')) {
-        isRainVisibleNotifier.value = false;
-        isRainDropVisibleNotifier.value = false;
-        isSnowVisibleNotifier.value = false;
-        isHazyVisibleNotifier.value = true;
-        isCloudVisibleNotifier.value = false;
-        isDarkCloudVisibleNotifier.value = true;
-      } else if (weatherDesc.contains('구름')) {
-        isRainVisibleNotifier.value = false;
-        isRainDropVisibleNotifier.value = false;
-        isSnowVisibleNotifier.value = false;
-        isHazyVisibleNotifier.value = false;
-        isCloudVisibleNotifier.value = true;
-        isDarkCloudVisibleNotifier.value = false;
-      } else {
-        isRainVisibleNotifier.value = false;
-        isRainDropVisibleNotifier.value = false;
-        isSnowVisibleNotifier.value = false;
-        isHazyVisibleNotifier.value = false;
-        isCloudVisibleNotifier.value = false;
-        isDarkCloudVisibleNotifier.value = false;
-      }
+      initAnimation(weatherDesc);
 
       currentWeather.update((val) {
         val?.description = weatherDesc;
@@ -669,5 +627,35 @@ class WeatherGogoCntr extends GetxController {
 
   void toggleSnow() {
     isSnowVisibleNotifier.value = !isSnowVisibleNotifier.value;
+  }
+
+  // 비 눈 흐름 등등 애니메이션
+  void initAnimation(String weatherDesc) {
+    // 초기화
+    isRainVisibleNotifier.value = false;
+    isRainDropVisibleNotifier.value = false;
+    isSnowVisibleNotifier.value = false;
+    isHazyVisibleNotifier.value = false;
+    isCloudVisibleNotifier.value = false;
+    isDarkCloudVisibleNotifier.value = false;
+
+    // 비, 소나기
+    if (weatherDesc.contains('비') || weatherDesc.contains('소나기')) {
+      isRainVisibleNotifier.value = true;
+    }
+    if (weatherDesc.contains('빗')) {
+      isRainDropVisibleNotifier.value = true;
+      isDarkCloudVisibleNotifier.value = false;
+    }
+    if (weatherDesc.contains('눈')) {
+      isSnowVisibleNotifier.value = true;
+    }
+    if (weatherDesc.contains('흐림')) {
+      isHazyVisibleNotifier.value = true;
+      isDarkCloudVisibleNotifier.value = true;
+    }
+    if (weatherDesc.contains('구름')) {
+      isCloudVisibleNotifier.value = true;
+    }
   }
 }
