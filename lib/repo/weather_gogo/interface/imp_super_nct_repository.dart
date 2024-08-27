@@ -48,6 +48,7 @@ class SuperNctRepositoryImp implements SuperNctRepository {
     }
   }
 
+  // 초단기 실황 조회
   @override
   Future<List<ItemSuperNct>> getItemListJSON(Weather weather) async {
     final List<ItemSuperNct> itemList = [];

@@ -151,11 +151,11 @@ class AuthCntr extends GetxController with SecureStorage {
 
     custId.value = _custId;
     await saveCustId(_custId);
-    await _getFcmToken();
+    String _fcmId = await _getFcmToken();
 
     try {
       deviceId = await getDeviceId() ?? '';
-      ResData res = await _custRepo.login(custId.value, fcmId);
+      ResData res = await _custRepo.login(custId.value, _fcmId);
       if (res.code != "00") {
         resData.code = "99";
         resData.msg = res.msg;

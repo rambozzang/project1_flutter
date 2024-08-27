@@ -24,7 +24,7 @@ class _RainAnimationState extends State<RainAnimation2> with TickerProviderState
       vsync: this,
     )..repeat();
 
-    for (int i = 0; i < 150; i++) {
+    for (int i = 0; i < 100; i++) {
       rainDrops.add(RainDrop());
     }
   }

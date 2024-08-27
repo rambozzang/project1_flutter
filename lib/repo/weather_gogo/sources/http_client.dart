@@ -14,7 +14,7 @@ class HttpService {
   HttpService({
     this.timeout = const Duration(seconds: 3),
     this.maxRetries = 10,
-    this.retryDelay = const Duration(microseconds: 250),
+    this.retryDelay = const Duration(microseconds: 400),
   });
 
   Future<dynamic> getWithRetry(Uri uri, {Map<String, String>? headers}) async {

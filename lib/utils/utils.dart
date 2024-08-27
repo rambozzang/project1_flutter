@@ -412,6 +412,94 @@ abstract class Utils {
         animationDuration: const Duration(milliseconds: 300));
   }
 
+  static void showNoConfirmDialog(String title, String subtitle, BackButtonBehavior backButtonBehavior,
+      {VoidCallback? confirm, VoidCallback? backgroundReturn}) {
+    BotToast.showAnimationWidget(
+        clickClose: false,
+        allowClick: false,
+        onlyOne: true,
+        crossPage: true,
+        backButtonBehavior: backButtonBehavior,
+        wrapToastAnimation: (controller, cancel, child) => Stack(
+              children: <Widget>[
+                GestureDetector(
+                  onTap: () {
+                    cancel();
+                    backgroundReturn?.call();
+                  },
+                  //The DecoratedBox here is very important,he will fill the entire parent component
+                  child: AnimatedBuilder(
+                    builder: (_, child) => Opacity(
+                      opacity: controller.value,
+                      child: child,
+                    ),
+                    animation: controller,
+                    child: const DecoratedBox(
+                      decoration: BoxDecoration(color: Colors.black26),
+                      child: SizedBox.expand(),
+                    ),
+                  ),
+                ),
+                CustomOffsetAnimation(
+                  controller: controller,
+                  child: child,
+                )
+              ],
+            ),
+        toastBuilder: (cancelFunc) => AlertDialog(
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              title: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title.toString(),
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const Gap(10),
+                    Text(
+                      subtitle.toString(),
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ]
+                ],
+              ),
+              actions: <Widget>[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      flex: 1,
+                      child: CustomButton(
+                          text: '확인',
+                          type: 'XS',
+                          widthValue: double.infinity,
+                          heightValue: 46,
+                          isEnable: true,
+                          onPressed: () {
+                            cancelFunc();
+                            confirm?.call();
+                          }),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+        animationDuration: const Duration(milliseconds: 300));
+  }
+
   static Widget progressbar({double? size, Color? color}) {
     // return Center(
     //   child: LoadingAnimationWidget.threeRotatingDots(
@@ -421,7 +509,7 @@ abstract class Utils {
     // );
     return Center(
         child: LoadingAnimationWidget.fourRotatingDots(
-      color: color ?? const Color.fromARGB(255, 173, 32, 79),
+      color: color ?? const Color.fromARGB(255, 141, 9, 18), // const Color.fromARGB(255, 173, 32, 79),
       size: size ?? 40,
     ));
   }
@@ -519,40 +607,66 @@ abstract class Utils {
     return StreamBuilder<ResStream<List<T>>>(
       stream: stream.stream as Stream<ResStream<List<T>>>?,
       builder: (BuildContext context, AsyncSnapshot<ResStream<List<T>>> snapshot) {
+        Widget child;
+
         if (snapshot.hasData) {
           switch (snapshot.data?.status) {
             case Status.LOADING:
-              return loadingWidget ??
+              child = loadingWidget ??
                   Center(
-                      child: Padding(
-                    padding: const EdgeInsets.all(68.0),
-                    child: Utils.progressbar(),
-                  ));
+                    child: Padding(
+                      padding: const EdgeInsets.all(68.0),
+                      child: Utils.progressbar(),
+                    ),
+                  );
+              break;
             case Status.COMPLETED:
               var list = snapshot.data!.data;
-              return list!.isEmpty ? (noDataWidget ?? const NoDataWidget()) : buildBody(list);
+              child = list!.isEmpty ? (noDataWidget ?? const NoDataWidget()) : buildBody(list);
+              break;
             case Status.ERROR:
-              return errorWidget ??
+              child = errorWidget ??
                   ErrorPage(
                     errorMessage: snapshot.data!.message ?? '',
                     onRetryPressed: onRetryPressed,
                   );
+              break;
             case null:
-              return errorWidget ??
+              child = errorWidget ??
                   const SizedBox(
                     width: 200,
                     height: 300,
                     child: Text("조회 중 오류가 발생했습니다."),
                   );
+              break;
           }
+        } else {
+          child = noDataWidget ??
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(48.0),
+                  child: Text("조회 된 데이터가 없습니다."),
+                ),
+              );
         }
-        return noDataWidget ??
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(48.0),
-                child: Text("조회 된 데이터가 없습니다."),
-              ),
+
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          child: child,
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: child,
+              // child: SlideTransition(
+              //   position: Tween<Offset>(
+              //     begin: const Offset(0.0, 0.01),
+              //     end: Offset.zero,
+              //   ).animate(animation),
+              //   child: child,
+              // ),
             );
+          },
+        );
       },
     );
   }

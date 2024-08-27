@@ -31,56 +31,7 @@ class NctAPI {
 
   static const _getURL = '$_baseURL/getUltraSrtNcst';
 
-  // 초단기 실황 과거 24시간 내정보
-  // Future<List<dynamic>> getYesterDayJsonData(Weather weather, bool isChache) async {
-  //   late Response response;
-  //   List<dynamic> resultList = [];
-  //   final dio = isChache ? await AuthDio.instance.getNoAuthCathDio(debug: true) : await AuthDio.instance.getNoAuthDio(debug: true);
-
-  //   try {
-  //     final now = DateTime.now();
-
-  //     // 매시 40분 보다 작으면 1시간전으로 보내야 한다.
-  //     int j = now.minute <= 40 ? 0 : 1;
-  //     int max = now.hour == 0 ? 24 : 25;
-
-  //     for (int i = j; i < 25; i++) {
-  //       DateTime dateTime = now.subtract(Duration(hours: i));
-
-  //       lo.g('dateTime $i: $dateTime');
-  //       String baseDate = '${dateTime.year}${dateTime.month.toString().padLeft(2, '0')}${dateTime.day.toString().padLeft(2, '0')}';
-  //       String baseTime = '${dateTime.hour.toString().padLeft(2, '0')}00';
-  //       // 00000 즉24시면 하루전달로 셋팅후 2400 으로 보내야 한다.
-  //       if (baseTime == '0000') {
-  //         DateTime dateTime2 = now.subtract(const Duration(days: 1));
-  //         baseDate = '${dateTime2.year}${dateTime2.month.toString().padLeft(2, '0')}${dateTime2.day.toString().padLeft(2, '0')}';
-  //       }
-  //       DateTime nowDate = DateTime.parse('$baseDate $baseTime');
-  //       // sleep(const Duration(milliseconds: 50));
-  //       var json = weather.copyWith(dateTime: nowDate).toJson();
-  //       json['base_time'] = baseTime == '0000' ? '2400' : baseTime;
-  //       response = await dio.get(
-  //         _getURL,
-  //         queryParameters: json,
-  //       );
-  //       if (response.statusCode == 200 || response.statusCode == 304) {
-  //         Map<String, dynamic> data = response.data;
-  //         if (data['response']['header']['resultCode'] == '00') {
-  //           List<dynamic> items = data['response']['body']['items']['item'];
-  //           resultList.addAll(items);
-  //         } else {}
-  //       } else {
-  //         lo.g('어제 날씨 가져오기 실패!!!!!!!!');
-  //       }
-  //     }
-  //   } on DioException catch (e) {
-  //     lo.g('dateTime 6666666666666');
-  //     debugPrint(e.message);
-  //     throw Exception(e.message);
-  //   }
-
-  //   return resultList;
-  // }
+  // 어제 날씨 가져오기
   Future<List<dynamic>> getYesterDayJsonData(Weather weather, bool isCache) async {
     final now = DateTime.now();
     final startTime = now.minute <= 40 ? now.subtract(const Duration(hours: 24)) : now.subtract(const Duration(hours: 23));
@@ -144,40 +95,14 @@ class NctAPI {
       if (response is Map<String, dynamic>) {
         if (response['response']['header']['resultCode'] == '00') {
           return response['response']['body']['items']['item'];
-        } else {
-          return [];
-          // throw Exception('API 응답 코드 오류: ${response['response']['header']['resultCode']}');
         }
-      } else {
-        throw Exception('예상치 못한 응답 형식');
+        return [];
       }
-
-      // final response = await http.get(uri);
-
-      // if (response.statusCode == 200 ) {
-      //   Map<String, dynamic> data = con.json.decode(response.body);
-      //   if (data['response']['header']['resultCode'] == '00') {
-      //     return data['response']['body']['items']['item'];
-      //   }
-      // }
-
-      // final response = await dio.get(_getURL, queryParameters: json);
-      // lo.g('response : ${response.data}');
-      // if (response.statusCode == 200 || response.statusCode == 304) {
-      //   Map<String, dynamic> data = response.data;
-      //   if (data['response']['header']['resultCode'] == '00') {
-      //     return data['response']['body']['items']['item'];
-      //   }
-      // }
-      // return [];
+      return [];
     } catch (e) {
       lo.g('getYesterDayJsonData() -> Error fetching data for ${e.toString()} ${uri.toString()}');
-      // Future.delayed(const Duration(milliseconds: 200), () {
-      _fetchData(dateTime, weather);
-      //   return;
-      // });
+      return [];
     }
-    return [];
   }
 
   String _formatHttpDate() {

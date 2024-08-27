@@ -275,7 +275,8 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                         ),
                       ),
                       Positioned(
-                        right: 0,
+                        right: 10,
+                        top: 20,
                         child: Visibility(
                           visible: !disableButtons,
                           child: CircleAvatar(

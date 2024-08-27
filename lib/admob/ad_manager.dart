@@ -16,8 +16,8 @@ class AdManager {
   late final Map<String, String> _adUnitIds;
 
   static Future<void> initialize({required TargetPlatform targetPlatform}) async {
-    // await MobileAds.instance.initialize();
-    // _instance._adUnitIds = Platform.isIOS ? AdUnitIds.ios : AdUnitIds.android;
+    await MobileAds.instance.initialize();
+    _instance._adUnitIds = Platform.isIOS ? AdUnitIds.ios : AdUnitIds.android;
   }
 
   bool isTestMode() {

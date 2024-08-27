@@ -77,7 +77,7 @@ class DailyWeatherChart extends StatelessWidget {
       height: itemHeight,
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       decoration: BoxDecoration(
-        color: index % 2 == 0 ? Colors.transparent : const Color.fromARGB(255, 31, 46, 75),
+        color: index % 2 == 0 ? Colors.transparent : Colors.blueGrey.withOpacity(0.15), // const Color.fromARGB(255, 31, 46, 75),
         // color: index % 2 == 0 ? const Color(0xFF0D1B2A) : const Color(0xFF1B263B),
         //border: Border.all(color: Colors.white.withOpacity(0.43)),
         border: Border.symmetric(

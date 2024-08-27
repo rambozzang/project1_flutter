@@ -373,11 +373,17 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                       SizedBox(
                         width: 80,
                         child: CustomButton(
-                            text: ' 게시물수정 ',
-                            type: 'XS',
-                            isEnable: true,
-                            onPressed: () =>
-                                VideoManagePageSheet().open(context, widget.data.boardId.toString(), widget.data.hideYn.toString())),
+                          text: ' 게시물수정 ',
+                          type: 'XS',
+                          isEnable: true,
+                          onPressed: () async {
+                            String result = await VideoManagePageSheet().open(
+                                context, widget.data.boardId.toString(), widget.data.hideYn.toString(), widget.data.contents.toString());
+
+                            widget.data.contents = result;
+                            setState(() {});
+                          },
+                        ),
                       )
                     ],
                   ),
@@ -386,6 +392,11 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
         ],
       ),
     );
+  }
+
+  void changeContents(String contents) {
+    widget.data.contents = contents;
+    setState(() {});
   }
 
   Widget buildLoading() {

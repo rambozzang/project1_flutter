@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
@@ -11,9 +9,7 @@ import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/admob/banner_ad_widget.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
-import 'package:project1/app/videolist/video_sigo_page.dart';
 import 'package:project1/repo/board/board_repo.dart';
-import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
@@ -89,7 +85,6 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
         return;
       }
 
-      // 4.로그인이 안되면 회원가입을 시도한다.
       signUp();
 
       Supabase.instance.client.auth.onAuthStateChange.listen((data) {

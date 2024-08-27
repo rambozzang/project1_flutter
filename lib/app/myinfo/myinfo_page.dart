@@ -9,12 +9,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/weather/widgets/customShimmer.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
-import 'package:project1/app/weathergogo/weathergogo_page.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/board/data/cust_count_data.dart';
@@ -30,9 +28,7 @@ import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:image_picker/image_picker.dart';
 
-import 'package:path_provider/path_provider.dart';
 import 'package:project1/widget/custom_button.dart';
-import 'package:project1/widget/custom_icon_button.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:share_plus/share_plus.dart';
@@ -446,14 +442,16 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
               isMyBoardMoreLoading.value = true;
 
               getMyBoard(myboardPageNum);
+              getCountData();
             }
             if (!isFollowLastPage && tabController.index == 1) {
               followboardPageNum++;
               isFollowMoreLoading.value = true;
 
               getFollowBoard(followboardPageNum);
+              getCountData();
             }
-            getCountData();
+            //
           }
           // }
         }
@@ -1029,11 +1027,11 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                           children: [
                             Text(
                               '회원정보 수정',
-                              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14.0, color: Colors.black),
+                              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12.0, color: Colors.black),
                             ),
                             Icon(
                               Icons.arrow_forward_ios,
-                              size: 15.0,
+                              size: 13.0,
                               color: Colors.black54,
                             ),
                           ],
@@ -1098,7 +1096,6 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
       child: list.isNotEmpty
           ? GridView.builder(
               shrinkWrap: false,
-
               // controller: myboardScrollCtrl,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

@@ -49,8 +49,14 @@ class WeatherGogoCntr extends GetxController {
   final Rx<CurrentWeatherData> currentWeather = CurrentWeatherData().obs;
   final RxList<ItemSuperNct> yesterdayWeather = <ItemSuperNct>[].obs;
   final RxList<HourlyWeatherData> yesterdayHourlyWeather = <HourlyWeatherData>[].obs;
+
   final ValueNotifier<bool> isRainVisibleNotifier = ValueNotifier<bool>(false);
   final ValueNotifier<bool> isSnowVisibleNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> isRainDropVisibleNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> isCloudVisibleNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> isHazyVisibleNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> isSunnyVisibleNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> isDarkCloudVisibleNotifier = ValueNotifier<bool>(false);
 
   final RxList<CustagResData> areaList = <CustagResData>[].obs;
 
@@ -93,7 +99,7 @@ class WeatherGogoCntr extends GetxController {
     // 하나라도 로딩중이면 제어한다.
     if (isLoading.value == true || isYestdayLoading.value == true) {
       String msg = isYestdayLoading.value == true ? '어제 ' : '';
-      Utils.alert('${msg}데이터 수집중입니다. 잠시만요..', align: 'TOP');
+      Utils.alert('$msg데이터 수집중입니다. 잠시만요..', align: 'TOP');
       return true;
     }
     return false;
@@ -127,10 +133,13 @@ class WeatherGogoCntr extends GetxController {
       if (locationPermission == LocationPermission.denied || locationPermission == LocationPermission.deniedForever) {
         // Utils.alert('Location permissions are denied');
 
-        Utils.showConfirmDialog('위치 권한이 거부되었습니다.', '위치 설정을 변경 하시겠습니까?', BackButtonBehavior.none, cancel: () {}, confirm: () async {
+        Utils.showNoConfirmDialog('위치 권한이 없어 사용할수 없습니다.', '위치 설정을 변경 해주세요!', BackButtonBehavior.none, confirm: () async {
           await openAppSettings();
+          lo.g('openAppSettings()');
         }, backgroundReturn: () async {
+          lo.g('backgroundReturn 1');
           locationPermission = await Geolocator.checkPermission();
+          lo.g('backgroundReturn 3');
         });
         return Future.error('Location permissions are disabled.');
       }
@@ -194,18 +203,20 @@ class WeatherGogoCntr extends GetxController {
         fetchSuperFct(location),
         fetchFct(location),
         fetchMidlandWeather(location),
+        fetchLocalNameAndMistinfo(location),
       ]);
+      isLoading.value = false;
       lo.g("=========================================================");
       lo.g("========================================================");
       lo.g("=========================================================");
 
       // isYestdayLoading.value = true;
-      await Future.wait([
-        fetchLocalNameAndMistinfo(location),
-        fetchYesterDayWeather(location),
-      ]);
-      isYestdayLoading.value = false;
-      isLoading.value = false;
+      // await Future.wait([
+
+      // ]);
+      fetchYesterDayWeather(location).then((onValue) {
+        isYestdayLoading.value = false;
+      });
 
       lo.g('getWeatherDataByLatLng initialization time: ${stopwatch.elapsedMilliseconds}ms');
     } catch (e) {
@@ -246,13 +257,22 @@ class WeatherGogoCntr extends GetxController {
       return time2!;
     }
     if (time2 == null) {
-      return time1!;
+      return time1;
     }
 
     time1 = time1.replaceAll(':', '');
     time2 = time2.replaceAll(':', '');
     int t1 = int.parse(time1);
     int t2 = int.parse(time2);
+
+    // time1 이 23:00 이며 time2 가 01:00 이면 time2 를 리턴
+    if (t1 >= 2300 && t2 < 100) {
+      return time2;
+    }
+    if (t1 >= 2300 && t2 == 0) {
+      return time2;
+    }
+
     if (t1 > t2) {
       return time1;
     } else if (t1 < t2) {
@@ -272,7 +292,7 @@ class WeatherGogoCntr extends GetxController {
       currentWeather.update((val) {
         val?.temp = value.temp;
         // val?.rain = value.rain;
-        val?.fcsTime = compareFcsTime(val.fcsTime, value.fcsTime!); // 발표시간
+        val?.fcsTime = compareFcsTime(val.fcsTime, value.fcsTime!); // 발표시간 -> 날이 바뀌면?? 20240822 2300 하고 20240823 0100 하고 비교
         val?.fcstDate = value.fcstDate; // 예보시간
         val?.humidity = value.humidity;
         val?.speed = value.speed;
@@ -323,11 +343,48 @@ class WeatherGogoCntr extends GetxController {
       String rain1h = itemFctList.firstWhere((element) => element.category == 'RN1').fcstValue.toString();
       String skyDesc = itemFctList.firstWhere((element) => element.category == 'LGT').fcstValue.toString();
       String weatherDesc = WeatherDataProcessor.instance.combineWeatherCondition(data[0].sky.toString(), data[0].rain.toString());
-      if (weatherDesc.contains('비') || weatherDesc.contains('빗')) {
+      if (weatherDesc.contains('비') || weatherDesc.contains('소나기')) {
         isRainVisibleNotifier.value = true;
-      }
-      if (weatherDesc.contains('눈')) {
+        isRainDropVisibleNotifier.value = false;
+        isSnowVisibleNotifier.value = false;
+        isHazyVisibleNotifier.value = false;
+        isCloudVisibleNotifier.value = false;
+        isDarkCloudVisibleNotifier.value = false;
+      } else if (weatherDesc.contains('빗')) {
+        isRainVisibleNotifier.value = false;
+        isRainDropVisibleNotifier.value = true;
+        isSnowVisibleNotifier.value = false;
+        isHazyVisibleNotifier.value = false;
+        isCloudVisibleNotifier.value = false;
+        isDarkCloudVisibleNotifier.value = false;
+      } else if (weatherDesc.contains('눈')) {
+        isRainVisibleNotifier.value = false;
+        isRainDropVisibleNotifier.value = false;
         isSnowVisibleNotifier.value = true;
+        isHazyVisibleNotifier.value = false;
+        isCloudVisibleNotifier.value = false;
+        isDarkCloudVisibleNotifier.value = false;
+      } else if (weatherDesc.contains('흐림')) {
+        isRainVisibleNotifier.value = false;
+        isRainDropVisibleNotifier.value = false;
+        isSnowVisibleNotifier.value = false;
+        isHazyVisibleNotifier.value = true;
+        isCloudVisibleNotifier.value = false;
+        isDarkCloudVisibleNotifier.value = true;
+      } else if (weatherDesc.contains('구름')) {
+        isRainVisibleNotifier.value = false;
+        isRainDropVisibleNotifier.value = false;
+        isSnowVisibleNotifier.value = false;
+        isHazyVisibleNotifier.value = false;
+        isCloudVisibleNotifier.value = true;
+        isDarkCloudVisibleNotifier.value = false;
+      } else {
+        isRainVisibleNotifier.value = false;
+        isRainDropVisibleNotifier.value = false;
+        isSnowVisibleNotifier.value = false;
+        isHazyVisibleNotifier.value = false;
+        isCloudVisibleNotifier.value = false;
+        isDarkCloudVisibleNotifier.value = false;
       }
 
       currentWeather.update((val) {
@@ -552,7 +609,8 @@ class WeatherGogoCntr extends GetxController {
       yesterdayDesc.value = compareTemp == 0.0 ? '어제와 같아요' : yesterdayDesc.value;
 
       processingYesterDay(hourlyWeather, ylist);
-      lo.g('완료!! => fetchYesterDayWeather() time : ${stopwatch.elapsedMilliseconds}ms , sevenDayWeather : ${sevenDayWeather.length}');
+      lo.g(
+          '완료!! => fetchYesterDayWeather() time : ${stopwatch.elapsedMilliseconds}ms , yesterdayDesc : ${yesterdayHourlyWeather.length} hourlyWeather : ${hourlyWeather.length}');
 
       fetchYesterDayreCallCnt = 0;
       // ==========================================================
