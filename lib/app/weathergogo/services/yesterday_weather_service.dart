@@ -2,7 +2,6 @@ import 'package:latlong2/latlong.dart';
 import 'package:project1/app/weathergogo/cntr/data/hourly_weather_data.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_nct/super_nct_model.dart';
 import 'package:project1/repo/weather_gogo/repository/weather_gogo_caching.dart';
-import 'package:project1/repo/weather_gogo/repository/weather_gogo_repo.dart';
 import 'package:project1/utils/log_utils.dart';
 
 class YesterdayHourlyWeatherService {

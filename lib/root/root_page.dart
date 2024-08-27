@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:giffy_dialog/giffy_dialog.dart';
 import 'package:project1/app/alram/alram_page.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/camera/page/camera_page.dart';
@@ -134,6 +135,13 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
         resizeToAvoidBottomInset: true,
         body: Stack(
           children: [
+            SizedBox(
+              width: double.infinity,
+              child: Lottie.asset(
+                'assets/login/bg1.json',
+                fit: BoxFit.cover,
+              ),
+            ),
             Positioned.fill(
                 child: PopScope(
               canPop: false,

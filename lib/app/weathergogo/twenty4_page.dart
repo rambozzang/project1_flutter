@@ -130,6 +130,7 @@ class _Twenty4PageState extends State<Twenty4Page> {
   Widget _buildHourlyWeatherWidget() {
     return Obx(
       () {
+        if (controller.hourlyWeather.isEmpty) return SizedBox(height: hourlyItemHeight, child: Utils.progressbar());
         return SizedBox(
           height: hourlyItemHeight,
           child: SingleChildScrollView(
@@ -162,16 +163,18 @@ class _Twenty4PageState extends State<Twenty4Page> {
         child: CustomPaint(
           size: Size(controller.hourlyWeather.length * hourlyItemWidth, chartHeight),
           painter: ChartPainterHour({
-            'Yesterday': Get.find<WeatherGogoCntr>()
-                .yesterdayHourlyWeather
-                .map((e) => WeatherData(
-                      time: e.date,
-                      humidity: 0,
-                      temperature: e.temp,
-                      rainProbability: double.parse((e.rainPo ?? 0.0).toString()), // 실제 데이터로 대체 필요
-                      source: 'Yesterday',
-                    ))
-                .toList(),
+            'Yesterday': Get.find<WeatherGogoCntr>().yesterdayHourlyWeather.isNotEmpty
+                ? Get.find<WeatherGogoCntr>()
+                    .yesterdayHourlyWeather
+                    .map((e) => WeatherData(
+                          time: e.date,
+                          humidity: 0,
+                          temperature: e.temp,
+                          rainProbability: double.parse((e.rainPo ?? 0.0).toString()), // 실제 데이터로 대체 필요
+                          source: 'Yesterday',
+                        ))
+                    .toList()
+                : [],
             'Today': Get.find<WeatherGogoCntr>()
                 .hourlyWeather
                 .map((e) => WeatherData(
@@ -220,7 +223,8 @@ class _Twenty4PageState extends State<Twenty4Page> {
           width: hourlyItemWidth,
           padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 1.0),
           decoration: BoxDecoration(
-            color: index % 2 == 0 ? const Color.fromARGB(255, 31, 46, 75) : Colors.transparent,
+            // color: index % 2 == 0 ? const Color.fromARGB(255, 31, 46, 75) : Colors.transparent,
+            color: index % 2 == 0 ? Colors.blueGrey.withOpacity(0.15) : Colors.transparent,
             border: data.date.hour == 0 ? Border(left: BorderSide(color: Colors.white.withOpacity(0.5))) : null,
           ),
           child: Column(
@@ -350,8 +354,10 @@ class ChartPainterHour extends CustomPainter {
 
     for (var dataList in weatherData.values) {
       for (var data in dataList) {
-        if (data.temperature < minTemp) minTemp = data.temperature;
-        if (data.temperature > maxTemp) maxTemp = data.temperature;
+        if (data.temperature.isFinite) {
+          if (data.temperature < minTemp) minTemp = data.temperature;
+          if (data.temperature > maxTemp) maxTemp = data.temperature;
+        }
       }
     }
 
@@ -371,6 +377,8 @@ class ChartPainterHour extends CustomPainter {
 
       for (int i = 0; i < dataList.length; i++) {
         final data = dataList[i];
+        if (!data.temperature.isFinite) continue;
+
         final double x = i * cellWidth + cellWidth / 2;
         final double normalizedTemp = (data.temperature - minTemp) / (maxTemp - minTemp);
         final double y = chartTopPadding + (1 - normalizedTemp) * (chartHeight - chartTopPadding - chartBottomPadding);
@@ -384,23 +392,25 @@ class ChartPainterHour extends CustomPainter {
       }
 
       canvas.drawPath(path, paint);
+
       for (int i = 0; i < dataList.length; i++) {
         final data = dataList[i];
+        if (!data.temperature.isFinite) continue;
+
         final double x = i * cellWidth + cellWidth / 2;
         final double normalizedTemp = (data.temperature - minTemp) / (maxTemp - minTemp);
         final double y = chartTopPadding + (1 - normalizedTemp) * (chartHeight - chartTopPadding - chartBottomPadding);
 
-        // 원 그리기 부분만 수정
         canvas.drawCircle(
           Offset(x, y),
           source == 'Today' ? circleRadius : circleRadius - 1,
           Paint()..color = Colors.white,
         );
-        // 온도를 원 아래에 표시
+
         final textSpan = TextSpan(
           text: '${data.temperature.toStringAsFixed(1)}°',
           style: TextStyle(
-            color: data.source == 'Today' ? Colors.black : Colors.white, // 텍스트 색상을 검정색으로 변경
+            color: data.source == 'Today' ? Colors.black : Colors.white,
             fontSize: data.source == 'Today' ? 13 : 12,
             fontWeight: FontWeight.bold,
           ),
@@ -411,15 +421,13 @@ class ChartPainterHour extends CustomPainter {
         );
         textPainter.layout();
 
-        // 텍스트가 차트 영역을 벗어나지 않도록 위치 조정
         double textX = x - textPainter.width / 2;
         double textY = y + (data.source == 'Today' ? -30 : 10);
 
         if (textY + textPainter.height > size.height) {
-          textY = y - textPainter.height - (data.source == 'Today' ? -30 : 10); // 원 위에 표시
+          textY = y - textPainter.height - (data.source == 'Today' ? -30 : 10);
         }
 
-        // 텍스트 배경 그리기
         final bgRect = Rect.fromLTWH(textX - 2, textY - 2, textPainter.width + 4, textPainter.height + 4);
         canvas.drawRect(bgRect, Paint()..color = data.source == 'Today' ? Colors.white.withOpacity(0.85) : Colors.transparent);
 

@@ -339,47 +339,44 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
         //     ),
         //   ),
         // ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 15.0),
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 0),
-            padding: const EdgeInsets.only(top: 15),
-            height: 154,
-            child: TextFormField(
-              controller: selfIntroController,
-              // focusNode: textFocus,
-              // cursorHeight: 12,
-              maxLines: 6,
-              style: const TextStyle(decorationThickness: 0), // 한글밑줄제거
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                filled: true,
-                fillColor: Colors.grey[100],
-                // suffixIcon: const Icon(Icons.search, color: Colors.grey),
-                enabledBorder: OutlineInputBorder(
-                  // width: 0.0 produces a thin "hairline" border
-                  borderSide: const BorderSide(color: Colors.grey, width: 0.2),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-                border: OutlineInputBorder(
-                  // width: 0.0 produces a thin "hairline" border
-                  //  borderSide: const BorderSide(color: Colors.grey, width: 0.1),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.grey, width: 0.2),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-                label: const Text("자기소개를 입력해주세요"),
-                labelStyle: const TextStyle(color: Colors.black38),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 0),
+          padding: const EdgeInsets.only(top: 15),
+          height: 154,
+          child: TextFormField(
+            controller: selfIntroController,
+            // focusNode: textFocus,
+            // cursorHeight: 12,
+            maxLines: 6,
+            style: const TextStyle(decorationThickness: 0), // 한글밑줄제거
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              filled: true,
+              fillColor: Colors.grey[100],
+              // suffixIcon: const Icon(Icons.search, color: Colors.grey),
+              enabledBorder: OutlineInputBorder(
+                // width: 0.0 produces a thin "hairline" border
+                borderSide: const BorderSide(color: Colors.grey, width: 0.2),
+                borderRadius: BorderRadius.circular(2),
               ),
-              onFieldSubmitted: (text) {
-                // Perform search
-              },
+              border: OutlineInputBorder(
+                // width: 0.0 produces a thin "hairline" border
+                //  borderSide: const BorderSide(color: Colors.grey, width: 0.1),
+                borderRadius: BorderRadius.circular(2),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: const BorderSide(color: Colors.grey, width: 0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+              label: const Text("자기소개를 입력해주세요"),
+              labelStyle: const TextStyle(color: Colors.black38),
             ),
+            onFieldSubmitted: (text) {
+              // Perform search
+            },
           ),
         ),
-        const Gap(40),
+        const Gap(50),
         Align(
             alignment: Alignment.centerRight,
             child: InkWell(

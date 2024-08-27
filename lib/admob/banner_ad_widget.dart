@@ -23,7 +23,7 @@ class BannerAdWidget extends StatelessWidget {
           child: AdWidget(ad: ad),
         );
       } else {
-        return SizedBox.shrink(); // 광고가 로드되지 않았거나 없는 경우 빈 공간 표시
+        return const SizedBox.shrink(); // 광고가 로드되지 않았거나 없는 경우 빈 공간 표시
       }
     });
   }

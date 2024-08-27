@@ -136,7 +136,7 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
   Future<void> getDate() async {
     try {
       // Utils.alert("최신 날씨 다시 가져와");
-      await Get.find<WeatherGogoCntr>().getInitWeatherData(false);
+      // await Get.find<WeatherGogoCntr>().getInitWeatherData(false);
     } catch (e) {
       lo.g("getDate() error : $e");
     }
@@ -352,17 +352,19 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
                                             radius: 16,
                                             backgroundColor: Colors.grey[100],
                                             child: ClipOval(
-                                              child: CachedNetworkImage(
-                                                cacheKey: Get.find<AuthCntr>().resLoginData.value.custId.toString(),
-                                                imageUrl: Get.find<AuthCntr>()
-                                                    .resLoginData
-                                                    .value
-                                                    .profilePath
-                                                    .toString(), //  'https://picsum.photos/200/300',
-                                                width: 23,
-                                                height: 23,
-                                                fit: BoxFit.cover,
-                                              ),
+                                              child: Get.find<AuthCntr>().resLoginData.value.profilePath == ''
+                                                  ? const Icon(Icons.person, size: 23, color: Colors.black87)
+                                                  : CachedNetworkImage(
+                                                      cacheKey: Get.find<AuthCntr>().resLoginData.value.custId.toString(),
+                                                      imageUrl: Get.find<AuthCntr>()
+                                                          .resLoginData
+                                                          .value
+                                                          .profilePath
+                                                          .toString(), //  'https://picsum.photos/200/300',
+                                                      width: 23,
+                                                      height: 23,
+                                                      fit: BoxFit.cover,
+                                                    ),
                                             ),
                                           ),
                                         ),

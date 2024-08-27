@@ -7,7 +7,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/admob/banner_ad_widget.dart';
-import 'package:project1/app/auth/agree_pagge.dart';
+import 'package:project1/app/auth/agree_page.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 // import 'package:flutter_image_compress/flutter_image_compress.dart';
 
@@ -17,7 +17,7 @@ import 'package:project1/widget/custom_button.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
 
 class SettingPage extends StatefulWidget {
-  const SettingPage({Key? key}) : super(key: key);
+  const SettingPage({super.key});
 
   @override
   State<SettingPage> createState() => _SettingPageState();
@@ -269,7 +269,7 @@ class _SettingPageState extends State<SettingPage> {
       child: Column(
         children: [
           const Text(
-            "코드랩타이거(CodeLabTiger)\n서울시 서대문구 TigerGroup 대표 : tigerBk, 사업자등록번호 : 770-50-01045",
+            "코드랩타이거(CodeLabTiger)\n서울시 서대문구 TigerGroup, 사업자등록번호 : 770-50-01045",
             style: TextStyle(fontSize: 13, color: Colors.black54),
           ),
           const Gap(20),

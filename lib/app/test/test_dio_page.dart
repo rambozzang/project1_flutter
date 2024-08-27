@@ -7,10 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/test/rain/RainAnimation.dart';
-import 'package:project1/app/test/raindrop_page.dart';
 
 import 'package:project1/app/test/snow/SnowAnimation.dart';
-import 'package:project1/app/test/sun_page.dart';
 
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/app/weatherCom/api/OpenWeatherMapclient.dart';
@@ -328,24 +326,6 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
             children: [
               const SizedBox(
                 height: 60,
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  Navigator.of(context).push(MaterialPageRoute(
-                    // fullscreenDialog: true,
-                    builder: (context) => SunlightAnimationPage(),
-                  ));
-                },
-                child: Text('썬 화면'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  Navigator.of(context).push(MaterialPageRoute(
-                    // fullscreenDialog: true,
-                    builder: (context) => AnimatedWaterDrops(),
-                  ));
-                },
-                child: Text('눈모듈 화면'),
               ),
               ElevatedButton(
                 onPressed: () async {

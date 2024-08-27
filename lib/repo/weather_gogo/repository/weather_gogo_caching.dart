@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/repo/weather/data/weather_view_data.dart';
 import 'package:project1/repo/weather_gogo/models/request/weather_cache_req.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:project1/repo/weather_gogo/adapter/adapter_map.dart';
@@ -65,9 +66,10 @@ class WeatherCache {
         expiresAt: expiresAt,
       );
       ResData resData = await wrepo.saveWeatherCacheData(req);
-      if (resData.code != '00') {
-        lo.g('saveWeatherCacheData() resData.data : ${resData.data}');
-      }
+      lo.g('saveWeatherCacheData() resData.data : ${resData.data}');
+      // if (resData.code != '00') {
+      //   lo.g('saveWeatherCacheData() resData.data : ${resData.data}');
+      // }
 
       // await prefs.setString(key, jsonEncode(cacheData));
     } catch (e) {
@@ -117,7 +119,7 @@ class WeatherCache {
         lo.g('[CACHING] 캐시에서 데이터 로드 : ${cachedTime.toString()} : ${type.toString()}');
         return _convertData<T>(decodedData);
         //  }
-        return null;
+        // return null;
       }
       return null;
     } catch (e) {
@@ -136,6 +138,8 @@ class WeatherCache {
     } else if (data is MidLandFcstResponse) {
       return jsonEncode(data.toJson());
     } else if (data is MidTaResponse) {
+      return jsonEncode(data.toJson());
+    } else if (data is MistViewData) {
       return jsonEncode(data.toJson());
     } else {
       throw ArgumentError('Unsupported type for JSON conversion: ${data.runtimeType}');
@@ -156,6 +160,8 @@ class WeatherCache {
       return MidTaResponse.fromJson(data!) as T;
     } else if (T == List<ItemFctVersion>) {
       return (data as List).map((item) => ItemFctVersion.fromJson(item)).toList() as T;
+    } else if (T == MistViewData) {
+      return MistViewData.fromJson(data) as T;
     }
     throw ArgumentError('Unsupported type: $T');
   }
@@ -273,7 +279,7 @@ class WeatherService {
   final WeatherGogoRepo _repo = WeatherGogoRepo();
 
   /// 날씨 데이터 조회 (캐시 확인 후 필요시 API 호출)
-  Future<T> getWeatherData<T>(LatLng location, ForecastType type) async {
+  Future<T> getWeatherData<T>(LatLng location, ForecastType type, {String? param1}) async {
     try {
       // 캐시 확인
       final cachedData = await _cache.getWeatherData<T>(location, type);
@@ -305,7 +311,7 @@ class WeatherService {
         }
       }
       // 새 데이터 캐싱
-      await _cache.saveWeatherData<T>(location, type, result);
+      _cache.saveWeatherData<T>(location, type, result);
 
       return result;
     } catch (e) {
@@ -335,6 +341,8 @@ class WeatherService {
       case ForecastType.midTa:
         return await _repo.getMidTaJson(location, isLog: true) as T;
       case ForecastType.weatherAlert:
+        return await _repo.getSpecialFctJson(location, isLog: true) as T;
+      case ForecastType.mistInfo:
         return await _repo.getSpecialFctJson(location, isLog: true) as T;
       default:
         throw ArgumentError('Invalid forecast type: $type');

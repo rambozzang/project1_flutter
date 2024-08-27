@@ -397,7 +397,7 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ],
         ),
-        backgroundColor: const Color.fromARGB(255, 78, 81, 102), // const Color(0xFF262B49),
+        //  backgroundColor: const Color.fromARGB(255, 78, 81, 102), // const Color(0xFF262B49),
         body: StreamBuilder<List<types.Message>>(
             initialData: const [],
             stream: _chatController.messages,

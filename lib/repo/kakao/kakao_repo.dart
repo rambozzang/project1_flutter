@@ -16,6 +16,12 @@ class KakaoRepo {
       Uri.parse('$apiUrl&query=$query'),
       headers: {
         'Authorization': 'KakaoAK $_apiKey',
+        'Cache-Control': 'max-age=31536000, stale-while-revalidate=86400, stale-if-error=604800, immutable, public',
+        'Vary': 'Accept-Encoding, User-Agent',
+        // 'ETag': '"<unique-identifier-for-this-version-of-the-resource>"',
+        'Expires': '${DateTime.now().add(const Duration(days: 365)).toUtc()}',
+        'Last-Modified': '${DateTime.now().toUtc()}',
+        'Pragma': 'cache',
       },
     );
 
@@ -74,8 +80,15 @@ https://developers.kakao.com/docs/latest/ko/local/dev-guide#coord-to-address
     lo.g("kakao url : ${Uri.parse('$apiUrl&x=$lon&y=$lat')}");
     final response = await http.get(
       Uri.parse('$apiUrl&x=$lon&y=$lat'),
+      // 캐쉬설정
       headers: {
         'Authorization': 'KakaoAK $_apiKey',
+        'Cache-Control': 'max-age=31536000, stale-while-revalidate=86400, stale-if-error=604800, immutable, public',
+        'Vary': 'Accept-Encoding, User-Agent',
+        // 'ETag': '"<unique-identifier-for-this-version-of-the-resource>"',
+        'Expires': '${DateTime.now().add(const Duration(days: 365)).toUtc()}',
+        'Last-Modified': '${DateTime.now().toUtc()}',
+        'Pragma': 'cache',
       },
     );
 

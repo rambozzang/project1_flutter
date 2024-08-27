@@ -1,9 +1,10 @@
 import 'package:get/get.dart';
 import 'package:project1/app/%08join/join_page.dart';
-import 'package:project1/app/auth/agree_pagge.dart';
+import 'package:project1/app/auth/agree_page.dart';
 import 'package:project1/app/auth/auth_page.dart';
 import 'package:project1/app/chatting/repo/suba_test_page.dart';
 import 'package:project1/app/chatting/chat_main_page.dart';
+import 'package:project1/app/myinfo/block_page.dart';
 import 'package:project1/app/myinfo/myinfo_page.dart';
 import 'package:project1/app/setting/alram_setting_page.dart';
 import 'package:project1/app/setting/maketing_page.dart';
@@ -57,7 +58,7 @@ abstract class AppPages {
       name: '/rootPage',
       page: () => const RootPage(),
       binding: RootCntrBinding(),
-      //  transition: Transition.downToUp,
+      transition: Transition.fadeIn,
     ),
 
     GetPage(
@@ -225,6 +226,11 @@ abstract class AppPages {
     GetPage(
       name: '/T24Page',
       page: () => T24Page(),
+      // transition: Transition.downToUp,
+    ),
+    GetPage(
+      name: '/BlockListPage',
+      page: () => BlockListPage(),
       // transition: Transition.downToUp,
     ),
   ];

@@ -3,7 +3,7 @@ description: "SkySnap Flutter project."
 
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.0+13
+version: 1.0.0+14
 
 environment:
   sdk: ">=3.3.0-99.1.beta <4.0.0"
@@ -165,35 +165,32 @@ flutter:
 
 flutter_native_splash:
   color: "#262B49"
-  image: assets/play_store_512.png
+  image: assets/skysnap.png
   color_dark: "#262B49"
-  image_dark: assets/play_store_512.png
+  image_dark: assets/skysnap.png
   android_12:
-    image: assets/play_store_512.png
+    image: assets/skysnap.png
     color: "#262B49"
     icon_background_color: "#262B49"
-    image_dark: assets/play_store_512.png
+    image_dark: assets/skysnap.png
+    color_dark: "#262B49"
     icon_background_color_dark: "#262B49"
-  # An image asset can refer to one or more resolution-specific "variants", see
-  # https://flutter.dev/assets-and-images/#resolution-aware
-  # For details regarding adding assets from package dependencies, see
-  # https://flutter.dev/assets-and-images/#from-packages
-  # To add custom fonts to your application, add a fonts section here,
-  # in this "flutter" section. Each entry in this list should have a
-  # "family" key with the font family name, and a "fonts" key with a
-  # list giving the asset and other descriptors for the font. For
-  # example:
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
-  #       - asset: fonts/Schyler-Italic.ttf
-  #         style: italic
-  #   - family: Trajan Pro
-  #     fonts:
-  #       - asset: fonts/TrajanPro.ttf
-  #       - asset: fonts/TrajanPro_Bold.ttf
-  #         weight: 700
-  #
-  # For details regarding fonts from package dependencies,
-  # see https://flutter.dev/custom-fonts/#from-packages
+
+  fullscreen: true
+  android: true
+  ios: true
+  web: false
+
+  android_gravity: center
+  ios_content_mode: center
+  web_image_mode: center
+
+  android_screen_orientation: portrait
+
+  info_plist_files:
+    - 'ios/Runner/Info.plist'
+
+  # Customize the parameters below, and run the following command in the terminal:
+  # flutter pub run flutter_native_splash:create
+  # To restore Flutter's default white splash screen, run the following command in the terminal:
+  # flutter pub run flutter_native_splash:remove

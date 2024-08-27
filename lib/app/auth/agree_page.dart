@@ -5,6 +5,7 @@ import 'package:project1/app/auth/permission_page.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class AgreePage extends StatefulWidget {
   const AgreePage({super.key});
@@ -13,24 +14,38 @@ class AgreePage extends StatefulWidget {
   _AgreePageState createState() => _AgreePageState();
 }
 
-class _AgreePageState extends State<AgreePage> {
+class _AgreePageState extends State<AgreePage> with WidgetsBindingObserver {
   bool allChecked = false;
   List<Map<String, dynamic>> agreements = [
     {'id': 1, 'title': '(필수) 서비스이용약관 동의', 'checked': false, 'url': '/ServicePage'},
     {'id': 2, 'title': '(필수) 개인정보 수집 및 이용 동의', 'checked': false, 'url': '/PrivecyPage'},
-    // {'id': 3, 'title': '(필수) 개인정보처리방침 동의', 'checked': false, 'url': '/PrivecyPage'},
     {'id': 3, 'title': '(필수) 위치정보 이용 동의', 'checked': false, 'url': '/LocatinServicePage'},
     {'id': 4, 'title': '(필수) 14세 이상 동의', 'checked': false, 'url': ''},
   ];
   late String custId;
 
   final ValueNotifier<bool> isLoading = ValueNotifier<bool>(false);
+  bool _needToCheckPermission = false;
 
   @override
   void initState() {
     super.initState();
-
+    WidgetsBinding.instance.addObserver(this);
     custId = Get.parameters['custId']!;
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _needToCheckPermission) {
+      _needToCheckPermission = false;
+      _checkLocationPermission();
+    }
   }
 
   void toggleAgreement(int id) {
@@ -77,31 +92,84 @@ class _AgreePageState extends State<AgreePage> {
     );
   }
 
-  // void completed() async {
-  //   // await handleNotificationPermission();
-  //   PermissionHandler handler = PermissionHandler();
-  //   await handler.completed();
-  //   isLoading.value = true;
+  Future<bool> requestLocationPermission() async {
+    PermissionHandler handler = PermissionHandler();
+    bool locationPermissionGranted = await handler.completed();
 
-  //   // Get.back(result: true);
-  //   ResData resData = await Get.find<AuthCntr>().signUpProc(custId);
-  //   if (resData.code != "00") {
-  //     Utils.alert(resData.msg.toString());
-  //     // 3초 딜레이
-  //     await Future.delayed(const Duration(milliseconds: 2000), () {
-  //       Get.offAllNamed('/JoinPage');
-  //     });
-  //     return;
-  //   }
-  //   Get.offAllNamed('/AuthPage');
-  // }
-  void completed() async {
+    if (!locationPermissionGranted) {
+      bool? openSettings = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('위치 권한 필요'),
+            content: const Text('앱을 사용하려면 위치 권한이 필요합니다. 설정에서 위치 권한을 허용해주세요.'),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('설정으로 이동'),
+                onPressed: () => Navigator.of(context).pop(true),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (openSettings == true) {
+        _needToCheckPermission = true;
+        openAppSettings();
+        return false; // 설정 화면으로 이동했으므로 false 반환
+      }
+    }
+
+    return locationPermissionGranted;
+  }
+
+  Future<void> _checkLocationPermission() async {
+    PermissionHandler handler = PermissionHandler();
+    bool locationPermissionGranted = await handler.completed();
+    if (locationPermissionGranted) {
+      _proceedWithSignUp();
+    } else {
+      _showRetryDialog();
+    }
+  }
+
+  Future<void> _showRetryDialog() async {
+    bool? retry = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('위치 권한 필요'),
+          content: const Text('앱을 사용하려면 위치 권한이 반드시 필요합니다. 다시 시도하시겠습니까?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('종료'),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            TextButton(
+              child: const Text('다시 시도'),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (retry == true) {
+      bool locationPermissionGranted = await requestLocationPermission();
+      if (locationPermissionGranted) {
+        await _proceedWithSignUp();
+      }
+    } else {
+      // 사용자가 종료를 선택한 경우
+      Get.offAllNamed('/JoinPage');
+    }
+  }
+
+  Future<void> _proceedWithSignUp() async {
     try {
       isLoading.value = true;
-
-      PermissionHandler handler = PermissionHandler();
-      await handler.completed();
-
       ResData resData = await Get.find<AuthCntr>().signUpProc(custId);
 
       if (resData.code != "00") {
@@ -118,9 +186,12 @@ class _AgreePageState extends State<AgreePage> {
     }
   }
 
-  @override
-  void dispose() {
-    super.dispose();
+  Future<void> completed() async {
+    bool locationPermissionGranted = await requestLocationPermission();
+    if (locationPermissionGranted) {
+      await _proceedWithSignUp();
+    }
+    // 권한이 거부되었거나 설정 화면으로 이동한 경우, AppLifecycleState.resumed에서 처리될 것임
   }
 
   @override

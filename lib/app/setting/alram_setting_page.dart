@@ -69,7 +69,7 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
 
   Future<void> request() async {
     Utils.showConfirmDialog('핸드폰 알림 설정을 변경 하시겠습니까?', '핸드폰 설정화면으로 이동됩니다.', BackButtonBehavior.none, cancel: () {}, confirm: () async {
-      openAppSettings();
+      await openAppSettings();
     }, backgroundReturn: () {
       checkPermission();
     });
@@ -223,22 +223,34 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
                   ),
                 );
               }),
-          buildItem(),
-          Divider(
-            height: 15,
-            thickness: 3,
-            color: Colors.grey.withOpacity(0.3),
-          ),
-          Utils.commonStreamList<Map<String, String>>(streamController, buildAlramList, searchAlram,
-              noDataWidget: const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(40.0),
-                  child: Text(
-                    '전체 알람이 꺼져있습니다.',
-                    style: TextStyle(color: Colors.grey, fontSize: 14, fontWeight: FontWeight.w500),
-                  ),
-                ),
-              )),
+          ValueListenableBuilder<bool>(
+              valueListenable: isPermisstion,
+              builder: (context, val, snapshot) {
+                if (!val) {
+                  return const SizedBox.shrink();
+                }
+
+                return Column(
+                  children: [
+                    buildItem(),
+                    Divider(
+                      height: 15,
+                      thickness: 3,
+                      color: Colors.grey.withOpacity(0.3),
+                    ),
+                    Utils.commonStreamList<Map<String, String>>(streamController, buildAlramList, searchAlram,
+                        noDataWidget: const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(40.0),
+                            child: Text(
+                              '전체 알람이 꺼져있습니다.',
+                              style: TextStyle(color: Colors.grey, fontSize: 14, fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        )),
+                  ],
+                );
+              }),
         ]),
       ),
     );

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:lottie/lottie.dart';
 
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:project1/admob/ad_manager.dart';
@@ -13,7 +14,6 @@ import 'package:project1/app/camera/page/camera_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/camera/utils/permission_utils.dart';
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
-import 'package:project1/app/videolist/video_screen3_page.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
@@ -82,23 +82,33 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
 
   // 전체 하면을 차지하면서 이미지를 보여주는 위젯
   Widget buildLoading() {
-    return SizedBox.expand(
-      child: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/2.jpg'),
-            // image: ExactAssetImage(
-            //   'assets/images/2.jpg',
-            // ),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 35.0, sigmaY: 45.0),
-          child: const Center(child: Text(" ", style: TextStyle(color: Colors.white, fontSize: 9))),
+    return Hero(
+      tag: 'bg1',
+      child: SizedBox(
+        width: double.infinity,
+        child: Lottie.asset(
+          'assets/login/bg1.json',
+          fit: BoxFit.cover,
         ),
       ),
     );
+    // return SizedBox.expand(
+    //   child: Container(
+    //     decoration: const BoxDecoration(
+    //       image: DecorationImage(
+    //         image: AssetImage('assets/images/2.jpg'),
+    //         // image: ExactAssetImage(
+    //         //   'assets/images/2.jpg',
+    //         // ),
+    //         fit: BoxFit.cover,
+    //       ),
+    //     ),
+    //     child: BackdropFilter(
+    //       filter: ImageFilter.blur(sigmaX: 35.0, sigmaY: 45.0),
+    //       child: const Center(child: Text(" ", style: TextStyle(color: Colors.white, fontSize: 9))),
+    //     ),
+    //   ),
+    // );
   }
 
   @override

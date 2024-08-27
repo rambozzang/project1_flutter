@@ -8,8 +8,13 @@ import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/admob/banner_ad_widget.dart';
+import 'package:project1/app/test/cloud/cloud_page.dart';
+import 'package:project1/app/test/darkcloud/darkcloud_page.dart';
+import 'package:project1/app/test/hazy/hazy_page.dart';
 import 'package:project1/app/test/rain/RainAnimation.dart';
+import 'package:project1/app/test/raindrop/raindrop_page.dart';
 import 'package:project1/app/test/snow/SnowAnimation.dart';
+import 'package:project1/app/test/sunny/sunny_page.dart';
 import 'package:project1/app/weather/models/geocode.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
 import 'package:project1/app/weathergogo/appbar_page.dart';
@@ -73,6 +78,13 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
     isAdLoading.value = true;
   }
 
+/*
+/ Primary colors
+  static const Color primaryBlue = Color(0xFF00ADEF);
+  static const Color silver = Color(0xFFCCCCCC);
+  static const Color darkGrey = Color(0xFF333333);
+
+*/
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -98,6 +110,11 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
               // 비 애니메이션
               RainAnimation2(isVisibleNotifier: Get.find<WeatherGogoCntr>().isRainVisibleNotifier),
               SnowAnimation2(isVisibleNotifier: Get.find<WeatherGogoCntr>().isSnowVisibleNotifier),
+              CloudyAnimation(isVisibleNotifier: Get.find<WeatherGogoCntr>().isCloudVisibleNotifier),
+              HazyAnimation(isVisibleNotifier: Get.find<WeatherGogoCntr>().isHazyVisibleNotifier),
+              RainDropAnimation(isVisibleNotifier: Get.find<WeatherGogoCntr>().isRainDropVisibleNotifier),
+              DarkCloudsAnimation(isVisibleNotifier: Get.find<WeatherGogoCntr>().isDarkCloudVisibleNotifier),
+
               _buildLazyLoadingContent(),
 
               const WeathergogoKakaoSearchPage(),
