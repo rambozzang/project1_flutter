@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:project1/app/videomylist/Video_myScreen_page.dart';
-import 'package:project1/app/videomylist/Video_myScreen_page2.dart';
 import 'package:project1/app/videomylist/cntr/video_myinfo_list_cntr.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/utils/log_utils.dart';

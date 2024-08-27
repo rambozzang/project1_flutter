@@ -14,7 +14,6 @@ import 'package:project1/app/test/hazy/hazy_page.dart';
 import 'package:project1/app/test/rain/RainAnimation.dart';
 import 'package:project1/app/test/raindrop/raindrop_page.dart';
 import 'package:project1/app/test/snow/SnowAnimation.dart';
-import 'package:project1/app/test/sunny/sunny_page.dart';
 import 'package:project1/app/weather/models/geocode.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
 import 'package:project1/app/weathergogo/appbar_page.dart';
@@ -114,7 +113,6 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
               HazyAnimation(isVisibleNotifier: Get.find<WeatherGogoCntr>().isHazyVisibleNotifier),
               RainDropAnimation(isVisibleNotifier: Get.find<WeatherGogoCntr>().isRainDropVisibleNotifier),
               DarkCloudsAnimation(isVisibleNotifier: Get.find<WeatherGogoCntr>().isDarkCloudVisibleNotifier),
-
               _buildLazyLoadingContent(),
 
               const WeathergogoKakaoSearchPage(),

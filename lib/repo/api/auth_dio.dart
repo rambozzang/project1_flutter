@@ -7,7 +7,7 @@ import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/src/response.dart' as R;
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
-import 'package:dio_cache_interceptor_hive_store/dio_cache_interceptor_hive_store.dart';
+// import 'package:dio_cache_interceptor_hive_store/dio_cache_interceptor_hive_store.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
@@ -31,26 +31,26 @@ class AuthDio {
 
   // 인스턴스 getter
   static AuthDio get instance => _instance;
-  late HiveCacheStore cacheStore;
+  // late HiveCacheStore cacheStore;
   late CacheOptions customCacheOptions;
   bool _isInitialized = false;
   late Future<void> _initialization;
 
   Future<void> _initialize() async {
     var cacheDir = await getTemporaryDirectory();
-    cacheStore = HiveCacheStore(
-      cacheDir.path,
-      hiveBoxName: "skysnap",
-    );
-    customCacheOptions = CacheOptions(
-      store: cacheStore,
-      policy: CachePolicy.forceCache,
-      priority: CachePriority.high,
-      maxStale: const Duration(days: 7),
-      hitCacheOnErrorExcept: [401, 404],
-      keyBuilder: CacheOptions.defaultCacheKeyBuilder,
-      allowPostMethod: true,
-    );
+    // cacheStore = HiveCacheStore(
+    //   cacheDir.path,
+    //   hiveBoxName: "skysnap",
+    // );
+    // customCacheOptions = CacheOptions(
+    //   store: cacheStore,
+    //   policy: CachePolicy.forceCache,
+    //   priority: CachePriority.high,
+    //   maxStale: const Duration(days: 7),
+    //   hitCacheOnErrorExcept: [401, 404],
+    //   keyBuilder: CacheOptions.defaultCacheKeyBuilder,
+    //   allowPostMethod: true,
+    // );
     _isInitialized = true;
   }
 
@@ -123,18 +123,8 @@ class AuthDio {
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 60)));
 
-    customCacheOptions = CacheOptions(
-      store: cacheStore,
-      policy: CachePolicy.forceCache,
-      priority: CachePriority.high,
-      maxStale: Duration(hours: cachehour),
-      hitCacheOnErrorExcept: [401, 404],
-      keyBuilder: CacheOptions.defaultCacheKeyBuilder,
-      allowPostMethod: true,
-    );
-
     dio.interceptors.clear();
-    dio.interceptors.add(DioCacheInterceptor(options: customCacheOptions));
+    // dio.interceptors.add(DioCacheInterceptor(options: customCacheOptions));
     // if (debug == true) {
     //   dio.interceptors.add(PrettyDioLogger(
     //     requestHeader: true,

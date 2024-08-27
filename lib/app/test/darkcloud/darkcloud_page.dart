@@ -50,7 +50,7 @@ class DarkCloudsPainter extends CustomPainter {
       cloud.move(size);
 
       final cloudPaint = Paint()
-        ..color = Colors.grey[700]!.withOpacity(cloud.opacity)
+        ..color = Colors.grey[400]!.withOpacity(cloud.opacity)
         ..style = PaintingStyle.fill;
 
       final path = Path();

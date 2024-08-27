@@ -8,7 +8,6 @@ import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/admob/banner_ad_widget.dart';
-import 'package:project1/app/alram/gemini_chat_page.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/chatting/chat_main_page.dart';
 import 'package:project1/repo/alram/alram_repo.dart';

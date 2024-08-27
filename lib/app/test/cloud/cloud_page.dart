@@ -17,7 +17,7 @@ class Cloud {
     y = math.Random().nextDouble() * 500;
     size = math.Random().nextDouble() * 60 + 40; // 40-100 사이의 크기
     speed = math.Random().nextDouble() * 0.5 + 0.1; // 0.1-0.6 사이의 속도
-    opacity = math.Random().nextDouble() * 0.3 + 0.1; // 0.1-0.4 사이의 투명도
+    opacity = math.Random().nextDouble() * 0.5 + 0.1; // 0.1-0.4 사이의 투명도
   }
 
   void move(double width) {
