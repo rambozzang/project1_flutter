@@ -178,11 +178,11 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 0),
             padding: const EdgeInsets.only(top: 5),
-            height: 74,
+            height: 90,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('계정 Email - 수정불가', style: TextStyle(color: Colors.black38, fontSize: 14)),
+                const Text('계정 Email', style: TextStyle(color: Colors.black38, fontSize: 14)),
                 TextFormField(
                   controller: emailController,
                   // focusNode: textFocus,
@@ -350,6 +350,7 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
             maxLines: 6,
             style: const TextStyle(decorationThickness: 0), // 한글밑줄제거
             decoration: InputDecoration(
+              alignLabelWithHint: true, // label 과 입력창을 같은 높이로 맞춤
               contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
               filled: true,
               fillColor: Colors.grey[100],

@@ -331,7 +331,7 @@ class _JoinPageState extends State<JoinPage> with SingleTickerProviderStateMixin
           padding: EdgeInsets.symmetric(horizontal: 60.0),
           child: Divider(color: Colors.white),
         ),
-        const Gap(20),
+        const Gap(25),
         // 소셜 로그인 버튼들
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -344,7 +344,7 @@ class _JoinPageState extends State<JoinPage> with SingleTickerProviderStateMixin
             if (Platform.isIOS) ...[const Gap(20), _buildSocialLoginButton('apple', "assets/login/apple_login.png", '애플')]
           ],
         ),
-        const Gap(5),
+        const Gap(25),
         FadeTransition(
           opacity: _animation,
           child: Container(

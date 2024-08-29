@@ -1,6 +1,22 @@
 # SkySnap App by CodeLabtiger
 
-이 프로젝트에 대한 자세한 정보는 개발 팀에 문의하세요.
+#ISO 업로드 하기
+
+
+1.  flutter build ipa
+2. build/ios/archive/Runner.xcarchive 를 XCode로 열기
+3. Validate 실행
+4. Distribution 실행
+5. 앱컨넥터스토어 업로드된 빌드 번호 확인 가능
+
+#안드로이드 
+
+1. flutter build appbundle --release --obfuscate --split-debug-info=./debug-info.zip 실행
+  flutter build apk --release --target-platform=android-arm64 --split-debug-info=./debug-info
+2. App bundle 탐색기에 업로드
+ - build/app/outputs/bundle/release/app-release.aab
+
+ 
 
 # 안드로이드 디버그 기호 파일 업로드
 **app/build/app/intermediates/merged_nativ_libs/프로젝트폴더/out/lib**
@@ -17,7 +33,7 @@
 
 https://hooun.tistory.com/432
 
-`/work/app/flutter/project1/build/app/intermediates/merged_native_libs/release/out/lib` 
+work/app/flutter/project1/build/app/intermediates/merged_native_libs/release/out/lib
 
 - find . -name "__MACOSX" -exec rm -rf {} +
 - find . -name ".DS_Store" -exec rm -rf {} +
@@ -61,3 +77,12 @@ symbols_clean.zip  파일 업로드 끝!!
    - 해결 방안: Sign in with Apple 버튼 디자인 수정
 
 이러한 문제들을 해결하고 앱을 개선한 후 다시 제출하면 승인 가능성이 높아질 것입니다. 각 가이드라인에 대한 자세한 내용은 Apple의 개발자 문서를 참조하시기 바랍니다.
+
+
+flutter pub run flutter_native_splash:remove
+flutter pub run flutter_native_splash:create
+
+
+
+# 구글스토어 목업 탬플릿
+https://studio.app-mockup.com/

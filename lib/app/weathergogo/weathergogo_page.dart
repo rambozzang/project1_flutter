@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:lottie/lottie.dart';
 import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/admob/banner_ad_widget.dart';
 import 'package:project1/app/test/cloud/cloud_page.dart';
@@ -106,6 +107,13 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
           ),
           child: Stack(
             children: <Widget>[
+              // SizedBox.expand(
+              //   child: Lottie.asset(
+              //     'assets/login/bg1.json',
+              //     fit: BoxFit.cover,
+              //     renderCache: RenderCache.raster,
+              //   ),
+              // ),
               // 비 애니메이션
               RainAnimation2(isVisibleNotifier: Get.find<WeatherGogoCntr>().isRainVisibleNotifier),
               SnowAnimation2(isVisibleNotifier: Get.find<WeatherGogoCntr>().isSnowVisibleNotifier),
@@ -113,7 +121,7 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
               HazyAnimation(isVisibleNotifier: Get.find<WeatherGogoCntr>().isHazyVisibleNotifier),
               RainDropAnimation(isVisibleNotifier: Get.find<WeatherGogoCntr>().isRainDropVisibleNotifier),
               DarkCloudsAnimation(isVisibleNotifier: Get.find<WeatherGogoCntr>().isDarkCloudVisibleNotifier),
-              _buildLazyLoadingContent(),
+              _buildLazyLoadingContent2(),
 
               const WeathergogoKakaoSearchPage(),
 
@@ -128,7 +136,7 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
   Widget _buildLazyLoadingContent2() {
     return SingleChildScrollView(
       controller: RootCntr.to.hideButtonController5,
-      physics: physic,
+      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 20.0).copyWith(
         top: kToolbarHeight + 3,
       ),

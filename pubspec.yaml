@@ -3,7 +3,7 @@ description: "SkySnap Flutter project."
 
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.0+14
+version: 1.0.0+17
 
 environment:
   sdk: ">=3.3.0-99.1.beta <4.0.0"
@@ -116,30 +116,28 @@ flutter:
      - assets/images/map/
      - assets/lottie/
 
-
 flutter_native_splash:
   color: "#262B49"
-  image: assets/skysnap.png
-  color_dark: "#262B49"
-  image_dark: assets/skysnap.png
+  image:  assets/skysnap1.png
   android_12:
-    image: assets/skysnap.png
-    color: "#262B49"
-    icon_background_color: "#262B49"
-    image_dark: assets/skysnap.png
-    color_dark: "#262B49"
-    icon_background_color_dark: "#262B49"
+    image:   assets/skysnap1.png
+   # color: "#262B49"
+    # icon_background_color: "#262B49"
+    image_dark:   assets/skysnap1.png
+  #  color_dark: "#262B49"
+    # icon_background_color_dark: "#262B49"
 
   fullscreen: true
   android: true
   ios: true
   web: false
+ 
 
-  android_gravity: center
-  ios_content_mode: center
-  web_image_mode: center
+  # android_gravity: center
+  # ios_content_mode: center
+  # web_image_mode: center
 
-  android_screen_orientation: portrait
+  # android_screen_orientation: portrait
 
   info_plist_files:
     - 'ios/Runner/Info.plist'

@@ -8,79 +8,82 @@ import 'package:project1/app/weather/theme/colors.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 
-class DetailMainPage extends StatelessWidget {
+class DetailMainPage extends GetView<WeatherGogoCntr> {
   const DetailMainPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // return GetBuilder<WeatherGogoCntr>(
-    //   builder: (cntr) {
-    //     final currentWeather = cntr.currentWeather;
-    //     if (cntr.isLoading.value) {
-    //       return const Center(
-    //           child: Text(
-    //         '....',
-    //         style: TextStyle(color: Colors.white),
-    //       ));
-    //     }
-    final controller = Get.find<WeatherGogoCntr>();
-
     return Obx(
       () {
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          decoration: BoxDecoration(
-            // color: const Color(0xFF262B49),
-            borderRadius: BorderRadius.circular(16.0),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 10.0),
-              _buildInfoRow([
-                _buildInfoTile(
-                  icon: PhosphorIconsRegular.clock,
-                  title: '발표시각',
-                  data: controller.currentWeather.value.fcsTime == null
-                      ? ''
-                      : '${controller.currentWeather.value.fcsTime.toString().substring(0, 2)}:${controller.currentWeather.value.fcsTime.toString().substring(2, 4)}',
-                ),
-                _buildInfoTile(
-                  icon: PhosphorIconsRegular.drop,
-                  title: '강수량1h',
-                  data: '${controller.currentWeather.value.rain1h ?? 0}mm',
-                ),
-                _buildInfoTile(
-                  icon: PhosphorIconsRegular.navigationArrow,
-                  title: '풍 향',
-                  data: '${controller.currentWeather.value.deg ?? 0.0}',
-                  isWindDirection: true,
-                ),
-              ]),
-              const Divider(
-                thickness: 1.0,
-                color: backgroundBlue,
-                indent: 12.0,
-                endIndent: 12.0,
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 500),
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.4),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
               ),
-              _buildInfoRow([
-                _buildInfoTile(
-                  icon: PhosphorIconsRegular.wind,
-                  title: '바 람',
-                  data: '${controller.currentWeather.value.speed ?? 0}m/s',
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            decoration: BoxDecoration(
+              // color: const Color(0xFF262B49),
+              borderRadius: BorderRadius.circular(16.0),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 10.0),
+                _buildInfoRow([
+                  _buildInfoTile(
+                    icon: PhosphorIconsRegular.clock,
+                    title: '발표시각',
+                    data: controller.currentWeather.value.fcsTime == null
+                        ? ''
+                        : '${controller.currentWeather.value.fcsTime.toString().substring(0, 2)}:${controller.currentWeather.value.fcsTime.toString().substring(2, 4)}',
+                  ),
+                  _buildInfoTile(
+                    icon: PhosphorIconsRegular.drop,
+                    title: '강수량1h',
+                    data: '${controller.currentWeather.value.rain1h ?? 0}mm',
+                  ),
+                  _buildInfoTile(
+                    icon: PhosphorIconsRegular.navigationArrow,
+                    title: '풍 향',
+                    data: '${controller.currentWeather.value.deg ?? 0.0}',
+                    isWindDirection: true,
+                  ),
+                ]),
+                const Divider(
+                  thickness: 1.0,
+                  color: backgroundBlue,
+                  indent: 12.0,
+                  endIndent: 12.0,
                 ),
-                _buildInfoTile(
-                  icon: PhosphorIconsRegular.dropHalfBottom,
-                  title: '습 도',
-                  data: '${controller.currentWeather.value.humidity ?? 0}%',
-                ),
-                _buildInfoTile(
-                  icon: PhosphorIconsRegular.cloud,
-                  title: '낙 뢰',
-                  data: '${controller.currentWeather.value.skyDesc ?? ''}kA',
-                ),
-              ]),
-            ],
+                _buildInfoRow([
+                  _buildInfoTile(
+                    icon: PhosphorIconsRegular.wind,
+                    title: '바 람',
+                    data: '${controller.currentWeather.value.speed ?? 0}m/s',
+                  ),
+                  _buildInfoTile(
+                    icon: PhosphorIconsRegular.dropHalfBottom,
+                    title: '습 도',
+                    data: '${controller.currentWeather.value.humidity ?? 0}%',
+                  ),
+                  _buildInfoTile(
+                    icon: PhosphorIconsRegular.cloud,
+                    title: '낙 뢰',
+                    data: '${controller.currentWeather.value.skyDesc ?? ''}kA',
+                  ),
+                ]),
+              ],
+            ),
           ),
         );
       },

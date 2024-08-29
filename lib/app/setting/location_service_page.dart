@@ -98,7 +98,7 @@ class _LocatinServicePageState extends State<LocatinServicePage> {
       backgroundColor: Colors.white,
       body: const CommonWebView(
         isBackBtn: false,
-        url: 'https://www.tigerbk.com/skysnap/location/',
+        url: 'https://www.skysnap.co.kr/location/',
       ),
       // body: SingleChildScrollView(
       //   physics: const BouncingScrollPhysics(),

@@ -343,8 +343,9 @@ class VideoScreenPageState extends State<VideoScreenPage> {
       bottom: (MediaQuery.of(context).size.height - 12) * .5,
       right: 12,
       child: GestureDetector(
-        onTap: () => SigoPageSheet().open(context, widget.data.boardId.toString(),
-            Get.find<VideoListCntr>().list[widget.index].custId.toString(), Get.find<VideoListCntr>().getData),
+        onTap: () => SigoPageSheet().open(
+            context, widget.data.boardId.toString(), Get.find<VideoListCntr>().list[widget.index].custId.toString(),
+            callBackFunction: Get.find<VideoListCntr>().getSingAfterGetData),
         child: const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,

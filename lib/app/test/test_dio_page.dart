@@ -6,9 +6,11 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/test/aa.dart';
 import 'package:project1/app/test/rain/RainAnimation.dart';
 
 import 'package:project1/app/test/snow/SnowAnimation.dart';
+import 'package:project1/app/test/tt_page.dart';
 
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/app/weatherCom/api/OpenWeatherMapclient.dart';
@@ -326,6 +328,22 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
             children: [
               const SizedBox(
                 height: 60,
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      // fullscreenDialog: true,
+                      builder: (context) => EnhancedSunlightEffect()));
+                },
+                child: Text('햇빛화면'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      // fullscreenDialog: true,
+                      builder: (context) => AaaaaaPAge()));
+                },
+                child: Text('이쁜 컨테이너 화면'),
               ),
               ElevatedButton(
                 onPressed: () async {

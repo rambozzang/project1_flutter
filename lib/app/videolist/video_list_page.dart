@@ -17,6 +17,7 @@ import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
+import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:text_scroll/text_scroll.dart';
 
@@ -155,6 +156,8 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
           physics: const CustomPhysics(),
           onPageChanged: (int inx) {
             cntr.getMoreData(inx, data.length);
+
+            RootCntr.to.bottomBarStreamController.sink.add(true);
           },
           itemBuilder: (context, videoIndex) {
             PageStorageKey key = PageStorageKey('key_$videoIndex');
@@ -408,7 +411,7 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
     return Obx(() => Positioned(
           top: MediaQuery.of(context).padding.top + 42,
           right: 0,
-          child: Get.find<WeatherGogoCntr>().currentWeather.value.temp != null
+          child: Get.find<WeatherGogoCntr>().currentWeather.value.temp != '0.0'
               ? Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.center,
