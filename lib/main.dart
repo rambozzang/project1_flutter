@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 // import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
@@ -48,7 +49,7 @@ void main() async {
   // 안드로이드  : Network : CERTIFICATE_VERIFY_FAILED 오류 수정
   HttpOverrides.global = MyHttpOverrides();
 
-  runApp(const TigerBk());
+  runApp(TigerBk());
 }
 
 class MyHttpOverrides extends HttpOverrides {
@@ -59,7 +60,14 @@ class MyHttpOverrides extends HttpOverrides {
 }
 
 class TigerBk extends StatelessWidget {
-  const TigerBk({super.key});
+  // flutter_splach_native 패키지를 사용하면 아래 코드를 사용해야함. Ios 상태바가 안보임.
+  // TigerBk() {
+  //   SystemChrome.setEnabledSystemUIMode(
+  //     SystemUiMode.manual,
+  //     overlays: SystemUiOverlay.values,
+  //   );
+  // }
+
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(

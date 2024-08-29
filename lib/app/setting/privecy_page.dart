@@ -98,7 +98,7 @@ class _PrivecyPageState extends State<PrivecyPage> {
       backgroundColor: Colors.white,
       body: const CommonWebView(
         isBackBtn: false,
-        url: 'https://www.tigerbk.com/skysnap/privacy',
+        url: 'https://www.skysnap.co.kr/privacy',
       ),
       // body: SingleChildScrollView(
       //   physics: const BouncingScrollPhysics(),

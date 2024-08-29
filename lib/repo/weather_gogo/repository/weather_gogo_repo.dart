@@ -38,18 +38,18 @@ import 'package:dio/dio.dart' as rdio;
 예보버전 :  WeatherVersion class
 */
 class WeatherGogoRepo {
-  static const _baseURL = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0';
+  // static const _baseURL = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0';
   //decoding key 를 사용.
   static const _key = 'CeGmiV26lUPH9guq1Lca6UA25Al/aZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur+t2iPaL/LtEQdZebg==';
-  static Dio createDio({required bool isLog, PrettyDioLogger? customLogger}) {
-    var dio = Dio(BaseOptions(baseUrl: _baseURL));
+  // static Dio createDio({required bool isLog, PrettyDioLogger? customLogger}) {
+  //   var dio = Dio(BaseOptions(baseUrl: _baseURL));
 
-    if (isLog) {
-      final logger = customLogger ?? PrettyDioLogger();
-      dio.interceptors.add(logger);
-    }
-    return dio;
-  }
+  //   if (isLog) {
+  //     final logger = customLogger ?? PrettyDioLogger();
+  //     dio.interceptors.add(logger);
+  //   }
+  //   return dio;
+  // }
 
   // 초단기 실황 24시 조회
   //  X축이 Longitude, Y축이 Latitude
@@ -271,12 +271,31 @@ class WeatherGogoRepo {
 
   // 캐쉬 저장
   Future<ResData> saveWeatherCacheData(WeatherCacheReq data) async {
-    final dio = await AuthDio.instance.getDio(debug: false);
+    final dio2 = await AuthDio.instance.getDio(debug: false);
     try {
       var url = '${UrlConfig.baseURL}/weather/saveCache';
 
-      log(data.toString());
-      rdio.Response response = await dio.post(url, data: data.toJson());
+      // log(data.toJson());
+      rdio.Response response = await dio2.post(url, data: data.toJson());
+      return AuthDio.instance.dioResponse(response);
+    } on DioException catch (e) {
+      return AuthDio.instance.dioException(e);
+    } finally {}
+  }
+
+  // 어제 날씨 캐쉬 저장
+  Future<ResData> saveYesterdayWeatherCacheData(WeatherCacheReq data) async {
+    // return ResData(code: '00', msg: 'success');
+    log("saveYesterdayWeatherCacheData >>>  11111");
+
+    final dio2 = await AuthDio.instance.getDio(debug: false);
+    log("saveYesterdayWeatherCacheData >>>  2222");
+    try {
+      log("saveYesterdayWeatherCacheData >>>  3333");
+      var url = '${UrlConfig.baseURL}/weather/saveYesterDayCache';
+
+      log("saveYesterdayWeatherCacheData >>> ${data.toJson()}");
+      rdio.Response response = await dio2.post(url, data: data.toJson());
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);

@@ -213,15 +213,16 @@ class _AgreePageState extends State<AgreePage> with WidgetsBindingObserver {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      '서비스 가입',
+                      'SkySnap 서비스',
                       style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 10),
-                    Text(
-                      '서비스 시작 및 가입을 위해 먼저\n가입 및 정보 제공에 동의해 주세요.',
-                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                    const Text(
+                      '서비스 시작 및 가입을 위해 먼저 가입 및 정보 제공에\n동의해 주세요.',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 14, color: Colors.black),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 30),
                     Expanded(
                       child: ListView(
                         children: [
@@ -230,7 +231,7 @@ class _AgreePageState extends State<AgreePage> with WidgetsBindingObserver {
                             child: Container(
                               padding: const EdgeInsets.all(15),
                               decoration: BoxDecoration(
-                                color: Colors.blueGrey[100],
+                                color: Colors.indigo[100],
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(

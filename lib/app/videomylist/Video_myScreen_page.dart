@@ -322,8 +322,9 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                   top: (MediaQuery.of(context).size.height - 60) * .5,
                   right: 14,
                   child: GestureDetector(
-                    onTap: () => SigoPageSheet().open(context, widget.data.boardId.toString(),
-                        Get.find<VideoMyinfoListCntr>().list[widget.index].custId.toString(), Get.find<VideoMyinfoListCntr>().getData),
+                    onTap: () => SigoPageSheet().open(
+                        context, widget.data.boardId.toString(), Get.find<VideoMyinfoListCntr>().list[widget.index].custId.toString(),
+                        callBackFunction: Get.find<VideoMyinfoListCntr>().getSingAfterGetData),
                     child: Column(
                       children: [
                         const Icon(Icons.warning, color: Colors.white),

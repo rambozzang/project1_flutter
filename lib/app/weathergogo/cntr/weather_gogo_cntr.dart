@@ -46,7 +46,7 @@ class WeatherGogoCntr extends GetxController {
   final RxList<HourlyWeatherData> hourlyWeather = <HourlyWeatherData>[].obs;
   final RxList<SevenDayWeather> sevenDayWeather = <SevenDayWeather>[].obs;
   final Rx<DateTime> lastUpdated = DateTime.now().obs;
-  final Rx<CurrentWeatherData> currentWeather = CurrentWeatherData().obs;
+  final Rx<CurrentWeatherData> currentWeather = CurrentWeatherData(temp: '0.0').obs;
   final RxList<ItemSuperNct> yesterdayWeather = <ItemSuperNct>[].obs;
   final RxList<HourlyWeatherData> yesterdayHourlyWeather = <HourlyWeatherData>[].obs;
 
@@ -190,9 +190,6 @@ class WeatherGogoCntr extends GetxController {
         isYestdayLoading.value = false;
       });
 
-      isRainVisibleNotifier.value = false;
-      isSnowVisibleNotifier.value = false;
-
       hourlyWeather.clear();
       sevenDayWeather.clear();
       yesterdayHourlyWeather.clear();
@@ -206,6 +203,7 @@ class WeatherGogoCntr extends GetxController {
         fetchLocalNameAndMistinfo(location),
       ]);
       isLoading.value = false;
+      lo.e('최종  현재온도 : ${currentWeather.value.temp.toString()}');
       lo.g("=========================================================");
       lo.g("========================================================");
       lo.g("=========================================================");
@@ -289,6 +287,7 @@ class WeatherGogoCntr extends GetxController {
       List<ItemSuperNct> itemSuperNctList = await weatherService.getWeatherData<List<ItemSuperNct>>(location, ForecastType.superNct);
       // 1.초단기 실황 파싱처리
       CurrentWeatherData value = WeatherDataProcessor.instance.parsingSuperNct(itemSuperNctList);
+      lo.e('초단기 실황 현재온도 : ${value.temp}');
       currentWeather.update((val) {
         val?.temp = value.temp;
         // val?.rain = value.rain;
@@ -307,7 +306,7 @@ class WeatherGogoCntr extends GetxController {
     } catch (e) {
       handleError('1. 초단기 실황 조회 오류', e);
       if (fetchSuperNctreCallCnt < 3) {
-        Future.delayed(const Duration(milliseconds: 150), () {
+        Future.delayed(const Duration(milliseconds: 350), () {
           fetchSuperNct(location);
           fetchSuperNctreCallCnt++;
         });
@@ -345,7 +344,10 @@ class WeatherGogoCntr extends GetxController {
       String weatherDesc = WeatherDataProcessor.instance.combineWeatherCondition(data[0].sky.toString(), data[0].rain.toString());
       initAnimation(weatherDesc);
 
+      lo.e('초단기 예보 현재온도 : ${data[0].temp.toString()}');
+
       currentWeather.update((val) {
+        val?.temp = val.temp == '0.0' ? data[0].temp.toString() : val.temp;
         val?.description = weatherDesc;
         val?.sky = data[0].sky;
         val?.skyDesc = skyDesc;
@@ -535,7 +537,8 @@ class WeatherGogoCntr extends GetxController {
   int fetchYesterDayreCallCnt = 0;
 
   // 어제 날씨 가져오기
-  Future<void> fetchYesterDayWeather(LatLng location) async {
+  Future<void> fetchYesterDayWeather(LatLng location, {int? reCallCnt}) async {
+    reCallCnt ??= 0;
     try {
       // ==========================================================
       // 어제 날씨 가져오기 - 초단기실황조회 한시간전 정보로 구성
@@ -557,7 +560,7 @@ class WeatherGogoCntr extends GetxController {
         }
         reCallCnt++;
 
-        fetchYesterDayWeather(location);
+        fetchYesterDayWeather(location, reCallCnt: reCallCnt);
         return;
       }
       reCallCnt = 0;
@@ -567,8 +570,8 @@ class WeatherGogoCntr extends GetxController {
       yesterdayDesc.value = compareTemp == 0.0 ? '어제와 같아요' : yesterdayDesc.value;
 
       processingYesterDay(hourlyWeather, ylist);
-      lo.g(
-          '완료!! => fetchYesterDayWeather() time : ${stopwatch.elapsedMilliseconds}ms , yesterdayDesc : ${yesterdayHourlyWeather.length} hourlyWeather : ${hourlyWeather.length}');
+      // lo.g(
+      //     '완료!! => fetchYesterDayWeather() time : ${stopwatch.elapsedMilliseconds}ms , yesterdayDesc : ${yesterdayHourlyWeather.length} hourlyWeather : ${hourlyWeather.length}');
 
       fetchYesterDayreCallCnt = 0;
       // ==========================================================

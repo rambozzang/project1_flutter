@@ -141,6 +141,13 @@ class VideoMyinfoListCntr extends GetxController {
     }
   }
 
+  void getSingAfterGetData(String? singoCd) async {
+    lo.g('getSingAfterGetData() 신고 코드 : $singoCd');
+    if (singoCd == '07' || singoCd == '08') {
+      getData();
+    }
+  }
+
   // 참고 싸이트 : https://github.com/octomato/preload_page_view/issues/43
   Future<void> getMoreData(int index, int length) async {
     // index :  3 , length :  5  =>  3 > 0 true;
@@ -149,7 +156,7 @@ class VideoMyinfoListCntr extends GetxController {
 
     currentIndex.value = index;
 
-    bool isBottom = index > length - (preLoadingCount + 1);
+    bool isBottom = index > list.length - (preLoadingCount + 1);
     isBottom = length < pagesize ? false : isBottom;
     // false 이면 바로 리턴 (더이상 데이터가 없음)
     if (!isBottom) {

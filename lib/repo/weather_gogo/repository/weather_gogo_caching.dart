@@ -38,11 +38,14 @@ enum ForecastType {
 /// 날씨 데이터 캐싱을 관리하는 클래스
 class WeatherCache {
   static const String _keyPrefix = 'weather_cache_';
+
   final WeatherGogoRepo wrepo = WeatherGogoRepo();
 
   /// 날씨 데이터를 캐시에 저장
   Future<void> saveWeatherData<T>(LatLng latLng, ForecastType type, T data) async {
     try {
+      if (type == ForecastType.superNctYesterDay) {}
+
       MapAdapter changeMap = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
       final location = '${changeMap.x}_${changeMap.y}';
       // final prefs = await SharedPreferences.getInstance();
@@ -66,14 +69,43 @@ class WeatherCache {
         expiresAt: expiresAt,
       );
       ResData resData = await wrepo.saveWeatherCacheData(req);
-      lo.g('saveWeatherCacheData() resData.data : ${resData.data}');
-      // if (resData.code != '00') {
-      //   lo.g('saveWeatherCacheData() resData.data : ${resData.data}');
-      // }
-
-      // await prefs.setString(key, jsonEncode(cacheData));
+      if (resData.code != '00') {
+        lo.g('saveWeatherCacheData() resData.data : ${resData.data}');
+      }
     } catch (e) {
       lo.g('Error saving weather data to cache: $e');
+    }
+  }
+
+  /// 날씨 데이터를 캐시에 저장
+  Future<void> saveYesterDayWeatherData<T>(LatLng latLng, ForecastType type, T data) async {
+    try {
+      MapAdapter changeMap = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
+      final location = '${changeMap.x}_${changeMap.y}';
+
+      final key = _getCacheKey(location, type);
+      final cacheData1 = {
+        'data': _dataToJson(data),
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+
+      DateTime expiresAt = _calculateExpiresAt(type);
+
+      WeatherCacheReq req = WeatherCacheReq(
+        cacheKey: key,
+        forecastType: type.toString(),
+        cacheData: cacheData1.toString(),
+        contentType: 'application/json',
+        loX: changeMap.x.toString(),
+        loY: changeMap.y.toString(),
+        expiresAt: expiresAt,
+      );
+      lo.g('saveYesterDayJsonData() 호출!!!!!');
+
+      ResData resData = await wrepo.saveYesterdayWeatherCacheData(req);
+      lo.g('saveYesterDayJsonData() resData.data : ${resData.toString()}');
+    } catch (e) {
+      lo.g('saveYesterDayJsonData() Error saving weather data to cache: $e');
     }
   }
 

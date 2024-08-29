@@ -98,7 +98,7 @@ class _ServicePageState extends State<ServicePage> {
       backgroundColor: Colors.white,
       body: const CommonWebView(
         isBackBtn: false,
-        url: 'https://www.tigerbk.com/skysnap/service/',
+        url: 'https://www.skysnap.co.kr/service/',
       ),
       // body: SingleChildScrollView(
       //   physics: const BouncingScrollPhysics(),

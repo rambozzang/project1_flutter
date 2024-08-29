@@ -1,4 +1,11 @@
+import 'package:flutter/foundation.dart';
+
 class UrlConfig {
-  static String get baseURL => "https://www.tigerbk.com/api";
-  //static String get baseURL => "http://localhost:7010/api";
+  static String get baseURL {
+    if (kReleaseMode) {
+      return "https://www.tigerbk.com/api";
+    } else {
+      return "https://www.tigerbk.com/api";
+    }
+  }
 }

@@ -124,35 +124,55 @@ class _WeatherComPageState extends State<WeatherComPage> {
         ),
         child: GetBuilder<WeatherComController>(
           builder: (controller) {
+            Widget mainWidget;
             if (controller.isLoading.value) {
-              return _buildLoading(controller);
-            }
-            return SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 15),
-                  _buildNotice(),
-                  const SizedBox(height: 15),
-                  _buildHourlyChart(context),
-                  const SizedBox(height: 30),
-                  if (!controller.isLoading.value) ...[
-                    ValueListenableBuilder<bool>(
-                        valueListenable: isAdLoading2,
-                        builder: (context, value, child) {
-                          if (!value) return const SizedBox.shrink();
-                          return const BannerAdWidget(screenName: 'WeathComPage2');
-                        }),
+              mainWidget = _buildLoading(controller);
+            } else {
+              mainWidget = SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 15),
+                    _buildNotice(),
+                    const SizedBox(height: 15),
+                    _buildHourlyChart(context),
+                    const SizedBox(height: 30),
+                    if (!controller.isLoading.value) ...[
+                      ValueListenableBuilder<bool>(
+                          valueListenable: isAdLoading2,
+                          builder: (context, value, child) {
+                            if (!value) return const SizedBox.shrink();
+                            return const BannerAdWidget(screenName: 'WeathComPage2');
+                          }),
+                    ],
+                    const SizedBox(height: 30),
+                    _buildDailyChart(context),
+                    const SizedBox(height: 15),
+                    _buildWeatherProvidersTable(),
+                    const SizedBox(height: 100),
                   ],
-                  const SizedBox(height: 30),
-                  _buildDailyChart(context),
-                  const SizedBox(height: 15),
-                  _buildWeatherProvidersTable(),
-                  const SizedBox(height: 100),
-                ],
-              ),
+                ),
+              );
+            }
+
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 350),
+              child: mainWidget,
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  // child: child,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0.0, 0.01),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                );
+              },
             );
           },
         ),

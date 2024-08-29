@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:project1/repo/api/auth_dio.dart';
+import 'package:project1/repo/weather_gogo/repository/weather_gogo_caching.dart';
 import 'package:project1/repo/weather_gogo/sources/http_client.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'dart:convert' as con;
@@ -30,11 +32,27 @@ class NctAPI {
   static const _baseURL = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0';
 
   static const _getURL = '$_baseURL/getUltraSrtNcst';
+  final WeatherCache _cache = WeatherCache();
+
+  void saveYesterDayJsonData(LatLng latLng, List<dynamic> list) async {
+    try {
+      List<ItemSuperNct> itemList = [];
+      // 캐쉬에 저장
+      itemList = list.map((data) => ItemSuperNct.fromJson(data)).toList();
+
+      lo.g('saveYesterDayJsonData() -> ${itemList.length}');
+
+      await _cache.saveYesterDayWeatherData(latLng, ForecastType.superNctYesterDay, itemList);
+    } catch (e) {
+      lo.g('saveYesterDayJsonData() -> Error saving data for ${e.toString()}');
+    }
+  }
 
   // 어제 날씨 가져오기
   Future<List<dynamic>> getYesterDayJsonData(Weather weather, bool isCache) async {
     final now = DateTime.now();
     final startTime = now.minute <= 40 ? now.subtract(const Duration(hours: 24)) : now.subtract(const Duration(hours: 23));
+    LatLng latLng = LatLng(weather.nx.toDouble(), weather.ny.toDouble());
 
     List<Future<List<dynamic>>> futures = [];
 
@@ -47,6 +65,8 @@ class NctAPI {
       }
       List<List<dynamic>> results = await Future.wait(futures);
 
+      lo.g("getYesterDayJsonData() results: ${results.length}");
+
       // results 가 24개의 리스트가 아니면 나머지를 다시 요청해서 24개로 만든다.
       if (results.length <= 22) {
         results = await _fillMissingData(results, startTime, weather);
@@ -54,6 +74,21 @@ class NctAPI {
       if (results.length <= 22) {
         results = await _fillMissingData(results, startTime, weather);
       }
+      lo.g("0000");
+
+      if (results.length <= 22) {
+        throw Exception('날씨 데이터 가져오기 실패');
+      }
+      lo.g("111111111111111111111111111111111111");
+
+      // try {
+      //   // 데이터가 있는건 캐쉬에 저장
+      //   saveYesterDayJsonData(latLng, results.expand((x) => x).toList());
+      // } catch (e) {
+      //   lo.g('getYesterDayJsonData() -> Error saving data for ${e.toString()}');
+      // }
+      lo.g("2222222222222222222222");
+
       lo.g('===================== getYesterDayJsonData end  ${stopwatch.elapsedMilliseconds}ms , list : ${results.length}');
       return results.expand((x) => x).toList();
     } catch (e) {
@@ -84,6 +119,9 @@ class NctAPI {
     Map<String, dynamic> weatherJson = weather.copyWith(dateTime: dateTime).toJson();
     // 모든 값을 문자열로 변환
     Map<String, String> queryParams = weatherJson.map((key, value) => MapEntry(key, value.toString()));
+
+    LatLng latLng = LatLng(weather.nx.toDouble(), weather.ny.toDouble());
+
     final uri = Uri.parse(_getURL).replace(queryParameters: queryParams);
     // lo.g('getYesterDayJsonData() -> ${uri.toString()} ');
     try {
@@ -94,7 +132,9 @@ class NctAPI {
 
       if (response is Map<String, dynamic>) {
         if (response['response']['header']['resultCode'] == '00') {
-          return response['response']['body']['items']['item'];
+          List<dynamic> results = response['response']['body']['items']['item'] as List<dynamic>;
+
+          return results;
         }
         return [];
       }

@@ -13,7 +13,7 @@ import 'dart:math';
 class VideoAdScreenPage extends StatefulWidget {
   final int index;
 
-  const VideoAdScreenPage({Key? key, required this.index}) : super(key: key);
+  const VideoAdScreenPage({super.key, required this.index});
 
   @override
   State<VideoAdScreenPage> createState() => _VideoAdPageState();

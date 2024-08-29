@@ -351,6 +351,18 @@ class _ChatPageState extends State<ChatPage> {
     _textController.clear();
   }
 
+  void singoAfterCallBack(String? singoCd) async {
+    lo.g('singoAfterCallBack() 신고 코드 : $singoCd');
+    // leaveRoom();
+    if (singoCd == '07' || singoCd == '08') {
+      bool result = await SupabaseChatCore.instance.leaveRoom(room.id);
+      if (result) {
+        Utils.alert('대화방에서 나왔습니다.');
+        Get.back();
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
@@ -382,9 +394,9 @@ class _ChatPageState extends State<ChatPage> {
               ),
               onPressed: () => SigoPageSheet().open(
                 context,
-                '',
-                otherChatId.toString(),
-                () => {},
+                '0',
+                otherCustId.toString(),
+                callBackFunction: singoAfterCallBack,
               ),
             ),
 

@@ -20,11 +20,13 @@ class SigoPageSheet {
   Future<dynamic> open(
     BuildContext context,
     String boardId,
-    String crtCustId,
-    VoidCallback onClick,
-  ) async {
-    showModalBottomSheet(
+    String crtCustId, {
+    void Function(String?)? callBackFunction,
+  }) async {
+    return showModalBottomSheet(
       isScrollControlled: true,
+      useRootNavigator: true, // 이 부분을 true로 변경
+      isDismissible: true,
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
@@ -40,7 +42,7 @@ class SigoPageSheet {
             contextParent: context,
             boardId: boardId,
             crtCustId: crtCustId,
-            onClick: onClick,
+            callBackFunction: callBackFunction,
           ),
         );
       },
@@ -49,11 +51,11 @@ class SigoPageSheet {
 }
 
 class SigoPage extends StatefulWidget {
-  const SigoPage({super.key, required this.contextParent, required this.boardId, required this.crtCustId, required this.onClick});
+  const SigoPage({super.key, required this.contextParent, required this.boardId, required this.crtCustId, this.callBackFunction});
   final BuildContext contextParent;
   final String boardId;
   final String crtCustId;
-  final VoidCallback onClick;
+  final void Function(String)? callBackFunction;
 
   @override
   State<SigoPage> createState() => _SigoPageState();
@@ -115,47 +117,51 @@ class _SigoPageState extends State<SigoPage> {
   Future<void> saveSigo() async {
     try {
       BoardRepo repo = BoardRepo();
-
       String reason = replyController.text;
-
       String boardId = widget.boardId.toString();
-
-      // dropdownValue 07 이면 사용자신고(거절) 이므로 boardID 대신 상대방 custId를 넘긴다.
-      // boardId = dropdownValue == '07' ? widget.crtCustId : boardId;
 
       ResData res = await repo.saveSingo(boardId, dropdownValue, widget.crtCustId, reason);
       if (res.code != '00') {
-        Utils.alert('다시 시도해주세요.');
-        Navigator.pop(widget.contextParent);
+        if (mounted) {
+          Utils.alert('다시 시도해주세요.');
+        }
+        return;
       }
-      Utils.alert('신고가 완료되었습니다.');
-      // 사용자신고 및 사용자 차단 인 경우 리스트 갱신
-      if (dropdownValue == '07' || dropdownValue == '08') {
-        Get.find<VideoListCntr>().getData();
-        //  widget.onClick;
+
+      if (mounted) {
+        Utils.alert('신고가 완료되었습니다.');
+        // 사용자신고 및 사용자 차단 인 경우 리스트 갱신
+        // if (dropdownValue == '07' || dropdownValue == '08') {
+        if (widget.callBackFunction != null) {
+          widget.callBackFunction!(dropdownValue);
+        }
+        // }
       }
-      Navigator.pop(widget.contextParent);
     } catch (e) {
       Lo.g('saveReply() error : $e');
-      Utils.alert("다시 시도해주세요.");
-      Navigator.pop(widget.contextParent);
+      if (mounted) {
+        Utils.alert("다시 시도해주세요.");
+      }
+    } finally {
+      if (mounted) {
+        onClose();
+      }
     }
   }
 
-  void onClose(bool didPop) {
-    if (didPop) {
-      Lo.g('PopScope 2 didPop');
-      return;
-    } else {
-      Lo.g('PopScope 3 not didPop');
-      return;
+  void onClose() {
+    // Navigator.of(context, rootNavigator: true).pop();
+    if (mounted) {
+      Navigator.of(context).pop();
     }
   }
 
   @override
   void dispose() {
     replyController.dispose();
-
+    replyFocusNode.dispose();
+    listCtrl.close();
+    streamController.close();
     RootCntr.to.bottomBarStreamController.sink.add(true);
     super.dispose();
   }
@@ -202,7 +208,7 @@ class _SigoPageState extends State<SigoPage> {
               ),
               actions: [
                 IconButton(
-                  onPressed: () => Navigator.pop(widget.contextParent),
+                  onPressed: onClose,
                   icon: const Icon(
                     Icons.close,
                     color: Colors.white,
@@ -417,17 +423,15 @@ class _SigoPageState extends State<SigoPage> {
           top: 10,
         ),
         child: SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: CustomButton(
-            text: '신고 완료',
-            type: 'L',
-            isEnable: true,
-            onPressed: () async {
-              await saveSigo();
-            },
-          ),
-        ),
+            width: double.infinity,
+            height: 48,
+            child: CustomButton(
+                text: '신고 완료',
+                type: 'L',
+                isEnable: true,
+                onPressed: () async {
+                  await saveSigo();
+                })),
       ),
     );
   }

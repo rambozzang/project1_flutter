@@ -63,14 +63,17 @@ class VideoListCntr extends GetxController {
     update();
   }
 
-  getData() async {
+  void getData() async {
     pageNum = 0;
     searchType.value = 'TOTAL';
-
-    //  await Future.wait([
     getDataProcess();
-    // Get.find<WeatherGogoCntr>().getInitWeatherData(true),
-//    ]);
+  }
+
+  void getSingAfterGetData(String? singoCd) async {
+    lo.g('getSingAfterGetData() 신고 코드 : $singoCd');
+    if (singoCd == '07' || singoCd == '08') {
+      getData();
+    }
   }
 
   Future<void> getDataProcess() async {
@@ -129,8 +132,8 @@ class VideoListCntr extends GetxController {
     } finally {
       // 리스트가 다 구성이 끝나면 날씨 데이터 가져온다.
       // 날씨 정보가 없을때만 다시 가져온다.  - 최초시만 가져온다.
-      if (Get.find<WeatherGogoCntr>().currentWeather.value.temp == null) {
-        Future.delayed(const Duration(milliseconds: 5000), () {
+      if (Get.find<WeatherGogoCntr>().currentWeather.value.temp == '0.0') {
+        Future.delayed(const Duration(milliseconds: 3000), () {
           Get.find<WeatherGogoCntr>().getInitWeatherData(true);
         });
       }

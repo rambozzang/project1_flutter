@@ -58,7 +58,7 @@ abstract class AppPages {
       name: '/rootPage',
       page: () => const RootPage(),
       binding: RootCntrBinding(),
-      transition: Transition.native,
+      transition: Transition.fadeIn,
     ),
 
     GetPage(

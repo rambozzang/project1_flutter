@@ -15,7 +15,7 @@ class DarkCloud {
   void reset(Size screenSize) {
     x = math.Random().nextDouble() * screenSize.width;
     y = math.Random().nextDouble() * screenSize.height;
-    size = math.Random().nextDouble() * 100 + 50; // 50-150 사이의 크기
+    size = math.Random().nextDouble() * 70 + 50; // 50-150 사이의 크기
     speed = math.Random().nextDouble() * 0.5 + 0.1; // 0.1-0.6 사이의 속도
     opacity = math.Random().nextDouble() * 0.3 + 0.5; // 0.5-0.8 사이의 투명도
   }

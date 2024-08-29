@@ -405,7 +405,7 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
                                     ),
                                     Row(
                                       children: [
-                                        Text('현재온도 : ${cntr.currentWeather.value.temp!.split('.')[0]}°C',
+                                        Text('${cntr.currentWeather.value.temp!}°C',
                                             style: const TextStyle(
                                               fontSize: 14,
                                               color: Colors.black,
@@ -550,6 +550,44 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
                             Icon(Icons.info, color: Colors.black, size: 20),
                             Text(
                               '영상에 음악이 포함될 경우 저작권 과금.',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontSize: 12.0,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Gap(10),
+                      const Tooltip(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 25,
+                        ),
+                        padding: EdgeInsets.all(15),
+                        message: """
+안전하고 적절한 환경 제공을 위해 다음 콘텐츠를 엄격히 금지합니다:
+
+• 불법 콘텐츠 (저작권 침해, 사기 등)
+• 성적으로 노골적인 콘텐츠 (포르노그래피 등)
+• 폭력적 콘텐츠 (과도한 폭력, 학대 등)
+• 혐오 발언 (차별적 콘텐츠)
+
+위반 시 조치:
+1. 콘텐츠 즉시 삭제
+2. 계정 영구 정지 가능
+3. 법 집행 기관 신고 가능
+4. 민형사상 법적 조치 가능
+
+부적절한 콘텐츠 발견 시 즉시 신고 바랍니다.
+                            """,
+                        triggerMode: TooltipTriggerMode.tap,
+                        showDuration: Duration(seconds: 10),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info, color: Colors.black, size: 20),
+                            Text(
+                              '불법/성적/학대 영상 업로드 시 법적 조치',
                               style: TextStyle(
                                 color: Colors.red,
                                 fontSize: 12.0,
