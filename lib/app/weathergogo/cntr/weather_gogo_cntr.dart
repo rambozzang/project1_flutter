@@ -1,8 +1,7 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:bot_toast/bot_toast.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
@@ -57,6 +56,8 @@ class WeatherGogoCntr extends GetxController {
   final ValueNotifier<bool> isHazyVisibleNotifier = ValueNotifier<bool>(false);
   final ValueNotifier<bool> isSunnyVisibleNotifier = ValueNotifier<bool>(false);
   final ValueNotifier<bool> isDarkCloudVisibleNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> isDaySun = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> isNightSun = ValueNotifier<bool>(false);
 
   final RxList<CustagResData> areaList = <CustagResData>[].obs;
 
@@ -71,14 +72,38 @@ class WeatherGogoCntr extends GetxController {
   final WeatherService weatherService = WeatherService();
   final LocationService locationService = LocationService();
 
+  List<Color> nightColors = [
+    const Color(0xFF0c1445), // 짙은 남색
+    const Color(0xFF1c2951), // 미드나이트 블루
+    const Color(0xFF2c3e67), // 네이비 블루
+    const Color(0xFF4a5d8f), // 연한 네이비 블루/ 연한
+  ];
+  List<Color> dayColors = [
+    const Color.fromARGB(255, 43, 69, 120),
+    const Color.fromARGB(255, 83, 122, 177),
+    const Color.fromARGB(255, 51, 110, 192),
+  ];
+
+  RxList<Color> currentColors = <Color>[].obs;
+
+  late Color appbarColor;
+
   @override
   void onInit() {
     super.onInit();
+    final now = DateTime.now();
+    if ((now.hour >= 19 || now.hour < 7)) {
+      currentColors.value = nightColors;
+      appbarColor = nightColors.first;
+    } else {
+      currentColors.value = dayColors;
+      appbarColor = dayColors.first;
+    }
   }
 
   // 최초 호출 , 영상 등록시 호출
   Future<void> getInitWeatherData(bool isAllSearch) async {
-    await getWeatherDataByLatLng(currentLocation.value!.latLng, isAllSearch);
+    await getWeatherDataByLatLng(currentLocation.value.latLng, isAllSearch);
   }
 
   // app bar 에서 호출
@@ -91,8 +116,8 @@ class WeatherGogoCntr extends GetxController {
 
     // 날씨 가져오기
     positionData.value = await Geolocator.getCurrentPosition();
-    currentLocation.value!.latLng = LatLng(positionData.value!.latitude, positionData.value!.longitude);
-    await getWeatherDataByLatLng(currentLocation.value!.latLng, isAllSearch);
+    currentLocation.value.latLng = LatLng(positionData.value!.latitude, positionData.value!.longitude);
+    await getWeatherDataByLatLng(currentLocation.value.latLng, isAllSearch);
   }
 
   bool loadingCheck() {
@@ -110,7 +135,7 @@ class WeatherGogoCntr extends GetxController {
       return;
     }
     isLoading.value = true;
-    await getWeatherDataByLatLng(currentLocation.value!.latLng, isAllSearch);
+    await getWeatherDataByLatLng(currentLocation.value.latLng, isAllSearch);
   }
 
   // Auth_page.dart 에서 호출한다.
@@ -185,7 +210,7 @@ class WeatherGogoCntr extends GetxController {
       stopwatch = Stopwatch()..start();
       webViewUrl.value = '${webViewUrl.value} + ${location.longitude},${location.latitude},2780/loc=';
       // 5분후 해제
-      Timer(const Duration(minutes: 1), () {
+      Timer(const Duration(seconds: 15), () {
         isLoading.value = false;
         isYestdayLoading.value = false;
       });
@@ -201,6 +226,7 @@ class WeatherGogoCntr extends GetxController {
         fetchFct(location),
         fetchMidlandWeather(location),
         fetchLocalNameAndMistinfo(location),
+        // fetchYesterDayWeather(location)
       ]);
       isLoading.value = false;
       lo.e('최종  현재온도 : ${currentWeather.value.temp.toString()}');
@@ -212,9 +238,9 @@ class WeatherGogoCntr extends GetxController {
       // await Future.wait([
 
       // ]);
-      fetchYesterDayWeather(location).then((onValue) {
-        isYestdayLoading.value = false;
-      });
+      // fetchYesterDayWeather(location).then((onValue) {
+      //   isYestdayLoading.value = false;
+      // });
 
       lo.g('getWeatherDataByLatLng initialization time: ${stopwatch.elapsedMilliseconds}ms');
     } catch (e) {
@@ -320,6 +346,7 @@ class WeatherGogoCntr extends GetxController {
   // 1시간 단위 6시간 정보를 셋팅한다.
   Future<void> fetchSuperFct(LatLng location) async {
     try {
+      List<HourlyWeatherData> resultList = [];
       // 2.초단기 예보 가져오기
       List<ItemSuperFct> itemFctList = await weatherService.getWeatherData<List<ItemSuperFct>>(location, ForecastType.superFct);
       // 2.초단기 예보 파싱처리
@@ -357,10 +384,15 @@ class WeatherGogoCntr extends GetxController {
         val?.fcsTime = compareFcsTime(val.fcsTime, itemFctList[0].baseTime); // 발표시간
       });
 
-      hourlyWeather.addAll(data);
+      // resultList.addAll(hourlyWeather);
+      resultList.addAll(data);
+
+      // hourlyWeather.addAll(data);
       // hourlyWeather.sort((a, b) => a.date.compareTo(b.date));
       // 중복 제거 date 기준으로
-      hourlyWeather.removeWhere((a) => a != hourlyWeather.firstWhere((b) => b.date == a.date));
+      resultList.removeWhere((a) => a != resultList.firstWhere((b) => b.date == a.date));
+      hourlyWeather.addAll(resultList);
+
       // hourlyWeather 가 20개 이상이면 어제 날씨 가져오기 호출
       processingYesterDay(hourlyWeather, yesterdayHourlyWeather);
 
@@ -396,6 +428,7 @@ class WeatherGogoCntr extends GetxController {
       hWeather.sort((a, b) => a.date.compareTo(b.date));
       yHWeather.sort((a, b) => a.date.compareTo(b.date));
       var (syncedToday, syncedYesterday) = WeatherDataProcessor.instance.synchronizeWeatherData(hWeather, yHWeather);
+
       hourlyWeather.value = syncedToday.toList();
       yesterdayHourlyWeather.value = syncedYesterday.toList();
       // hourlyWeather.forEach((element) {
@@ -413,25 +446,32 @@ class WeatherGogoCntr extends GetxController {
   // 24시간 및 주간예보 3일치 셋팅
   Future<void> fetchFct(LatLng location) async {
     try {
+      List<HourlyWeatherData> resultList = [];
+
       // 2.단기 예보 예제 +3일
       List<ItemFct> itemFctList = await weatherService.getWeatherData<List<ItemFct>>(location, ForecastType.fct);
 
       // 24시간 및 주간예보 셋팅이 필요함
       List<HourlyWeatherData> data = WeatherDataProcessor.instance.processShortTermForecast(itemFctList);
 
+      // resultList.addAll(hourlyWeather);
+      resultList.addAll(data);
+
       // 5시간~ 24시간 데이터만 셋팅
-      hourlyWeather.addAll(data);
-      hourlyWeather.sort((a, b) => a.date.compareTo(b.date));
+      // hourlyWeather.addAll(data);
+      resultList.sort((a, b) => a.date.compareTo(b.date));
       // 중복 제거 date 기준으로
-      hourlyWeather.removeWhere((a) => a != hourlyWeather.firstWhere((b) => b.date == a.date));
-      hourlyWeather.value = hourlyWeather.toSet().toList();
+      resultList.removeWhere((a) => a != resultList.firstWhere((b) => b.date == a.date));
+
+      resultList = resultList.toSet().toList();
+      hourlyWeather.addAll(resultList);
 
       // hourlyWeather 가 20개 이상이면 어제 날씨 가져오기 호출
       processingYesterDay(hourlyWeather, yesterdayHourlyWeather);
 
       // 주간예보에서 3일치까지만 셋팅
       sevenDayWeather.addAll(WeatherDataProcessor.instance.processShortTermForecastToDaily(itemFctList,
-          lat: location.latitude, lon: location.longitude, cityName: currentLocation.value!.name));
+          lat: location.latitude, lon: location.longitude, cityName: currentLocation.value.name));
 
       // update();
       lo.g('완료!! => fetchFct() time : ${stopwatch.elapsedMilliseconds}ms');
@@ -446,7 +486,8 @@ class WeatherGogoCntr extends GetxController {
 
       fetchFctreCallCnt = 0;
 
-      // fetchYesterDayWeather(location);
+      isLoading.value = false;
+      fetchYesterDayWeather(location);
     } catch (e) {
       handleError('3. 단기 예보 조회 오류', e);
       if (fetchFctreCallCnt < 3) {
@@ -480,7 +521,7 @@ class WeatherGogoCntr extends GetxController {
         midTaResponse,
         lat: location.latitude,
         lon: location.longitude,
-        cityName: currentLocation.value!.name,
+        cityName: currentLocation.value.name,
       );
 
       // 데이터가 충분하지 않으면 재시도
@@ -537,14 +578,16 @@ class WeatherGogoCntr extends GetxController {
   int fetchYesterDayreCallCnt = 0;
 
   // 어제 날씨 가져오기
-  Future<void> fetchYesterDayWeather(LatLng location, {int? reCallCnt}) async {
+  Future<bool> fetchYesterDayWeather(LatLng location, {int? reCallCnt}) async {
     reCallCnt ??= 0;
     try {
       // ==========================================================
       // 어제 날씨 가져오기 - 초단기실황조회 한시간전 정보로 구성
       // ==========================================================
       yesterdayHourlyWeather.clear();
+
       YesterdayHourlyWeatherService yesterdayHourlyWeatherService = YesterdayHourlyWeatherService();
+
       List<HourlyWeatherData> ylist = await yesterdayHourlyWeatherService.getYesterdayWeather(location);
       // ylist.forEach((element) {
       //   lo.g('processingYesterDay  ylist  : ${element.toString()}');
@@ -553,16 +596,16 @@ class WeatherGogoCntr extends GetxController {
 
       ylist.sort((a, b) => a.date.compareTo(b.date));
       // 다시 호출한다.
-      if (ylist.length < 22) {
-        handleError('5.어제 날씨 가져오기 조회 오류', '갯수 : ${ylist.length}');
-        if (reCallCnt == 2) {
-          return;
-        }
-        reCallCnt++;
+      // if (ylist.length < 22) {
+      //   handleError('5.어제 날씨 가져오기 조회 오류', '갯수 : ${ylist.length}');
+      //   if (reCallCnt == 2) {
+      //     return;
+      //   }
+      //   reCallCnt++;
 
-        fetchYesterDayWeather(location, reCallCnt: reCallCnt);
-        return;
-      }
+      //   fetchYesterDayWeather(location, reCallCnt: reCallCnt);
+      //   return;
+      // }
       reCallCnt = 0;
 
       double compareTemp = yesterdayHourlyWeatherService.compareTempData(ylist);
@@ -583,6 +626,9 @@ class WeatherGogoCntr extends GetxController {
           fetchYesterDayreCallCnt++;
         });
       }
+    } finally {
+      isYestdayLoading.value = false;
+      return true;
     }
   }
 
@@ -599,7 +645,7 @@ class WeatherGogoCntr extends GetxController {
   double getMaxTemp(RxList<SevenDayWeather> list) {
     return list
             .where((e) => e.afternoon.maxTemp != null)
-            .map((e) => double.tryParse(e!.afternoon!.maxTemp!))
+            .map((e) => double.tryParse(e.afternoon.maxTemp!))
             .where((temp) => temp != null)
             .reduce((value, element) => value! > element! ? value : element) ??
         40.0;
@@ -641,10 +687,20 @@ class WeatherGogoCntr extends GetxController {
     isHazyVisibleNotifier.value = false;
     isCloudVisibleNotifier.value = false;
     isDarkCloudVisibleNotifier.value = false;
+    if ((DateTime.now().hour >= 19 || DateTime.now().hour < 7)) {
+      isNightSun.value = true;
+    } else {
+      isDaySun.value = true;
+    }
 
+    // 맑음
+    if (weatherDesc.contains('맑음')) {
+      isSunnyVisibleNotifier.value = true;
+    }
     // 비, 소나기
     if (weatherDesc.contains('비') || weatherDesc.contains('소나기')) {
       isRainVisibleNotifier.value = true;
+      isDaySun.value = false;
     }
     if (weatherDesc.contains('빗')) {
       isRainDropVisibleNotifier.value = true;
@@ -652,13 +708,34 @@ class WeatherGogoCntr extends GetxController {
     }
     if (weatherDesc.contains('눈')) {
       isSnowVisibleNotifier.value = true;
+      isDaySun.value = false;
     }
     if (weatherDesc.contains('흐림')) {
       isHazyVisibleNotifier.value = true;
       isDarkCloudVisibleNotifier.value = true;
+      isDaySun.value = false;
     }
     if (weatherDesc.contains('구름')) {
       isCloudVisibleNotifier.value = true;
+    }
+
+    // isRainVisibleNotifier.value = true;
+    // isRainDropVisibleNotifier.value = true;
+    // isSnowVisibleNotifier.value = true;
+    // isHazyVisibleNotifier.value = true;
+    // isCloudVisibleNotifier.value = true;
+    // isDarkCloudVisibleNotifier.value = true;
+  }
+
+  void changeBgColor() {
+    if (currentColors == nightColors) {
+      currentColors.value = dayColors;
+      appbarColor = dayColors.first;
+      isDaySun.value = true;
+    } else {
+      currentColors.value = nightColors;
+      appbarColor = nightColors.first;
+      isDaySun.value = false;
     }
   }
 }

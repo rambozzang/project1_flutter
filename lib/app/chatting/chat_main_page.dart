@@ -291,10 +291,6 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
               child: StreamBuilder<List<types.Room>>(
                 stream: SupabaseChatCore.instance.rooms(orderByUpdatedAt: false),
                 builder: (context, snapshot) {
-                  lo.g('StreamBuilder state: ${snapshot.connectionState}');
-                  lo.g('StreamBuilder data: ${snapshot.data}');
-                  lo.g('StreamBuilder error: ${snapshot.error}');
-
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return Center(child: Utils.progressbar());
                   }
@@ -316,7 +312,7 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
                   if (rooms.isEmpty) {
                     return Container(
                       alignment: Alignment.center,
-                      margin: const EdgeInsets.only(bottom: 200),
+                      // margin: const EdgeInsets.only(bottom: 200),
                       child: const Text('대화방이 없습니다.'),
                     );
                   }

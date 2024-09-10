@@ -1,5 +1,5 @@
 import 'package:get/get.dart';
-import 'package:project1/app/%08join/join_page.dart';
+import 'package:project1/app/join/join_page.dart';
 import 'package:project1/app/auth/agree_page.dart';
 import 'package:project1/app/auth/auth_page.dart';
 import 'package:project1/app/chatting/repo/suba_test_page.dart';
@@ -8,7 +8,6 @@ import 'package:project1/app/myinfo/block_page.dart';
 import 'package:project1/app/myinfo/myinfo_page.dart';
 import 'package:project1/app/setting/alram_setting_page.dart';
 import 'package:project1/app/setting/maketing_page.dart';
-import 'package:project1/app/favoriteArea/cntr/favo_area_cntr.dart';
 import 'package:project1/app/favoriteArea/favorite_area_page.dart';
 import 'package:project1/app/test/weather_compare_page.dart';
 import 'package:project1/app/videomylist/video_myinfo_list_page.dart';
@@ -150,8 +149,7 @@ abstract class AppPages {
     GetPage(
       name: '/OtherInfoPage/:custId',
       page: () => const OtherInfoPage(),
-
-      // transition: Transition.downToUp,
+      transition: Transition.rightToLeftWithFade,
     ),
     GetPage(
       name: '/TestDioPage',
@@ -192,8 +190,6 @@ abstract class AppPages {
     GetPage(
       name: '/FavoriteAreaPage',
       page: () => const FavoriteAreaPage(),
-      binding: FavoAreaBinding(),
-      // transition: Transition.downToUp,
     ),
 
     GetPage(

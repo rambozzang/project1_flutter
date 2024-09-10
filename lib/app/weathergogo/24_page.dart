@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart' as intl;
 
 import 'package:lottie/lottie.dart';
-import 'package:project1/app/weatherCom/models/weather_data.dart';
 import 'package:project1/app/weathergogo/cntr/data/daily_weather_data.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
@@ -37,7 +36,7 @@ class _T24PageState extends State<T24Page> {
                 child: Text('7일 예보', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
               ),
               DailyWeatherChart(weatherData: Get.find<WeatherGogoCntr>().sevenDayWeather),
-              SizedBox(
+              const SizedBox(
                 height: 200,
               )
             ],
@@ -124,9 +123,9 @@ class DailyWeatherChart extends StatelessWidget {
     final weathIcon = index > 1
         ? WeatherDataProcessor.instance.getWeatherIconForMidtermForecast(data.skyDesc.toString())
         : WeatherDataProcessor.instance.getWeatherGogoImage(data.sky.toString(), data.rain.toString());
-    String desc = index > 1
-        ? data.skyDesc.toString()
-        : WeatherDataProcessor.instance.combineWeatherCondition(data.sky.toString(), data.rain.toString());
+    // String desc = index > 1
+    //     ? data.skyDesc.toString()
+    //     : WeatherDataProcessor.instance.combineWeatherCondition(data.sky.toString(), data.rain.toString());
     return Column(
       children: [
         Text(period, style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.white)),
@@ -180,14 +179,14 @@ class TemperatureGraphPainter extends CustomPainter {
     final barRRect = RRect.fromRectAndRadius(rect, const Radius.circular(5));
 
     // 그라데이션 정의
-    final gradient = LinearGradient(
+    const gradient = LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
       tileMode: TileMode.mirror,
       colors: [
-        Colors.blue[900]!,
-        Colors.blue[400]!,
-        Colors.blue[200]!,
+        Colors.orange,
+        Colors.orange,
+        Colors.yellow,
       ],
     );
 
@@ -200,9 +199,9 @@ class TemperatureGraphPainter extends CustomPainter {
 
     // 테두리 그리기
     final borderPaint = Paint()
-      ..color = const Color.fromARGB(255, 14, 88, 149)
+      ..color = Colors.blue
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.7;
+      ..strokeWidth = 1.0;
 
     canvas.drawRRect(barRRect, borderPaint);
     // 최저/최고 온도 텍스트

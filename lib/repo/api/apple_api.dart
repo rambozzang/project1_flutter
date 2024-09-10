@@ -27,7 +27,6 @@ class AppleApi with SecureStorage {
           AppleIDAuthorizationScopes.fullName,
         ],
       );
-
       // email null 이고 identityToken 이 있는 경우
       if (credential.email == null && credential.identityToken != null) {
         List<String> jwt = credential.identityToken?.split('.') ?? [];
@@ -45,13 +44,19 @@ class AppleApi with SecureStorage {
         uid = credential.userIdentifier;
         displayName = '${credential.givenName ?? ''} ${credential.familyName ?? ''}'.trim();
       }
+      displayName = (displayName == null || displayName == '') ? email2!.split('@')[0] : displayName;
 
-      displayName = displayName == null || displayName == '' ? email2!.split('@')[0] : displayName;
-
-      if (credential.userIdentifier == null) {
-        resData.code = '99';
-        resData.msg = 'Apple의 사용자 정보가 없습니다.';
-        return resData;
+      // if (credential.userIdentifier == null) {
+      //   resData.code = '99';
+      //   resData.msg = 'Apple의 사용자 정보가 없습니다.';
+      //   return resData;
+      // }
+      if (email2 == null || email2.isEmpty) {
+        email2 = '$uid@privaterelay.appleid.com';
+      }
+      // 6. displayName이 비어있는 경우 대체 이름 사용
+      if (displayName == null || displayName == '') {
+        displayName = 'Apple User';
       }
 
       // 2. Apple 로그인 정보로 회원가입/로그인 처리
@@ -67,18 +72,12 @@ class AppleApi with SecureStorage {
       CustRepo repo = CustRepo();
       ResData res = await repo.createAppleCust(appleJoinData);
       if (res.code != "00") {
-        // lo.g('res: ${res.toString()}');
-        // Utils.alert(res.msg.toString());
-        // return false;
         resData.code = '99';
         resData.msg = res.msg.toString();
         return resData;
       }
       // 채팅서버 회원가입
       appleJoinData.chatId = await chatSignUp(appleJoinData);
-
-      // ResData signUpProcRes = await AuthCntr.to.signUpProc(appleJoinData.uid.toString());
-      // return signUpProcRes;
       resData.data = appleJoinData.uid.toString();
       return resData;
     } catch (e) {

@@ -123,7 +123,7 @@ class WeatherComController extends GetxController {
           temperature: element.temp,
           humidity: 0.0,
           rainProbability: double.parse(element.rainPo.toString()) * 0.01,
-          source: WeatherDataProcessor.instance.getFinalWeatherIcon(element.sky.toString(), element.rain.toString()),
+          source: WeatherDataProcessor.instance.getFinalWeatherIcon(element.date.hour, element.sky.toString(), element.rain.toString()),
         ));
         // 기상청데이터기준으로 시간대별 타이틀 생성
         // hourlyTimes.add(DateFormat('H', 'ko').format(element.date));

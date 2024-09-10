@@ -31,35 +31,6 @@ class _SevenDayPageState extends State<SevenDayPage> {
           const SizedBox(height: 20.0),
           _buildHeader(),
           const SizedBox(height: 15.0),
-          // Stack(
-          //   children: [
-          //     DailyWeatherChart(weatherData: Get.find<WeatherGogoCntr>().sevenDayWeather),
-          //     Positioned(
-          //         top: 0,
-          //         right: 0,
-          //         bottom: 0,
-          //         child: IconButton(
-          //           icon: const Icon(
-          //             Icons.arrow_forward_ios,
-          //             color: Colors.white38,
-          //             size: 20,
-          //           ),
-          //           onPressed: () {},
-          //         )),
-          //   ],
-          // ),
-          // GetBuilder<WeatherGogoCntr>(
-          //   builder: (cntr) {
-          //     if (cntr.sevenDayWeather.length < 6) {
-          //       return const Center(
-          //         child: Padding(
-          //             padding: EdgeInsets.all(30),
-          //             child: Text(
-          //               '데이터 가져오는중..',
-          //               style: TextStyle(color: Colors.white, fontSize: 13),
-          //             )),
-          //       );
-          //     }
           Obx(
             () {
               return Column(
@@ -72,7 +43,6 @@ class _SevenDayPageState extends State<SevenDayPage> {
               );
             },
           ),
-
           const SizedBox(height: 25.0),
         ],
       ),
@@ -272,6 +242,8 @@ class _SevenDayPageState extends State<SevenDayPage> {
         ? weatherInfo.skyDesc.toString()
         : WeatherDataProcessor.instance.combineWeatherCondition(weatherInfo.sky.toString(), weatherInfo.rain.toString());
 
+    desc = desc == 'null' ? '' : desc;
+
     return Expanded(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -289,7 +261,7 @@ class _SevenDayPageState extends State<SevenDayPage> {
             children: [
               Icon(CupertinoIcons.umbrella_fill, size: 13, color: int.parse(weatherInfo.rainPo ?? '0') >= 50 ? Colors.blue : Colors.white),
               const Gap(3),
-              Text('${weatherInfo.rainPo}%',
+              Text('${weatherInfo.rainPo ?? 0}%',
                   style: TextStyle(
                       color: int.parse(weatherInfo.rainPo ?? '0') >= 50 ? Colors.blue : Colors.white,
                       fontSize: 13,

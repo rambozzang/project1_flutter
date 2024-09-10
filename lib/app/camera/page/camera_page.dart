@@ -285,7 +285,7 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                             child: IconButton(
                               onPressed: () async {
                                 try {
-                                  screenshotBytes = await takeCameraScreenshot(key: screenshotKey);
+                                  // screenshotBytes = await takeCameraScreenshot(key: screenshotKey);
                                   if (context.mounted) cameraBloc.add(CameraSwitch());
                                 } catch (e) {
                                   //screenshot error

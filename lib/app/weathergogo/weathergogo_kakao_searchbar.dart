@@ -12,7 +12,7 @@ import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 
 class WeathergogoKakaoSearchPage extends StatefulWidget {
-  const WeathergogoKakaoSearchPage({Key? key}) : super(key: key);
+  const WeathergogoKakaoSearchPage({super.key});
 
   @override
   State<WeathergogoKakaoSearchPage> createState() => _WeathergogoKakaoSearchPageState();

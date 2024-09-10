@@ -157,7 +157,7 @@ class _Twenty4PageState extends State<Twenty4Page> {
 
   Widget _buildContinuousChart() {
     return Obx(() {
-      if (controller.hourlyWeather.isEmpty) return const SizedBox.shrink();
+      if (controller.hourlyWeather.isEmpty && controller.yesterdayHourlyWeather.isEmpty) return const SizedBox.shrink();
       return SizedBox(
         height: chartHeight,
         child: CustomPaint(
@@ -175,16 +175,18 @@ class _Twenty4PageState extends State<Twenty4Page> {
                         ))
                     .toList()
                 : [],
-            'Today': Get.find<WeatherGogoCntr>()
-                .hourlyWeather
-                .map((e) => WeatherData(
-                      time: e.date,
-                      temperature: e.temp,
-                      humidity: 0,
-                      rainProbability: double.parse((e.rainPo ?? 0.0).toString()), // 실제 데이터로 대체 필요
-                      source: 'Today',
-                    ))
-                .toList(),
+            'Today': Get.find<WeatherGogoCntr>().hourlyWeather.isNotEmpty
+                ? Get.find<WeatherGogoCntr>()
+                    .hourlyWeather
+                    .map((e) => WeatherData(
+                          time: e.date,
+                          temperature: e.temp,
+                          humidity: 0,
+                          rainProbability: double.parse((e.rainPo ?? 0.0).toString()), // 실제 데이터로 대체 필요
+                          source: 'Today',
+                        ))
+                    .toList()
+                : [],
           }, hourlyItemWidth, chartHeight, chartHeight, circleRadius),
         ),
       );
@@ -224,7 +226,7 @@ class _Twenty4PageState extends State<Twenty4Page> {
           padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 1.0),
           decoration: BoxDecoration(
             // color: index % 2 == 0 ? const Color.fromARGB(255, 31, 46, 75) : Colors.transparent,
-            color: index % 2 == 0 ? Colors.blueGrey.withOpacity(0.15) : Colors.transparent,
+            color: index % 2 == 0 ? Colors.blue.withOpacity(0.15) : Colors.transparent,
             border: data.date.hour == 0 ? Border(left: BorderSide(color: Colors.white.withOpacity(0.5))) : null,
           ),
           child: Column(
@@ -240,7 +242,7 @@ class _Twenty4PageState extends State<Twenty4Page> {
                 height: weatherIconSize,
                 width: weatherIconSize,
                 child: Lottie.asset(
-                  WeatherDataProcessor.instance.getFinalWeatherIcon(data.sky.toString(), data.rain.toString()),
+                  WeatherDataProcessor.instance.getFinalWeatherIcon(data.date.hour, data.sky.toString(), data.rain.toString()),
                   fit: BoxFit.cover,
                 ),
               ),
@@ -299,7 +301,7 @@ class _Twenty4PageState extends State<Twenty4Page> {
                 ? Colors.white
                 : isWarmer
                     ? Colors.amber
-                    : Colors.green,
+                    : const Color.fromARGB(255, 22, 220, 29),
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -359,6 +361,12 @@ class ChartPainterHour extends CustomPainter {
           if (data.temperature > maxTemp) maxTemp = data.temperature;
         }
       }
+    }
+
+    // 온도 범위가 유효한지 확인
+    if (!minTemp.isFinite || !maxTemp.isFinite || minTemp == maxTemp) {
+      print('Invalid temperature range: $minTemp - $maxTemp');
+      return; // 유효하지 않은 경우 그리기 중단
     }
 
     // 온도 범위를 더 넓게 만듭니다.

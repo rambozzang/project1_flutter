@@ -116,9 +116,13 @@ class _WeatherComPageState extends State<WeatherComPage> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF0D1B2A),
-              Color(0xFF1B263B),
-              Color(0xFF2A3B50),
+              // Color(0xFF0D1B2A),
+              // Color(0xFF1B263B),
+              // Color(0xFF2A3B50),
+
+              Color.fromARGB(255, 16, 31, 47),
+              Color.fromARGB(255, 38, 53, 80),
+              Color.fromARGB(255, 57, 77, 101),
             ],
           ),
         ),
@@ -948,9 +952,13 @@ Color getColorForSource(String source) {
     // case 'AccuWeather':
     //   return Colors.indigo;
     case 'Yesterday':
-      return Color.fromARGB(255, 223, 214, 42);
+      return const Color.fromARGB(255, 232, 232, 2);
+      ;
+    // return const Color.fromARGB(255, 223, 214, 42);
     case 'Today':
-      return Colors.blue[700]!;
+      return Colors.deepOrangeAccent;
+    // return const Color.fromARGB(255, 255, 191, 0);
+    // return Colors.blue[700]!;
     default:
       return Colors.white;
   }

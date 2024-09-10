@@ -86,3 +86,17 @@ flutter pub run flutter_native_splash:create
 
 # 구글스토어 목업 탬플릿
 https://studio.app-mockup.com/
+
+# 밤과 낮 애니메이션
+https://github.com/abuanwar072/Flutter-Day-and-Night-Mood-Animation?tab=readme-ov-file
+
+#앱스토어 이미지 등록
+https://www.figma.com/design/J1jTkl6TLwbkXPDi6bzbrx/App-Store-Screenshot-Template-(Community)?node-id=6-2358&node-type=FRAME&t=yaTUNn8kjfP1xE2n-0
+
+https://www.figma.com/community/plugin/1305891870034170272/imockup
+
+
+20240910 수정사항
+ - 사용자정보 조회 스와이프 방향 수정
+ - 알람 리스트 와 대화하기 리스트 데이터없음 표시 수정
+  

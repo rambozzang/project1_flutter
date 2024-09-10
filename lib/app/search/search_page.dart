@@ -232,7 +232,7 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
             // buildCommon('추천 검색어', recoWordlist),
             // const Gap(20),
             // buildWeatherInfoImg(),
-            buildTodayWeather(),
+            // buildTodayWeather(),
             // buildAddmob(),
             // ValueListenableBuilder 만들어서 이미지 가져오기
             ValueListenableBuilder<String>(

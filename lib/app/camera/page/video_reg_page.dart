@@ -7,14 +7,21 @@ import 'package:gap/gap.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:hashtagable_v3/hashtagable.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/weather/models/geocode.dart';
+import 'package:project1/app/weathergogo/services/location_service.dart';
+import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/repo/board/data/board_save_data.dart';
 import 'package:project1/repo/board/data/board_save_main_data.dart';
 import 'package:project1/repo/board/data/board_save_weather_data.dart';
 import 'package:project1/repo/weather/data/current_weather.dart';
 import 'package:project1/app/weathergogo/cntr/data/current_weather_data.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
+import 'package:project1/repo/weather/data/weather_view_data.dart';
+import 'package:project1/repo/weather_gogo/models/response/super_fct/super_fct_model.dart';
+import 'package:project1/repo/weather_gogo/repository/weather_gogo_caching.dart';
+import 'package:project1/repo/weather_gogo/repository/weather_gogo_repo.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
@@ -39,12 +46,13 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
   // late Subscription _subscription;
   // late MediaInfo? pickedFile;
 
-  final ValueNotifier<CurrentWeather?> currentWeather = ValueNotifier<CurrentWeather?>(null);
+  // ValueNotifier<CurrentWeather?> currentWeather = ValueNotifier<CurrentWeather?>(null);
 
-  final ValueNotifier<String?> localName = ValueNotifier<String?>(null);
-  final ValueNotifier<TotalData?> totalData = ValueNotifier<TotalData?>(null);
+  ValueNotifier<String?> localName = ValueNotifier<String?>(null);
+  ValueNotifier<TotalData?> totalData = ValueNotifier<TotalData?>(null);
 
   final ValueNotifier<bool> isUploading = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> isWeathering = ValueNotifier<bool>(false);
 
   late Position? position;
 
@@ -61,6 +69,12 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
   late Animation<double> _scaleAnimation;
 
   final ValueNotifier<bool> soundOff = ValueNotifier<bool>(false);
+
+  final WeatherService weatherService = WeatherService();
+
+  ValueNotifier<CurrentWeatherData?> currentWeather = ValueNotifier<CurrentWeatherData?>(null);
+  ValueNotifier<GeocodeData?> geocodeData = ValueNotifier<GeocodeData?>(null);
+  ValueNotifier<MistViewData?> mistData = ValueNotifier<MistViewData?>(null);
 
   @override
   void initState() {
@@ -81,6 +95,7 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
 
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       initializeVideo();
+      initData();
       getDate();
     });
   }
@@ -133,19 +148,71 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
     }
   }
 
+  int retryCount = 3;
+
+  void initData() {
+    geocodeData.value = Get.find<WeatherGogoCntr>().currentLocation.value;
+    mistData.value = Get.find<WeatherGogoCntr>().mistData.value;
+    currentWeather.value = Get.find<WeatherGogoCntr>().currentWeather.value;
+  }
+
   Future<void> getDate() async {
     try {
-      // Utils.alert("최신 날씨 다시 가져와");
-      // await Get.find<WeatherGogoCntr>().getInitWeatherData(false);
+      // 현재위치와 지명 가져오기
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 5),
+      );
+      LatLng location = LatLng(position.latitude, position.longitude);
+
+      LocationService locationService = LocationService();
+      final (onValue1, onValue2) = await locationService.getLocalName(location);
+      if (onValue1 == null || onValue2 == null) {
+        return;
+      }
+
+      geocodeData.value = GeocodeData(name: onValue2, latLng: location);
+
+      mistData.value = (await locationService.getMistData(onValue1))!;
+
+      WeatherGogoRepo repo = WeatherGogoRepo();
+      List<ItemSuperFct> itemFctList = await repo.getSuperFctListJson(location);
+
+      String fcstDate = itemFctList.first.fcstDate!;
+      String fcstTime = itemFctList.first.fcstTime!;
+      CurrentWeatherData _currentWeatherData = CurrentWeatherData();
+      itemFctList.forEach((item) {
+        if (item.fcstDate.toString() == fcstDate && item.fcstTime.toString() == fcstTime) {
+          if (item?.category == 'T1H') {
+            _currentWeatherData.temp = item.fcstValue!;
+          } else if (item.category == 'PTY') {
+            _currentWeatherData.rain = item.fcstValue!;
+          } else if (item.category == 'SKY') {
+            _currentWeatherData.sky = item.fcstValue!;
+          } else if (item.category == 'REH') {
+            _currentWeatherData.humidity = item.fcstValue!;
+          } else if (item.category == 'WSD') {
+            _currentWeatherData.speed = item.fcstValue!;
+          }
+        }
+      });
+      _currentWeatherData.description =
+          WeatherDataProcessor.instance.combineWeatherCondition(_currentWeatherData.sky.toString(), _currentWeatherData.rain.toString());
+
+      currentWeather.value = _currentWeatherData;
+      lo.g('currentWeather : ${currentWeather.value}');
+      isWeathering.value = false;
+      // 현재날씨 가져오기
     } catch (e) {
       lo.g("getDate() error : $e");
+      isWeathering.value = false;
     }
   }
 
   // 파일 업로드
   Future<void> upload() async {
-    if (Get.find<WeatherGogoCntr>().isLoading.value) {
-      Utils.alert("현지 위치정보 수신중입니다. 수신완료 후 다시 시도해주세요.");
+    if (isWeathering.value) {
+      Utils.alert("현지 위치정보 수신중입니다. 잠시 후 다시 시도해주세요.");
       return;
     }
 
@@ -162,36 +229,33 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
       boardSaveMainData.typeDtCd = 'V';
       boardSaveMainData.hideYn = hideYn;
 
-      CurrentWeatherData? currentWeather = Get.find<WeatherGogoCntr>().currentWeather.value;
-      GeocodeData geocodeData = Get.find<WeatherGogoCntr>().currentLocation.value!;
-
       BoardSaveWeatherData boardSaveWeatherData = BoardSaveWeatherData();
       boardSaveWeatherData.boardId = 0;
 
       boardSaveWeatherData.city = '';
-      boardSaveWeatherData.country = ''!;
+      boardSaveWeatherData.country = '';
 
-      boardSaveWeatherData.currentTemp = currentWeather!.temp;
+      boardSaveWeatherData.currentTemp = currentWeather.value!.temp;
       // boardSaveWeatherData.feelsTemp = currentWeather!.feels_like?.toStringAsFixed(1);
-      boardSaveWeatherData.humidity = currentWeather.humidity.toString();
+      boardSaveWeatherData.humidity = currentWeather.value?.humidity.toString();
       // boardSaveWeatherData.icon = currentWeather.weather![0].icon;
-      boardSaveWeatherData.lat = geocodeData.latLng.latitude.toString();
-      boardSaveWeatherData.lon = geocodeData.latLng.longitude.toString();
-      boardSaveWeatherData.speed = currentWeather.speed.toString();
-      boardSaveWeatherData.sky = currentWeather.sky.toString();
-      boardSaveWeatherData.rain = currentWeather.rain.toString();
+      boardSaveWeatherData.lat = geocodeData.value?.latLng.latitude.toString();
+      boardSaveWeatherData.lon = geocodeData.value?.latLng.longitude.toString();
+      boardSaveWeatherData.speed = currentWeather.value?.speed.toString();
+      boardSaveWeatherData.sky = currentWeather.value?.sky.toString();
+      boardSaveWeatherData.rain = currentWeather.value?.rain.toString();
 
       boardSaveWeatherData.tempMax = ''; // currentWeather.main!.temp_max?.toStringAsFixed(1);
       boardSaveWeatherData.tempMin = ''; // currentWeather.main!.temp_min?.toStringAsFixed(1);
 
-      boardSaveWeatherData.location = Get.find<WeatherGogoCntr>().currentLocation.value!.name;
+      boardSaveWeatherData.location = Get.find<WeatherGogoCntr>().currentLocation.value.name;
       // boardSaveWeatherData.thumbnailPath = res2.secureUrl;
       // boardSaveWeatherData.videoPath = res.secureUrl;
-      boardSaveWeatherData.weatherInfo = currentWeather.description;
+      boardSaveWeatherData.weatherInfo = currentWeather.value?.description;
       boardSaveData.boardMastInVo = boardSaveMainData;
       boardSaveData.boardWeatherVo = boardSaveWeatherData;
-      boardSaveWeatherData.mist10 = Get.find<WeatherGogoCntr>().mistData.value!.mist10Grade.toString();
-      boardSaveWeatherData.mist25 = Get.find<WeatherGogoCntr>().mistData.value!.mist25Grade.toString();
+      boardSaveWeatherData.mist10 = Get.find<WeatherGogoCntr>().mistData.value.mist10Grade.toString();
+      boardSaveWeatherData.mist25 = Get.find<WeatherGogoCntr>().mistData.value.mist25Grade.toString();
       Lo.g("Root upload() videoFilePath : ${widget.videoFile.path}");
       if (hideYn == "Y") {
         Utils.alert('숨기기 상태로 등록중 입니다!');
@@ -209,6 +273,8 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
   }
 
   void cancle() {
+    FocusScope.of(context).unfocus();
+    sleep(const Duration(milliseconds: 500));
     if (isUploading.value == true) {
       return;
     }
@@ -329,138 +395,7 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
                                   ),
                                 ),
                           const Gap(5),
-                          Expanded(
-                            child: GetBuilder<WeatherGogoCntr>(builder: (cntr) {
-                              if (cntr.isLoading.value) {
-                                return Container(padding: const EdgeInsets.only(top: 40), child: Utils.progressbar());
-                              }
-                              return Container(
-                                alignment: Alignment.topLeft,
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        SizedBox(
-                                          width: 25,
-                                          child: CircleAvatar(
-                                            radius: 16,
-                                            backgroundColor: Colors.grey[100],
-                                            child: ClipOval(
-                                              child: Get.find<AuthCntr>().resLoginData.value.profilePath == ''
-                                                  ? const Icon(Icons.person, size: 23, color: Colors.black87)
-                                                  : CachedNetworkImage(
-                                                      cacheKey: Get.find<AuthCntr>().resLoginData.value.custId.toString(),
-                                                      imageUrl: Get.find<AuthCntr>()
-                                                          .resLoginData
-                                                          .value
-                                                          .profilePath
-                                                          .toString(), //  'https://picsum.photos/200/300',
-                                                      width: 23,
-                                                      height: 23,
-                                                      fit: BoxFit.cover,
-                                                    ),
-                                            ),
-                                          ),
-                                        ),
-                                        const Gap(5),
-                                        Flexible(
-                                          child: Text(Get.find<AuthCntr>().resLoginData.value.nickNm.toString(),
-                                              overflow: TextOverflow.clip,
-                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)),
-                                        ),
-                                      ],
-                                    ),
-                                    const Divider(),
-                                    const SizedBox(height: 10),
-                                    Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                      child: Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Container(
-                                              padding: const EdgeInsets.all(4),
-                                              decoration: BoxDecoration(
-                                                color: Colors.green.withOpacity(0.9),
-                                                borderRadius: BorderRadius.circular(5),
-                                              ),
-                                              child: const Icon(Icons.location_on, color: Colors.white, size: 15)),
-                                          const SizedBox(width: 5),
-                                          Flexible(
-                                            child: Text(cntr.currentLocation.value!.name,
-                                                overflow: TextOverflow.clip,
-                                                style: const TextStyle(fontSize: 13, color: Colors.black, fontWeight: FontWeight.bold)),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Row(
-                                      children: [
-                                        Text('${cntr.currentWeather.value.temp!}°C',
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.black,
-                                            )),
-                                        // CachedNetworkImage(
-                                        //   cacheKey: cntr.currentWeather.value?.weather![0].icon ?? '10n',
-                                        //   width: 50,
-                                        //   height: 50,
-                                        //   imageUrl:
-                                        //       'http://openweathermap.org/img/wn/${WeatherGogoCntr.oneCallCurrentWeather.value?.weather![0].icon ?? '10n'}@2x.png',
-                                        //   imageBuilder: (context, imageProvider) => Container(
-                                        //     decoration: BoxDecoration(
-                                        //       image: DecorationImage(
-                                        //           image: imageProvider,
-                                        //           fit: BoxFit.cover,
-                                        //           colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn)),
-                                        //     ),
-                                        //   ),
-                                        //   placeholder: (context, url) =>
-                                        //       const CircularProgressIndicator(strokeWidth: 1, color: Colors.white),
-                                        //   errorWidget: (context, url, error) => const Icon(Icons.error),
-                                        // ),
-                                      ],
-                                    ),
-                                    Text(
-                                      cntr.currentWeather.value.description ?? '-',
-                                      style: const TextStyle(fontSize: 14, color: Colors.black),
-                                      overflow: TextOverflow.clip,
-                                    ),
-                                    const Gap(15),
-                                    cntr.mistData.value!.mist10Grade.toString() == 'null'
-                                        ? const Text('미세먼지 정보가 없습니다.', style: TextStyle(fontSize: 13, color: Colors.black87))
-                                        : RichText(
-                                            text: TextSpan(
-                                              text: '미세',
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                color: Colors.black,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                              children: <TextSpan>[
-                                                buildTextMist(cntr.mistData.value!.mist10Grade.toString()),
-                                                const TextSpan(
-                                                  text: ' 초미세',
-                                                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: Colors.black),
-                                                ),
-                                                buildTextMist(cntr.mistData.value!.mist25Grade.toString()),
-                                              ],
-                                            ),
-                                          ),
-                                  ],
-                                ),
-                              );
-                            }),
-                          ),
+                          buildWeatherInfo(),
                         ],
                       ),
                       // const Gap(20),
@@ -650,22 +585,170 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
               ),
               const Spacer(),
               ValueListenableBuilder<bool>(
-                valueListenable: isUploading,
-                builder: (context, value, child) {
-                  return Obx(() => CustomButton(
-                      text: !value ? '등록하기' : '처리중..',
-                      type: 'L',
-                      isEnable: Get.find<WeatherGogoCntr>().isLoading.value == false,
-                      widthValue: 120,
-                      heightValue: 50,
-                      onPressed: () => !value ? upload() : Utils.alert('처리중입니다..')));
-                },
-              ),
+                  valueListenable: isWeathering,
+                  builder: (context, isWeatherValue, child) {
+                    return ValueListenableBuilder<bool>(
+                      valueListenable: isUploading,
+                      builder: (context, value, child) {
+                        return CustomButton(
+                            text: !value ? '등록하기' : '처리중..',
+                            type: 'L',
+                            isEnable: !isWeatherValue,
+                            widthValue: 120,
+                            heightValue: 50,
+                            onPressed: () => !value ? upload() : Utils.alert('처리중입니다..'));
+                      },
+                    );
+                  }),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Widget buildWeatherInfo() {
+    return Expanded(
+        child: Container(
+      alignment: Alignment.topLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              SizedBox(
+                width: 25,
+                child: CircleAvatar(
+                  radius: 16,
+                  backgroundColor: Colors.grey[100],
+                  child: ClipOval(
+                    child: Get.find<AuthCntr>().resLoginData.value.profilePath == ''
+                        ? const Icon(Icons.person, size: 23, color: Colors.black87)
+                        : CachedNetworkImage(
+                            cacheKey: Get.find<AuthCntr>().resLoginData.value.custId.toString(),
+                            imageUrl: Get.find<AuthCntr>().resLoginData.value.profilePath.toString(), //  'https://picsum.photos/200/300',
+                            width: 23,
+                            height: 23,
+                            fit: BoxFit.cover,
+                          ),
+                  ),
+                ),
+              ),
+              const Gap(5),
+              Flexible(
+                child: Text(Get.find<AuthCntr>().resLoginData.value.nickNm.toString(),
+                    overflow: TextOverflow.clip, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)),
+              ),
+            ],
+          ),
+          const Divider(),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: const Icon(Icons.location_on, color: Colors.white, size: 15)),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: ValueListenableBuilder<GeocodeData?>(
+                      valueListenable: geocodeData,
+                      builder: (context, value, child) {
+                        if (value == null) {
+                          return const SizedBox.shrink();
+                        }
+                        return Text(value.name,
+                            overflow: TextOverflow.clip,
+                            style: const TextStyle(fontSize: 13, color: Colors.black, fontWeight: FontWeight.bold));
+                      }),
+                ),
+              ],
+            ),
+          ),
+          const Gap(15),
+          ValueListenableBuilder<CurrentWeatherData?>(
+              valueListenable: currentWeather,
+              builder: (context, value, child) {
+                if (value == null) {
+                  return const SizedBox.shrink();
+                }
+                return Row(
+                  children: [
+                    Text(
+                      '${value.temp}°C',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Gap(10),
+                    // Text(
+                    //   '습도:${value.humidity}%',
+                    //   style: const TextStyle(
+                    //     fontSize: 15,
+                    //     color: Colors.black,
+                    //   ),
+                    // ),
+                  ],
+                );
+              }),
+          ValueListenableBuilder<CurrentWeatherData?>(
+              valueListenable: currentWeather,
+              builder: (context, value, child) {
+                if (value == null) {
+                  return const SizedBox.shrink();
+                }
+                return Text(
+                  value.description ?? '-',
+                  style: const TextStyle(fontSize: 14, color: Colors.black),
+                  overflow: TextOverflow.clip,
+                );
+              }),
+          const Gap(15),
+          ValueListenableBuilder<MistViewData?>(
+              valueListenable: mistData,
+              builder: (context, value, child) {
+                if (value == null) {
+                  return const SizedBox.shrink();
+                }
+                return RichText(
+                  text: TextSpan(
+                    text: '미세',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.black,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    children: <TextSpan>[
+                      buildTextMist(value.mist10Grade.toString()),
+                      const TextSpan(
+                        text: ' 초미세',
+                        style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: Colors.black),
+                      ),
+                      buildTextMist(value!.mist25Grade.toString()),
+                    ],
+                  ),
+                );
+              }),
+        ],
+      ),
+    ));
   }
 
   String formatMilliseconds(int milliseconds) {

@@ -174,23 +174,6 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
           title: const Text('알람'),
           centerTitle: false,
           actions: [
-            // IconButton(
-            //   onPressed: () {
-            //     // SectionStreamChat 페이지로 이동
-
-            //     Navigator.of(context).push(
-            //       MaterialPageRoute(
-            //         fullscreenDialog: true,
-            //         builder: (context) => SectionStreamChat(),
-            //       ),
-            //     );
-            //   },
-            //   icon: const Icon(Icons.refresh_outlined),
-            // ),
-            // IconButton(
-            //   onPressed: () => aa(),
-            //   icon: const Icon(Icons.chat_bubble_outline),
-            // ),
             IconButton(
               onPressed: () => tabController.index == 0 ? getDataInit() : chatMainPageKey.currentState?.initSupaBaseSession(),
               icon: const Icon(Icons.refresh_outlined),
@@ -210,7 +193,6 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
                 // 3가지 갯수 가져오기
               },
               child: NestedScrollView(
-                // controller: mainScrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
                 headerSliverBuilder: (context, innerBoxIsScrolled) {
                   return [
@@ -269,10 +251,6 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
         ChatMainApp(
           key: chatMainPageKey,
         )
-        // TextButton(
-        //   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ChatMainApp())),
-        //   child: const Text('채팅'),
-        // )
       ]),
     );
   }
@@ -295,7 +273,7 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
                 return const SizedBox(width: double.infinity, child: Center(child: BannerAdWidget(screenName: 'AlramPage')));
               }),
           // 공통 스트림 빌더
-          Utils.commonStreamList<AlramResData>(listCtrl, buildList, getDataInit),
+          Utils.commonStreamList<AlramResData>(listCtrl, buildList, getDataInit, noDataWidget: noDataWidget()),
           ValueListenableBuilder<bool>(
               valueListenable: isMoreLoading,
               builder: (context, val, snapshot) {
@@ -311,6 +289,22 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
         ]),
       ),
     );
+  }
+
+  Widget noDataWidget() {
+    return Center(
+        child: Container(
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 200),
+      child: const Text(
+        '조회된 데이터가 없습니다.',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    ));
   }
 
   Widget buildList(List<AlramResData> list) {

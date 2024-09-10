@@ -275,7 +275,7 @@ abstract class Utils {
                   children: [
                     Text(
                       title.toString(),
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.black,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -285,7 +285,7 @@ abstract class Utils {
                       const Gap(5),
                       Text(
                         subtitle.toString(),
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.black,
                           fontSize: 14,
                           fontWeight: FontWeight.w400,
@@ -509,7 +509,7 @@ abstract class Utils {
     // );
     return Center(
         child: LoadingAnimationWidget.fourRotatingDots(
-      color: color ?? const Color.fromARGB(255, 141, 9, 18), // const Color.fromARGB(255, 173, 32, 79),
+      color: color ?? const Color.fromARGB(255, 178, 76, 83), // const Color.fromARGB(255, 173, 32, 79),
       size: size ?? 40,
     ));
   }
@@ -574,7 +574,7 @@ abstract class Utils {
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text(title.toString(), style: TextStyle(fontSize: 16, color: Colors.white)),
+                child: Text(title.toString(), style: const TextStyle(fontSize: 16, color: Colors.white)),
               ),
               if (subtitle != null) ...[
                 Padding(

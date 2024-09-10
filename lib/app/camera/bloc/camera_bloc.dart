@@ -64,6 +64,8 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     try {
       await _checkPermissionAndInitializeCamera(); // checking and asking for camera permission and initializing camera
       emit(CameraReady(isRecordingVideo: false));
+      // 20240830 bk 추가
+      await _cameraController?.prepareForVideoRecording();
     } catch (e) {
       emit(CameraError(error: e == CameraErrorType.permission ? CameraErrorType.permission : CameraErrorType.other));
     }
@@ -80,8 +82,9 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   void _onCameraRecordingStart(CameraRecordingStart event, Emitter<CameraState> emit) async {
     if (!isRecording()) {
       try {
-        emit(CameraReady(isRecordingVideo: true));
-        await _startRecording();
+        await _startRecording().then((onValue) {
+          emit(CameraReady(isRecordingVideo: true));
+        });
       } catch (e) {
         await _reInitialize();
         emit(CameraReady(isRecordingVideo: false));

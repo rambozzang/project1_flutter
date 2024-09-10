@@ -8,6 +8,7 @@ import 'package:hashtagable_v3/hashtagable.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_update_data.dart';
 import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_button.dart';
 
@@ -78,9 +79,6 @@ class _VideoManagePageState extends State<VideoManagePage> {
   }
 
   Future<void> save() async {
-    // 게시물 숨김 여부 저장
-    print('isChecked.value: ${isHide.value}');
-
     try {
       BoardRepo repo = BoardRepo();
       BoardUpdateData boardUpdateData = BoardUpdateData();
@@ -91,16 +89,24 @@ class _VideoManagePageState extends State<VideoManagePage> {
           boardUpdateData.delYn = 'Y';
           try {
             ResData res = await repo.updateBoard(boardUpdateData);
+            lo.g('res ${res.toString()}');
             if (res.code == '00') {
               Utils.alert('삭제되었습니다.');
-              Navigator.pop(context);
+              if (mounted) {
+                // 여기서 mounted 체크
+                Navigator.pop(context);
+              }
             } else {
               Utils.alert('삭제 중 에러가 발생했습니다.${res.msg}');
             }
           } catch (e) {
+            lo.g('삭제 중 에러 ${e.toString()}');
             Utils.alert('삭제 중 에러가 발생했습니다.');
           }
-          Navigator.pop(context);
+          if (mounted) {
+            // 여기서도 mounted 체크
+            Navigator.pop(context);
+          }
           // 삭제 Api 호출
         }, backgroundReturn: () {});
         Navigator.pop(context);

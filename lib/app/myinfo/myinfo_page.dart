@@ -10,6 +10,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:image_cropper/image_cropper.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/weather/widgets/customShimmer.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
@@ -43,7 +44,7 @@ class MyPage extends StatefulWidget {
   State<MyPage> createState() => _MyPageState();
 }
 
-class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
+class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final ValueNotifier<List<String>> urls = ValueNotifier<List<String>>([]);
 
   @override
@@ -91,10 +92,13 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
 
   FocusNode textFocus = FocusNode();
 
+  bool _needToCheckPermission = false;
+
   @override
   void initState() {
     super.initState();
     fetchAllData();
+
     textFocus.addListener(() {
       if (textFocus.hasFocus) {
         RootCntr.to.bottomBarStreamController.sink.add(false);
@@ -221,91 +225,229 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     }
   }
 
+  // //이미지를 가져오는 함수
+  // Future getImage(ImageSource imageSource) async {
+  //   isLoading.value = true;
+
+  //   PermissionStatus status = await Permission.photos.request();
+  //   lo.g('status : $status');
+
+  //   try {
+  //     //pickedFile에 ImagePicker로 가져온 이미지가 담긴다.
+  //     final XFile? pickedFile = await picker.pickImage(source: imageSource);
+  //     lo.g('pickedFile :  $pickedFile');
+  //     if (pickedFile != null) {
+  //       _image = XFile(pickedFile.path); //가져온 이미지를 _image에 저장
+
+  //       CroppedFile? croppedFile = await ImageCropper().cropImage(
+  //         sourcePath: pickedFile.path,
+  //         compressFormat: ImageCompressFormat.jpg,
+  //         compressQuality: 80,
+  //         uiSettings: [
+  //           AndroidUiSettings(
+  //             toolbarTitle: '사진 편집기',
+  //             toolbarColor: const Color(0xFF262B49),
+  //             toolbarWidgetColor: Colors.white,
+  //             initAspectRatio: CropAspectRatioPreset.original,
+  //             lockAspectRatio: false,
+  //             aspectRatioPresets: [
+  //               CropAspectRatioPreset.square,
+  //               CropAspectRatioPreset.ratio3x2,
+  //               CropAspectRatioPreset.original,
+  //               CropAspectRatioPreset.ratio4x3,
+  //               CropAspectRatioPreset.ratio16x9
+  //             ],
+  //           ),
+  //           IOSUiSettings(
+  //             title: '사진 편집기',
+  //             aspectRatioPresets: [
+  //               CropAspectRatioPreset.square,
+  //               CropAspectRatioPreset.ratio3x2,
+  //               CropAspectRatioPreset.original,
+  //               CropAspectRatioPreset.ratio4x3,
+  //               CropAspectRatioPreset.ratio16x9
+  //             ],
+  //           ),
+  //           WebUiSettings(
+  //             context: context,
+  //           ),
+  //         ],
+  //       );
+
+  //       if (croppedFile != null) {
+  //         _image = XFile(croppedFile.path);
+  //       }
+
+  //       // File aa = await CompressAndGetFile(croppedFile!.path);
+
+  //       File aa = File(croppedFile!.path);
+
+  //       // 1. 파일 업로드
+  //       final String resthumbnail = await uploadImage(aa);
+
+  //       AuthCntr.to.resLoginData.value.profilePath = resthumbnail;
+
+  //       CustRepo repo = CustRepo();
+  //       ResData res = await repo.modiProfilePath(AuthCntr.to.resLoginData.value.custId.toString(), resthumbnail);
+  //       if (res.code != '00') {
+  //         Utils.alert(res.msg.toString());
+  //         isLoading.value = false;
+  //         return;
+  //       }
+  //       isLoading.value = false;
+  //       getCountData();
+
+  //       // chatting 서버 이미지도 변경한다.
+  //       ChatRepo chatRepo = ChatRepo();
+  //       ChatUpdateData chatUpdateData = ChatUpdateData();
+  //       chatUpdateData.firstName = AuthCntr.to.resLoginData.value.nickNm;
+  //       chatUpdateData.uid = AuthCntr.to.resLoginData.value.chatId.toString();
+  //       chatUpdateData.imageUrl = resthumbnail;
+  //       chatRepo.updateUserino(chatUpdateData);
+
+  //       Utils.alert('프로필 사진이 변경되었습니다.');
+  //     } else {
+  //       isLoading.value = false;
+  //     }
+  //   } catch (e) {
+  //     Utils.alert(e.toString());
+  //     isLoading.value = false;
+  //   }
+  // }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (state == AppLifecycleState.resumed && _needToCheckPermission) {
+      _needToCheckPermission = false;
+      PermissionStatus permissionStatus = await Permission.photos.status;
+      if (permissionStatus.isGranted) {
+        getImage(ImageSource.gallery); // 권한이 허용되면 다시 이미지 선택 시도
+      }
+    }
+  }
+
   //이미지를 가져오는 함수
   Future getImage(ImageSource imageSource) async {
     isLoading.value = true;
 
     try {
-      //pickedFile에 ImagePicker로 가져온 이미지가 담긴다.
-      final XFile? pickedFile = await picker.pickImage(source: imageSource);
-      lo.g('pickedFile :  $pickedFile');
-      if (pickedFile != null) {
-        _image = XFile(pickedFile.path); //가져온 이미지를 _image에 저장
+      // 권한 요청
+      PermissionStatus status = await Permission.photos.request();
 
-        CroppedFile? croppedFile = await ImageCropper().cropImage(
-          sourcePath: pickedFile.path,
-          compressFormat: ImageCompressFormat.jpg,
-          compressQuality: 80,
-          uiSettings: [
-            AndroidUiSettings(
-              toolbarTitle: '사진 편집기',
-              toolbarColor: const Color(0xFF262B49),
-              toolbarWidgetColor: Colors.white,
-              initAspectRatio: CropAspectRatioPreset.original,
-              lockAspectRatio: false,
-              aspectRatioPresets: [
-                CropAspectRatioPreset.square,
-                CropAspectRatioPreset.ratio3x2,
-                CropAspectRatioPreset.original,
-                CropAspectRatioPreset.ratio4x3,
-                CropAspectRatioPreset.ratio16x9
-              ],
-            ),
-            IOSUiSettings(
-              title: '사진 편집기',
-              aspectRatioPresets: [
-                CropAspectRatioPreset.square,
-                CropAspectRatioPreset.ratio3x2,
-                CropAspectRatioPreset.original,
-                CropAspectRatioPreset.ratio4x3,
-                CropAspectRatioPreset.ratio16x9
-              ],
-            ),
-            WebUiSettings(
-              context: context,
-            ),
-          ],
-        );
+      lo.g('status : $status');
+      lo.g('status : ${status.isGranted}');
 
-        if (croppedFile != null) {
-          _image = XFile(croppedFile.path);
-        }
-
-        // File aa = await CompressAndGetFile(croppedFile!.path);
-
-        File aa = File(croppedFile!.path);
-
-        // 1. 파일 업로드
-        final String resthumbnail = await uploadImage(aa);
-
-        AuthCntr.to.resLoginData.value.profilePath = resthumbnail;
-
-        CustRepo repo = CustRepo();
-        ResData res = await repo.modiProfilePath(AuthCntr.to.resLoginData.value.custId.toString(), resthumbnail);
-        if (res.code != '00') {
-          Utils.alert(res.msg.toString());
+      if (status.isGranted) {
+        // 권한이 허용된 경우
+        final XFile? pickedFile = await picker.pickImage(source: imageSource);
+        if (pickedFile != null) {
+          _processImage(pickedFile);
+        } else {
           isLoading.value = false;
-          return;
         }
-        isLoading.value = false;
-        getCountData();
-
-        // chatting 서버 이미지도 변경한다.
-        ChatRepo chatRepo = ChatRepo();
-        ChatUpdateData chatUpdateData = ChatUpdateData();
-        chatUpdateData.firstName = AuthCntr.to.resLoginData.value.nickNm;
-        chatUpdateData.uid = AuthCntr.to.resLoginData.value.chatId.toString();
-        chatUpdateData.imageUrl = resthumbnail;
-        chatRepo.updateUserino(chatUpdateData);
-
-        Utils.alert('프로필 사진이 변경되었습니다.');
       } else {
-        isLoading.value = false;
+        // 권한이 거부된 경우
+        bool openSettings = await showDialog(
+              context: context,
+              builder: (BuildContext context) => AlertDialog(
+                title: const Text('권한이 필요합니다'),
+                content: const Text('사진을 선택하기 위해 갤러리 접근 권한이 필요합니다. 설정에서 권한을 허용해주세요.'),
+                actions: <Widget>[
+                  TextButton(
+                    child: const Text('취소'),
+                    onPressed: () => Navigator.of(context).pop(false),
+                  ),
+                  TextButton(
+                    child: const Text('설정으로 이동'),
+                    onPressed: () => Navigator.of(context).pop(true),
+                  ),
+                ],
+              ),
+            ) ??
+            false;
+
+        if (openSettings) {
+          _needToCheckPermission = true;
+          await openAppSettings();
+          // 설정에서 돌아온 후 다시 권한 체크
+        }
       }
     } catch (e) {
-      // Utils.alert(e.toString());
+      Utils.alert(e.toString());
+    } finally {
       isLoading.value = false;
     }
+  }
+
+  Future<void> _processImage(XFile pickedFile) async {
+    isLoading.value = true;
+    _image = XFile(pickedFile.path);
+
+    CroppedFile? croppedFile = await ImageCropper().cropImage(
+      sourcePath: pickedFile.path,
+      compressFormat: ImageCompressFormat.jpg,
+      compressQuality: 80,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: '사진 편집기',
+          toolbarColor: const Color(0xFF262B49),
+          toolbarWidgetColor: Colors.white,
+          initAspectRatio: CropAspectRatioPreset.original,
+          lockAspectRatio: false,
+          aspectRatioPresets: [
+            CropAspectRatioPreset.square,
+            CropAspectRatioPreset.ratio3x2,
+            CropAspectRatioPreset.original,
+            CropAspectRatioPreset.ratio4x3,
+            CropAspectRatioPreset.ratio16x9
+          ],
+        ),
+        IOSUiSettings(
+          title: '사진 편집기',
+          aspectRatioPresets: [
+            CropAspectRatioPreset.square,
+            CropAspectRatioPreset.ratio3x2,
+            CropAspectRatioPreset.original,
+            CropAspectRatioPreset.ratio4x3,
+            CropAspectRatioPreset.ratio16x9
+          ],
+        ),
+        WebUiSettings(
+          context: context,
+        ),
+      ],
+    );
+
+    if (croppedFile != null) {
+      _image = XFile(croppedFile.path);
+    }
+
+    File aa = File(croppedFile!.path);
+
+    // 1. 파일 업로드
+    final String resthumbnail = await uploadImage(aa);
+
+    AuthCntr.to.resLoginData.value.profilePath = resthumbnail;
+
+    CustRepo repo = CustRepo();
+    ResData res = await repo.modiProfilePath(AuthCntr.to.resLoginData.value.custId.toString(), resthumbnail);
+    if (res.code != '00') {
+      Utils.alert(res.msg.toString());
+      isLoading.value = false;
+      return;
+    }
+    isLoading.value = false;
+    getCountData();
+
+    // chatting 서버 이미지도 변경한다.
+    ChatRepo chatRepo = ChatRepo();
+    ChatUpdateData chatUpdateData = ChatUpdateData();
+    chatUpdateData.firstName = AuthCntr.to.resLoginData.value.nickNm;
+    chatUpdateData.uid = AuthCntr.to.resLoginData.value.chatId.toString();
+    chatUpdateData.imageUrl = resthumbnail;
+    chatRepo.updateUserino(chatUpdateData);
+
+    Utils.alert('프로필 사진이 변경되었습니다.');
   }
 
   // 이미지 서버에 저장
@@ -385,11 +527,11 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
       data.tagNm = tagNm;
 
       ResData res = await repo.saveTag(data);
+
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         return;
       }
-
       //   getTag();
     } catch (e) {
       Utils.alert(e.toString());
@@ -1117,63 +1259,72 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                   decoration: BoxDecoration(
                     color: Colors.grey[300],
                     borderRadius: BorderRadius.circular(10.0),
-                    image: DecorationImage(
-                      image: CachedNetworkImageProvider(list[index].thumbnailPath!),
-                      fit: BoxFit.cover,
-                    ),
                   ),
-                  child: Stack(
-                    children: [
-                      Align(
-                        alignment: Alignment.bottomRight,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 5),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.favorite,
-                                    color: Colors.white,
-                                    size: 17,
-                                  ),
-                                  const Gap(5),
-                                  Text(
-                                    list[index].likeCnt.toString(),
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10.0),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        CachedNetworkImage(
+                          imageUrl: list[index].thumbnailPath!,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => const Center(
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
                             ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 5),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.play_arrow_outlined,
-                                    color: Colors.white,
-                                    size: 17,
-                                  ),
-                                  const Gap(5),
-                                  Text(
-                                    list[index].likeCnt.toString(),
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                          ),
+                          errorWidget: (context, url, error) => const Icon(Icons.error),
                         ),
-                      ),
-                      list[index].hideYn == 'Y'
-                          ? const Positioned(
-                              top: 10,
-                              left: 10,
-                              child: Icon(Icons.lock, color: Colors.red, size: 20),
-                            )
-                          : const SizedBox.shrink(),
-                    ],
+                        Align(
+                          alignment: Alignment.bottomRight,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 5),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.favorite,
+                                      color: Colors.white,
+                                      size: 17,
+                                    ),
+                                    const Gap(5),
+                                    Text(
+                                      list[index].likeCnt.toString(),
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 5),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.play_arrow_outlined,
+                                      color: Colors.white,
+                                      size: 17,
+                                    ),
+                                    const Gap(5),
+                                    Text(
+                                      list[index].likeCnt.toString(),
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (list[index].hideYn == 'Y')
+                          const Positioned(
+                            top: 10,
+                            left: 10,
+                            child: Icon(Icons.lock, color: Colors.red, size: 20),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),

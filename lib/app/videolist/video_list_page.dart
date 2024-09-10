@@ -83,16 +83,19 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
 
   // 전체 하면을 차지하면서 이미지를 보여주는 위젯
   Widget buildLoading() {
-    return Hero(
-      tag: 'bg1',
-      child: SizedBox(
-        width: double.infinity,
-        child: Lottie.asset(
-          'assets/login/bg1.json',
-          fit: BoxFit.cover,
-        ),
-      ),
+    return Center(
+      child: Utils.progressbar(),
     );
+    // return Hero(
+    //   tag: 'bg1',
+    //   child: SizedBox(
+    //     width: double.infinity,
+    //     child: Lottie.asset(
+    //       'assets/login/bg1.json',
+    //       fit: BoxFit.cover,
+    //     ),
+    //   ),
+    // );
     // return SizedBox.expand(
     //   child: Container(
     //     decoration: const BoxDecoration(
@@ -121,25 +124,25 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
       resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFF262B49),
       extendBody: true,
-      body: RefreshIndicator(
-        onRefresh: () async {
-          Get.find<VideoListCntr>().pageNum = 0;
-          Get.find<VideoListCntr>().getData();
-        },
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: Utils.commonStreamList<BoardWeatherListData>(
-                  Get.find<VideoListCntr>().videoListCntr, buildVideoBody, Get.find<VideoListCntr>().getData,
-                  loadingWidget: buildLoading()),
-            ),
-            buildLocalName(),
-            buildButton(),
-            // 검색하기
-            buildSeachBtn(),
-          ],
-        ),
+      // body: RefreshIndicator(
+      //   onRefresh: () async {
+      //     Get.find<VideoListCntr>().pageNum = 0;
+      //     Get.find<VideoListCntr>().getData();
+      //   },
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Utils.commonStreamList<BoardWeatherListData>(
+                Get.find<VideoListCntr>().videoListCntr, buildVideoBody, Get.find<VideoListCntr>().getData,
+                loadingWidget: buildLoading()),
+          ),
+          buildLocalName(),
+          buildButton(),
+          // 검색하기
+          buildSeachBtn(),
+        ],
       ),
+      //   ),
     );
   }
 

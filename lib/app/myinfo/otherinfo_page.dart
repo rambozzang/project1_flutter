@@ -424,8 +424,8 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                               ),
                             ),
                             listColors: const [
-                              const Color(0xFFFF9900),
-                              const Color(0xFFFF9900),
+                              Color(0xFFFF9900),
+                              Color(0xFFFF9900),
                             ],
                           ),
                         );

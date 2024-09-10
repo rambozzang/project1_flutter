@@ -41,7 +41,7 @@ class VideoMyinfoListCntr extends GetxController {
 
   var isloading = true.obs;
 
-  int preLoadingCount = 4;
+  int preLoadingCount = 3;
   @override
   void onInit() {
     super.onInit();
@@ -64,7 +64,7 @@ class VideoMyinfoListCntr extends GetxController {
       if (datatype == 'ONE') {
         resListData = await boardRepo.getBoardByBoardId(boardId);
         if (resListData.code != '00') {
-          Utils.alert(resListData.msg.toString());
+          Utils.alert('해당 게시물은 존재하지 않습니다.');
           return;
         }
         boarIdData = BoardWeatherListData.fromMap(resListData.data);
@@ -91,7 +91,7 @@ class VideoMyinfoListCntr extends GetxController {
       }
 
       if (resListData.code != '00') {
-        Utils.alert(resListData.msg.toString());
+        Utils.alert('해당 게시물은 존재하지 않습니다.');
         return;
       }
 

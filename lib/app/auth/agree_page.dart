@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
-import 'package:project1/app/auth/permission_page.dart';
+import 'package:project1/app/auth/PermissionHandler.dart';
 import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -93,10 +95,12 @@ class _AgreePageState extends State<AgreePage> with WidgetsBindingObserver {
   }
 
   Future<bool> requestLocationPermission() async {
-    PermissionHandler handler = PermissionHandler();
-    bool locationPermissionGranted = await handler.completed();
+    LocationPermission locationPermission = await Geolocator.checkPermission();
+
+    bool locationPermissionGranted = locationPermission == LocationPermission.always || locationPermission == LocationPermission.whileInUse;
 
     if (!locationPermissionGranted) {
+      _needToCheckPermission = true;
       bool? openSettings = await showDialog<bool>(
         context: context,
         barrierDismissible: false,
@@ -113,21 +117,26 @@ class _AgreePageState extends State<AgreePage> with WidgetsBindingObserver {
           );
         },
       );
+      lo.e('openSettings 1: $openSettings');
 
       if (openSettings == true) {
         _needToCheckPermission = true;
         openAppSettings();
         return false; // 설정 화면으로 이동했으므로 false 반환
       }
+      lo.e('openSettings 2 : $openSettings');
     }
-
+    lo.e('openSettings 3 : $locationPermissionGranted');
     return locationPermissionGranted;
   }
 
   Future<void> _checkLocationPermission() async {
-    PermissionHandler handler = PermissionHandler();
-    bool locationPermissionGranted = await handler.completed();
-    if (locationPermissionGranted) {
+    // PermissionHandler handler = PermissionHandler();
+    // bool locationPermissionGranted = await handler.completed();
+
+    LocationPermission locationPermission = await Geolocator.checkPermission();
+
+    if (locationPermission == LocationPermission.always || locationPermission == LocationPermission.whileInUse) {
       _proceedWithSignUp();
     } else {
       _showRetryDialog();
@@ -187,7 +196,12 @@ class _AgreePageState extends State<AgreePage> with WidgetsBindingObserver {
   }
 
   Future<void> completed() async {
-    bool locationPermissionGranted = await requestLocationPermission();
+    // bool locationPermissionGranted = await requestLocationPermission();
+    _needToCheckPermission = true;
+    PermissionHandler handler = PermissionHandler();
+
+    bool locationPermissionGranted = await handler.completed();
+
     if (locationPermissionGranted) {
       await _proceedWithSignUp();
     }
@@ -212,9 +226,21 @@ class _AgreePageState extends State<AgreePage> with WidgetsBindingObserver {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'SkySnap 서비스',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    Stack(
+                      children: [
+                        Positioned(
+                          bottom: 5,
+                          child: Container(
+                            height: 10,
+                            width: 250,
+                            color: const Color.fromARGB(255, 105, 144, 74).withOpacity(0.5),
+                          ),
+                        ),
+                        const Text(
+                          'SkySnap 서비스',
+                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 10),
                     const Text(
@@ -231,7 +257,12 @@ class _AgreePageState extends State<AgreePage> with WidgetsBindingObserver {
                             child: Container(
                               padding: const EdgeInsets.all(15),
                               decoration: BoxDecoration(
-                                color: Colors.indigo[100],
+                                // color: Colors.indigo[100],
+                                gradient: const LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomRight,
+                                    // colors: [Color.fromARGB(255, 29, 33, 56), Color.fromARGB(255, 45, 52, 91)],
+                                    colors: [Color.fromARGB(255, 59, 114, 197), Color.fromARGB(255, 117, 158, 219)]),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(
@@ -239,12 +270,12 @@ class _AgreePageState extends State<AgreePage> with WidgetsBindingObserver {
                                 children: [
                                   Icon(
                                     allChecked ? Icons.check_box : Icons.check_box_outline_blank,
-                                    color: Colors.black,
+                                    color: Colors.white,
                                   ),
                                   const SizedBox(width: 10),
                                   const Text(
                                     '전체동의',
-                                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
                                   ),
                                 ],
                               ),

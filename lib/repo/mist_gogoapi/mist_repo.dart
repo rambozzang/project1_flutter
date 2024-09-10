@@ -21,6 +21,7 @@ import 'package:project1/repo/api/auth_dio.dart';
 class MistRepo {
   String endPoint = 'http://apis.data.go.kr/B552584/ArpltnStatsSvc';
   String apiKey = 'CeGmiV26lUPH9guq1Lca6UA25Al%2FaZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur%2Bt2iPaL%2FLtEQdZebg%3D%3D';
+
   //Decoding :  CeGmiV26lUPH9guq1Lca6UA25Al/aZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur+t2iPaL/LtEQdZebg==
 
   Future<Response?> getMistData(String stationNm) async {

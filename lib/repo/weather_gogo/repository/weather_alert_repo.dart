@@ -20,7 +20,7 @@ import 'package:project1/utils/log_utils.dart';
 class WeatherAlertAPI {
   final String baseUrl = 'http://apis.data.go.kr/1360000/WthrWrnInfoService';
   final String serviceKey = 'CeGmiV26lUPH9guq1Lca6UA25Al/aZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur+t2iPaL/LtEQdZebg==';
-
+// _key = 'CeGmiV26lUPH9guq1Lca6UA25Al/aZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur+t2iPaL/LtEQdZebg==';
   Future<List<WeatherAlert>> getWeatherAlerts() async {
     final url = Uri.parse('$baseUrl/getWthrWrnList'
         '?serviceKey=$serviceKey'

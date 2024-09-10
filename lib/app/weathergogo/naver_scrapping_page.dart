@@ -1,176 +1,105 @@
+import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:html/parser.dart' as parser;
-import 'package:project1/app/webview/common_webview.dart';
-import 'package:project1/utils/log_utils.dart';
 
-class NaverScrappingPage extends StatefulWidget {
-  const NaverScrappingPage({Key? key}) : super(key: key);
+class WeatherCrawler {
+  static Future<List<Map<String, dynamic>>> crawlWeatherForecast() async {
+    final Completer<List<Map<String, dynamic>>> completer = Completer();
 
-  @override
-  State<NaverScrappingPage> createState() => _NaverScrappingPageState();
-}
-
-class _NaverScrappingPageState extends State<NaverScrappingPage> with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
-
-  List<NewsItem> news = [];
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    loadNews();
-  }
-
-  Future<void> loadNews() async {
-    setState(() {
-      isLoading = true;
-    });
-    try {
-      news = await scrapeNews();
-    } catch (e) {
-      lo.g("뉴스 스크래핑 중 오류 발생: $e");
-    }
-    setState(() {
-      isLoading = false;
-    });
-  }
-
-  Future<List<NewsItem>> scrapeNews() async {
-    const url = 'https://weather.naver.com/today/09440121?cpName=KMA';
-    try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'User-Agent':
-              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-          'Referer': 'https://weather.naver.com/',
-          'Accept': 'application/json',
-          'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-        },
-      );
-
-      lo.g("Response status: ${response.statusCode}");
-      lo.g("Response body: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        final newsList = jsonData['newsList'] as List<dynamic>? ?? [];
-
-        lo.g("Found ${newsList.length} news items");
-
-        return newsList.map((item) {
-          return NewsItem(
-            title: item['title'] ?? '',
-            imageUrl: item['imageUrl'] ?? '',
-            source: item['officeNameKorean'] ?? '',
-            time: item['datetime'] ?? '',
-            link: item['linkUrl'] ?? '',
-            isVideo: item['isVideo'] ?? false,
-          );
-        }).toList();
-      } else {
-        throw Exception('Failed to load news. Status code: ${response.statusCode}');
-      }
-    } catch (e) {
-      lo.e("네이버 뉴스 API 호출 오류: $e");
-      return [];
-    }
-  }
-
-  // Helper function to get the minimum of two integers
-  int min(int a, int b) {
-    return (a < b) ? a : b;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('네이버 날씨 뉴스'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: loadNews,
-          ),
-        ],
+    final headlessWebView = HeadlessInAppWebView(
+      initialUrlRequest: URLRequest(url: WebUri("https://weather.naver.com/")),
+      initialSettings: InAppWebViewSettings(
+        javaScriptEnabled: true,
       ),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : news.isEmpty
-              ? Center(child: Text('뉴스를 불러올 수 없습니다.'))
-              : ListView.builder(
-                  itemCount: news.length,
-                  itemBuilder: (context, index) {
-                    final item = news[index];
-                    return NewsItemTile(item: item);
-                  },
-                ),
+      onLoadStop: (controller, url) async {
+        await Future.delayed(Duration(seconds: 5)); // 페이지 로드 후 추가 대기 시간
+        final result = await controller.evaluateJavascript(source: _extractForecastsScript);
+
+        if (result != null) {
+          try {
+            final forecasts = List<Map<String, dynamic>>.from(jsonDecode(result));
+            completer.complete(forecasts);
+          } catch (e) {
+            completer.completeError('데이터 파싱 실패: $e');
+          }
+        } else {
+          completer.completeError('데이터 추출 실패');
+        }
+
+        // await headlessWebView.dispose();
+      },
     );
-  }
-}
 
-class NewsItemTile extends StatelessWidget {
-  final NewsItem item;
-
-  const NewsItemTile({Key? key, required this.item}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: item.imageUrl.isNotEmpty
-          ? Stack(
-              children: [
-                Image.network(
-                  item.imageUrl,
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Icon(Icons.error, size: 100),
-                ),
-                if (item.isVideo)
-                  Positioned(
-                    right: 5,
-                    bottom: 5,
-                    child: Icon(Icons.play_circle_outline, color: Colors.white),
-                  ),
-              ],
-            )
-          : null,
-      title: Text(item.title),
-      subtitle: Text('${item.source} • ${item.time}'),
-      onTap: () => _launchURL(item.link),
-    );
+    await headlessWebView.run();
+    return completer.future;
   }
 
-  void _launchURL(String urlPath) {
-    // Get.to(() => CommonWebView(
-    //       isBackBtn: false,
-    //       url: urlPath,
-    //     ));
+  static Future<void> _waitForPageLoad(InAppWebViewController controller) async {
+    await controller.evaluateJavascript(source: '''
+      return new Promise((resolve) => {
+        if (document.readyState === 'complete') {
+          resolve();
+        } else {
+          window.addEventListener('load', resolve);
+        }
+      });
+    ''');
   }
-}
 
-class NewsItem {
-  final String title;
-  final String imageUrl;
-  final String source;
-  final String time;
-  final String link;
-  final bool isVideo;
+  static const String _extractForecastsScript = '''
+    function waitForElement(selector, timeout = 30000) {
+      return new Promise((resolve, reject) => {
+        const startTime = Date.now();
+        
+        function checkElement() {
+          const element = document.querySelector(selector);
+          if (element) {
+            resolve(element);
+          } else if (Date.now() - startTime > timeout) {
+            reject(new Error('요소를 찾을 수 없습니다: ' + selector));
+          } else {
+            setTimeout(checkElement, 100);
+          }
+        }
+        
+        checkElement();
+      });
+    }
 
-  NewsItem({
-    required this.title,
-    required this.imageUrl,
-    required this.source,
-    required this.time,
-    required this.link,
-    this.isVideo = false,
-  });
+    async function extractForecasts() {
+      try {
+        await waitForElement('.card_list_inner._newsArea');
+        
+        const items = document.querySelectorAll('.card_list_inner._newsArea .card_list_item._news');
+        const forecasts = [];
+
+        for (let i = 0; i < 6 && i < items.length; i++) {
+          const item = items[i];
+          const title = item.querySelector('.card_data_title')?.textContent.trim() || '';
+          const provider = item.querySelector('.card_info_item:first-child')?.textContent.trim() || '';
+          const time = item.querySelector('.card_info_item:last-child')?.textContent.trim() || '';
+          const imageUrl = item.querySelector('img')?.src || '';
+          const link = item.href || '';
+
+          forecasts.push({
+            title: title,
+            provider: provider,
+            time: time,
+            imageUrl: imageUrl,
+            link: link
+          });
+        }
+
+        return JSON.stringify(forecasts);
+      } catch (error) {
+        console.error('데이터 추출 중 오류 발생:', error);
+        return JSON.stringify([]);
+      }
+    }
+
+    extractForecasts();
+  ''';
 }

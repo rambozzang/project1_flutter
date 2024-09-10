@@ -56,19 +56,14 @@ class SuperFctAPI {
 
       // weather 객체를 JSON으로 변환
       Map<String, dynamic> weatherJson = weather.copyWith(dateTime: nowDate).toJson();
+
+      lo.g(weatherJson.toString());
+
       // 모든 값을 문자열로 변환
       Map<String, String> queryParams = weatherJson.map((key, value) => MapEntry(key, value.toString()));
 
       uri = Uri.parse(_getURL).replace(queryParameters: queryParams);
       return await _httpService.getWithRetry(uri);
-      // response = await http.get(uri);
-      // return json.decode(response.body);
-      // if (response.statusCode == 200 || response.statusCode == 304) {
-
-      // } else {
-      //   return null;
-      //   // throw Exception('Failed to load data. Status code: ${response.statusCode}');
-      // }
     } catch (e) {
       debugPrint(e.toString());
       lo.g('SuperFctAPI() -> Error fetching data for ${e.toString()} ${uri.toString()}');

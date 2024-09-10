@@ -10,6 +10,7 @@ import 'package:project1/repo/cust/data/cust_update_data.dart';
 import 'package:project1/repo/cust/data/google_join_data.dart';
 import 'package:project1/repo/cust/data/kakao_join_data.dart';
 import 'package:project1/repo/cust/data/naver_join_data.dart';
+import 'package:project1/repo/weather_gogo/adapter/adapter_map.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:dio/dio.dart';
 
@@ -113,7 +114,7 @@ class CustRepo {
 
   // 회원정보 조회
   Future<ResData> login(String custId, String fcmId) async {
-    final dio = await AuthDio.instance.getDio(debug: false);
+    final dio = await AuthDio.instance.getDio(debug: true);
     try {
       var url = '${UrlConfig.baseURL}/auth/login';
       Response response = await dio.post(url, data: {'custId': custId, 'fcmId': fcmId});
@@ -126,8 +127,15 @@ class CustRepo {
   // Tag 저장
   Future<ResData> saveTag(CustTagData data) async {
     final dio = await AuthDio.instance.getDio(debug: false);
+    if (data.lon != null || data.lat != null) {
+      MapAdapter changeMap = MapAdapter.changeMap(double.parse(data.lon!), double.parse(data.lat!));
+      data.nx = changeMap.x.toString();
+      data.ny = changeMap.y.toString();
+    }
+
     try {
       var url = '${UrlConfig.baseURL}/tag/save';
+
       Response response = await dio.post(url, data: data.toMap());
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {

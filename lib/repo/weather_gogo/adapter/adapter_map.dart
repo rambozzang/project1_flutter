@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'dart:math';
 
 class MapAdapter {
   final int x;
@@ -35,6 +34,8 @@ class MapAdapter {
 
     double x = ra * sin(theta) + ChangeMapParameter.nx + 1.5;
     double y = ro - ra * cos(theta) + ChangeMapParameter.ny + 1.5;
+
+    print('x = $x, y = $y');
 
     return MapAdapter(x.toInt(), y.toInt());
   }

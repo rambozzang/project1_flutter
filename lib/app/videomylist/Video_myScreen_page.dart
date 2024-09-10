@@ -71,53 +71,15 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
     loadingImageIndex = Random().nextInt(6);
   }
 
-  // String _getFinalUrl() {
-  //   return Platform.isAndroid ? widget.data.videoPath.toString().replaceAll('m3u8', 'mpd') : widget.data.videoPath.toString();
-  // }
-
-  Map<String, String> _getHttpHeaders() {
-    final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
-    final lastModified = _formatHttpDate(sevenDaysAgo);
-
-    return {
-      'Connection': 'keep-alive',
-      'Cache-Control': 'max-age=3600, stale-while-revalidate=86400',
-      'Etg': widget.data.boardId.toString(),
-      'Last-Modified': lastModified,
-      'If-None-Match': widget.data.boardId.toString(),
-      'If-Modified-Since': lastModified,
-      'Vary': 'Accept-Encoding, User-Agent',
-    };
-  }
-
   Future<void> initiliazeVideo() async {
-    final stopwatch = Stopwatch()..start();
-
-    // https://customer-r151saam0lb88khc.cloudflarestream.com/854ec7a9a60b43e7b5a7ac79ea09577d/manifest/video.m3u8
-    // https://customer-r151saam0lb88khc.cloudflarestream.com/854ec7a9a60b43e7b5a7ac79ea09577d/manifest/video.mpd
-
     //  Ios : m3u8
     String finalUrl = widget.data.videoPath.toString();
     VideoFormat format = VideoFormat.hls;
-
-    // if (Platform.isAndroid) {
-    //   // 안드로이드면 대쉬 사용
-    //   finalUrl = widget.data.videoPath.toString().replaceAll('m3u8', 'mpd');
-    //   format = VideoFormat.dash;
-    // }
 
     final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
     final lastModified = _formatHttpDate(sevenDaysAgo);
 
     try {
-      // final response = await http.head(Uri.parse(finalUrl));
-      // final cfRay = response.headers['cf-ray'];
-      // if (cfRay != null) {
-      //   // CF-RAY 헤더의 형식: <식별자>-<데이터센터코드>
-      //   final datacenterCode = cfRay.split('-').last;
-      //   lo.g('Cloudflare datacenter code: $datacenterCode');
-      // }
-
       Stopwatch stopwatch = Stopwatch()..start();
       lo.g(
           '@@@  VideoScreenPage init(${Get.find<VideoMyinfoListCntr>().currentIndex.value}) ${widget.index} : ${widget.data.boardId} : 1.Start ');
@@ -174,16 +136,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
     } finally {}
   }
 
-  Future<void> _retryInitialization() async {
-    // await _videoController.dispose();
-    lo.g('retryInitialization');
-    await Future.delayed(const Duration(milliseconds: 500));
-    initiliazeVideo();
-  }
-
   String _formatHttpDate(DateTime date) {
-    // Format the date as per HTTP-date format defined in RFC7231
-    // Example: Tue, 15 Nov 1994 08:12:31 GMT
     final weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     final weekDay = weekDays[date.weekday - 1];
@@ -238,6 +191,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
     }
   }
 
+  final TransformationController _transformationController = TransformationController();
   @override
   void dispose() {
     initialized = false;
@@ -292,16 +246,24 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                               }
                             },
                             key: GlobalKey(),
-                            child: SizedBox.expand(
-                              child: FittedBox(
-                                fit: BoxFit.cover,
-                                child: SizedBox(
-                                  width: _controller.value.size.width,
-                                  height: _controller.value.size.height,
-                                  child: VideoPlayer(_controller),
-                                ),
+                            child: InteractiveViewer(
+                              transformationController: _transformationController,
+                              minScale: 1.0,
+                              maxScale: 4.0,
+                              child: SizedBox.expand(
+                                child: VideoPlayer(_controller),
                               ),
                             ),
+                            // child: SizedBox.expand(
+                            //   child: FittedBox(
+                            //     fit: BoxFit.cover,
+                            //     child: SizedBox(
+                            //       width: _controller.value.size.width,
+                            //       height: _controller.value.size.height,
+                            //       child: VideoPlayer(_controller),
+                            //     ),
+                            //   ),
+                            // ),
                           ),
                   ),
                 ),
@@ -766,16 +728,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                   duration: Duration(milliseconds: value == 0.0 ? 200 : 1000),
                   height: 2,
                   width: (MediaQuery.of(context).size.width) * (value / 100),
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(4),
-                      // color: const Color.fromRGBO(215, 215, 215, 1),
-                      // color: const Color.fromRGBO(215, 215, 215, 1),
-                      //color: const Color.fromARGB(255, 110, 186, 111),
-                      // color: const Color.fromARGB(255, 38, 162, 40),
-                      // color: const Color.fromARGB(255, 34, 112, 26),
-                      color: Colors.red
-                      // color: Color.fromARGB(255, 13, 104, 43),
-                      ),
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(4), color: Colors.red),
                 ),
               ],
             );

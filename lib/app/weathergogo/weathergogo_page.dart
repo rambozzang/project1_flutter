@@ -1,14 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:animate_icons/animate_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:lottie/lottie.dart';
 import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/admob/banner_ad_widget.dart';
+import 'package:project1/app/join/widget/TwinklingStar.dart';
 import 'package:project1/app/test/cloud/cloud_page.dart';
 import 'package:project1/app/test/darkcloud/darkcloud_page.dart';
 import 'package:project1/app/test/hazy/hazy_page.dart';
@@ -20,6 +22,7 @@ import 'package:project1/app/weather/theme/textStyle.dart';
 import 'package:project1/app/weathergogo/appbar_page.dart';
 import 'package:project1/app/weathergogo/detail_main_page.dart';
 import 'package:project1/app/weathergogo/header_main_page.dart';
+import 'package:project1/app/weathergogo/naver_scrapping_page.dart';
 import 'package:project1/app/weathergogo/seven_day_page.dart';
 import 'package:project1/app/weathergogo/twenty4_page.dart';
 import 'package:project1/app/weathergogo/weathergogo_kakao_searchbar.dart';
@@ -36,7 +39,7 @@ class WeathgergogoPage extends StatefulWidget {
   State<WeathgergogoPage> createState() => WeathgergogoPageState();
 }
 
-class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAliveClientMixin<WeathgergogoPage>, TickerProviderStateMixin {
+class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAliveClientMixin<WeathgergogoPage> {
   @override
   bool get wantKeepAlive => true;
 
@@ -49,25 +52,53 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
   // final WeatherGogoCntr controller = Get.find();
   ValueNotifier<bool> isAdLoading = ValueNotifier<bool>(false);
 
+  List<TwinklingStar> twinklingStars = [];
+  ValueNotifier<List<TwinklingStar>> starsNotifier = ValueNotifier<List<TwinklingStar>>([]);
+
+  List<Color> currentColors = [];
+  late Color appbarColor;
+
+  bool isStartStart = false;
+
   @override
   void initState() {
     super.initState();
+
     controller = AnimateIconController();
     _loadAd();
     _initializeSections();
+  }
+
+  // instState 할수 다음에 호출되는 메써드
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 오후 7시부터 새벽 7시까지 createTwinklingStars() 메써드를 호출
+    final now = DateTime.now();
+    if ((now.hour >= 19 || now.hour < 7) && isStartStart == false) {
+      createTwinklingStars();
+    }
   }
 
   void _initializeSections() {
     sections.addAll([
       () => buildFavLocal(),
       () => _buildWeatherInfoHeader(),
-      () => const HeaderMainPage(),
-      () => const DetailMainPage(),
+      () => const HeaderMainPage(
+            key: ValueKey('HeaderMainPage'),
+          ),
+      () => const DetailMainPage(
+            key: ValueKey('DetailMainPage'),
+          ),
       () => _buildAdWidget(),
-      () => const Twenty4Page(),
-      () => const SevenDayPage(),
+      () => const Twenty4Page(
+            key: ValueKey('Twenty4Page'),
+          ),
+      () => const SevenDayPage(
+            key: ValueKey('SevenDayPage'),
+          ),
       // () => const NaverScraPpingPage(),
-      () => _buildWeatherWebView(),
+      // () => _buildWeatherWebView(),
       () => const SizedBox(height: 50),
     ]);
     Get.find<WeatherGogoCntr>().getLocalTag();
@@ -78,19 +109,49 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
     isAdLoading.value = true;
   }
 
-/*
-/ Primary colors
-  static const Color primaryBlue = Color(0xFF00ADEF);
-  static const Color silver = Color(0xFFCCCCCC);
-  static const Color darkGrey = Color(0xFF333333);
+  Future<void> getNaverNews() async {
+    var result = await WeatherCrawler.crawlWeatherForecast();
+    print(json.encode(result));
+  }
 
-*/
+  void createTwinklingStars() {
+    twinklingStars = [];
+    isStartStart = true;
+    for (int i = 0; i < 100; i++) {
+      twinklingStars.add(TwinklingStar(
+          Random().nextDouble() * MediaQuery.of(context).size.width, Random().nextDouble() * MediaQuery.of(context).size.height));
+    }
+    starsNotifier.value = twinklingStars;
+    startObjectMovement();
+  }
+
+  Timer? _animationTimer;
+
+  void startObjectMovement() {
+    _animationTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (mounted) {
+        updateStarPositions();
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  void updateStarPositions() {
+    List<TwinklingStar> updatedStars = starsNotifier.value.map((star) {
+      star.twinkle();
+      return star;
+    }).toList();
+    starsNotifier.value = updatedStars;
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
+
     return Scaffold(
         key: scaffoldKey,
-        backgroundColor: const Color(0xFF262B49),
+        backgroundColor: Get.find<WeatherGogoCntr>().currentColors.first,
         appBar: AppBar(
           automaticallyImplyLeading: false,
           forceMaterialTransparency: true,
@@ -98,30 +159,25 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
           title: const AppbarPage(),
         ),
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color.fromARGB(255, 29, 33, 56), Color.fromARGB(255, 45, 52, 91)],
+              end: Alignment.bottomRight,
+              colors: Get.find<WeatherGogoCntr>().currentColors,
             ),
           ),
           child: Stack(
             children: <Widget>[
-              // SizedBox.expand(
-              //   child: Lottie.asset(
-              //     'assets/login/bg1.json',
-              //     fit: BoxFit.cover,
-              //     renderCache: RenderCache.raster,
-              //   ),
-              // ),
-              // 비 애니메이션
+              buildStarts(),
+              // NightSun(isVisibleNotifier: Get.find<WeatherGogoCntr>().isNightSun, top: 0, right: 0),
+              // DaySun(isVisibleNotifier: Get.find<WeatherGogoCntr>().isDaySun, top: 56, right: 20),
               RainAnimation2(isVisibleNotifier: Get.find<WeatherGogoCntr>().isRainVisibleNotifier),
               SnowAnimation2(isVisibleNotifier: Get.find<WeatherGogoCntr>().isSnowVisibleNotifier),
               CloudyAnimation(isVisibleNotifier: Get.find<WeatherGogoCntr>().isCloudVisibleNotifier),
               HazyAnimation(isVisibleNotifier: Get.find<WeatherGogoCntr>().isHazyVisibleNotifier),
               RainDropAnimation(isVisibleNotifier: Get.find<WeatherGogoCntr>().isRainDropVisibleNotifier),
               DarkCloudsAnimation(isVisibleNotifier: Get.find<WeatherGogoCntr>().isDarkCloudVisibleNotifier),
-              _buildLazyLoadingContent2(),
+              _buildLazyLoadingContent(),
 
               const WeathergogoKakaoSearchPage(),
 
@@ -129,6 +185,33 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
             ],
           ),
         ));
+  }
+
+  Widget buildStarts() {
+    return ValueListenableBuilder<List<TwinklingStar>>(
+      valueListenable: starsNotifier,
+      builder: (context, stars, child) {
+        return Stack(
+          children: stars
+              .map((star) => Positioned(
+                    left: star.x,
+                    top: star.y,
+                    child: Opacity(
+                      opacity: star.opacity,
+                      child: Container(
+                        width: star.opacity * 5,
+                        height: star.opacity * 5,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ))
+              .toList(),
+        );
+      },
+    );
   }
 
   var physic = Platform.isIOS ? const AlwaysScrollableScrollPhysics() : const BouncingScrollPhysics();
@@ -184,7 +267,11 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
                     borderRadius: BorderRadius.circular(8), // 더 둥근 모서리
                   ),
                 ),
-                onPressed: () => Get.toNamed('/WeatherComPage'),
+                onPressed: () {
+                  // Get.find<WeatherGogoCntr>().changeBgColor();
+                  // Get.toNamed('/WeathgergogoPage');
+                  Get.toNamed('/WeatherComPage');
+                },
                 child: Row(
                   children: [
                     Text('날씨 비교 ', style: semiboldText.copyWith(fontSize: 11.0)),
@@ -234,7 +321,7 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
             Get.find<WeatherGogoCntr>().getRefreshWeatherData(true);
             return true;
           },
-          duration: Duration(milliseconds: 500),
+          duration: const Duration(milliseconds: 500),
           startIconColor: Colors.amber,
           endIconColor: Colors.amber,
           clockwise: false,
@@ -393,44 +480,4 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
           ),
         ));
   }
-}
-
-class RainbowPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTRB(0, 0, size.width, size.height);
-    final rainbow = [
-      Colors.red,
-      Colors.orange,
-      Colors.yellow,
-      Colors.green,
-      Colors.blue,
-      Colors.indigo,
-      Colors.purple,
-    ];
-
-    // 검은색 배경 그리기
-    canvas.drawRect(rect, Paint()..color = Colors.black);
-
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = size.width / 14; // 무지개 띠의 두께를 화면 크기에 비례하게 설정
-
-    final center = Offset(size.width / 2, size.height);
-    final radius = size.height * 1.5; // 무지개의 반지름을 화면 높이의 1.5배로 설정
-
-    for (int i = rainbow.length - 1; i >= 0; i--) {
-      paint.color = rainbow[i];
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius - (i * paint.strokeWidth)),
-        pi,
-        pi,
-        false,
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

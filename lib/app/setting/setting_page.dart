@@ -35,6 +35,7 @@ class _SettingPageState extends State<SettingPage> {
   void initState() {
     super.initState();
     _loadAd();
+    RootCntr.to.bottomBarStreamController.sink.add(true);
   }
 
   Future<void> _loadAd() async {
@@ -70,7 +71,7 @@ class _SettingPageState extends State<SettingPage> {
             elevation: 0,
           ),
           body: SingleChildScrollView(
-            controller: RootCntr.to.hideButtonController3,
+            // controller:
             padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
             child: Column(
               children: [
@@ -197,7 +198,7 @@ class _SettingPageState extends State<SettingPage> {
                           //   barrierDismissible: true,
                           // );
                           // AgreePage() 페이지로 이동 머터리얼 라우터를 이용
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => AgreePage()));
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => const AgreePage()));
                         },
                         icons: Icons.exit_to_app_rounded,
                         iconStyle: IconStyle(
@@ -267,19 +268,26 @@ class _SettingPageState extends State<SettingPage> {
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "코드랩타이거(CodeLabTiger)\n서울시 서대문구 TigerGroup, 사업자등록번호 : 770-50-01045",
+            "코드랩타이거(CodeLabTiger)\n사업자등록번호 : 770-50-01045",
             style: TextStyle(fontSize: 13, color: Colors.black54),
           ),
           const Gap(20),
-          const Text(
-            'Copyright 2024 TIGER Group',
-            style: TextStyle(fontSize: 13, color: Colors.black),
+          const Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              'Copyright 2024 TIGER Group',
+              style: TextStyle(fontSize: 13, color: Colors.black),
+            ),
           ),
-          const Text(
-            'All rights reserved',
-            style: TextStyle(fontSize: 13, color: Colors.black),
+          const Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              'All rights reserved',
+              style: TextStyle(fontSize: 13, color: Colors.black),
+            ),
           ),
           const Gap(20),
           Stack(
@@ -414,7 +422,7 @@ class SettingsGroup extends StatelessWidget {
     if (this.iconItemSize != null) SettingsScreenUtils.settingsGroupIconSize = iconItemSize;
 
     return Container(
-      margin: EdgeInsets.only(bottom: 20),
+      margin: const EdgeInsets.only(bottom: 20),
       color: Colors.transparent,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -425,8 +433,9 @@ class SettingsGroup extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 5),
                   child: Text(
                     settingsGroupTitle!,
-                    style:
-                        (settingsGroupTitleStyle == null) ? TextStyle(fontSize: 25, fontWeight: FontWeight.bold) : settingsGroupTitleStyle,
+                    style: (settingsGroupTitleStyle == null)
+                        ? const TextStyle(fontSize: 25, fontWeight: FontWeight.bold)
+                        : settingsGroupTitleStyle,
                   ),
                 )
               : Container(),
@@ -438,7 +447,7 @@ class SettingsGroup extends StatelessWidget {
             ),
             child: ListView.separated(
               separatorBuilder: (context, index) {
-                return Divider();
+                return const Divider();
               },
               itemCount: items.length,
               itemBuilder: (BuildContext context, int index) {
@@ -446,7 +455,7 @@ class SettingsGroup extends StatelessWidget {
               },
               shrinkWrap: true,
               padding: EdgeInsets.zero,
-              physics: ScrollPhysics(),
+              physics: const ScrollPhysics(),
             ),
           ),
         ],
@@ -500,7 +509,7 @@ class SettingsItem extends StatelessWidget {
                   color: iconStyle!.backgroundColor,
                   borderRadius: BorderRadius.circular(iconStyle!.borderRadius!),
                 ),
-                padding: EdgeInsets.all(5),
+                padding: const EdgeInsets.all(5),
                 child: Icon(
                   icons,
                   size: SettingsScreenUtils.settingsGroupIconSize,
@@ -508,7 +517,7 @@ class SettingsItem extends StatelessWidget {
                 ),
               )
             : Padding(
-                padding: EdgeInsets.all(5),
+                padding: const EdgeInsets.all(5),
                 child: Icon(
                   icons,
                   size: SettingsScreenUtils.settingsGroupIconSize,
@@ -516,7 +525,7 @@ class SettingsItem extends StatelessWidget {
               ),
         title: Text(
           title,
-          style: titleStyle ?? TextStyle(fontWeight: FontWeight.bold),
+          style: titleStyle ?? const TextStyle(fontWeight: FontWeight.bold),
           maxLines: titleMaxLine,
           overflow: titleMaxLine != null ? overflow : null,
         ),
@@ -528,7 +537,7 @@ class SettingsItem extends StatelessWidget {
                 overflow: subtitleMaxLine != null ? TextOverflow.ellipsis : null,
               )
             : null,
-        trailing: (trailing != null) ? trailing : Icon(Icons.navigate_next),
+        trailing: (trailing != null) ? trailing : const Icon(Icons.navigate_next),
       ),
     );
   }

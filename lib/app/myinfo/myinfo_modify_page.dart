@@ -478,7 +478,7 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
                             Get.back();
                           },
                           type: 'S',
-                          listColors: const [Colors.grey, Colors.grey],
+                          // listColors: const [Colors.deep, Colors.grey],
                           text: "취소",
                         ),
                       ],

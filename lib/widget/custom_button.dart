@@ -113,7 +113,7 @@ class CustomButton extends StatelessWidget {
         width: widthValue ?? widthSize[type]!,
         clipBehavior: Clip.antiAlias,
         decoration: ShapeDecoration(
-          color: type != 'XL' ? (!isEnable ? Colors.white : null) : null,
+          color: type != 'XL' ? (!isEnable ? Colors.grey : null) : null,
           shadows: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.3),

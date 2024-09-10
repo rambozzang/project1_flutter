@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:lottie/lottie.dart';
 
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:project1/app/videomylist/Video_myScreen_page.dart';
@@ -55,53 +56,56 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        key: Scaffoldkey,
-        extendBodyBehindAppBar: true,
-        resizeToAvoidBottomInset: true,
-        backgroundColor: const Color(0xFF262B49),
-        extendBody: true,
-        body: RefreshIndicator(
-          onRefresh: () async {
-            Get.find<VideoMyinfoListCntr>().pageNum = 0;
-            Get.find<VideoMyinfoListCntr>().getData();
-          },
-          child: Stack(
-            children: [
-              Utils.commonStreamList<BoardWeatherListData>(
-                Get.find<VideoMyinfoListCntr>().videoMyListCntr,
-                buildVideoBody,
-                Get.find<VideoMyinfoListCntr>().getData,
-              ),
-              // buildLocalName(),
-              // buildTemp(),
-              // buildRecodeBtn(),
-              // Join 버튼
-              //buildJoinButton(),
-              // 오른쪽 상단 close 버튼
-              buildCloseButton(),
-            ],
+      key: Scaffoldkey,
+      extendBodyBehindAppBar: true,
+      resizeToAvoidBottomInset: true,
+      backgroundColor: Colors.black54, // const Color(0xFF262B49),
+      extendBody: true,
+      // body: RefreshIndicator(
+      //   onRefresh: () async {
+      //     Get.find<VideoMyinfoListCntr>().pageNum = 0;
+      //     Get.find<VideoMyinfoListCntr>().getData();
+      //   },
+      body: Stack(
+        children: [
+          buildLoading(),
+          Utils.commonStreamList<BoardWeatherListData>(
+            Get.find<VideoMyinfoListCntr>().videoMyListCntr,
+            loadingWidget: SizedBox.shrink(), //  Utils.progressbar(color: Colors.white),
+            buildVideoBody,
+            Get.find<VideoMyinfoListCntr>().getData,
           ),
-        ));
+          buildCloseButton(),
+        ],
+      ),
+      // ),
+    );
   }
 
   // 전체 하면을 차지하면서 이미지를 보여주는 위젯
   Widget buildLoading() {
-    return SizedBox.expand(
-      child: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: ExactAssetImage(
-              'assets/images/2.jpg',
-            ),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 40.0, sigmaY: 45.0),
-          child: const Center(child: Text(" ", style: TextStyle(color: Colors.white, fontSize: 9))),
-        ),
+    return Center(
+      child: Lottie.asset(
+        'assets/lottie/day_bg.json',
+        fit: BoxFit.cover,
       ),
     );
+    // return SizedBox.expand(
+    //   child: Container(
+    //     decoration: const BoxDecoration(
+    //       image: DecorationImage(
+    //         image: ExactAssetImage(
+    //           'assets/images/2.jpg',
+    //         ),
+    //         fit: BoxFit.cover,
+    //       ),
+    //     ),
+    //     child: BackdropFilter(
+    //       filter: ImageFilter.blur(sigmaX: 40.0, sigmaY: 45.0),
+    //       child: const Center(child: Text(" ", style: TextStyle(color: Colors.white, fontSize: 9))),
+    //     ),
+    //   ),
+    // );
   }
 
   Widget buildCloseButton() {

@@ -32,7 +32,7 @@ class VideoListCntr extends GetxController {
   int playAtFirst = 0;
 
   var isLoadingMore = true.obs;
-  int preLoadingCount = 7;
+  int preLoadingCount = 4;
 
   //현재 영상의 index값 저장
   var currentIndex = 0.obs;
