@@ -180,14 +180,14 @@ class RootCntr extends GetxController {
   //   }
   // }
 
-  void uploadR2Storage(File videoFile, BoardSaveData boardSaveData) async {
+  void uploadR2Storage2(File videoFile, BoardSaveData boardSaveData) async {
     isFileUploading.value = UploadingType.UPLOADING;
 
     try {
       // 비디오 파일 압축
       MediaInfo? pickedFile = await VideoCompress.compressVideo(
         videoFile.path,
-        quality: VideoQuality.LowQuality,
+        quality: VideoQuality.DefaultQuality,
         deleteOrigin: false,
         includeAudio: true,
       );
@@ -262,14 +262,20 @@ class RootCntr extends GetxController {
       bool needsCompression = await shouldCompressVideo(videoFile.path);
       late MediaInfo? pickedFile;
 
-      if (needsCompression) {
-        pickedFile = await VideoCompress.compressVideo(
-          videoFile.path,
-          quality: VideoQuality.HighestQuality,
-          deleteOrigin: false,
-          includeAudio: true,
-        );
-      } else {
+      try {
+        if (needsCompression) {
+          pickedFile = await VideoCompress.compressVideo(
+            videoFile.path,
+            quality: VideoQuality.DefaultQuality,
+            deleteOrigin: false,
+            includeAudio: true,
+          );
+        } else {
+          pickedFile = await VideoCompress.getMediaInfo(videoFile.path);
+        }
+      } catch (e) {
+        lo.g('비디오 압축 에러 : $e');
+        VideoCompress.cancelCompression();
         pickedFile = await VideoCompress.getMediaInfo(videoFile.path);
       }
 
@@ -411,10 +417,14 @@ class RootCntr extends GetxController {
 
   Future<bool> shouldCompressVideo(
     String filePath, {
-    int sizeThreshold = 50 * 1024 * 1024, // 50MB
-    int widthThreshold = 1920,
-    int heightThreshold = 1080,
-    double bitrateThreshold = 5000000, // 5 Mbps
+    // int sizeThreshold = 50 * 1024 * 1024, // 50MB
+    // int widthThreshold = 1920,
+    // int heightThreshold = 1080,
+    // double bitrateThreshold = 5000000, // 5 Mbps
+    int sizeThreshold = 60 * 1024 * 1024, // 60MB
+    int widthThreshold = 1080,
+    int heightThreshold = 1920,
+    double bitrateThreshold = 5000000, // 10 Mbps
   }) async {
     File file = File(filePath);
     int fileSize = await file.length();
@@ -437,27 +447,15 @@ class RootCntr extends GetxController {
         bitrate = (mediaInfo.filesize! * 8) / durationInSeconds;
       }
     }
-
-    print('File size: $fileSize bytes');
-    print('Resolution: ${width}x$height');
-    print('Calculated bitrate: $bitrate bps');
-
     if (fileSize > sizeThreshold) {
-      print('File size exceeds threshold');
       return true;
     }
-
     if (width > widthThreshold || height > heightThreshold) {
-      print('Resolution exceeds threshold');
       return true;
     }
-
     if (bitrate > bitrateThreshold) {
-      print('Bitrate exceeds threshold');
       return true;
     }
-
-    print('Compression not needed');
     return false;
   }
 }

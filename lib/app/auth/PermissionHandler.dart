@@ -37,6 +37,16 @@ class PermissionHandler {
     return locationPermission == LocationPermission.always || locationPermission == LocationPermission.whileInUse;
   }
 
+  Future<bool> handleMicrophonePermission() async {
+    var status = await Permission.microphone.request();
+    if (status.isDenied) {
+      return await showMicrophoneExplanationDialog();
+    } else if (status.isPermanentlyDenied) {
+      return await showOpenSettingsDialog('마이크');
+    }
+    return status.isGranted;
+  }
+
   Future<bool> showLocationExplanationDialog() async {
     bool? result = await Get.dialog<bool>(
       AlertDialog(
@@ -65,16 +75,40 @@ class PermissionHandler {
     return false;
   }
 
+  Future<bool> showMicrophoneExplanationDialog() async {
+    bool? result = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('마이크 권한 필요'),
+        content: const Text('동영상 촬영 시 오디오 녹음을 위해 마이크 권한이 필요합니다. 권한을 허용하시겠습니까?'),
+        actions: [
+          TextButton(
+            child: const Text('취소'),
+            onPressed: () => Get.back(result: false),
+          ),
+          TextButton(
+            child: const Text('허용'),
+            onPressed: () => Get.back(result: true),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      var newStatus = await Permission.microphone.request();
+      if (newStatus.isPermanentlyDenied) {
+        return await showOpenSettingsDialog('마이크');
+      }
+      return newStatus.isGranted;
+    }
+    return false;
+  }
+
   Future<bool> showOpenSettingsDialog(String permissionName) async {
     bool? result = await Get.dialog<bool>(
       AlertDialog(
         title: Text('$permissionName 권한 설정'),
         content: Text('$permissionName 권한이 거부되었습니다.\n휴대폰 설정에서 직접 권한을 허용해주세요.'),
         actions: [
-          // TextButton(
-          //   child: const Text('취소'),
-          //   onPressed: () => Get.back(result: false),
-          // ),
           TextButton(
             child: const Text('설정으로 이동'),
             onPressed: () => Get.back(result: true),
@@ -85,9 +119,6 @@ class PermissionHandler {
 
     if (result == true) {
       await openAppSettings();
-      // 아래 코드는 안먹힘 위 await를 해도 여기서 기다리지 못하고 바로 호출 하게 됨. 그래서 아래 코드는 무시됨
-      // 설정 페이지에서 돌아왔을 때 위치 권한 상태 다시 확인
-      // return await handleLocationPermission();
     }
     return false;
   }

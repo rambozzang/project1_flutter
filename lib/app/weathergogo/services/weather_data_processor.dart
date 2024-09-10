@@ -47,24 +47,46 @@ class WeatherDataProcessor {
     // 1. 오늘 데이터와 어제 데이터의 첫 번째 데이터의 시간을 비교
     DateTime todayStart = todayData.first.date;
     DateTime yesterdayStart = yesterdayData.first.date;
-    DateTime yesterdayStartPlus = yesterdayStart.add(const Duration(days: 1));
-    bool isTodayLater = todayStart.isAfter(yesterdayStartPlus);
-    // Lo.g('오늘 데이터 :  ${todayStart}, 어제 데이터 ${yesterdayStartPlus}  비교시 ${isTodayLater}');
-    // 2. 더 과거 데이터를 가지는 List 데이터를 삭제
-    //    다른 List 데이터의 첫 번째 데이터의 시간과 비교하여 더 과거 데이터를 가지는 List 데이터를 삭제
-
-    // 어제 데이터를 삭제
-    if (isTodayLater) {
-      while (yesterdayData.isNotEmpty && yesterdayData.first.date.isBefore(todayStart.subtract(const Duration(days: 1)))) {
-        yesterdayData.removeAt(0);
-      }
-    } else {
-      // 오늘 데이터를 삭제
-      while (todayData.isNotEmpty && todayData.first.date.isBefore(yesterdayStart.add(const Duration(days: 1)))) {
-        todayData.removeAt(0);
-      }
+    // DateTime yesterdayStartPlus = yesterdayStart.add(const Duration(days: 1));
+    // bool isTodayLater = todayStart.isAfter(yesterdayStartPlus);
+    // // 어제 데이터를 삭제
+    // if (isTodayLater) {
+    //   while (yesterdayData.isNotEmpty && yesterdayData.first.date.isBefore(todayStart.subtract(const Duration(days: 1)))) {
+    //     yesterdayData.removeAt(0);
+    //   }
+    // } else {
+    //   // 오늘 데이터를 삭제
+    //   while (todayData.isNotEmpty && todayData.first.date.isBefore(yesterdayStart.add(const Duration(days: 1)))) {
+    //     todayData.removeAt(0);
+    //   }
+    // }
+    // 날짜와 시간이 정확히 24시간 차이인지 확인
+    if (todayStart.difference(yesterdayStart).inHours == 24) {
+      return (todayData, yesterdayData);
     }
 
+    // 기존의 동기화 로직
+    DateTime yesterdayStartPlus = yesterdayStart.add(const Duration(days: 1));
+    bool isTodayLater = todayStart.isAfter(yesterdayStartPlus);
+
+    if (isTodayLater) {
+      yesterdayData.removeWhere((element) => element.date.isBefore(todayStart.subtract(const Duration(days: 1))));
+    } else {
+      todayData.removeWhere((element) => element.date.isBefore(yesterdayStart.add(const Duration(days: 1))));
+    }
+
+    // yesterdayData Date기준으로 중복 데이터 삭제 기준은
+    yesterdayData.removeWhere((element) => todayData.any((e) => e.date == element.date));
+
+    // yesterdayData 최대 24개까지만 유지
+    if (yesterdayData.length > 24) {
+      yesterdayData = yesterdayData.sublist(yesterdayData.length - 24);
+    }
+    Lo.g("todayData  : ${todayData.first.date}");
+    Lo.g("yesterdayData  : ${yesterdayData.first.date}");
+    yesterdayData.forEach((element) {
+      Lo.g("yesterdayData  : ${element.date}");
+    });
     return (todayData, yesterdayData);
   }
 
@@ -479,19 +501,25 @@ class WeatherDataProcessor {
   }
 
 //초단기예보, 단기예보 모두 수용 가능한 함수
-  String getFinalWeatherIcon(String skyCode, String ptyCode) {
-    String ptyIcon = getWeatherIcon('PTY', ptyCode);
+  String getFinalWeatherIcon(int hour, String skyCode, String ptyCode) {
+    String ptyIcon = getWeatherIcon(hour, 'PTY', ptyCode);
     if (ptyCode != '0') {
       return ptyIcon; // 강수가 있으면 PTY 아이콘 사용
     } else {
-      return getWeatherIcon('SKY', skyCode); // 강수가 없으면 SKY 아이콘 사용
+      return getWeatherIcon(hour, 'SKY', skyCode); // 강수가 없으면 SKY 아이콘 사용
     }
   }
 
   //초단기예보, 단기예보 모두 수용 가능한 함수
-  String getWeatherIcon(String category, String code) {
+  String getWeatherIcon(int hour, String category, String code) {
     int value = int.tryParse(code) ?? 0;
     String assetPath = 'assets/lottie/';
+
+    //저녁일때 이미지 변경
+    // 기존 이미지에 night_ 붙여서 사용
+    if ((hour) >= 19 || (hour) < 6) {
+      assetPath = 'assets/lottie/night_';
+    }
 
     switch (category) {
       case 'PTY': // 강수형태 (Precipitation type)

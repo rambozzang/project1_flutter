@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/weather/data/weather_view_data.dart';
 import 'package:project1/repo/weather_gogo/models/request/weather_cache_req.dart';
@@ -44,68 +45,42 @@ class WeatherCache {
   /// 날씨 데이터를 캐시에 저장
   Future<void> saveWeatherData<T>(LatLng latLng, ForecastType type, T data) async {
     try {
-      if (type == ForecastType.superNctYesterDay) {}
-
       MapAdapter changeMap = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
       final location = '${changeMap.x}_${changeMap.y}';
       // final prefs = await SharedPreferences.getInstance();
       // 캐쉬 전체 삭제
       // await prefs.clear();
       final key = _getCacheKey(location, type);
-      final cacheData1 = {
-        'data': _dataToJson(data),
-        'timestamp': DateTime.now().toIso8601String(),
-      };
+      // final cacheData1 = {
+      //   "data": _dataToJson(data),
+      //   "timestamp": DateTime.now().toIso8601String(),
+      // };
+      final cacheData1 = jsonEncode({
+        "data": json.decode(_dataToJson(data)),
+        "timestamp": DateTime.now().toIso8601String(),
+      });
 
       DateTime expiresAt = _calculateExpiresAt(type);
 
       WeatherCacheReq req = WeatherCacheReq(
         cacheKey: key,
         forecastType: type.toString(),
-        cacheData: cacheData1.toString(),
+        cacheData: cacheData1,
         contentType: 'application/json',
         loX: changeMap.x.toString(),
         loY: changeMap.y.toString(),
         expiresAt: expiresAt,
       );
+      late var stopwatch;
+      stopwatch = Stopwatch()..start();
       ResData resData = await wrepo.saveWeatherCacheData(req);
       if (resData.code != '00') {
         lo.g('saveWeatherCacheData() resData.data : ${resData.data}');
       }
+      lo.g('saveWeatherCacheData time: $type  ${stopwatch.elapsedMilliseconds}ms');
+      stopwatch.stop();
     } catch (e) {
       lo.g('Error saving weather data to cache: $e');
-    }
-  }
-
-  /// 날씨 데이터를 캐시에 저장
-  Future<void> saveYesterDayWeatherData<T>(LatLng latLng, ForecastType type, T data) async {
-    try {
-      MapAdapter changeMap = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
-      final location = '${changeMap.x}_${changeMap.y}';
-
-      final key = _getCacheKey(location, type);
-      final cacheData1 = {
-        'data': _dataToJson(data),
-        'timestamp': DateTime.now().toIso8601String(),
-      };
-
-      DateTime expiresAt = _calculateExpiresAt(type);
-
-      WeatherCacheReq req = WeatherCacheReq(
-        cacheKey: key,
-        forecastType: type.toString(),
-        cacheData: cacheData1.toString(),
-        contentType: 'application/json',
-        loX: changeMap.x.toString(),
-        loY: changeMap.y.toString(),
-        expiresAt: expiresAt,
-      );
-      lo.g('saveYesterDayJsonData() 호출!!!!!');
-
-      ResData resData = await wrepo.saveYesterdayWeatherCacheData(req);
-      lo.g('saveYesterDayJsonData() resData.data : ${resData.toString()}');
-    } catch (e) {
-      lo.g('saveYesterDayJsonData() Error saving weather data to cache: $e');
     }
   }
 
@@ -117,41 +92,14 @@ class WeatherCache {
       final key = _getCacheKey(location, type);
 
       ResData resData = await wrepo.getWeatherCacheData(key);
+
       if (resData.code == '00') {
         var rawString = resData.data['cacheData'];
-
-        RegExp dataRegex = RegExp(r'data: ((\{.+?\})|(\[.+?\])|(".*?"))(?=,\s*timestamp:)');
-
-        RegExp timestampRegex = RegExp(r'timestamp: (.+?)}');
-
-        Match? dataMatch = dataRegex.firstMatch(rawString);
-        Match? timestampMatch = timestampRegex.firstMatch(rawString);
-
-        String dataJsonString = dataMatch!.group(1)!;
-        String timestamp = timestampMatch!.group(1)!;
-
-        // lo.g('dataJsonString : $dataJsonString');
-        // lo.g('timestamp : $timestamp');
-
-        final cachedTime = DateTime.parse(timestamp);
-
-        // if (_isCacheValid(cachedTime, type)) {
-        // dataString을 유효한 JSON으로 변환
-        dataJsonString = dataJsonString.replaceAllMapped(
-          RegExp(r'(\w+):'),
-          (match) => '"${match.group(1)}":',
-        );
-        // 따옴표로 시작하고 끝나는 경우 (이스케이프된 JSON 문자열)
-        // if (dataString.startsWith('"') && dataString.endsWith('"')) {
-        //   // 바깥쪽 따옴표 제거 및 이스케이프 문자 처리
-        //   dataString = dataString.substring(1, dataString.length - 1).replaceAll('\\"', '"');
-        // }
-        dataJsonString = dataJsonString.replaceAll("'", '"');
-        final decodedData = json.decode(dataJsonString);
+        final decodedJson = json.decode(rawString);
+        final cachedTime = DateTime.parse(decodedJson['timestamp']);
+        final decodedData = decodedJson['data'];
         lo.g('[CACHING] 캐시에서 데이터 로드 : ${cachedTime.toString()} : ${type.toString()}');
         return _convertData<T>(decodedData);
-        //  }
-        // return null;
       }
       return null;
     } catch (e) {
@@ -320,30 +268,36 @@ class WeatherService {
         return cachedData;
       }
 
-      // API 호출
+      // compute 호출
       // RootIsolateToken 생성
-      final RootIsolateToken rootIsolateToken = RootIsolateToken.instance!;
+      // final RootIsolateToken rootIsolateToken = RootIsolateToken.instance!;
+      // // API 호출 및 데이터 처리는 백그라운드 Isolate에서 수행
+      // final result = await compute(
+      //   _callWeatherAPI<T>,
+      //   _FetchParams(location, type, rootIsolateToken),
+      // );
 
-      // API 호출 및 데이터 처리는 백그라운드 Isolate에서 수행
-      final result = await compute(
-        _callWeatherAPI<T>,
-        _FetchParams(location, type, rootIsolateToken),
-      );
+      // API 호출
+      final result = await _callWeatherAPI2<T>(location, type);
+      if (result == null || result is List && result.isEmpty) {
+        throw Exception('Api 호출 결과값이 Null 입니다. ');
+      }
+
       lo.g('[CACHING] API에서 데이터 로드 : ${type.toString()}');
 
       if (result == null || result is List && result.isEmpty) {
-        // sleep(const Duration(milliseconds: 500));
-        // getWeatherData<T>(location, type);
         throw Exception('Api 호출 결과값이 Null 입니다. ');
       }
+
       if (type == ForecastType.superNctYesterDay) {
-        final list = (result as T);
-        if ((list as List).length < 22) {
-          throw Exception('어제 API 조회 총 갯수가 20보다 작습니다.');
+        result as List<ItemSuperNct>;
+        if (result.length > 21) {
+          _cache.saveWeatherData<T>(location, type, result);
         }
+      } else {
+        // 새 데이터 캐싱
+        _cache.saveWeatherData<T>(location, type, result);
       }
-      // 새 데이터 캐싱
-      _cache.saveWeatherData<T>(location, type, result);
 
       return result;
     } catch (e) {
@@ -380,6 +334,30 @@ class WeatherService {
         throw ArgumentError('Invalid forecast type: $type');
     }
   }
+
+  /// 날씨 API 호출
+  Future<T> _callWeatherAPI2<T>(LatLng location, ForecastType type) async {
+    switch (type) {
+      case ForecastType.superNctYesterDay:
+        return await _repo.getYesterDayJson(location, isLog: true, isChache: false) as T;
+      case ForecastType.superNct:
+        return await _repo.getSuperNctListJson(location, isLog: true, isChache: false) as T;
+      case ForecastType.superFct:
+        return await _repo.getSuperFctListJson(location, isLog: true, isChache: false) as T;
+      case ForecastType.fct:
+        return await _repo.getFctListJson(location, isLog: true, isChache: false) as T;
+      case ForecastType.midFctLand:
+        return await _repo.getMidFctJson(location, isLog: true) as T;
+      case ForecastType.midTa:
+        return await _repo.getMidTaJson(location, isLog: true) as T;
+      case ForecastType.weatherAlert:
+        return await _repo.getSpecialFctJson(location, isLog: true) as T;
+      case ForecastType.mistInfo:
+        return await _repo.getSpecialFctJson(location, isLog: true) as T;
+      default:
+        throw ArgumentError('Invalid forecast type: $type');
+    }
+  }
 }
 
 class _FetchParams {
@@ -389,3 +367,10 @@ class _FetchParams {
 
   _FetchParams(this.location, this.type, this.rootIsolateToken);
 }
+
+
+// 어제 날ㅆ 가져오기 경우의수
+
+
+
+

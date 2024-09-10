@@ -38,19 +38,19 @@ class VideoScreenPage extends StatefulWidget {
 
   final BoardWeatherListData data;
   final int index;
-  // final VoidCallback onMounted;
-  // final VideoPlayerController? controller;
 
   @override
   State<VideoScreenPage> createState() => VideoScreenPageState();
 }
 
 class VideoScreenPageState extends State<VideoScreenPage> {
-  //late VideoPlayerController _controller;
   late VideoPlayerController _controller;
 
-  GlobalKey _key = GlobalKey();
-  // bool initialized = false;
+  final GlobalKey _key = GlobalKey();
+
+  final TransformationController transformationController = TransformationController();
+  final double scale = 1.0;
+  final double previousScale = 1.0;
 
   bool initPlay = false;
 
@@ -80,37 +80,14 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   }
 
   Future<void> initiliazeVideo() async {
-    final stopwatch = Stopwatch()..start();
-
-    // https://customer-r151saam0lb88khc.cloudflarestream.com/854ec7a9a60b43e7b5a7ac79ea09577d/manifest/video.m3u8
-    // https://customer-r151saam0lb88khc.cloudflarestream.com/854ec7a9a60b43e7b5a7ac79ea09577d/manifest/video.mpd
-
-    //  Ios : m3u8
     String finalUrl = widget.data.videoPath.toString();
     VideoFormat format = VideoFormat.hls;
-
-    // if (Platform.isAndroid) {
-    //   // 안드로이드면 대쉬 사용
-    //   finalUrl = widget.data.videoPath.toString().replaceAll('m3u8', 'mpd');
-    //   format = VideoFormat.dash;
-    // }
 
     final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
     final lastModified = _formatHttpDate(sevenDaysAgo);
 
     try {
-      // final response = await http.head(Uri.parse(finalUrl));
-      // final cfRay = response.headers['cf-ray'];
-      // if (cfRay != null) {
-      //   // CF-RAY 헤더의 형식: <식별자>-<데이터센터코드>
-      //   final datacenterCode = cfRay.split('-').last;
-      //   lo.g('Cloudflare datacenter code: $datacenterCode');
-      // }
-
       Stopwatch stopwatch = Stopwatch()..start();
-      lo.g(
-          '@@@  VideoScreenPage init(${Get.find<VideoListCntr>().currentIndex.value}) ${widget.index} : ${widget.data.boardId} : 1.Start ');
-
       _controller = VideoPlayerController.networkUrl(Uri.parse(finalUrl),
           httpHeaders: {
             'Connection': 'keep-alive',
@@ -125,11 +102,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
           formatHint: format)
         ..initialize().then((_) {
           if (mounted) {
-            lo.g('VideoScreenPage initialization time: ${stopwatch.elapsedMilliseconds}ms');
             timeDesc.value = '${stopwatch.elapsedMilliseconds}ms';
-
-            lo.g(
-                '@@@  VideoScreenPage init(${Get.find<VideoListCntr>().currentIndex.value}) ${widget.index} : ${widget.data.boardId} : 2.Mounted =>. ${stopwatch.elapsed}');
             setState(() {
               _controller.setLooping(true);
               _controller.pause();
@@ -154,8 +127,6 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   }
 
   String _formatHttpDate(DateTime date) {
-    // Format the date as per HTTP-date format defined in RFC7231
-    // Example: Tue, 15 Nov 1994 08:12:31 GMT
     final weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     final weekDay = weekDays[date.weekday - 1];
@@ -217,11 +188,6 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   }
 
   Future<void> share() async {
-    // final result = await Share.shareXFiles([XFile('${directory.path}/image.jpg')], text: 'Great picture');
-
-    // if (result.status == ShareResultStatus.success) {
-    //     print('Thank you for sharing the picture!');
-    // }
     final result = await Share.share('check out my website https://example.com');
 
     if (result.status == ShareResultStatus.success) {
@@ -236,72 +202,65 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     _controller.removeListener(() {});
     _controller.pause();
     _controller.dispose();
-
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black38,
+      backgroundColor: Colors.transparent,
       // backgroundColor: const Color(0xFF262B49),
       resizeToAvoidBottomInset: true,
       extendBodyBehindAppBar: true,
       extendBody: true,
-      body: Container(
-        // decoration: const BoxDecoration(
-        //   gradient: ui.LinearGradient(
-        //     begin: Alignment.topCenter,
-        //     end: Alignment.bottomCenter,
-        //     colors: [
-        //       Color(0xFF0D1B2A),
-        //       Color(0xFF1B263B),
-        //       Color(0xFF2A3B50),
-        //     ],
-        //   ),
-        // ),
-        child: Stack(
-          children: [
-            GestureDetector(
-              onTap: () {
-                initPlay = true;
-                if (_controller.value.isPlaying) {
-                  _controller.pause();
-                } else {
-                  _controller.play();
-                }
-              },
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                switchInCurve: Curves.easeIn,
-                switchOutCurve: Curves.ease,
-                // child: initialized == false ? buildLoading() : buildVideoScreen(),
-                child: ValueListenableBuilder<bool>(
-                  valueListenable: initialized,
-                  builder: (builder, value, child) {
-                    return value == false ? buildLoading() : buildVideoScreen(value);
-                  },
-                ),
+      body: Stack(
+        children: [
+          GestureDetector(
+            onTap: () {
+              initPlay = true;
+              if (_controller.value.isPlaying) {
+                _controller.pause();
+              } else {
+                _controller.play();
+              }
+            },
+            onHorizontalDragEnd: (DragEndDetails details) {
+              if (details.primaryVelocity! < 0) {
+                Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}');
+              } else if (details.primaryVelocity! > 0) {
+                // Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}');
+              }
+            },
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              switchInCurve: Curves.easeIn,
+              switchOutCurve: Curves.ease,
+              // child: initialized == false ? buildLoading() : buildVideoScreen(),
+              child: ValueListenableBuilder<bool>(
+                valueListenable: initialized,
+                builder: (builder, value, child) {
+                  return value == false ? buildLoading() : buildVideoScreen(value);
+                },
               ),
             ),
-            // 중앙 play 버튼
-            buildCenterPlayButton(),
-            // 사운드 on/off 버튼
-            buildSoundButton(),
-            // 하단 컨텐츠
-            buildBottomContent(),
-            // 오른쪽 메뉴바
-            buildRightMenuBar(),
-            // 재생 progressbar
-            buildPlayProgress(),
-            //
-            buildSingo()
-            // Center(
-            //   child: Text(widget.data.boardId.toString(),
-            //       style: const TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.bold)),
-            // )
-          ],
-        ),
+          ),
+          // 중앙 play 버튼
+          buildCenterPlayButton(),
+          // 사운드 on/off 버튼
+          buildSoundButton(),
+          // 하단 컨텐츠
+          buildBottomContent(),
+          // 오른쪽 메뉴바
+          buildRightMenuBar(),
+          // 재생 progressbar
+          buildPlayProgress(),
+          //
+          buildSingo()
+          // Center(
+          //   child: Text(widget.data.boardId.toString(),
+          //       style: const TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.bold)),
+          // )
+        ],
       ),
     );
   }
@@ -325,12 +284,16 @@ class VideoScreenPageState extends State<VideoScreenPage> {
         }
       },
       key: _key,
-      child: SizedBox.expand(
-        child: FittedBox(
-          fit: BoxFit.cover,
-          child: SizedBox(
-            width: _controller.value.size.width,
-            height: _controller.value.size.height,
+      child: Center(
+        child: InteractiveViewer(
+          transformationController: transformationController,
+          minScale: 1.0,
+          maxScale: 4.0,
+          // child: AspectRatio(
+          //   aspectRatio: _controller.value.aspectRatio,
+          //   child: VideoPlayer(_controller),
+          // ),
+          child: SizedBox.expand(
             child: VideoPlayer(_controller),
           ),
         ),

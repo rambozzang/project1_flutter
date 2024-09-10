@@ -11,8 +11,8 @@ import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-class ListItemWidget extends StatefulWidget {
-  const ListItemWidget({
+class CommentItemWidget extends StatefulWidget {
+  const CommentItemWidget({
     super.key,
     this.focus,
     required this.boardCommentData,
@@ -23,10 +23,10 @@ class ListItemWidget extends StatefulWidget {
   final TextEditingController? controller;
 
   @override
-  State<ListItemWidget> createState() => _ListItemWidgetState();
+  State<CommentItemWidget> createState() => _CommentItemWidgetState();
 }
 
-class _ListItemWidgetState extends State<ListItemWidget> {
+class _CommentItemWidgetState extends State<CommentItemWidget> {
   ValueNotifier<int> likeCnt = ValueNotifier<int>(0);
   ValueNotifier<String> likeYn = ValueNotifier<String>('N');
 

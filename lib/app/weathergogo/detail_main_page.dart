@@ -69,7 +69,7 @@ class DetailMainPage extends GetView<WeatherGogoCntr> {
                   _buildInfoTile(
                     icon: PhosphorIconsRegular.wind,
                     title: '바 람',
-                    data: '${controller.currentWeather.value.speed ?? 0}m/s',
+                    data: '${controller.currentWeather.value.speed ?? 0}m',
                   ),
                   _buildInfoTile(
                     icon: PhosphorIconsRegular.dropHalfBottom,
@@ -185,14 +185,14 @@ class WindDirectionArrow extends StatelessWidget {
   const WindDirectionArrow({
     super.key,
     required this.direction,
-    this.color = Colors.white, // const Color.fromARGB(255, 160, 123, 223),
+    this.color = Colors.white,
     this.size = 22.0,
   });
 
   @override
   Widget build(BuildContext context) {
     return Transform.rotate(
-      angle: (direction - 180) * (math.pi / 180),
+      angle: (direction) * (math.pi / 180), // 수정된 부분
       child: Icon(
         Icons.navigation,
         color: color,

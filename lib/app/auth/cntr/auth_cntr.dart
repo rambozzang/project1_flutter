@@ -314,7 +314,7 @@ class AuthCntr extends GetxController with SecureStorage {
       await Get.dialog(
         AlertDialog(
           title: const Text('회원 탈퇴 완료'),
-          content: const Text('회원 탈퇴가 완료되었습니다.\n\n그동안 고마웠습니다.'),
+          content: const Text('회원 탈퇴가 완료되었습니다.\n\n감사합니다.'),
           actions: [
             TextButton(
               child: const Text('확인'),

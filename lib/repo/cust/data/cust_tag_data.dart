@@ -8,6 +8,8 @@ class CustTagData {
   String? lat;
   String? lon;
   String? addr;
+  String? nx;
+  String? ny;
   CustTagData({
     this.custId,
     this.tagNm,
@@ -15,6 +17,8 @@ class CustTagData {
     this.lat,
     this.lon,
     this.addr,
+    this.nx,
+    this.ny,
   });
 
   CustTagData copyWith({
@@ -24,6 +28,8 @@ class CustTagData {
     String? lat,
     String? lon,
     String? addr,
+    String? nx,
+    String? ny,
   }) {
     return CustTagData(
       custId: custId ?? this.custId,
@@ -32,6 +38,8 @@ class CustTagData {
       lat: lat ?? this.lat,
       lon: lon ?? this.lon,
       addr: addr ?? this.addr,
+      nx: nx ?? this.nx,
+      ny: ny ?? this.ny,
     );
   }
 
@@ -43,6 +51,8 @@ class CustTagData {
       'lat': lat,
       'lon': lon,
       'addr': addr,
+      'nx': nx,
+      'ny': ny,
     };
   }
 
@@ -54,6 +64,8 @@ class CustTagData {
       lat: map['lat'] != null ? map['lat'] as String : null,
       lon: map['lon'] != null ? map['lon'] as String : null,
       addr: map['addr'] != null ? map['addr'] as String : null,
+      nx: map['nx'] != null ? map['nx'] as String : null,
+      ny: map['ny'] != null ? map['ny'] as String : null,
     );
   }
 
@@ -63,7 +75,7 @@ class CustTagData {
 
   @override
   String toString() {
-    return 'CustTagData(custId: $custId, tagNm: $tagNm, tagType: $tagType, lat: $lat, lon: $lon, addr: $addr)';
+    return 'CustTagData(custId: $custId, tagNm: $tagNm, tagType: $tagType, lat: $lat, lon: $lon, addr: $addr, nx: $nx, ny: $ny)';
   }
 
   @override
@@ -75,11 +87,13 @@ class CustTagData {
         other.tagType == tagType &&
         other.lat == lat &&
         other.lon == lon &&
-        other.addr == addr;
+        other.addr == addr &&
+        other.nx == nx &&
+        other.ny == ny;
   }
 
   @override
   int get hashCode {
-    return custId.hashCode ^ tagNm.hashCode ^ tagType.hashCode ^ lat.hashCode ^ lon.hashCode ^ addr.hashCode;
+    return custId.hashCode ^ tagNm.hashCode ^ tagType.hashCode ^ lat.hashCode ^ lon.hashCode ^ addr.hashCode ^ nx.hashCode ^ ny.hashCode;
   }
 }

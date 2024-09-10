@@ -19,34 +19,9 @@ class NctAPI {
 
   final HttpService _httpService = HttpService();
 
-  //
-
-  // NctAPI({bool? isLog, PrettyDioLogger? customLogger}) asyn {
-  //   //  AuthDio.instance.getNoAuthCathDio() = ApiClient.createDio(
-  //   //   isLog: isLog ?? true,
-  //   //   customLogger: customLogger,
-  //   // );
-  //    AuthDio.instance.getNoAuthCathDio() = await  AuthDio.instance.getNoAuthCathDio();
-  // }
-
   static const _baseURL = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0';
 
   static const _getURL = '$_baseURL/getUltraSrtNcst';
-  final WeatherCache _cache = WeatherCache();
-
-  void saveYesterDayJsonData(LatLng latLng, List<dynamic> list) async {
-    try {
-      List<ItemSuperNct> itemList = [];
-      // 캐쉬에 저장
-      itemList = list.map((data) => ItemSuperNct.fromJson(data)).toList();
-
-      lo.g('saveYesterDayJsonData() -> ${itemList.length}');
-
-      await _cache.saveYesterDayWeatherData(latLng, ForecastType.superNctYesterDay, itemList);
-    } catch (e) {
-      lo.g('saveYesterDayJsonData() -> Error saving data for ${e.toString()}');
-    }
-  }
 
   // 어제 날씨 가져오기
   Future<List<dynamic>> getYesterDayJsonData(Weather weather, bool isCache) async {
@@ -69,26 +44,11 @@ class NctAPI {
 
       // results 가 24개의 리스트가 아니면 나머지를 다시 요청해서 24개로 만든다.
       if (results.length <= 22) {
-        results = await _fillMissingData(results, startTime, weather);
+        results = await fillMissingData(results, startTime, weather);
       }
       if (results.length <= 22) {
-        results = await _fillMissingData(results, startTime, weather);
+        results = await fillMissingData(results, startTime, weather);
       }
-      lo.g("0000");
-
-      if (results.length <= 22) {
-        throw Exception('날씨 데이터 가져오기 실패');
-      }
-      lo.g("111111111111111111111111111111111111");
-
-      // try {
-      //   // 데이터가 있는건 캐쉬에 저장
-      //   saveYesterDayJsonData(latLng, results.expand((x) => x).toList());
-      // } catch (e) {
-      //   lo.g('getYesterDayJsonData() -> Error saving data for ${e.toString()}');
-      // }
-      lo.g("2222222222222222222222");
-
       lo.g('===================== getYesterDayJsonData end  ${stopwatch.elapsedMilliseconds}ms , list : ${results.length}');
       return results.expand((x) => x).toList();
     } catch (e) {
@@ -98,7 +58,7 @@ class NctAPI {
     }
   }
 
-  Future<List<List<dynamic>>> _fillMissingData(List<List<dynamic>> results, DateTime startTime, Weather weather) async {
+  Future<List<List<dynamic>>> fillMissingData(List<List<dynamic>> results, DateTime startTime, Weather weather) async {
     List<Future<List<dynamic>>> futures = [];
     for (int i = 0; i < 25; i++) {
       if (results.where((element) => element.isNotEmpty).length >= 24) {
@@ -123,7 +83,7 @@ class NctAPI {
     LatLng latLng = LatLng(weather.nx.toDouble(), weather.ny.toDouble());
 
     final uri = Uri.parse(_getURL).replace(queryParameters: queryParams);
-    // lo.g('getYesterDayJsonData() -> ${uri.toString()} ');
+    lo.g('getYesterDayJsonData() -> ${uri.toString()} ');
     try {
       var response = await _httpService.getWithRetry(uri);
       if (response is String) {
@@ -133,7 +93,6 @@ class NctAPI {
       if (response is Map<String, dynamic>) {
         if (response['response']['header']['resultCode'] == '00') {
           List<dynamic> results = response['response']['body']['items']['item'] as List<dynamic>;
-
           return results;
         }
         return [];

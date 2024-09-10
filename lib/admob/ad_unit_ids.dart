@@ -21,3 +21,5 @@ class AdUnitIds {
     'WeathComPage2': 'ca-app-pub-7861255216779015/5926124101' // 비교화면2
   };
 }
+
+// google.com, pub-7861255216779015, DIRECT, f08c47fec0942fa0

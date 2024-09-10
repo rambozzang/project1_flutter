@@ -159,6 +159,7 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
       //   weather.rain?.toString() ?? '',
       // ),
       WeatherDataProcessor.instance.getFinalWeatherIcon(
+        DateTime.now().hour,
         weather.sky?.toString() ?? '',
         weather.rain?.toString() ?? '',
       ),

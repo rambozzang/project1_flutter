@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/videocomment/comment_header_widget.dart';
-import 'package:project1/app/videocomment/list_item_widget.dart';
+import 'package:project1/app/videocomment/comment_item_widget.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_comment_res_data.dart';
 import 'package:project1/repo/board/data/board_comment_data.dart';
@@ -208,7 +208,7 @@ class _CommentsPageState extends State<CommentsPage> {
                                         ),
                                       ),
                                     )
-                                  : ListItemWidget(
+                                  : CommentItemWidget(
                                       focus: replyFocusNode,
                                       boardCommentData: list[index],
                                       controller: replyController,

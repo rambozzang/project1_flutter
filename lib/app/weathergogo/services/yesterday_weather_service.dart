@@ -2,6 +2,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:project1/app/weathergogo/cntr/data/hourly_weather_data.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_nct/super_nct_model.dart';
 import 'package:project1/repo/weather_gogo/repository/weather_gogo_caching.dart';
+import 'package:project1/repo/weather_gogo/sources/weather_super_nct_api.dart';
 import 'package:project1/utils/log_utils.dart';
 
 class YesterdayHourlyWeatherService {
@@ -15,8 +16,11 @@ class YesterdayHourlyWeatherService {
     try {
       yesterdayWeather.clear();
       yesterdayWeather = await weatherService.getWeatherData<List<ItemSuperNct>>(latLng, ForecastType.superNctYesterDay);
+
       // list 출력
       // yesterdayWeather.forEach((data) => data.category == 'T1H' ? lo.g('${data.baseDate!} ${data.baseTime!}=>${data.obsrValue!}') : null);
+      // 이빨빠진 데이터가 있어서 다시 요청한다.
+
       for (ItemSuperNct item in yesterdayWeather) {
         if (item.category == 'T1H') {
           HourlyWeatherData hourlyWeather = HourlyWeatherData(

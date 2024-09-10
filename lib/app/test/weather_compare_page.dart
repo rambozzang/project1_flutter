@@ -71,6 +71,8 @@ class _WeatherComparePageState extends State<WeatherComparePage> {
 
     // 기상청 API 호출
     String _key = 'CeGmiV26lUPH9guq1Lca6UA25Al/aZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur+t2iPaL/LtEQdZebg==';
+    // String _key = 'CeGmiV26lUPH9guq1Lca6UA25Al%2FaZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur%2Bt2iPaL%2FLtEQdZebg%3D%3D';
+
     final weather = Weather(
       serviceKey: _key,
       pageNo: 1,

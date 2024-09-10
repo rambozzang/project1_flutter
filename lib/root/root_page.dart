@@ -130,18 +130,18 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     //   onPointerUp: handleUserInteraction,
     return UserOnlineStateObserver(
       child: Scaffold(
-        backgroundColor: Colors.transparent, //  Color(0xFF262B49),
+        backgroundColor: Colors.black,
         extendBodyBehindAppBar: true,
         resizeToAvoidBottomInset: true,
         body: Stack(
           children: [
-            SizedBox(
-              width: double.infinity,
-              child: Lottie.asset(
-                'assets/login/bg1.json',
-                fit: BoxFit.cover,
-              ),
-            ),
+            // SizedBox(
+            //   width: double.infinity,
+            //   child: Lottie.asset(
+            //     'assets/login/bg1.json',
+            //     fit: BoxFit.cover,
+            //   ),
+            // ),
             Positioned.fill(
                 child: PopScope(
               canPop: false,

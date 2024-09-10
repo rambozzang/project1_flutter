@@ -6,8 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:project1/app/%08join/ConstellationPainter.dart';
-import 'package:project1/app/%08join/TwinklingStar.dart';
+import 'package:project1/app/join/widget/ConstellationPainter.dart';
+import 'package:project1/app/join/widget/TwinklingStar.dart';
 import 'package:project1/repo/api/apple_api.dart';
 import 'package:project1/repo/api/google_api.dart';
 import 'package:project1/repo/api/kakao_api.dart';
@@ -235,56 +235,52 @@ class _JoinPageState extends State<JoinPage> with SingleTickerProviderStateMixin
             ],
           ),
         ),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-          blendMode: BlendMode.srcIn,
-          child: Stack(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(26.0),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Gap(85),
-                      // 앱 소개 텍스트
-                      _buildAppIntroText(),
-                      const Spacer(),
-                      // 회원가입 섹션
-                      _buildSignUpSection(),
-                      const Gap(65),
-                      // 푸터
-                      _buildFooter(),
-                    ],
-                  ),
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(26.0),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Gap(85),
+                    // 앱 소개 텍스트
+                    _buildAppIntroText(),
+                    const Spacer(),
+                    // 회원가입 섹션
+                    _buildSignUpSection(),
+                    const Gap(65),
+                    // 푸터
+                    _buildFooter(),
+                  ],
                 ),
               ),
-              // 로딩 인디케이터
-              _buildLoadingIndicator(),
-              ...constellations.map((constellation) => Positioned(
-                    left: constellation.x,
-                    top: constellation.y,
-                    child: CustomPaint(
-                      painter: constellation.constellationPainter,
-                    ),
-                  )),
-              ...twinklingStars.map((star) => Positioned(
-                    left: star.x,
-                    top: star.y,
-                    child: Opacity(
-                      opacity: star.opacity,
-                      child: Container(
-                        width: star.opacity * 5,
-                        height: star.opacity * 5,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
+            ),
+            // 로딩 인디케이터
+            _buildLoadingIndicator(),
+            ...constellations.map((constellation) => Positioned(
+                  left: constellation.x,
+                  top: constellation.y,
+                  child: CustomPaint(
+                    painter: constellation.constellationPainter,
+                  ),
+                )),
+            ...twinklingStars.map((star) => Positioned(
+                  left: star.x,
+                  top: star.y,
+                  child: Opacity(
+                    opacity: star.opacity,
+                    child: Container(
+                      width: star.opacity * 5,
+                      height: star.opacity * 5,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
                       ),
                     ),
-                  )),
-            ],
-          ),
+                  ),
+                )),
+          ],
         ),
       ),
     );

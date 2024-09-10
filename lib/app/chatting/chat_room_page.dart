@@ -363,17 +363,21 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  Color get bgColor => Colors.white;
+  Color get bgRoomColor => const Color.fromARGB(255, 234, 234, 234);
+  Color get systemColor => Colors.black87;
+
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
-          backgroundColor: const Color(0xFF262B49), //
+          backgroundColor: bgColor, //
           automaticallyImplyLeading: true,
           // systemOverlayStyle: SystemUiOverlayStyle.light,
-          // forceMaterialTransparency: true,
+          forceMaterialTransparency: true,
           leading: IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios,
-              color: Colors.white,
+              color: systemColor,
             ),
             onPressed: () {
               Navigator.pop(context);
@@ -383,14 +387,14 @@ class _ChatPageState extends State<ChatPage> {
           centerTitle: false,
           title: Text(
             room.name ?? '대화하기',
-            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+            style: TextStyle(color: systemColor, fontSize: 20, fontWeight: FontWeight.bold),
           ),
           actions: [
             // isGeminiAi
             IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.warning,
-                color: Colors.white,
+                color: systemColor,
               ),
               onPressed: () => SigoPageSheet().open(
                 context,
@@ -401,9 +405,9 @@ class _ChatPageState extends State<ChatPage> {
             ),
 
             IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.exit_to_app,
-                color: Colors.white,
+                color: systemColor,
               ),
               onPressed: leaveRoom,
             ),
@@ -426,38 +430,45 @@ class _ChatPageState extends State<ChatPage> {
                 theme: const DefaultChatTheme(
                   dateDividerMargin: EdgeInsets.only(bottom: 15, top: 15),
                   dateDividerTextStyle: TextStyle(
-                    color: Colors.white,
+                    color: Colors.black,
                     fontSize: 13,
                   ),
-                  inputBackgroundColor: Colors.white,
-                  inputTextColor: Colors.black,
-                  primaryColor: Colors.yellow,
+                  //inputBackgroundColor: Color.fromARGB(255, 202, 201, 201),
+                  // inputTextColor: Colors.black,
+
                   userNameTextStyle: TextStyle(
-                    color: Colors.white,
+                    color: Colors.black,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     height: 1.375,
                   ),
-                  unreadHeaderTheme: UnreadHeaderTheme(
-                    color: secondary,
-                    textStyle: TextStyle(color: neutral2, fontSize: 12, fontWeight: FontWeight.w500, height: 1.333),
-                  ),
-                  secondaryColor: Color.fromARGB(255, 68, 68, 68),
-                  inputPadding: EdgeInsets.fromLTRB(14, 10, 14, 10),
+                  // unreadHeaderTheme: UnreadHeaderTheme(
+                  //   color: Color.fromARGB(255, 68, 68, 68),
+                  //   textStyle: TextStyle(color: neutral2, fontSize: 12, fontWeight: FontWeight.w500, height: 1.333),
+                  // ),
+                  // 내 채팅방 색상
+                  primaryColor: Color.fromARGB(255, 111, 98, 232),
+                  // 상대방 채팅방 색상
+                  secondaryColor: Color.fromARGB(255, 240, 235, 227),
+                  // secondaryColor: Color.fromARGB(255, 43, 34, 81),
+                  // secondaryColor: Color.fromARGB(255, 92, 97, 111),
+                  backgroundColor: Colors.white, // Color.fromARGB(255, 248, 248, 245),
+
+                  // inputPadding: EdgeInsets.fromLTRB(14, 10, 14, 10),
                   messageBorderRadius: 10,
                   messageInsetsVertical: 5,
                   messageInsetsHorizontal: 10,
-                  sentMessageBodyTextStyle: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w400, height: 1.375),
-                  receivedMessageBodyTextStyle: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w400, height: 1.375),
-                  sentMessageLinkDescriptionTextStyle: TextStyle(color: neutral7, fontSize: 14, fontWeight: FontWeight.w400, height: 1.428),
-                  sentMessageLinkTitleTextStyle: TextStyle(color: neutral7, fontSize: 16, fontWeight: FontWeight.w800, height: 1.375),
+                  sentMessageBodyTextStyle: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w400, height: 1.375),
+                  receivedMessageBodyTextStyle: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w400, height: 1.375),
+                  // sentMessageLinkDescriptionTextStyle: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w400, height: 1.428),
+                  // sentMessageLinkTitleTextStyle: TextStyle(color: neutral7, fontSize: 16, fontWeight: FontWeight.w800, height: 1.375),
                   receivedEmojiMessageTextStyle: TextStyle(fontSize: 25),
-                  inputBorderRadius: BorderRadius.vertical(top: Radius.circular(10)),
-                  backgroundColor: Color.fromARGB(255, 32, 36, 59), // const Color(0xFF262B49), // Colors.black87,
-                  inputTextStyle: TextStyle(
-                    color: Colors.black,
-                    fontSize: 15,
-                  ),
+                  // inputBorderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+
+                  // inputTextStyle: TextStyle(
+                  //   color: Colors.black,
+                  //   fontSize: 15,
+                  // ),
                 ),
                 dateFormat: DateFormat('yyyy/MM/dd'),
                 timeFormat: DateFormat('HH:mm'),
@@ -497,7 +508,6 @@ class _ChatPageState extends State<ChatPage> {
                 ),
                 isAttachmentUploading: _isAttachmentUploading,
                 messages: snapshot.data ?? [],
-                //customBottomWidget: customTextinputWidget(),
                 onAttachmentPressed: _handleAttachmentPressed,
                 onMessageTap: _handleMessageTap,
                 onPreviewDataFetched: _handlePreviewDataFetched,
@@ -506,13 +516,6 @@ class _ChatPageState extends State<ChatPage> {
                 user: types.User(
                   id: SupabaseChatCore.instance.supabaseUser!.id,
                 ),
-                // systemMessageBuilder: (SystemMessage) {
-                //   if (snapshot.data!.first == '[상대방나감]') {
-                //     return const Text('나갔씁니다.');
-                //   }
-                //   return const Text('상대방이 나갔습니다.');
-                // },
-
                 imageHeaders: storageHeaders,
                 onMessageVisibilityChanged: (message, visible) async {
                   if (message.status != types.Status.seen && message.author.id != SupabaseChatCore.instance.supabaseUser!.id) {
@@ -520,12 +523,99 @@ class _ChatPageState extends State<ChatPage> {
                   }
                 },
                 onEndReached: _chatController.loadPreviousMessages,
-                // bubbleBuilder: (child, {required message, required nextMessageInGroup}) => Bubble(
-                //   child: child,
-                //   message: message,
-                //   nextMessageInGroup: nextMessageInGroup,
-                // ),
               );
+              // return Chat(
+              //   scrollPhysics: const BouncingScrollPhysics(),
+              //   theme: const DefaultChatTheme(
+              //     dateDividerMargin: EdgeInsets.only(bottom: 15, top: 15),
+              //     dateDividerTextStyle: TextStyle(
+              //       color: Colors.white,
+              //       fontSize: 13,
+              //     ),
+              //     inputBackgroundColor: Colors.white,
+              //     inputTextColor: Colors.black,
+              //     primaryColor: Colors.yellow,
+              //     userNameTextStyle: TextStyle(
+              //       color: Colors.white,
+              //       fontSize: 13,
+              //       fontWeight: FontWeight.w700,
+              //       height: 1.375,
+              //     ),
+              //     unreadHeaderTheme: UnreadHeaderTheme(
+              //       color: secondary,
+              //       textStyle: TextStyle(color: neutral2, fontSize: 12, fontWeight: FontWeight.w500, height: 1.333),
+              //     ),
+              //     secondaryColor: Color.fromARGB(255, 68, 68, 68),
+              //     inputPadding: EdgeInsets.fromLTRB(14, 10, 14, 10),
+              //     messageBorderRadius: 10,
+              //     messageInsetsVertical: 5,
+              //     messageInsetsHorizontal: 10,
+              //     sentMessageBodyTextStyle: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w400, height: 1.375),
+              //     receivedMessageBodyTextStyle: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w400, height: 1.375),
+              //     sentMessageLinkDescriptionTextStyle: TextStyle(color: neutral7, fontSize: 14, fontWeight: FontWeight.w400, height: 1.428),
+              //     sentMessageLinkTitleTextStyle: TextStyle(color: neutral7, fontSize: 16, fontWeight: FontWeight.w800, height: 1.375),
+              //     receivedEmojiMessageTextStyle: TextStyle(fontSize: 25),
+              //     inputBorderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+              //     backgroundColor: Color.fromARGB(255, 32, 36, 59), // const Color(0xFF262B49), // Colors.black87,
+              //     inputTextStyle: TextStyle(
+              //       color: Colors.black,
+              //       fontSize: 15,
+              //     ),
+              //   ),
+              //   dateFormat: DateFormat('yyyy/MM/dd'),
+              //   timeFormat: DateFormat('HH:mm'),
+              //   messageWidthRatio: 0.8,
+              //   showUserNames: false,
+              //   showUserAvatars: true,
+              //   emptyState: const Center(
+              //     child: Column(
+              //       children: [
+              //         Align(
+              //           alignment: Alignment.centerRight,
+              //           child: Text(
+              //             '💥음란대화는 법적조치가 들어갑니다.',
+              //             style: TextStyle(color: Colors.red),
+              //           ),
+              //         ),
+              //         Spacer(),
+              //         Text(
+              //           '이제 대화를 시작해보세요.',
+              //           style: TextStyle(color: Colors.white),
+              //         ),
+              //         Spacer(),
+              //         const SizedBox(
+              //           height: 1,
+              //         )
+              //       ],
+              //     ),
+              //   ),
+              //   avatarBuilder: (author) => Padding(
+              //     padding: const EdgeInsets.only(right: 10.0),
+              //     child: CircleAvatar(
+              //       radius: 16,
+              //       backgroundColor: Colors.white,
+              //       backgroundImage: author.imageUrl != null ? CachedNetworkImageProvider(author.imageUrl!) : null,
+              //       child: author.imageUrl == null ? const Icon(Icons.person) : null,
+              //     ),
+              //   ),
+              //   isAttachmentUploading: _isAttachmentUploading,
+              //   messages: snapshot.data ?? [],
+              //   onAttachmentPressed: _handleAttachmentPressed,
+              //   onMessageTap: _handleMessageTap,
+              //   onPreviewDataFetched: _handlePreviewDataFetched,
+              //   onSendPressed: _handleSendPressed,
+              //   hideBackgroundOnEmojiMessages: false,
+              //   user: types.User(
+              //     id: SupabaseChatCore.instance.supabaseUser!.id,
+              //   ),
+              //   imageHeaders: storageHeaders,
+              //   onMessageVisibilityChanged: (message, visible) async {
+              //     if (message.status != types.Status.seen && message.author.id != SupabaseChatCore.instance.supabaseUser!.id) {
+              //       await SupabaseChatCore.instance.updateMessage(message.copyWith(status: types.Status.seen), room.id);
+              //     }
+              //   },
+              //   onEndReached: _chatController.loadPreviousMessages,
+              // );
             }),
       );
   Widget customTextinputWidget() {

@@ -1,8 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:pretty_dio_logger/pretty_dio_logger.dart';
-import 'package:project1/app/weather/cntr/weather_cntr.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/config/url_config.dart';
 import 'package:project1/repo/api/auth_dio.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -41,6 +39,8 @@ class WeatherGogoRepo {
   // static const _baseURL = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0';
   //decoding key 를 사용.
   static const _key = 'CeGmiV26lUPH9guq1Lca6UA25Al/aZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur+t2iPaL/LtEQdZebg==';
+  // static const _key = 'CeGmiV26lUPH9guq1Lca6UA25Al%2FaZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur%2Bt2iPaL%2FLtEQdZebg%3D%3D';
+
   // static Dio createDio({required bool isLog, PrettyDioLogger? customLogger}) {
   //   var dio = Dio(BaseOptions(baseUrl: _baseURL));
 
@@ -284,18 +284,49 @@ class WeatherGogoRepo {
   }
 
   // 어제 날씨 캐쉬 저장
-  Future<ResData> saveYesterdayWeatherCacheData(WeatherCacheReq data) async {
-    // return ResData(code: '00', msg: 'success');
-    log("saveYesterdayWeatherCacheData >>>  11111");
+  // Future<ResData> saveYesterdayWeatherCacheData(WeatherCacheReq data) async {
+  //   // return ResData(code: '00', msg: 'success');
+  //   log("saveYesterdayWeatherCacheData >>>  11111");
 
-    final dio2 = await AuthDio.instance.getDio(debug: false);
-    log("saveYesterdayWeatherCacheData >>>  2222");
+  //   // final diodio = Dio();
+  //   // diodio.options.headers['Authorization'] = 'Bearer $token';
+  //   log("saveYesterdayWeatherCacheData >>>  2222");
+  //   try {
+  //     final diodio = await AuthDio.instance.getDio(debug: false);
+  //     log("saveYesterdayWeatherCacheData >>>  3333");
+  //     var url = '${UrlConfig.baseURL}/weather/saveYesterDayCache';
+
+  //     log("saveYesterdayWeatherCacheData >>> ${data.toJson()}");
+  //     rdio.Response response = await diodio.post(url, data: data.toJson());
+  //     return AuthDio.instance.dioResponse(response);
+  //   } on DioException catch (e) {
+  //     return AuthDio.instance.dioException(e);
+  //   } finally {
+  //     // diodio.close();
+  //   }
+  // }
+
+  // 어제 날씨 배치 데이터 db 리스트로 가져오기
+  Future<ResData> findWeatherCacheYesterday(String lox, String loy) async {
     try {
-      log("saveYesterdayWeatherCacheData >>>  3333");
-      var url = '${UrlConfig.baseURL}/weather/saveYesterDayCache';
+      final diodio = await AuthDio.instance.getDio(debug: false);
+      var url = '${UrlConfig.baseURL}/board/findWeatherCacheYesterday?lox=$lox&loy=$loy';
 
-      log("saveYesterdayWeatherCacheData >>> ${data.toJson()}");
-      rdio.Response response = await dio2.post(url, data: data.toJson());
+      rdio.Response response = await diodio.post(url);
+      return AuthDio.instance.dioResponse(response);
+    } on DioException catch (e) {
+      return AuthDio.instance.dioException(e);
+    } finally {}
+  }
+
+  // 어제날씨 기상청 호출 24개 가져오기
+  Future<ResData> getKmaforecastApi(String lox, String loy) async {
+    try {
+      final diodio = await AuthDio.instance.getDio(debug: false);
+      log("getWeatherYesterday >>>  3333");
+      var url = '${UrlConfig.baseURL}/weather/getKmaforecastApi?lox=$lox&loy=$loy';
+
+      rdio.Response response = await diodio.post(url);
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);

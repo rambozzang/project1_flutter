@@ -162,7 +162,10 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
   // 골프장 검색
 
   // 전국 전철역 검색
+
   String weatherKey = 'CeGmiV26lUPH9guq1Lca6UA25Al/aZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur+t2iPaL/LtEQdZebg==';
+  // String weatherKey = 'CeGmiV26lUPH9guq1Lca6UA25Al%2FaZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur%2Bt2iPaL%2FLtEQdZebg%3D%3D';
+
   // 기상청 초단기실황 가져오기
   void getSuperNctCast() async {
     try {
@@ -316,6 +319,40 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
     a.getInitWeatherData(true);
   }
 
+  void findWeatherCacheYesterday() async {
+    WeatherGogoRepo repo = WeatherGogoRepo();
+    ResData res = await repo.findWeatherCacheYesterday('89', '68');
+    if (res.code == '00') {
+      lo.g('data : ${res.data.toString()}');
+    } else {
+      lo.g('데이터 없음요');
+    }
+  }
+
+  void findYesterDayCache() async {
+    WeatherGogoRepo repo = WeatherGogoRepo();
+    late var stopwatch;
+    stopwatch = Stopwatch()..start();
+    ResData res = await repo.getKmaforecastApi('89', '68');
+
+    lo.g('findYesterDayCache time: ${stopwatch.elapsedMilliseconds}ms');
+    if (res.code == '00') {
+      List<ItemSuperFct> json = (res.data as List).map((item) => ItemSuperFct.fromJson(item)).toList();
+
+      List<String> days = [];
+      json.forEach((element) {
+        var aaa = "${element.baseDate}/${element.baseTime}";
+        if (!days.contains(aaa)) {
+          days.add(aaa);
+        }
+      });
+      Lo.g('초단기실황 : days : ${days.length}');
+      Lo.g('초단기실황 : days : $days');
+    } else {
+      lo.g('데이터 없음요');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -329,13 +366,26 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
               const SizedBox(
                 height: 60,
               ),
+
+              ElevatedButton(
+                onPressed: () async {
+                  var result = await WeatherCrawler.crawlWeatherForecast();
+                  print(json.encode(result));
+                },
+                child: const Text('네이버영상 '),
+              ),
+
+              ElevatedButton(
+                onPressed: () => findYesterDayCache(),
+                child: const Text('어제 날씨 '),
+              ),
               ElevatedButton(
                 onPressed: () async {
                   Navigator.of(context).push(MaterialPageRoute(
                       // fullscreenDialog: true,
-                      builder: (context) => EnhancedSunlightEffect()));
+                      builder: (context) => PageViewWidget()));
                 },
-                child: Text('햇빛화면'),
+                child: const Text('햇빛화면'),
               ),
               ElevatedButton(
                 onPressed: () async {
@@ -343,7 +393,7 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
                       // fullscreenDialog: true,
                       builder: (context) => AaaaaaPAge()));
                 },
-                child: Text('이쁜 컨테이너 화면'),
+                child: const Text('이쁜 컨테이너 화면'),
               ),
               ElevatedButton(
                 onPressed: () async {
@@ -354,7 +404,7 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
                     ),
                   ));
                 },
-                child: Text('눈모듈 화면'),
+                child: const Text('눈모듈 화면'),
               ),
               ElevatedButton(
                 onPressed: () async {
@@ -364,13 +414,13 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
                             isVisibleNotifier: ValueNotifier(true),
                           )));
                 },
-                child: Text('비 모듈 화면'),
+                child: const Text('비 모듈 화면'),
               ),
               ElevatedButton(
                 onPressed: () async {
                   await AuthCntr.to.logout();
                 },
-                child: Text('로그아웃'),
+                child: const Text('로그아웃'),
               ),
               ElevatedButton(
                 onPressed: () async {
@@ -378,13 +428,15 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
                 },
                 child: const Text('openweathermapclient '),
               ),
+              // ElevatedButton(
+              //   onPressed: () => Get.to(NaverScrappingPage()),
+              //   child: const Text('NaverScraPpingPage '),
+              // ),
               ElevatedButton(
-                onPressed: () => Get.to(NaverScrappingPage()),
-                child: const Text('NaverScraPpingPage '),
-              ),
-              ElevatedButton(
-                onPressed: () =>
-                    Get.find<WeatherGogoCntr>().fetchYesterDayWeather(Get.find<WeatherGogoCntr>().currentLocation.value!.latLng),
+                onPressed: () {
+                  LatLng latLng = LatLng(37.5546788388674, 126.970606917394);
+                  Get.find<WeatherGogoCntr>().fetchYesterDayWeather(Get.find<WeatherGogoCntr>().currentLocation.value!.latLng);
+                },
                 child: const Text('어제날씨조회 '),
               ),
               ElevatedButton(
