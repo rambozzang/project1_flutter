@@ -1,8 +1,10 @@
 # SkySnap App by CodeLabtiger
 
+앱스크린샷
+https://www.figma.com/design/J1jTkl6TLwbkXPDi6bzbrx/App-Store-Screenshot-Template-(Community)?node-id=6-2274&node-type=frame&t=o2ho2Bx82if4fXTS-0
+
+
 #ISO 업로드 하기
-
-
 1.  flutter build ipa
 2. build/ios/archive/Runner.xcarchive 를 XCode로 열기
 3. Validate 실행
@@ -15,10 +17,10 @@
   flutter build apk --release --target-platform=android-arm64 --split-debug-info=./debug-info
 2. App bundle 탐색기에 업로드
  - build/app/outputs/bundle/release/app-release.aab
-
+ 3. 안드로이드 디버그 기호 파일 업로드
+ cleanZip.sh 파일 실행 후 
+ ~/work/app/flutter/project1/build/app/intermediates/merged_native_libs/release/out/lib 폴더에서 zip 업로드
  
-
-# 안드로이드 디버그 기호 파일 업로드
 **app/build/app/intermediates/merged_nativ_libs/프로젝트폴더/out/lib**
 - x86_64
 - x86
@@ -33,13 +35,16 @@
 
 https://hooun.tistory.com/432
 
-work/app/flutter/project1/build/app/intermediates/merged_native_libs/release/out/lib
+cd ~/work/app/flutter/project1/build/app/intermediates/merged_native_libs/release/out/lib
 
-- find . -name "__MACOSX" -exec rm -rf {} +
-- find . -name ".DS_Store" -exec rm -rf {} +
-- zip -r ../symbols_clean.zip ./*
+find . -name "__MACOSX" -exec rm -rf {} +
+find . -name ".DS_Store" -exec rm -rf {} +
+zip -r ../symbols_clean.zip ./*
 
 symbols_clean.zip  파일 업로드 끝!!
+
+
+
 
 #1차 심사
 네, 앱스토어 심사 결과를 분석해 드리겠습니다. 앱이 거절된 주요 이유와 해결 방안을 정리해 드리겠습니다:
@@ -99,4 +104,11 @@ https://www.figma.com/community/plugin/1305891870034170272/imockup
 20240910 수정사항
  - 사용자정보 조회 스와이프 방향 수정
  - 알람 리스트 와 대화하기 리스트 데이터없음 표시 수정
-  
+ - 위치권한 설정 이후 프로세스 진행하도록 수정.
+ - 비디오 리스트 팔로우 조회 오류 수정
+ - 데이터 없을때 로직 추가 - 전체조회버튼 추가
+ - 24시 온도 그래프 간격 조정
+
+
+ 20230919 수정사항
+  - 안드로이드인경우 Dash 비디오 포멧 이용

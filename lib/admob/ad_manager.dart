@@ -48,7 +48,7 @@ class AdManager {
       sizes: [AdSize.banner],
       listener: AdManagerBannerAdListener(
         onAdLoaded: (Ad ad) {
-          lo.g('$AdManagerBannerAd loaded for $screenName.');
+          // lo.g('$AdManagerBannerAd loaded for $screenName.');
           Get.find<RootCntr>().updateAdLoadingStatus(screenName, true);
         },
         onAdFailedToLoad: (Ad ad, LoadAdError error) {

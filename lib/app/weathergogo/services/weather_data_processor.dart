@@ -82,11 +82,11 @@ class WeatherDataProcessor {
     if (yesterdayData.length > 24) {
       yesterdayData = yesterdayData.sublist(yesterdayData.length - 24);
     }
-    Lo.g("todayData  : ${todayData.first.date}");
-    Lo.g("yesterdayData  : ${yesterdayData.first.date}");
-    yesterdayData.forEach((element) {
-      Lo.g("yesterdayData  : ${element.date}");
-    });
+    // Lo.g("todayData  : ${todayData.first.date}");
+    // Lo.g("yesterdayData  : ${yesterdayData.first.date}");
+    // yesterdayData.forEach((element) {
+    //   Lo.g("yesterdayData  : ${element.date}");
+    // });
     return (todayData, yesterdayData);
   }
 

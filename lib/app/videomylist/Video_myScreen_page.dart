@@ -75,6 +75,11 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
     //  Ios : m3u8
     String finalUrl = widget.data.videoPath.toString();
     VideoFormat format = VideoFormat.hls;
+    // 안드로이드인 경우 daah 사용
+    if (Platform.isAndroid) {
+      finalUrl = widget.data.videoPath.toString().replaceAll('.m3u8', '.mpd');
+      format = VideoFormat.dash;
+    }
 
     final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
     final lastModified = _formatHttpDate(sevenDaysAgo);
@@ -227,8 +232,14 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                     duration: const Duration(milliseconds: 250),
                     switchInCurve: Curves.fastOutSlowIn,
                     switchOutCurve: Curves.fastLinearToSlowEaseIn,
+                    transitionBuilder: (Widget child, Animation<double> animation) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: child,
+                      );
+                    },
                     child: initialized == false
-                        ? buildLoading()
+                        ? buildLoading(ValueKey('${widget.data.boardId.toString()}loading'))
                         : VisibilityDetector(
                             onVisibilityChanged: (info) {
                               initPlay = false;
@@ -245,7 +256,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                                 }
                               }
                             },
-                            key: GlobalKey(),
+                            key: ValueKey('${widget.data.boardId.toString()}videoScreen'),
                             child: InteractiveViewer(
                               transformationController: _transformationController,
                               minScale: 1.0,
@@ -362,8 +373,10 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
     setState(() {});
   }
 
-  Widget buildLoading() {
+  Widget buildLoading(Key key) {
+    String imgPath = widget.data.videoPath!.replaceAll('/manifest/video.m3u8', '/thumbnails/thumbnail.jpg');
     return ClipRect(
+      key: key,
       // ClipRect을 사용하여 블러 효과가 자식 위젯 영역을 벗어나지 않도록 합니다.
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 25.0, sigmaY: 25.0),
@@ -371,7 +384,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
           decoration: BoxDecoration(
             image: DecorationImage(
               image: CachedNetworkImageProvider(
-                widget.data.videoPath!.replaceAll('/manifest/video.m3u8', '/thumbnails/thumbnail.jpg'),
+                imgPath,
                 cacheKey: widget.data.boardId.toString(),
               ),
               fit: BoxFit.cover,

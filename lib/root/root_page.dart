@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:app_version_update/app_version_update.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:giffy_dialog/giffy_dialog.dart';
 import 'package:project1/app/alram/alram_page.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/camera/page/camera_page.dart';
@@ -83,12 +83,14 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
 
   Future<void> checkAppVersion() async {
     try {
-      await AppVersionUpdate.checkForUpdates(appleId: AppConfig.appleId, playStoreId: AppConfig.playStoreId).then((data) async {
-        lo.g('checkAppVersion : ${data.storeUrl}');
-        lo.g('checkAppVersion : ${data.storeVersion}');
-
+      await AppVersionUpdate.checkForUpdates(appleId: AppConfig.appleId, playStoreId: AppConfig.playStoreId, country: 'kr')
+          .then((data) async {
         if (data.canUpdate!) {
-          Utils.appUpdateAlert(context, data.storeUrl.toString());
+          if (kDebugMode) {
+            Utils.alert("앱 최신번전으로 업데이트가 필요합니다.");
+          } else {
+            Utils.appUpdateAlert(context, data.storeUrl.toString());
+          }
         }
       });
     } catch (e) {

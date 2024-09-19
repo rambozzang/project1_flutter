@@ -221,8 +221,10 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
               children: [
                 const Gap(kToolbarHeight + 10),
                 Container(
-                  decoration: const BoxDecoration(
-                    borderRadius: BorderRadius.all(Radius.circular(15)),
+                  decoration: BoxDecoration(
+                    // color: Colors.black,
+                    // borderRadius: const BorderRadius.all(Radius.circular(15)),
+                    border: Border.all(color: Colors.grey),
                   ),
                   height: 240,
                   child: initialized
@@ -231,8 +233,8 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
                           options: NaverMapViewOptions(
                             locationButtonEnable: false,
                             initialCameraPosition: NCameraPosition(
-                                target: NLatLng(Get.find<WeatherGogoCntr>().currentLocation.value!.latLng.latitude,
-                                    Get.find<WeatherGogoCntr>().currentLocation!.value!.latLng.longitude),
+                                target: NLatLng(Get.find<WeatherGogoCntr>().currentLocation.value.latLng.latitude,
+                                    Get.find<WeatherGogoCntr>().currentLocation.value.latLng.longitude),
                                 zoom: 13,
                                 bearing: 0,
                                 tilt: 0),
@@ -246,11 +248,11 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
                       : const SizedBox.shrink(),
                 ),
                 const Gap(20),
-                const Divider(),
-                const Gap(10),
+                // const Divider(),
+                // const Gap(10),
                 const Align(
                     alignment: Alignment.centerLeft, child: Text('관심 지역 리스트', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800))),
-                const Gap(15),
+                const Gap(10),
                 buildLocalTag(),
                 const Gap(200),
               ],
@@ -365,7 +367,7 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
   Widget buildLocalTag() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       child: StreamBuilder<ResStream<List<String>>>(
           stream: areaStream.stream,
           builder: (context, snapshot) {

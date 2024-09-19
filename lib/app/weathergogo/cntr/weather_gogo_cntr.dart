@@ -423,11 +423,32 @@ class WeatherGogoCntr extends GetxController {
     // yHWeather.forEach((element) {
     //   lo.g('processingYesterDay 1 yHWeather  : ${element.toString()}');
     // });
+    // 중복 제거 함수
+    List<HourlyWeatherData> removeDuplicates(List<HourlyWeatherData> list) {
+      final seen = <String>{};
+      return list.where((data) {
+        final key = '${data.date.day}-${data.date.hour}';
+        if (seen.contains(key)) {
+          return false;
+        } else {
+          seen.add(key);
+          return true;
+        }
+      }).toList();
+    }
 
-    if (hWeather.length > 20 && yHWeather.length > 22) {
+    final now = DateTime.now();
+    final firstHour = hWeather.first.date.hour;
+    final isWithinTwoHours = (now.hour - firstHour).abs() <= 2;
+
+    if (hWeather.length > 20 && yHWeather.length > 20 && isWithinTwoHours) {
       hWeather.sort((a, b) => a.date.compareTo(b.date));
       yHWeather.sort((a, b) => a.date.compareTo(b.date));
       var (syncedToday, syncedYesterday) = WeatherDataProcessor.instance.synchronizeWeatherData(hWeather, yHWeather);
+
+      // 중복 제거 적용
+      syncedToday = removeDuplicates(syncedToday);
+      syncedYesterday = removeDuplicates(syncedYesterday);
 
       hourlyWeather.value = syncedToday.toList();
       yesterdayHourlyWeather.value = syncedYesterday.toList();

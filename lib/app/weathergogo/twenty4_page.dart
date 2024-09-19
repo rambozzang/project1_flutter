@@ -24,7 +24,7 @@ class Twenty4Page extends StatefulWidget {
 
 class _Twenty4PageState extends State<Twenty4Page> {
   // 크기 관련 상수 정의
-  final double hourlyItemWidth = 60.0;
+  final double hourlyItemWidth = 62.0;
 
   final double hourlyItemHeight = 320.0;
   // final double hourlyItemHeight = 280.0;

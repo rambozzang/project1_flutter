@@ -202,56 +202,59 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
         decoration: const BoxDecoration(
           color: Colors.white,
         ),
-        child: ListView(
-          //   controller: RootCntr.to.hideButtonController4,
-          children: [
-            buildLastSearch(),
-            const Gap(20),
-            buildLastTop10(),
-            const Gap(20),
-            buildCommon('추천 검색어', 1, recoWordlist),
-            const Gap(20),
-            buildCommon('급등 검색어', 2, suddenlylist),
-            const Gap(20),
-            ValueListenableBuilder<bool>(
-                valueListenable: isAdLoading,
-                builder: (context, value, child) {
-                  if (!value) return const SizedBox.shrink();
-                  return const Center(child: BannerAdWidget(screenName: 'SeachPage'));
-                }),
-            const Gap(20),
-            buildCommon('지하철 검색어', 3, subwaylist),
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            //   controller: RootCntr.to.hideButtonController4,
+            children: [
+              buildLastSearch(),
+              const Gap(20),
+              // buildLastTop10(),
+              buildCommon('급등 검색어', 2, suddenlylist),
+              const Gap(20),
+              buildCommon('추천 검색어', 1, recoWordlist),
+              const Gap(20),
 
-            const Gap(20),
-            buildCommon('학교 검색어', 4, schoollist),
-            const Gap(20),
-            buildCommon('캠핑장 검색어', 8, campinglist),
-            const Gap(20),
-            buildCommon('골프 검색어', 6, golflist),
-            const Gap(20),
-            // buildCommon('추천 검색어', recoWordlist),
-            // const Gap(20),
-            // buildWeatherInfoImg(),
-            // buildTodayWeather(),
-            // buildAddmob(),
-            // ValueListenableBuilder 만들어서 이미지 가져오기
-            ValueListenableBuilder<String>(
-              valueListenable: bgImaggeUrl,
-              builder: (context, value, child) {
-                return Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    image: DecorationImage(
-                      image: NetworkImage(value),
-                      fit: BoxFit.cover,
+              // const Gap(20),
+              ValueListenableBuilder<bool>(
+                  valueListenable: isAdLoading,
+                  builder: (context, value, child) {
+                    if (!value) return const SizedBox.shrink();
+                    return const Center(child: BannerAdWidget(screenName: 'SeachPage'));
+                  }),
+              const Gap(20),
+              buildCommon('지하철 검색어', 3, subwaylist),
+              const Gap(20),
+              buildCommon('학교 검색어', 4, schoollist),
+              const Gap(20),
+              buildCommon('캠핑장 검색어', 8, campinglist),
+              const Gap(20),
+              buildCommon('골프 검색어', 6, golflist),
+              const Gap(20),
+              // buildCommon('추천 검색어', recoWordlist),
+              // const Gap(20),
+              // buildWeatherInfoImg(),
+              // buildTodayWeather(),
+              // buildAddmob(),
+              // ValueListenableBuilder 만들어서 이미지 가져오기
+              ValueListenableBuilder<String>(
+                valueListenable: bgImaggeUrl,
+                builder: (context, value, child) {
+                  return Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: NetworkImage(value),
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-            //   Image.asset('assets/images/girl-6356393_640.jpg', fit: BoxFit.cover, width: double.infinity, height: 700),
-            //   myFeeds()
-          ],
+                  );
+                },
+              ),
+              //   Image.asset('assets/images/girl-6356393_640.jpg', fit: BoxFit.cover, width: double.infinity, height: 700),
+              //   myFeeds()
+            ],
+          ),
         ),
       ),
     );
@@ -375,32 +378,6 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
           children: [
             Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const Spacer(),
-            // SizedBox(
-            //   height: 33,
-            //   // width: 100,
-            //   child: TextButton(
-            //     style: TextButton.styleFrom(
-            //         padding: EdgeInsets.zero,
-            //         minimumSize: const Size(50, 30),
-            //         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            //         alignment: Alignment.centerRight),
-            //     onPressed: () => Get.toNamed('/MapPage'),
-            //     child: const Row(
-            //       children: [
-            //         Icon(
-            //           Icons.map,
-            //           color: Colors.indigo,
-            //           size: 20,
-            //         ),
-            //         Gap(3),
-            //         Text(
-            //           '지도에서 보기',
-            //           style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.bold),
-            //         ),
-            //       ],
-            //     ),
-            //   ),
-            // ),
           ],
         ),
         Column(

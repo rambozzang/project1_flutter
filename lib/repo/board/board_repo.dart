@@ -344,4 +344,17 @@ class BoardRepo {
       return AuthDio.instance.dioException(e);
     } finally {}
   }
+
+  //  follow  쿼리로 데이터 조회
+  Future<ResData> getFollowBoardList(String lat, String lon, int pageNum, int pageSize) async {
+    final dio = await AuthDio.instance.getDio();
+    try {
+      var url = '${UrlConfig.baseURL}/board/getFollowBoardList';
+
+      Response response = await dio.post(url, data: {'lat': lat, 'lon': lon, 'pageNum': pageNum, 'pageSize': pageSize});
+      return AuthDio.instance.dioResponse(response);
+    } on DioException catch (e) {
+      return AuthDio.instance.dioException(e);
+    } finally {}
+  }
 }

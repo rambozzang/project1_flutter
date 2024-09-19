@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -9,7 +7,6 @@ import 'package:material_floating_search_bar_2/material_floating_search_bar_2.da
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:project1/app/weather/models/geocode.dart';
 import 'package:project1/app/weather/theme/colors.dart';
-import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/repo/kakao/kakao_repo.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 
@@ -63,13 +60,13 @@ class _FavoriteAreaSearchPageState extends State<FavoriteAreaSearchPage> {
     return FloatingSearchBar(
       // backgroundColor: Colors.grey.shade400,
       controller: fsc,
-      hint: '통합 검색...',
+      hint: '주소, 지역명, 학교, 캠핑장, 골프장, 등산지역, 관광지,',
       clearQueryOnClose: true,
       scrollPadding: const EdgeInsets.only(top: 3.0, bottom: 56.0, left: 2.0, right: 2.0),
       // margins: EdgeInsets.only(left: 12.0, right: 12, top: Platform.isIOS ? kToolbarHeight : kToolbarHeight - 20, bottom: 0),
       margins: const EdgeInsets.only(left: 12.0, right: 12, top: 5),
       transitionDuration: const Duration(milliseconds: 300),
-      borderRadius: BorderRadius.circular(14.0),
+      borderRadius: BorderRadius.circular(8.0),
       transitionCurve: Curves.easeInOut,
       accentColor: primaryBlue,
       hintStyle: const TextStyle(color: Colors.black, decorationThickness: 0), //regularText,

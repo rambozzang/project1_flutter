@@ -187,7 +187,7 @@ class RootCntr extends GetxController {
       // 비디오 파일 압축
       MediaInfo? pickedFile = await VideoCompress.compressVideo(
         videoFile.path,
-        quality: VideoQuality.DefaultQuality,
+        quality: VideoQuality.HighestQuality,
         deleteOrigin: false,
         includeAudio: true,
       );
@@ -266,7 +266,7 @@ class RootCntr extends GetxController {
         if (needsCompression) {
           pickedFile = await VideoCompress.compressVideo(
             videoFile.path,
-            quality: VideoQuality.DefaultQuality,
+            quality: VideoQuality.HighestQuality,
             deleteOrigin: false,
             includeAudio: true,
           );
@@ -424,7 +424,7 @@ class RootCntr extends GetxController {
     int sizeThreshold = 60 * 1024 * 1024, // 60MB
     int widthThreshold = 1080,
     int heightThreshold = 1920,
-    double bitrateThreshold = 5000000, // 10 Mbps
+    double bitrateThreshold = 7000000, // 7 Mbps
   }) async {
     File file = File(filePath);
     int fileSize = await file.length();

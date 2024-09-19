@@ -82,7 +82,7 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      //   backgroundColor: const Color.fromARGB(255, 54, 53, 53),
+      backgroundColor: const Color.fromARGB(255, 54, 53, 53),
       extendBodyBehindAppBar: true,
       resizeToAvoidBottomInset: true,
       body: Stack(children: [
@@ -418,7 +418,7 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
         ),
       ),
     );
-  }
+  } // 기존 코드에서
 
   Widget errorWidget(CameraState state) {
     bool isPermissionError = state is CameraError && state.error == CameraErrorType.permission;
