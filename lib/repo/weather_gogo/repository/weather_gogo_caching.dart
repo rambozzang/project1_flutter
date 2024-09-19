@@ -270,18 +270,18 @@ class WeatherService {
 
       // compute 호출
       // RootIsolateToken 생성
-      // final RootIsolateToken rootIsolateToken = RootIsolateToken.instance!;
-      // // API 호출 및 데이터 처리는 백그라운드 Isolate에서 수행
-      // final result = await compute(
-      //   _callWeatherAPI<T>,
-      //   _FetchParams(location, type, rootIsolateToken),
-      // );
+      final RootIsolateToken rootIsolateToken = RootIsolateToken.instance!;
+      // API 호출 및 데이터 처리는 백그라운드 Isolate에서 수행
+      final result = await compute(
+        _callWeatherAPI<T>,
+        _FetchParams(location, type, rootIsolateToken),
+      );
 
       // API 호출
-      final result = await _callWeatherAPI2<T>(location, type);
-      if (result == null || result is List && result.isEmpty) {
-        throw Exception('Api 호출 결과값이 Null 입니다. ');
-      }
+      // final result = await _callWeatherAPI2<T>(location, type);
+      // if (result == null || result is List && result.isEmpty) {
+      //   throw Exception('Api 호출 결과값이 Null 입니다. ');
+      // }
 
       lo.g('[CACHING] API에서 데이터 로드 : ${type.toString()}');
 

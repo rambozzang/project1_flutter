@@ -3,8 +3,9 @@ description: "SkySnap Flutter project."
 
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
-# version: 1.0.3 # Ios 초기 버전
-version: 1.0.0+22  # Android 초기 버전
+version: 1.0.5 # Ios 초기 버전
+# version: 1.0.0+24  # Android 초기 버전
+
 
 environment:
   sdk: ">=3.3.0-99.1.beta <4.0.0"
@@ -12,6 +13,8 @@ environment:
 dependency_overrides:
   video_player_android:
     path: /Users/bumkyuchun/work/app/flutter_plugins/packages/video_player/video_player_android
+  # video_player_avfoundation:
+  #   path: /Users/bumkyuchun/work/app/flutter_plugins/packages/video_player/video_player_avfoundation
 
 dependencies:
   flutter:
@@ -96,14 +99,17 @@ dependencies:
   xml: ^6.1.0
   syncfusion_flutter_datagrid: ^26.1.40
   giffy_dialog: ^2.1.0
-  app_version_update: ^5.0.1
+  app_version_update: ^4.0.2
   flutter_dotenv: ^5.1.0
   sign_in_with_apple: ^6.1.1
   flutter_weather_bg_null_safety: ^1.0.0
   
   video_player_android:
     path: /Users/bumkyuchun/work/app/flutter_plugins/packages/video_player/video_player_android
+  # video_player_avfoundation:
+  #   path: /Users/bumkyuchun/work/app/flutter_plugins/packages/video_player/video_player_avfoundation
 
+    
 dev_dependencies:
   flutter_lints: ^4.0.0
   flutter_test:

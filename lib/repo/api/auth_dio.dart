@@ -61,7 +61,7 @@ class AuthDio {
     await _initialization;
   }
 
-  Future<Dio> getDio({debug = true}) async {
+  Future<Dio> getDio({debug = false}) async {
     // 캐쉬 사용 설정 1
     // await ensureInitialized();
 
@@ -90,7 +90,7 @@ class AuthDio {
     return dio;
   }
 
-  Future<Dio> getNoAuthDio({debug = true}) async {
+  Future<Dio> getNoAuthDio({debug = false}) async {
     // await ensureInitialized();
 
     final dio = Dio(BaseOptions(
@@ -115,7 +115,7 @@ class AuthDio {
     return dio;
   }
 
-  Future<Dio> getNoAuthCathDio({debug = true, cachehour = 4}) async {
+  Future<Dio> getNoAuthCathDio({debug = false, cachehour = 4}) async {
     await ensureInitialized();
 
     final dio = Dio(BaseOptions(

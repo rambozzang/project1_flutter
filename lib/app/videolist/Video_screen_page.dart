@@ -13,6 +13,7 @@ import 'package:giffy_dialog/giffy_dialog.dart';
 import 'package:hashtagable_v3/hashtagable.dart';
 import 'package:like_button/like_button.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/myinfo/otherinfo_page.dart';
 
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/app/videocomment/comment_page.dart';
@@ -45,8 +46,6 @@ class VideoScreenPage extends StatefulWidget {
 
 class VideoScreenPageState extends State<VideoScreenPage> {
   late VideoPlayerController _controller;
-
-  final GlobalKey _key = GlobalKey();
 
   final TransformationController transformationController = TransformationController();
   final double scale = 1.0;
@@ -82,6 +81,12 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   Future<void> initiliazeVideo() async {
     String finalUrl = widget.data.videoPath.toString();
     VideoFormat format = VideoFormat.hls;
+
+    // 안드로이드인 경우 daah 사용
+    if (Platform.isAndroid) {
+      finalUrl = widget.data.videoPath.toString().replaceAll('.m3u8', '.mpd');
+      format = VideoFormat.dash;
+    }
 
     final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
     final lastModified = _formatHttpDate(sevenDaysAgo);
@@ -232,14 +237,21 @@ class VideoScreenPageState extends State<VideoScreenPage> {
               }
             },
             child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
+              duration: const Duration(milliseconds: 200),
               switchInCurve: Curves.easeIn,
               switchOutCurve: Curves.ease,
-              // child: initialized == false ? buildLoading() : buildVideoScreen(),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: child,
+                );
+              },
               child: ValueListenableBuilder<bool>(
                 valueListenable: initialized,
                 builder: (builder, value, child) {
-                  return value == false ? buildLoading() : buildVideoScreen(value);
+                  return value == false
+                      ? buildLoading(ValueKey('${widget.data.boardId.toString()}loading'))
+                      : buildVideoScreen(ValueKey('${widget.data.boardId.toString()}videoScreen'), value);
                 },
               ),
             ),
@@ -265,7 +277,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     );
   }
 
-  Widget buildVideoScreen(bool init) {
+  Widget buildVideoScreen(Key key, bool init) {
     return VisibilityDetector(
       onVisibilityChanged: (info) {
         initPlay = false;
@@ -283,7 +295,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
           }
         }
       },
-      key: _key,
+      key: key,
       child: Center(
         child: InteractiveViewer(
           transformationController: transformationController,
@@ -325,7 +337,24 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     );
   }
 
-  Widget buildLoading() {
+  Widget buildLoading(Key key) {
+    String imgPath = widget.data.videoPath!.replaceAll('/manifest/video.m3u8', '/thumbnails/thumbnail.jpg');
+    return Container(
+      key: key,
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: CachedNetworkImageProvider(
+            imgPath,
+            cacheKey: widget.data.boardId.toString(),
+          ),
+          fit: BoxFit.fill,
+        ),
+      ),
+    );
+  }
+
+  Widget buildLoading2() {
+    String imgPath = widget.data.videoPath!.replaceAll('/manifest/video.m3u8', '/thumbnails/thumbnail.jpg');
     return ClipRect(
       // ClipRect을 사용하여 블러 효과가 자식 위젯 영역을 벗어나지 않도록 합니다.
       child: BackdropFilter(
@@ -334,7 +363,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
           decoration: BoxDecoration(
             image: DecorationImage(
               image: CachedNetworkImageProvider(
-                widget.data.videoPath!.replaceAll('/manifest/video.m3u8', '/thumbnails/thumbnail.jpg'),
+                imgPath,
                 cacheKey: widget.data.boardId.toString(),
               ),
               fit: BoxFit.cover,

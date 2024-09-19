@@ -437,6 +437,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
       return;
     }
     isLoading.value = false;
+
+    Utils.alert('프로필 사진이 변경되었습니다.');
     getCountData();
 
     // chatting 서버 이미지도 변경한다.
@@ -446,8 +448,6 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     chatUpdateData.uid = AuthCntr.to.resLoginData.value.chatId.toString();
     chatUpdateData.imageUrl = resthumbnail;
     chatRepo.updateUserino(chatUpdateData);
-
-    Utils.alert('프로필 사진이 변경되었습니다.');
   }
 
   // 이미지 서버에 저장
@@ -1270,6 +1270,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                           fit: BoxFit.cover,
                           placeholder: (context, url) => const Center(
                             child: CircularProgressIndicator(
+                              strokeWidth: 3.0,
                               valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
                             ),
                           ),

@@ -2,10 +2,8 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
-import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
@@ -81,7 +79,36 @@ class BoardListPageState extends State<BoardListPage> with AutomaticKeepAliveCli
       BoardRepo repo = BoardRepo();
 
       ResData res = await repo.getSearchBoard(Get.find<WeatherGogoCntr>().positionData.value!.latitude.toString(),
-          Get.find<WeatherGogoCntr>().positionData.value!.latitude.toString(), boardPageNum, boardageSize, searchWord);
+          Get.find<WeatherGogoCntr>().positionData.value!.longitude.toString(), boardPageNum, boardageSize, searchWord);
+
+      if (res.code != '00') {
+        Utils.alert(res.msg.toString());
+        return;
+      }
+
+      if (boardPageNum == 0) {
+        list = ((res.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
+      } else {
+        list.addAll(((res.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList());
+      }
+
+      followVideoListCntr.sink.add(ResStream.completed(list));
+    } catch (e) {
+      Utils.alert(e.toString());
+      followVideoListCntr.sink.add(ResStream.error(e.toString()));
+    }
+  }
+
+  // 거리로 조회 서비스
+  Future<void> getDistanceBoard(String lat, lon) async {
+    try {
+      if (boardPageNum == 0) {
+        followVideoListCntr.sink.add(ResStream.loading());
+      }
+
+      BoardRepo repo = BoardRepo();
+
+      ResData res = await repo.getDistinceBoardList(lat.toString(), lon.toString(), boardPageNum, boardageSize);
 
       if (res.code != '00') {
         Utils.alert(res.msg.toString());

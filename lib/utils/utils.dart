@@ -1,12 +1,8 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:giffy_dialog/giffy_dialog.dart';
@@ -69,7 +65,7 @@ abstract class Utils {
                 //   });
               },
               child: const Text(
-                '    확 인    ',
+                '    확     인    ',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 15,
@@ -641,13 +637,9 @@ abstract class Utils {
               break;
           }
         } else {
-          child = noDataWidget ??
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(48.0),
-                  child: Text("조회 된 데이터가 없습니다."),
-                ),
-              );
+          child = Container(
+            color: Colors.transparent,
+          );
         }
 
         return AnimatedSwitcher(

@@ -309,6 +309,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
               ];
             },
             body: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _tabs(),
                 _tabBarView(),
@@ -637,7 +638,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
       padding: const EdgeInsets.all(8.0),
       child: list.isNotEmpty
           ? GridView.builder(
-              shrinkWrap: true,
+              shrinkWrap: false,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3, //1 개의 행에 보여줄 item 개수
@@ -695,7 +696,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                                   ),
                                   const Gap(5),
                                   Text(
-                                    list[index].likeCnt.toString(),
+                                    list[index].viewCnt.toString(),
                                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                   ),
                                 ],
@@ -781,7 +782,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                             ),
                             const Gap(5),
                             Text(
-                              list[index].likeCnt.toString(),
+                              list[index].viewCnt.toString(),
                               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                             ),
                           ],
@@ -815,7 +816,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
           children: [
             Icon(Icons.grid_on),
             Gap(10),
-            Text('내 게시물'),
+            Text('게시물'),
           ],
         ),
       ),

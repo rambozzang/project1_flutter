@@ -131,8 +131,8 @@ class _AgreePageState extends State<AgreePage> with WidgetsBindingObserver {
   }
 
   Future<void> _checkLocationPermission() async {
-    // PermissionHandler handler = PermissionHandler();
-    // bool locationPermissionGranted = await handler.completed();
+    // 권한 상태 확인 전 잠시 대기
+    await Future.delayed(const Duration(milliseconds: 500));
 
     LocationPermission locationPermission = await Geolocator.checkPermission();
 

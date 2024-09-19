@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
@@ -83,19 +81,19 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
 
   // 전체 하면을 차지하면서 이미지를 보여주는 위젯
   Widget buildLoading() {
-    return Center(
-      child: Utils.progressbar(),
-    );
-    // return Hero(
-    //   tag: 'bg1',
-    //   child: SizedBox(
-    //     width: double.infinity,
-    //     child: Lottie.asset(
-    //       'assets/login/bg1.json',
-    //       fit: BoxFit.cover,
-    //     ),
-    //   ),
+    // return Center(
+    //   child: Utils.progressbar(),
     // );
+    return Hero(
+      tag: 'bg1',
+      child: SizedBox(
+        width: double.infinity,
+        child: Lottie.asset(
+          'assets/login/bg1.json',
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
     // return SizedBox.expand(
     //   child: Container(
     //     decoration: const BoxDecoration(
@@ -122,19 +120,21 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
       key: scaffoldkey,
       extendBodyBehindAppBar: true,
       resizeToAvoidBottomInset: true,
-      backgroundColor: const Color(0xFF262B49),
+      backgroundColor: Colors.black,
       extendBody: true,
-      // body: RefreshIndicator(
-      //   onRefresh: () async {
-      //     Get.find<VideoListCntr>().pageNum = 0;
-      //     Get.find<VideoListCntr>().getData();
-      //   },
       body: Stack(
         children: [
+          SizedBox(
+            width: double.infinity,
+            child: Lottie.asset(
+              'assets/login/bg1.json',
+              fit: BoxFit.cover,
+            ),
+          ),
           Positioned.fill(
             child: Utils.commonStreamList<BoardWeatherListData>(
                 Get.find<VideoListCntr>().videoListCntr, buildVideoBody, Get.find<VideoListCntr>().getData,
-                loadingWidget: buildLoading()),
+                loadingWidget: buildLoading(), noDataWidget: buildNoData()),
           ),
           buildLocalName(),
           buildButton(),
@@ -143,6 +143,39 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
         ],
       ),
       //   ),
+    );
+  }
+
+  Widget buildNoData() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Icon(Icons.error_outline, color: Colors.white, size: 30),
+          Lottie.asset('assets/lottie/faliure.json', width: 55, height: 55),
+          const Gap(10),
+          const Text('조회된 데이터가 없습니다.', style: TextStyle(color: Colors.white, fontSize: 15)),
+          const Gap(20),
+          TextButton(
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.white30,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              minimumSize: const Size(80, 38),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              '전체 조회하기',
+              style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+            ),
+            onPressed: () async {
+              Get.find<VideoListCntr>().swichSearchType('TOTAL');
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -159,7 +192,6 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
           physics: const CustomPhysics(),
           onPageChanged: (int inx) {
             cntr.getMoreData(inx, data.length);
-
             RootCntr.to.bottomBarStreamController.sink.add(true);
           },
           itemBuilder: (context, videoIndex) {
@@ -205,7 +237,6 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
         valueListenable: _showInterstitial,
         builder: (context, value, child) {
           // animation 자동으로 나타나기
-
           return AnimatedPositioned(
             duration: const Duration(milliseconds: 1200),
             curve: Curves.fastOutSlowIn,
@@ -217,7 +248,7 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
                       style: TextButton.styleFrom(
                         backgroundColor: Get.find<VideoListCntr>().searchType.value == 'TOTAL' ? Colors.white54 : Colors.white30,
                         padding: const EdgeInsets.symmetric(horizontal: 4),
-                        minimumSize: const Size(50, 28),
+                        minimumSize: const Size(40, 28),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -235,15 +266,15 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
                     TextButton(
                       style: TextButton.styleFrom(
                         backgroundColor: Get.find<VideoListCntr>().searchType.value == 'DIST' ? Colors.white54 : Colors.white30,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        minimumSize: const Size(50, 28),
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        minimumSize: const Size(40, 28),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       child: const Text(
-                        '현위치기준',
+                        '현위치',
                         style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                       ),
                       onPressed: () async {
@@ -254,7 +285,7 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
                     TextButton(
                       style: TextButton.styleFrom(
                         backgroundColor: Get.find<VideoListCntr>().searchType.value == 'TAG' ? Colors.white54 : Colors.white30,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
                         minimumSize: const Size(50, 28),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         shape: RoundedRectangleBorder(
@@ -273,7 +304,7 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
                     TextButton(
                       style: TextButton.styleFrom(
                         backgroundColor: Get.find<VideoListCntr>().searchType.value == 'LOCAL' ? Colors.white54 : Colors.white30,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
                         minimumSize: const Size(50, 28),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         shape: RoundedRectangleBorder(
@@ -286,6 +317,25 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
                       ),
                       onPressed: () async {
                         Get.find<VideoListCntr>().swichSearchType('LOCAL');
+                      },
+                    ),
+                    const Gap(5),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        backgroundColor: Get.find<VideoListCntr>().searchType.value == 'FOLLOW' ? Colors.white54 : Colors.white30,
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        minimumSize: const Size(40, 28),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Follow',
+                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: () async {
+                        Get.find<VideoListCntr>().swichSearchType('FOLLOW');
                       },
                     ),
                   ],
