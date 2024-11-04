@@ -49,7 +49,7 @@ void main() async {
   // 안드로이드  : Network : CERTIFICATE_VERIFY_FAILED 오류 수정
   HttpOverrides.global = MyHttpOverrides();
 
-  runApp(TigerBk());
+  runApp(const TigerBk());
 }
 
 class MyHttpOverrides extends HttpOverrides {
@@ -60,6 +60,8 @@ class MyHttpOverrides extends HttpOverrides {
 }
 
 class TigerBk extends StatelessWidget {
+  const TigerBk({super.key});
+
   // flutter_splach_native 패키지를 사용하면 아래 코드를 사용해야함. Ios 상태바가 안보임.
   // TigerBk() {
   //   SystemChrome.setEnabledSystemUIMode(

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
@@ -17,8 +18,11 @@ class VideoMyinfoListCntr extends GetxController {
   final String custId;
   final String boardId;
   final String? searchWord;
+  final String? southWest;
+  final String? northEast;
+  final int? searchDay;
 
-  VideoMyinfoListCntr(this.datatype, this.custId, this.boardId, this.searchWord);
+  VideoMyinfoListCntr(this.datatype, this.custId, this.boardId, this.searchWord, {this.southWest, this.northEast, this.searchDay});
 
   // 비디오 리스트
   StreamController<ResStream<List<BoardWeatherListData>>> videoMyListCntr = StreamController();
@@ -26,6 +30,7 @@ class VideoMyinfoListCntr extends GetxController {
   late Position? position;
   int pageNum = 0;
   int pagesize = 15;
+  bool isLastPage = false;
 
   var soundOff = false.obs;
 
@@ -45,21 +50,28 @@ class VideoMyinfoListCntr extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    getData();
+    getInitData();
   }
 
-  void getData() async {
+  Future<void> getInitData() async {
+    await getDataWithPagination(isInitialLoad: true);
+  }
+
+  Future<void> getDataWithPagination({bool isInitialLoad = false}) async {
     try {
-      list = [];
-      BoardWeatherListData boarIdData = BoardWeatherListData();
-      videoMyListCntr.sink.add(ResStream.loading());
-      // 위치 좌표 가져오기
-      // MyLocatorRepo myLocatorRepo = MyLocatorRepo();
-      //  position = await myLocatorRepo.getCurrentLocation();
+      if (isInitialLoad) {
+        videoMyListCntr.sink.add(ResStream.loading());
+        list.clear();
+        pageNum = 0;
+      } else {
+        if (!isLoadingMore.value || isLastPage) {
+          return;
+        }
+        pageNum++;
+      }
 
       BoardRepo boardRepo = BoardRepo();
       late ResData resListData;
-      // boardId가 있으면 해당 게시물만 가져오기
 
       if (datatype == 'ONE') {
         resListData = await boardRepo.getBoardByBoardId(boardId);
@@ -67,8 +79,8 @@ class VideoMyinfoListCntr extends GetxController {
           Utils.alert('해당 게시물은 존재하지 않습니다.');
           return;
         }
-        boarIdData = BoardWeatherListData.fromMap(resListData.data);
-        list.add(boarIdData);
+        BoardWeatherListData boarIdData = BoardWeatherListData.fromMap(resListData.data);
+        list = [boarIdData];
         videoMyListCntr.sink.add(ResStream.completed(list));
         return;
       }
@@ -84,6 +96,16 @@ class VideoMyinfoListCntr extends GetxController {
 
         resListData = await boardRepo.getSearchBoard(
             position!.latitude.toString(), position!.longitude.toString(), pageNum, pagesize, searchWord ?? "");
+      } else if (datatype == "LOCAL") {
+        // 좌료로 bounds 를 구하기
+        var (southWest, northEast) = await getbounds();
+        resListData = await boardRepo.searchBoardListByMaplonlatAndDay(
+          southWest,
+          northEast,
+          searchDay ?? 10,
+          pageNum,
+          pagesize,
+        );
       } else {
         position = Get.find<WeatherGogoCntr>().positionData.value;
 
@@ -92,25 +114,32 @@ class VideoMyinfoListCntr extends GetxController {
 
       if (resListData.code != '00') {
         Utils.alert('해당 게시물은 존재하지 않습니다.');
+        isLastPage = true;
         return;
       }
 
       List<BoardWeatherListData> _list = ((resListData.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
 
-      if (_list.length == 1) {
-        videoMyListCntr.sink.add(ResStream.completed(_list));
-        return;
+      if (_list.isEmpty || _list.length < pagesize) {
+        isLastPage = true;
+        isLoadingMore.value = false;
       }
 
-      //  boardid 가 있으면 해당 게시물이 맨 앞으로 오도록
-      if (boardId != '') {
+      if (isInitialLoad) {
+        list = _list;
+      } else {
+        list.addAll(_list);
+      }
+
+      // boardId 관련 로직 (기존 getData 메서드에서 가져옴)
+      if (boardId != '' && isInitialLoad) {
         bool isExist = false;
         // _List 에서 boardid 와 같은 데이터를 찾아서 맨 앞으로 이동
-        for (int i = 0; i < _list.length; i++) {
-          if (_list[i].boardId == int.parse(boardId)) {
-            BoardWeatherListData data = _list[i];
-            _list.removeAt(i);
-            _list.insert(0, data);
+        for (int i = 0; i < list.length; i++) {
+          if (list[i].boardId == int.parse(boardId)) {
+            BoardWeatherListData data = list[i];
+            list.removeAt(i);
+            list.insert(0, data);
             isExist = true;
             break;
           }
@@ -121,22 +150,16 @@ class VideoMyinfoListCntr extends GetxController {
           // 한건만 가져와 넣어준다 (페이징이 한참 후인 경우 해당 )
           resListData = await boardRepo.getBoardByBoardId(boardId);
           if (resListData.code == '00') {
-            boarIdData = BoardWeatherListData.fromMap(resListData.data);
-            _list.insert(0, boarIdData);
+            BoardWeatherListData boarIdData = BoardWeatherListData.fromMap(resListData.data);
+            list.insert(0, boarIdData);
           }
         }
       }
-      list.addAll(_list);
-      List<BoardWeatherListData> initList = list.sublist(0, list.length > 1 ? 2 : 1);
-      videoMyListCntr.sink.add(ResStream.completed(initList));
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        // 1번째 비디오를 플레이 화면에 바로 노출하도록 나머지 스트림 전송
-        if (!videoMyListCntr.isClosed) {
-          videoMyListCntr.sink.add(ResStream.completed(list));
-        }
-      });
+      lo.g('list : ${list.length}');
+
+      videoMyListCntr.sink.add(ResStream.completed(list));
     } catch (e) {
-      Lo.g('getDate() error : $e');
+      Lo.g('getDataWithPagination() error : $e');
       videoMyListCntr.sink.add(ResStream.error(e.toString()));
     }
   }
@@ -144,62 +167,9 @@ class VideoMyinfoListCntr extends GetxController {
   void getSingAfterGetData(String? singoCd) async {
     lo.g('getSingAfterGetData() 신고 코드 : $singoCd');
     if (singoCd == '07' || singoCd == '08') {
-      getData();
+      // getData(pageNum);
+      getInitData();
     }
-  }
-
-  // 참고 싸이트 : https://github.com/octomato/preload_page_view/issues/43
-  Future<void> getMoreData(int index, int length) async {
-    // index :  3 , length :  5  =>  3 > 0 true;
-    // index:    , length : 15 =>  3 > 10 false;
-    // pagesize
-
-    currentIndex.value = index;
-
-    bool isBottom = index > list.length - (preLoadingCount + 1);
-    isBottom = length < pagesize ? false : isBottom;
-    // false 이면 바로 리턴 (더이상 데이터가 없음)
-    if (!isBottom) {
-      return;
-    }
-
-    if (!isLoadingMore.value) {
-      return;
-    }
-
-    pageNum++;
-
-    BoardRepo boardRepo = BoardRepo();
-
-    late ResData resListData;
-    if (datatype == "MUYFEED") {
-      resListData = await boardRepo.getMyBoard(Get.find<AuthCntr>().resLoginData.value.custId.toString(), pageNum, pagesize);
-    } else if (datatype == "FOLLOW") {
-      resListData = await boardRepo.getFollowBoard(Get.find<AuthCntr>().resLoginData.value.custId.toString(), pageNum, pagesize);
-    } else if (datatype == "LIKE") {
-      resListData = await boardRepo.searchBoardBylatlon(position!.latitude.toString(), position!.longitude.toString(), pageNum, pagesize);
-    } else if (datatype == "SEARCHLIST") {
-      resListData = await boardRepo.getSearchBoard(
-          position!.latitude.toString(), position!.longitude.toString(), pageNum, pagesize, searchWord ?? "");
-    } else if (datatype == "ONE") {
-      videoMyListCntr.sink.add(ResStream.completed(list));
-      return;
-    } else {
-      resListData = await boardRepo.searchBoardBylatlon(position!.latitude.toString(), position!.longitude.toString(), pageNum, pagesize);
-    }
-
-    if (resListData.code != '00') {
-      Utils.alert(resListData.msg.toString());
-      return;
-    }
-    List<BoardWeatherListData> _list = ((resListData.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
-
-    if (_list.isEmpty || _list.length < pagesize) {
-      isLoadingMore.value = false;
-    }
-
-    list.addAll(_list);
-    videoMyListCntr.sink.add(ResStream.completed(list));
   }
 
   Future<void> follow(String custId) async {
@@ -248,6 +218,29 @@ class VideoMyinfoListCntr extends GetxController {
     } catch (e) {
       Utils.alert('실패! 다시 시도해주세요');
     }
+  }
+
+  Future<(LatLng, LatLng)> getbounds() async {
+    // 현재 위치 가져오기 (예: WeatherGogoCntr에서)
+    final currentLocation = Get.find<WeatherGogoCntr>().currentLocation.value;
+
+    if (currentLocation == null) {
+      throw Exception('Current location is not available');
+    }
+
+    // 현재 위치의 위도와 경도
+    double lat = currentLocation.latLng.latitude;
+    double lon = currentLocation.latLng.longitude;
+
+    // 범위 설정 (예: 위도와 경도로 각각 0.1도, 대략 11km)
+    double latDelta = 0.1;
+    double lonDelta = 0.1;
+
+    // 경계 계산
+    LatLng southWest = LatLng(lat - latDelta, lon - lonDelta);
+    LatLng northEast = LatLng(lat + latDelta, lon + lonDelta);
+
+    return (southWest, northEast);
   }
 
   void onDispose() {

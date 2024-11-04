@@ -3,12 +3,11 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:project1/app/camera/bloc/camera_state.dart';
-import 'package:project1/app/camera/enums/color_constant.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/camera/utils/permission_utils.dart';
-import 'package:project1/repo/weather/data/current_weather.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:path/path.dart' as path;
 part 'camera_event.dart';
@@ -47,9 +46,20 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     on<CameraRecordingStop>(_onCameraRecordingStop);
     on<CameraEnable>(_onCameraEnable);
     on<CameraDisable>(_onCameraDisable);
+    on<CameraDispose>(_onCameraDispose);
   }
 
   // ...................... event handler ..........................
+
+  // 카메라 페이지가 dispose될 때 호출되는 이벤트 핸들러
+  void _onCameraDispose(CameraDispose event, Emitter<CameraState> emit) async {
+    if (isRecording()) {
+      await _stopRecording();
+    }
+    await _disposeCamera();
+    _resetCameraBloc();
+    emit(CameraDisposed());
+  }
 
   // Handle CameraReset event
   void _onCameraReset(CameraReset event, Emitter<CameraState> emit) async {
@@ -62,10 +72,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   void _onCameraInitialize(CameraInitialize event, Emitter<CameraState> emit) async {
     recordDurationLimit = event.recordingLimit;
     try {
-      await _checkPermissionAndInitializeCamera(); // checking and asking for camera permission and initializing camera
-      emit(CameraReady(isRecordingVideo: false));
-      // 20240830 bk 추가
-      await _cameraController?.prepareForVideoRecording();
+      await _checkPermissionAndInitializeCamera(emit); // checking and asking for camera permission and initializing camera
     } catch (e) {
       emit(CameraError(error: e == CameraErrorType.permission ? CameraErrorType.permission : CameraErrorType.other));
     }
@@ -73,9 +80,20 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
   // Handle CameraSwitch event
   void _onCameraSwitch(CameraSwitch event, Emitter<CameraState> emit) async {
+    // emit(CameraInitial());
+    // await _switchCamera();
+    // emit(CameraReady(isRecordingVideo: false));
     emit(CameraInitial());
-    await _switchCamera();
-    emit(CameraReady(isRecordingVideo: false));
+    try {
+      await _switchCamera(emit);
+      if (_cameraController != null && _cameraController!.value.isInitialized) {
+        // emit(CameraReady(isRecordingVideo: false));
+      } else {
+        emit(CameraError(error: CameraErrorType.other));
+      }
+    } catch (e) {
+      emit(CameraError(error: CameraErrorType.other));
+    }
   }
 
   // Handle CameraRecordingStart event
@@ -86,8 +104,8 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
           emit(CameraReady(isRecordingVideo: true));
         });
       } catch (e) {
-        await _reInitialize();
-        emit(CameraReady(isRecordingVideo: false));
+        await _reInitialize(emit);
+        // emit(CameraReady(isRecordingVideo: false));
       }
     }
   }
@@ -110,8 +128,8 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
           emit(CameraRecordingSuccess(file: videoFile));
         }
       } catch (e) {
-        await _reInitialize(); // On Camera Exception, initialize the camera again
-        emit(CameraReady(isRecordingVideo: false));
+        await _reInitialize(emit); // On Camera Exception, initialize the camera again
+        // emit(CameraReady(isRecordingVideo: false));
       }
     }
   }
@@ -120,8 +138,8 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   void _onCameraEnable(CameraEnable event, Emitter<CameraState> emit) async {
     if (!isInitialized() && _cameraController != null) {
       if (await permissionUtils.getCameraAndMicrophonePermissionStatus()) {
-        await _initializeCamera();
-        emit(CameraReady(isRecordingVideo: false));
+        await _initializeCamera(emit);
+        // emit(CameraReady(isRecordingVideo: false));
       } else {
         emit(CameraError(error: CameraErrorType.permission));
       }
@@ -150,6 +168,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
   // Start the recording timer
   void _startTimer() async {
+    lo.g("################################ startTimer");
     recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       recordingDuration.value++;
       if (recordingDuration.value == recordDurationLimit) {
@@ -192,14 +211,14 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   }
 
   // Check and ask for camera permission and initialize camera
-  Future<void> _checkPermissionAndInitializeCamera() async {
+  Future<void> _checkPermissionAndInitializeCamera(Emitter<CameraState> emit) async {
     if (await permissionUtils.getCameraAndMicrophonePermissionStatus()) {
-      await _initializeCamera();
+      await _initializeCamera(emit);
     } else {
       if (await permissionUtils.askForPermission()) {
         // 릴레이를 쭤야 함 안그럼 빨간딱지 나옴 - 여긴 최초한번만 실행되니까
-        sleep(const Duration(milliseconds: 800));
-        await _initializeCamera();
+        sleep(const Duration(milliseconds: 500));
+        await _initializeCamera(emit);
       } else {
         return Future.error(CameraErrorType.permission); // Throw the specific error type for permission denial
       }
@@ -207,13 +226,31 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   }
 
   // Initialize the camera controller
-  Future<void> _initializeCamera() async {
-    _cameraController = await cameraUtils.getCameraController(lensDirection: currentLensDirection);
+  Future<void> _initializeCamera(Emitter<CameraState> emit) async {
     try {
-      await _cameraController?.initialize();
-      _cameraController?.addListener(() {
-        if (_cameraController!.value.isRecordingVideo) {
-          _startTimer();
+      _cameraController = null;
+      _cameraController = await cameraUtils.getCameraController(lensDirection: currentLensDirection);
+
+      await _cameraController?.initialize().then((_) async {
+        // isInitialized 가 바로 true 를 반환하지 않아 딜레이를 줍니다.
+        Platform.isIOS ? await Future.delayed(const Duration(milliseconds: 150)) : null;
+        if (_cameraController!.value.isInitialized) {
+          if (Platform.isIOS) {
+            //ios 에서만 필요한 코드
+            await _cameraController?.prepareForVideoRecording();
+
+            // 화면 깜빡임을 속이기 위해 딜레이를 주고 Ready로 상태변경
+            await Future.delayed(const Duration(milliseconds: 150));
+          }
+
+          emit(CameraReady(isRecordingVideo: false, decativateRecordButton: false));
+          _cameraController?.lockCaptureOrientation(DeviceOrientation.portraitUp);
+
+          _cameraController!.addListener(() {
+            if (_cameraController!.value.isRecordingVideo) {
+              _startTimer();
+            }
+          });
         }
       });
     } on CameraException catch (error) {
@@ -224,15 +261,15 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   }
 
   // Switch between front and back cameras
-  Future<void> _switchCamera() async {
+  Future<void> _switchCamera(Emitter<CameraState> emit) async {
     currentLensDirection = currentLensDirection == CameraLensDirection.back ? CameraLensDirection.front : CameraLensDirection.back;
-    await _reInitialize();
+    await _reInitialize(emit);
   }
 
   // Reinitialize the camera
-  Future<void> _reInitialize() async {
+  Future<void> _reInitialize(Emitter<CameraState> emit) async {
     await _disposeCamera();
-    await _initializeCamera();
+    await _initializeCamera(emit);
   }
 
   // Dispose of the camera controller
@@ -240,9 +277,9 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     _cameraController?.removeListener(() {});
     await _cameraController?.dispose();
     _stopTimerAndResetDuration();
-    _cameraController = await cameraUtils.getCameraController(
-        lensDirection:
-            currentLensDirection); // it's important to remove old camera controller instances otherwise _cameraController!.value will remain unchanged hence _cameraController!.value.isInitialized will always true
+    // _cameraController = await cameraUtils.getCameraController(
+    //     lensDirection:
+    //         currentLensDirection); // it's important to remove old camera controller instances otherwise _cameraController!.value will remain unchanged hence _cameraController!.value.isInitialized will always true
   }
 
   Future<File> ensureMP4Extension(File videoFile) async {

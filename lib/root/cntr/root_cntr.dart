@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloudflare/cloudflare.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -154,32 +155,6 @@ class RootCntr extends GetxController {
     VideoCompress.cancelCompression();
   }
 
-  // 비디오 파일 압축 및 썸네일 생성
-  // Future<List<File>> compressVideo(videoFile) async {
-  //   try {
-  //     final List list;
-  //     list = await Future.wait([
-  //       VideoCompress.compressVideo(
-  //         videoFile.path,
-  //         quality: VideoQuality.HighestQuality,
-  //         deleteOrigin: false,
-  //         includeAudio: true,
-  //       ),
-  //       VideoCompress.getFileThumbnail(videoFile.path, quality: 50),
-  //     ]);
-  //     pickedFile = list[0];
-  //     thumbnailFile = list[1].path;
-  //     uploadVideoFile = File(pickedFile!.path.toString());
-  //     uploadThumbnailFile = File(thumbnailFile!.toString());
-  //     return [uploadVideoFile, uploadThumbnailFile];
-  //     // // return pickedFile;
-  //   } catch (e) {
-  //     Lo.g('비디오 압축 에러 : $e');
-  //     VideoCompress.cancelCompression();
-  //     return [];
-  //   }
-  // }
-
   void uploadR2Storage2(File videoFile, BoardSaveData boardSaveData) async {
     isFileUploading.value = UploadingType.UPLOADING;
 
@@ -237,7 +212,7 @@ class RootCntr extends GetxController {
       }
       isFileUploading.value = UploadingType.SUCCESS;
       // Utils.alert('정상 등록되었습니다!');
-      Future.delayed(const Duration(milliseconds: 2000), () {
+      Future.delayed(const Duration(milliseconds: 1000), () {
         isFileUploading.value = UploadingType.NONE;
         File(pickedFile!.path.toString()).delete();
         File(thumbnailFile!.toString()).delete();
@@ -262,6 +237,10 @@ class RootCntr extends GetxController {
       bool needsCompression = await shouldCompressVideo(videoFile.path);
       late MediaInfo? pickedFile;
 
+      lo.e('shouldCompressVideo needsCompression : $needsCompression');
+      if (kDebugMode && needsCompression) {
+        Utils.alert('압축 진행합니다.');
+      }
       try {
         if (needsCompression) {
           pickedFile = await VideoCompress.compressVideo(
@@ -275,7 +254,9 @@ class RootCntr extends GetxController {
         }
       } catch (e) {
         lo.g('비디오 압축 에러 : $e');
-        VideoCompress.cancelCompression();
+        if (needsCompression) {
+          VideoCompress.cancelCompression();
+        }
         pickedFile = await VideoCompress.getMediaInfo(videoFile.path);
       }
 
@@ -390,7 +371,7 @@ class RootCntr extends GetxController {
 
   // Video__reg_page.dart 파일에서 호출 후 등록 처리.
   void goTimer(File videoFile, BoardSaveData boardSaveData) {
-    Future.delayed(const Duration(microseconds: 300), () {
+    Future.delayed(const Duration(microseconds: 350), () {
       // Cloudflare R2 파일 업로드
       // uploadR2Storage(videoFile, boardSaveData);
       // Cloudflare Stream 파일 업로드
@@ -421,7 +402,7 @@ class RootCntr extends GetxController {
     // int widthThreshold = 1920,
     // int heightThreshold = 1080,
     // double bitrateThreshold = 5000000, // 5 Mbps
-    int sizeThreshold = 60 * 1024 * 1024, // 60MB
+    int sizeThreshold = 70 * 1024 * 1024, // 60MB
     int widthThreshold = 1080,
     int heightThreshold = 1920,
     double bitrateThreshold = 7000000, // 7 Mbps
@@ -450,12 +431,28 @@ class RootCntr extends GetxController {
     if (fileSize > sizeThreshold) {
       return true;
     }
+
+    // width, height 체크 더 큰게 height 으로 재설정
+    int width_t = 0;
+    int height_t = 0;
+
+    if (width > height) {
+      height_t = width;
+      width_t = height;
+    } else {
+      height_t = height;
+      width_t = width;
+    }
+    width = width_t;
+    height = height_t;
+
     if (width > widthThreshold || height > heightThreshold) {
       return true;
     }
     if (bitrate > bitrateThreshold) {
       return true;
     }
+
     return false;
   }
 }

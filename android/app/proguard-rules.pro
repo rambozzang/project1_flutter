@@ -51,3 +51,8 @@
 -dontwarn org.bouncycastle.jsse.**
 -dontwarn org.conscrypt.*
 -dontwarn org.openjsse.**
+
+# 네이버 로그인
+-keep public class com.navercorp.nid.** {
+    public *;
+}

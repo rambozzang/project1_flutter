@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:project1/app/alram/alram_page.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/camera/page/camera_page.dart';
@@ -20,6 +21,7 @@ import 'package:project1/app/videolist/video_list_page.dart';
 import 'package:project1/app/weathergogo/weathergogo_page.dart';
 import 'package:project1/config/app_config.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
+import 'package:project1/utils/WeatherLottie.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/fade_stack.dart';
@@ -51,7 +53,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     bottomItem(Icons.cloudy_snowing, '날씨'),
     // bottomItem(Icons.cloud_queue, '날씨'),
     bottomItem(Icons.add, '추가'),
-    bottomItem(Icons.favorite, '알람'),
+    bottomItem(Icons.favorite, '라운지'),
     bottomItem(Icons.person, '내정보'),
   ];
   // body Widget List
@@ -66,19 +68,9 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+
     Get.put(VideoListCntr());
     checkAppVersion();
-
-    // initFirebase();
-
-    // getData();
-    // 3초후 실행
-    // Future.delayed(const Duration(seconds: 3), () {
-    //   Utils.AppUpdateAlert(context);
-    //   // Utils.checkAppVersion();
-
-    //   Utils.bottomNotiAlert(context, '신기능 추가', '날씨 예보 비교 기능 추가되었습니다.');
-    // });
   }
 
   Future<void> checkAppVersion() async {
@@ -98,7 +90,25 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     }
   }
 
-  DateTime? currentBackPressTime = null;
+  onClick(index) {
+    if (index == 2) {
+      goRecord();
+      return;
+    }
+    // 알람 페이지로 이동
+    if (index == 3) {
+      mainlist[3] = const AlramPage();
+      // Get.to(() => const AlramPage2());
+      // return;
+    }
+    //내정보 페이지로 이동
+    if (index == 4) {
+      mainlist[4] = const MyPage();
+    }
+    RootCntr.to.changeRootPageIndex(index);
+  }
+
+  late DateTime? currentBackPressTime;
 
   //뒤로가기 로직(핸드폰 뒤로가기 버튼 클릭시)
   Future<void> onGoBack(didPop) async {
@@ -134,7 +144,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
       child: Scaffold(
         backgroundColor: Colors.black,
         extendBodyBehindAppBar: true,
-        resizeToAvoidBottomInset: true,
+        resizeToAvoidBottomInset: false,
         body: Stack(
           children: [
             // SizedBox(
@@ -238,33 +248,6 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     );
   }
 
-  onClick(index) {
-    // 검색 페이지로 이동
-    // if (index == 1) {
-    //   mainlist[1] = const WeatherPage();
-    //   // mainlist[1] = const SearchPage();
-    // }
-
-    // if (index == 1) {
-    //   mainlist[1] = const WeatherPage();
-    // }
-
-    // 가운데 + 키 눌렀을대 카메라로 이동
-    if (index == 2) {
-      goRecord();
-      return;
-    }
-    // 알람 페이지로 이동
-    if (index == 3) {
-      mainlist[3] = const AlramPage();
-    }
-    //내정보 페이지로 이동
-    if (index == 4) {
-      mainlist[4] = const MyPage();
-    }
-    RootCntr.to.changeRootPageIndex(index);
-  }
-
   BottomNavigationBarItem bottomItem(IconData icondata, String label) {
     return BottomNavigationBarItem(
       icon: Obx(() => Icon(
@@ -310,6 +293,19 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   }
 
   Widget centerEventContainer() {
-    return Container();
+    return Positioned(
+      top: MediaQuery.of(context).size.height / 2 - 50,
+      left: MediaQuery.of(context).size.width / 2 - 100,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.7),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Text(
+          "messageString",
+          style: TextStyle(color: Colors.black, fontSize: 16),
+        ),
+      ),
+    );
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -64,7 +65,11 @@ class _MapSearchPageState extends State<MapSearchPage> {
       hint: '통합 검색...',
       clearQueryOnClose: false,
       scrollPadding: const EdgeInsets.only(top: 3.0, bottom: 56.0, left: 2.0, right: 2.0),
-      margins: EdgeInsets.only(left: 12.0, right: 12, top: MediaQuery.of(context).padding.top, bottom: 0),
+      margins: EdgeInsets.only(
+          left: 12.0,
+          right: 12,
+          top: Platform.isIOS ? MediaQuery.of(context).padding.top : MediaQuery.of(context).padding.top + 10,
+          bottom: 0),
       transitionDuration: const Duration(milliseconds: 300),
       borderRadius: BorderRadius.circular(14.0),
       transitionCurve: Curves.easeInOut,
@@ -82,6 +87,7 @@ class _MapSearchPageState extends State<MapSearchPage> {
           icon: const Icon(
             Icons.arrow_back_ios,
             color: Colors.black,
+            size: 27,
           ),
           // icon: const PhosphorIcon(
           //   PhosphorIconsBold.arrowLeft,

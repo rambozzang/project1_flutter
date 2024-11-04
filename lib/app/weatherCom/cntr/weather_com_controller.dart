@@ -1,5 +1,6 @@
 import 'dart:collection';
 
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
@@ -123,7 +124,7 @@ class WeatherComController extends GetxController {
           temperature: element.temp,
           humidity: 0.0,
           rainProbability: double.parse(element.rainPo.toString()) * 0.01,
-          source: WeatherDataProcessor.instance.getFinalWeatherIcon(element.date.hour, element.sky.toString(), element.rain.toString()),
+          source: WeatherDataProcessor.instance.getWeatherGogoImageString(element.sky.toString(), element.rain.toString()),
         ));
         // 기상청데이터기준으로 시간대별 타이틀 생성
         // hourlyTimes.add(DateFormat('H', 'ko').format(element.date));
@@ -140,12 +141,12 @@ class WeatherComController extends GetxController {
         lo.g('dailyData : ${element.fcstDate} ${element.fcstTime}');
 
         final mIcon = i > 1
-            ? WeatherDataProcessor.instance.getWeatherIconForMidtermForecast(element.morning.skyDesc.toString())
-            : WeatherDataProcessor.instance.getWeatherGogoImage(element.morning.sky.toString(), element.morning.rain.toString());
+            ? WeatherDataProcessor.instance.getWeatherIconForMidtermForecastString(element.morning.skyDesc.toString())
+            : WeatherDataProcessor.instance.getWeatherGogoImageString(element.morning.sky.toString(), element.morning.rain.toString());
 
         final aIcon = i > 1
-            ? WeatherDataProcessor.instance.getWeatherIconForMidtermForecast(element.afternoon.skyDesc.toString())
-            : WeatherDataProcessor.instance.getWeatherGogoImage(element.afternoon.sky.toString(), element.afternoon.rain.toString());
+            ? WeatherDataProcessor.instance.getWeatherIconForMidtermForecastString(element.afternoon.skyDesc.toString())
+            : WeatherDataProcessor.instance.getWeatherGogoImageString(element.afternoon.sky.toString(), element.afternoon.rain.toString());
 
         dailyAmData.add(WeatherData(
           time: DateTime.parse('${element.fcstDate} ${element.fcstTime ?? '0000'}'),
@@ -205,6 +206,7 @@ class WeatherComController extends GetxController {
           temperature: double.parse((element['temp']).toString()),
           humidity: double.parse(element['humidity'].toString()),
           rainProbability: double.parse(element['pop'].toString()),
+
           source: element['weather'][0]['main'], // element['weather'][0]['description'],
         ));
       });

@@ -1,7 +1,5 @@
 import 'dart:math';
 
-import 'dart:math';
-
 class TwinklingStar {
   double x;
   double y;

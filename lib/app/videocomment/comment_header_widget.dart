@@ -2,20 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class CommentHeaderWidget extends StatelessWidget {
-  const CommentHeaderWidget({
-    super.key,
-    required this.listLength,
-    required this.getData,
-  });
+  const CommentHeaderWidget({super.key, required this.listLength, required this.getData, required this.isDarkTheme});
   final int listLength;
   final VoidCallback getData;
+  final bool isDarkTheme;
 
   @override
   Widget build(BuildContext context) {
+    Color backgroundColor = isDarkTheme ? const Color(0xFF0F0F0F) : Colors.white;
+    Color textColor = isDarkTheme ? Colors.white : Colors.black;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF0F0F0F),
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(12),
           topRight: Radius.circular(12),
         ),
@@ -77,7 +77,7 @@ class CommentHeaderWidget extends StatelessWidget {
                     color: Colors.white,
                   ),
                 ),
-              )
+              ),
             ],
           ),
           Container(

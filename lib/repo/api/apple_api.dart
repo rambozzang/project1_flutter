@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:project1/repo/api/chat_api.dart';
 import 'package:project1/repo/cust/data/apple_join_data.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:project1/repo/chatting/chat_repo.dart';
@@ -69,6 +70,12 @@ class AppleApi with SecureStorage {
       appleJoinData.deviceId = const Uuid().v4();
       saveDeviceId(appleJoinData.deviceId.toString());
 
+      // appleJoinData.chatId = await chatSignUp(appleJoinData);
+      // 채팅서버 회원가입
+      ChatApi chatApi = ChatApi();
+      appleJoinData.chatId =
+          await chatApi.chatSignUp(appleJoinData.email ?? '', appleJoinData.uid.toString(), appleJoinData.displayName ?? '', '');
+
       CustRepo repo = CustRepo();
       ResData res = await repo.createAppleCust(appleJoinData);
       if (res.code != "00") {
@@ -76,8 +83,7 @@ class AppleApi with SecureStorage {
         resData.msg = res.msg.toString();
         return resData;
       }
-      // 채팅서버 회원가입
-      appleJoinData.chatId = await chatSignUp(appleJoinData);
+
       resData.data = appleJoinData.uid.toString();
       return resData;
     } catch (e) {
@@ -85,18 +91,5 @@ class AppleApi with SecureStorage {
       resData.msg = e.toString();
       return resData;
     }
-  }
-
-  Future<String> chatSignUp(AppleJoinData appleJoinData) async {
-    ChatRepo chatRepo = ChatRepo();
-    ChatSignupData chatSignupData = ChatSignupData();
-    chatSignupData.email = appleJoinData.email;
-    chatSignupData.uid = appleJoinData.uid.toString();
-    chatSignupData.firstName = appleJoinData.displayName;
-    // Apple doesn't provide a photo URL, so we'll leave it empty
-    chatSignupData.imageUrl = '';
-    ResData resData = await chatRepo.signup(chatSignupData);
-
-    return resData.data.toString();
   }
 }

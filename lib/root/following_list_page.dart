@@ -300,7 +300,7 @@ class _FollowingListPageState extends State<FollowingListPage> with AutomaticKee
                   // color: Colors.grey.shade200,
                   borderRadius: BorderRadius.circular(10),
                   image: DecorationImage(
-                    image: CachedNetworkImageProvider(data.profilePath.toString()),
+                    image: CachedNetworkImageProvider(cacheKey: data.profilePath.toString(), data.profilePath.toString()),
                     fit: BoxFit.cover,
                   ),
                 ),

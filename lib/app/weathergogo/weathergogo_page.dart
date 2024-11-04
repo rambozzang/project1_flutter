@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -7,7 +6,9 @@ import 'package:animate_icons/animate_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:lottie/lottie.dart';
 import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/admob/banner_ad_widget.dart';
 import 'package:project1/app/join/widget/TwinklingStar.dart';
@@ -23,14 +24,17 @@ import 'package:project1/app/weathergogo/appbar_page.dart';
 import 'package:project1/app/weathergogo/detail_main_page.dart';
 import 'package:project1/app/weathergogo/header_main_page.dart';
 import 'package:project1/app/weathergogo/naver_scrapping_page.dart';
-import 'package:project1/app/weathergogo/seven_day_page.dart';
+import 'package:project1/app/weathergogo/seven_day_chart.dart';
 import 'package:project1/app/weathergogo/twenty4_page.dart';
+import 'package:project1/app/weathergogo/weather_webview.dart';
 import 'package:project1/app/weathergogo/weathergogo_kakao_searchbar.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
-import 'package:project1/app/webview/common_webview.dart';
 import 'package:project1/repo/cust/data/cust_tag_res_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
+import 'package:project1/utils/ShimmeringText.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
+import 'package:project1/widget/custom_tabbarview.dart';
+import 'package:text_scroll/text_scroll.dart';
 
 class WeathgergogoPage extends StatefulWidget {
   const WeathgergogoPage({super.key});
@@ -94,12 +98,20 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
       () => const Twenty4Page(
             key: ValueKey('Twenty4Page'),
           ),
-      () => const SevenDayPage(
-            key: ValueKey('SevenDayPage'),
+      // () => const SevenDayPage(
+      //       key: ValueKey('SevenDayPage'),
+      //     ),
+      () => const DailyWeatherChart(),
+
+      // () => const SizedBox(height: 10),
+      () => const NaverNewPage(
+            key: ValueKey('NaverNewPage'),
           ),
-      // () => const NaverScraPpingPage(),
       // () => _buildWeatherWebView(),
-      () => const SizedBox(height: 50),
+      () => const WeatherWEbviewPage(),
+      () => const SizedBox(
+            height: 40,
+          ),
     ]);
     Get.find<WeatherGogoCntr>().getLocalTag();
   }
@@ -107,11 +119,6 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
   Future<void> _loadAd() async {
     await AdManager().loadBannerAd('WeatherPage');
     isAdLoading.value = true;
-  }
-
-  Future<void> getNaverNews() async {
-    var result = await WeatherCrawler.crawlWeatherForecast();
-    print(json.encode(result));
   }
 
   void createTwinklingStars() {
@@ -214,7 +221,8 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
     );
   }
 
-  var physic = Platform.isIOS ? const AlwaysScrollableScrollPhysics() : const BouncingScrollPhysics();
+  // var physic = Platform.isIOS ? const AlwaysScrollableScrollPhysics() : const BouncingScrollPhysics();
+  var physic = const CustomTabBarViewScrollPhysics();
 
   Widget _buildLazyLoadingContent2() {
     return SingleChildScrollView(
@@ -232,6 +240,7 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
   Widget _buildLazyLoadingContent() {
     return ListView.builder(
       controller: RootCntr.to.hideButtonController5,
+      cacheExtent: 5000,
       physics: physic,
       padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 20.0).copyWith(
         top: kToolbarHeight + 3,
@@ -244,90 +253,171 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
   }
 
   Widget _buildWeatherInfoHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text('날씨 정보', style: semiboldText.copyWith(fontSize: 24.0)),
-              const Gap(20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.black87, // 텍스트 및 아이콘 색상
-                  backgroundColor: Colors.white12, // 버튼 배경색
-                  elevation: 4, // 그림자 높이
-                  shadowColor: Colors.black.withOpacity(0.3), // 그림자 색상
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  minimumSize: const Size(67, 25),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8), // 더 둥근 모서리
-                  ),
-                ),
-                onPressed: () {
-                  // Get.find<WeatherGogoCntr>().changeBgColor();
-                  // Get.toNamed('/WeathgergogoPage');
-                  Get.toNamed('/WeatherComPage');
-                },
-                child: Row(
-                  children: [
-                    Text('날씨 비교 ', style: semiboldText.copyWith(fontSize: 11.0)),
-                    const Icon(Icons.arrow_forward_ios, size: 10.0, color: Colors.amber),
-                  ],
-                ),
+    return Padding(
+      padding: const EdgeInsets.only(left: 8.0, right: 4.0),
+      child: Column(
+        children: [
+          Obx(() {
+            if (Get.find<WeatherGogoCntr>().weatherAlert.value == null) {
+              return const SizedBox();
+            }
+            final String tmFc = Get.find<WeatherGogoCntr>().weatherAlert.value!.tmFc.toString();
+            // 날짜 형식 변경 .
+            final String tmFc2 =
+                '${tmFc.substring(0, 4)}.${tmFc.substring(4, 6)}.${tmFc.substring(6, 8)} ${tmFc.substring(8, 10)}:${tmFc.substring(10, 12)}';
+            String title = Get.find<WeatherGogoCntr>().weatherAlert.value!.title.toString();
+            // 제목도  / 가 포함되어 있으면 / 를 기준으로 나누어서 2개로 나누어서 2번째 값만 사용한다.
+            final List<String> titleList = title.split('/');
+            if (titleList.length > 1) {
+              title = titleList[1];
+            }
+
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 5),
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 237, 219, 240).withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
               ),
-              const Gap(10),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.black87, // 텍스트 및 아이콘 색상
-                  backgroundColor: Colors.white12, // 버튼 배경색
-                  elevation: 4, // 그림자 높이
-                  shadowColor: Colors.black.withOpacity(0.3), // 그림자 색상
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  minimumSize: const Size(67, 25),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8), // 더 둥근 모서리
+              child: Row(
+                children: [
+                  const Icon(Icons.campaign, color: Colors.red, size: 18),
+                  const Gap(5),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.8,
+                    child: TextScroll(
+                      "$tmFc2 ${title.toString().replaceAll('(*)', '')}",
+                      // '각 항목을 Card 위젯으로 감싸 구글 Discover와 유사한 디자인을 구현했습니다.',
+                      mode: TextScrollMode.endless,
+                      numberOfReps: 20000,
+                      fadedBorder: false,
+                      delayBefore: const Duration(milliseconds: 4000),
+                      pauseBetween: const Duration(milliseconds: 2000),
+                      velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
+                      style: const TextStyle(fontSize: 14, color: Colors.yellow, fontWeight: FontWeight.w700),
+                      textAlign: TextAlign.left,
+                      selectable: false,
+                    ),
                   ),
-                ),
-                onPressed: () => Get.toNamed('/MapPage'), // Get.find<WeatherGogoCntr>().test(), //
-                child: Row(
-                  children: [
-                    Text('지도 보기 ', style: semiboldText.copyWith(fontSize: 11.0)),
-                    const Icon(Icons.arrow_forward_ios, size: 10.0, color: Colors.amber),
-                  ],
-                ),
+                ],
+              ),
+            );
+          }),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text('날씨정보', style: semiboldText.copyWith(fontSize: 20.0)),
+                  const Gap(10),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.black87, // 텍스트 및 아이콘 색상
+                      backgroundColor: Colors.white12, // 버튼 배경색
+                      elevation: 4, // 그림자 높이
+                      shadowColor: Colors.black.withOpacity(0.3), // 그림자 색상
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      minimumSize: const Size(67, 25),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8), // 더 둥근 모서리
+                      ),
+                    ),
+                    onPressed: () {
+                      // Get.find<WeatherGogoCntr>().changeBgColor();
+                      // Get.toNamed('/WeathgergogoPage');
+
+                      // Get.find<WeatherGogoCntr>().fetchWeatherAlert(Get.find<WeatherGogoCntr>().currentLocation.value.latLng);
+                      Get.toNamed('/WeatherComPage');
+                    },
+                    child: Row(
+                      children: [
+                        Text('날씨비교 ', style: semiboldText.copyWith(fontSize: 11.0)),
+                        const Icon(Icons.arrow_forward_ios, size: 12.0, color: Colors.amber),
+                      ],
+                    ),
+                  ),
+                  const Gap(3),
+                  Stack(
+                    children: [
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: Colors.black87, // 텍스트 및 아이콘 색상
+                          backgroundColor: Colors.white12, // 버튼 배경색
+                          elevation: 4, // 그림자 높이
+                          shadowColor: Colors.black.withOpacity(0.3), // 그림자 색상
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          minimumSize: const Size(67, 25),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8), // 더 둥근 모서리
+                          ),
+                        ),
+                        // onPressed: () => Get.toNamed('/MapPage'), // Get.find<WeatherGogoCntr>().test(), //
+                        onPressed: () => Get.toNamed('/ShortViewPage', arguments: {
+                          'address': Get.find<WeatherGogoCntr>().currentLocation.value.addr,
+                          'lat': Get.find<WeatherGogoCntr>().currentLocation.value.latLng.latitude.toString(),
+                          'lng': Get.find<WeatherGogoCntr>().currentLocation.value.latLng.longitude.toString(),
+                        }),
+                        child: const Row(
+                          children: [
+                            Text('동네라운지 ', style: TextStyle(fontSize: 13.0, color: Colors.yellow)),
+                            Icon(Icons.arrow_forward_ios, size: 13.0, color: Colors.amber),
+                            // ShimmeringText(
+                            //   text: '동네라운지 ',
+                            //   fontSize: 13.0,
+                            //   baseColor: Colors.yellow,
+                            //   highlightColor: Colors.purple,
+                            // ),
+                          ],
+                        ),
+                      ),
+                      Positioned(
+                        top: -10,
+                        right: 2,
+                        child: GestureDetector(
+                          onTap: () => Get.toNamed('/ShortViewPage', arguments: {
+                            'address': Get.find<WeatherGogoCntr>().currentLocation.value.addr,
+                            'lat': Get.find<WeatherGogoCntr>().currentLocation.value.latLng.latitude.toString(),
+                            'lng': Get.find<WeatherGogoCntr>().currentLocation.value.latLng.longitude.toString(),
+                          }),
+                          child: Transform.rotate(
+                            angle: pi / 16,
+                            child: Lottie.asset(
+                              'assets/lottie/new.json',
+                              width: 45,
+                            ),
+                          ),
+                        ),
+                      )
+                    ],
+                  ),
+                ],
+              ),
+              const Spacer(),
+              AnimateIcons(
+                startIcon: Icons.refresh,
+                endIcon: Icons.refresh,
+                controller: controller,
+                startTooltip: 'Icons.refresh',
+                endTooltip: 'Icons.refresh_rounded',
+                size: 24.0,
+                onStartIconPress: () {
+                  Get.find<WeatherGogoCntr>().getRefreshWeatherData(true);
+                  return true;
+                },
+                onEndIconPress: () {
+                  Get.find<WeatherGogoCntr>().getRefreshWeatherData(true);
+                  return true;
+                },
+                duration: const Duration(milliseconds: 250),
+                startIconColor: Colors.amber,
+                endIconColor: Colors.amber,
+                clockwise: true,
               ),
             ],
           ),
-        ),
-        const Spacer(),
-        AnimateIcons(
-          startIcon: Icons.refresh,
-          endIcon: Icons.refresh_rounded,
-          controller: controller,
-          // add this tooltip for the start icon
-          startTooltip: 'Icons.refresh',
-          // add this tooltip for the end icon
-          endTooltip: 'Icons.refresh_rounded',
-          size: 26.0,
-          onStartIconPress: () {
-            Get.find<WeatherGogoCntr>().getRefreshWeatherData(true);
-            return true;
-          },
-          onEndIconPress: () {
-            Get.find<WeatherGogoCntr>().getRefreshWeatherData(true);
-            return true;
-          },
-          duration: const Duration(milliseconds: 500),
-          startIconColor: Colors.amber,
-          endIconColor: Colors.amber,
-          clockwise: false,
-        ),
-        const SizedBox(width: 10),
-      ],
+        ],
+      ),
     );
   }
 
@@ -348,45 +438,60 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
         });
   }
 
-  Widget _buildWeatherWebView() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // const SizedBox(height: 600, child: WeatherWebView(key: PageStorageKey<String>('webview'), isBackBtn: false)),
-          SizedBox(
-              height: 600,
-              child: CommonWebView(
-                isBackBtn: false,
-                url: Get.find<WeatherGogoCntr>().webViewUrl.value,
-              )),
-          const Gap(10),
-          TextButton(
-            style: TextButton.styleFrom(
-              backgroundColor: Colors.white12,
-              padding: const EdgeInsets.symmetric(horizontal: 0),
-              minimumSize: const Size(50, 22),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                  fullscreenDialog: false,
-                  builder: (context) => CommonWebView(
-                        isBackBtn: true,
-                        url: Get.find<WeatherGogoCntr>().webViewUrl.value,
-                      )),
-            ), // Get.toNamed('/WeatherWebView'),
-            child: Text('전체화면으로 ', style: semiboldText.copyWith(fontSize: 11.0)),
-          ),
-          const Gap(40)
-        ],
-      ),
-    );
-  }
+  // Widget _buildWeatherWebView() {
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 15),
+  //     decoration: BoxDecoration(
+  //       borderRadius: BorderRadius.circular(12),
+  //     ),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.end,
+  //       children: [
+  //         const Row(
+  //           children: [
+  //             PhosphorIcon(PhosphorIconsRegular.wind, color: Colors.white),
+  //             SizedBox(width: 4.0),
+  //             Text(
+  //               '대기 흐름',
+  //               style: TextStyle(fontSize: 17, color: Colors.white, fontWeight: FontWeight.bold),
+  //             ),
+  //             Spacer(),
+  //           ],
+  //         ),
+  //         const Gap(15),
+  //         SizedBox(
+  //           height: 600,
+  //           child: CommonWebView2(
+  //             isBackBtn: false,
+  //             url: Get.find<WeatherGogoCntr>().webViewUrl.value,
+  //           ),
+  //         ),
+  //         const Gap(10),
+  //         TextButton(
+  //           style: TextButton.styleFrom(
+  //             backgroundColor: Colors.white12,
+  //             padding: const EdgeInsets.symmetric(horizontal: 0),
+  //             minimumSize: const Size(50, 22),
+  //             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+  //             shape: RoundedRectangleBorder(
+  //               borderRadius: BorderRadius.circular(8),
+  //             ),
+  //           ),
+  //           onPressed: () => Navigator.of(context).push(
+  //             MaterialPageRoute(
+  //                 fullscreenDialog: false,
+  //                 builder: (context) => CommonWebView(
+  //                       isBackBtn: true,
+  //                       url: Get.find<WeatherGogoCntr>().webViewUrl.value,
+  //                     )),
+  //           ), // Get.toNamed('/WeatherWebView'),
+  //           child: Text('전체화면으로 ', style: semiboldText.copyWith(fontSize: 11.0)),
+  //         ),
+  //         const Gap(40)
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildLoadingIndicator() {
     final cntr = Get.find<WeatherGogoCntr>();
@@ -404,26 +509,27 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
       width: double.infinity,
       child: Obx(() {
         if (Get.find<WeatherGogoCntr>().areaList.isEmpty) {
-          return Container(
-            padding: const EdgeInsets.symmetric(vertical: 3),
-            alignment: Alignment.center,
-            child: Row(
-              children: [
-                InkWell(
-                    onTap: () async => await Get.toNamed('/FavoriteAreaPage')!.then((value) => Get.find<WeatherGogoCntr>().getLocalTag()),
-                    child: const Text('관심지역', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white))),
-                const Gap(3),
-                const Icon(Icons.arrow_circle_right_outlined, color: Colors.white, size: 16),
-                const Gap(6),
-                Text(
-                  '등록된 관심지역이 없습니다.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade50,
+          return InkWell(
+            onTap: () async => await Get.toNamed('/FavoriteAreaPage')!.then((value) => Get.find<WeatherGogoCntr>().getLocalTag()),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              alignment: Alignment.center,
+              child: Row(
+                children: [
+                  const Text('관심지역', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white)),
+                  const Gap(3),
+                  const Icon(Icons.arrow_circle_right_outlined, color: Colors.white, size: 16),
+                  const Gap(6),
+                  Text(
+                    '등록된 관심지역이 없습니다.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade50,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         }

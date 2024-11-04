@@ -1,9 +1,9 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:get/get.dart';
-import 'package:project1/app/weather/cntr/weather_cntr.dart';
-import 'package:project1/utils/utils.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+// Import for Android features.
+import 'package:webview_flutter_android/webview_flutter_android.dart';
+// Import for iOS/macOS features.
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 class CommonWebView extends StatefulWidget {
   const CommonWebView({super.key, required this.isBackBtn, required this.url});
@@ -11,47 +11,65 @@ class CommonWebView extends StatefulWidget {
   final String url;
 
   @override
-  State<CommonWebView> createState() => _CommonWebViewState();
+  State<CommonWebView> createState() => _CommonWebView2State();
 }
 
-class _CommonWebViewState extends State<CommonWebView> with AutomaticKeepAliveClientMixin<CommonWebView> {
+class _CommonWebView2State extends State<CommonWebView> with AutomaticKeepAliveClientMixin<CommonWebView> {
   final GlobalKey webViewKey = GlobalKey();
+  late final WebViewController controller;
+  late final PlatformWebViewControllerCreationParams params;
+
+  ValueNotifier<bool> isLoading = ValueNotifier<bool>(false);
 
   @override
   bool get wantKeepAlive => true;
 
-  InAppWebViewController? webViewController;
-  InAppWebViewSettings webViewSettings = InAppWebViewSettings(
-    userAgent:
-        'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.152 Mobile Safari/537.36',
-  );
-
-  InAppWebViewSettings settings = InAppWebViewSettings(
-      isInspectable: kDebugMode,
-      mediaPlaybackRequiresUserGesture: false,
-      allowsInlineMediaPlayback: true,
-      iframeAllow: "camera; microphone",
-      iframeAllowFullscreen: true);
-
-  late String openUrl;
   @override
   void initState() {
     super.initState();
-    openUrl = widget.url;
-    androidCheck();
-  }
 
-  Future<void> androidCheck() async {
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      await InAppWebViewController.setWebContentsDebuggingEnabled(kDebugMode);
+    if (WebViewPlatform.instance is WebKitWebViewPlatform) {
+      params = WebKitWebViewControllerCreationParams(
+        allowsInlineMediaPlayback: true,
+        mediaTypesRequiringUserAction: const <PlaybackMediaTypes>{},
+      );
+    } else {
+      params = const PlatformWebViewControllerCreationParams();
     }
+
+    controller = WebViewController.fromPlatformCreationParams(params);
+// ···
+    if (controller.platform is AndroidWebViewController) {
+      AndroidWebViewController.enableDebugging(true);
+      (controller.platform as AndroidWebViewController).setMediaPlaybackRequiresUserGesture(false);
+    }
+
+    // #docregion webview_controller
+    controller
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onProgress: (int progress) {},
+          onPageStarted: (String url) {
+            isLoading.value = true;
+          },
+          onPageFinished: (String url) {
+            isLoading.value = false;
+          },
+          onHttpError: (HttpResponseError error) {},
+          onNavigationRequest: (NavigationRequest request) {
+            return NavigationDecision.navigate;
+          },
+        ),
+      )
+      ..setBackgroundColor(Colors.transparent)
+      ..loadRequest(Uri.parse(widget.url));
+    // #enddocregion webview_controller
   }
 
   @override
   void dispose() {
-    // webViewController.
-    // webViewController?.dispose();
-
+    controller.clearCache();
     super.dispose();
   }
 
@@ -59,32 +77,35 @@ class _CommonWebViewState extends State<CommonWebView> with AutomaticKeepAliveCl
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
-        //  backgroundColor: const Color(0xFF262B49), // Colors.black54,
-        body: Stack(
-      children: [
-        InAppWebView(
-          key: webViewKey,
-          initialUrlRequest: URLRequest(url: WebUri(openUrl)),
-          initialSettings: settings,
-          onWebViewCreated: (controller) {
-            webViewController = controller;
-          },
-          onLoadStart: (controller, url) {
-            Utils.progressbar();
-          },
-          onLoadStop: (controller, url) {},
-          onConsoleMessage: (controller, consoleMessage) {},
-        ),
-        widget.isBackBtn
-            ? Positioned(
-                top: 45,
-                left: 10,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 24.0),
-                  onPressed: () => Get.back(),
-                ))
-            : const SizedBox.shrink(),
-      ],
-    ));
+      body: Stack(
+        children: [
+          ValueListenableBuilder<bool>(
+              valueListenable: isLoading,
+              builder: (context, value, snapshot) {
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 350),
+                  switchInCurve: Curves.easeIn,
+                  child: value
+                      ? const Center(
+                          child: CircularProgressIndicator(),
+                        )
+                      : WebViewWidget(controller: controller),
+                );
+              }),
+          if (widget.isBackBtn)
+            Positioned(
+              top: 40,
+              left: 10,
+              child: IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios,
+                  color: Colors.white,
+                ),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }

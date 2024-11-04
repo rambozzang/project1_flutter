@@ -68,6 +68,8 @@
 			<string>kakaokompassauth</string>
 			<string>kakaolink</string>
 			<string>kakaoplus</string>
+			<string>http</string>
+			<string>https</string>
 			<string>naversearchapp</string>
 			<string>naversearchthirdlogin</string>
 		</array>

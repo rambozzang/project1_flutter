@@ -1,26 +1,28 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:get/get_state_manager/get_state_manager.dart';
+import 'package:giffy_dialog/giffy_dialog.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/search/cctv_page.dart';
 import 'package:project1/app/search/cntr/map_cntr.dart';
 import 'package:project1/app/search/map_search_page.dart';
 import 'package:project1/app/weather/models/geocode.dart';
-import 'package:project1/repo/board/board_repo.dart';
+import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/cctv/cctv_repo.dart';
 import 'package:project1/repo/cctv/data/cctv_res_data.dart';
-import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
+import 'package:project1/root/cntr/root_cntr.dart';
+import 'package:project1/utils/StringUtils.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
+import 'package:project1/widget/custom_indicator_offstage.dart';
 import 'package:text_scroll/text_scroll.dart';
 import 'package:video_player/video_player.dart';
 import 'package:http/http.dart' as http;
@@ -40,16 +42,25 @@ class _MapPageState extends State<MapPage> {
   final ValueNotifier<bool> soundOff = ValueNotifier<bool>(false);
   final ValueNotifier<bool> isPlay = ValueNotifier<bool>(true);
   final ValueNotifier<double> progress = ValueNotifier<double>(0.0);
-
+  Size size = const Size(45, 60);
   Duration position = Duration.zero;
-
-  // 검색어 Data
-  int seachDay = 10;
-
+  late MapCntr mapCntr;
+  double lat = 0;
+  double lon = 0;
   @override
   void initState() {
     super.initState();
     topheight = Platform.isIOS ? 55 : 0;
+
+    lat = Get.arguments?['lat'] ?? 0;
+    lon = Get.arguments?['lon'] ?? 0;
+
+    print('lat: $lat, lon: $lon');
+
+    mapCntr = Get.find<MapCntr>();
+    if (lat != 0 && lon != 0) {
+      Get.find<MapCntr>().setInitialLocation(lat, lon);
+    }
   }
 
   // 동영상 비디오 재생
@@ -75,6 +86,7 @@ class _MapPageState extends State<MapPage> {
           setState(() {
             videoCntroller.setLooping(true);
             videoCntroller.play();
+            videoCntroller.setVolume(0);
             initialized = true;
           });
         }
@@ -97,33 +109,41 @@ class _MapPageState extends State<MapPage> {
   // 카카오 검색창에서 검색후 클릭시 위치로 이동
   Future<void> locationUpdate(GeocodeData geocodeData) async {
     NLatLng currentCoord = NLatLng(geocodeData.latLng.latitude, geocodeData.latLng.longitude);
-    var mapCntr = Get.find<MapCntr>();
-    final locationOverlay = mapCntr.mapController.getLocationOverlay();
-    const iconImage = NOverlayImage.fromAssetImage('assets/images/map/default_pin.png');
-    locationOverlay
-      ..setIcon(iconImage)
-      ..setIconSize(const Size.fromRadius(40))
-      ..setCircleRadius(100.0)
-      ..setCircleColor(Colors.grey.withOpacity(0.17))
-      ..setPosition(currentCoord)
-      ..setIsVisible(true);
+    await Get.find<MapCntr>().setPositionlocationUpdate(currentCoord: currentCoord);
+    buildMarker(10);
+  }
 
-    final cameraUpdate = NCameraUpdate.withParams(target: currentCoord)
-      ..setAnimation(animation: NCameraAnimation.linear, duration: const Duration(milliseconds: 500)); // 2초는 너무 길 수도 있어요.
-    await mapCntr.mapController.updateCamera(cameraUpdate);
+  // 마커 생성
+  Future<void> buildMarker(int sDay) async {
+    lo.g('buildMarker 호출');
+    List<BoardWeatherListData> list = await Get.find<MapCntr>().buildMarker(sDay);
 
-    final marker = NMarker(
-      id: geocodeData.latLng.longitude.toString(),
-      position: NLatLng(double.parse(geocodeData.latLng.latitude.toString()), double.parse(geocodeData.latLng.longitude.toString())),
-      icon: iconImage,
-      size: const Size(25, 25),
-      captionOffset: 10,
-      caption: NOverlayCaption(text: geocodeData.name.toString()),
-    );
+    list.forEach((element) async {
+      final request = await http.get(Uri.parse(element.thumbnailPath.toString()));
+      final NOverlayImage icon = await NOverlayImage.fromByteArray(request.bodyBytes);
 
-    // marker.openInfoWindow(NInfoWindow.onMarker(offsetX: 10, id: marker.info.id, text: geocodeData.name));
-    mapCntr.mapController.addOverlay(marker);
-    buildMarker(context);
+      final marker = NMarker(
+        id: element.boardId.toString(),
+        position: NLatLng(double.parse(element.lat.toString()), double.parse(element.lon.toString())),
+        icon: icon,
+        size: size,
+        captionOffset: 1,
+        isFlat: true,
+        caption: NOverlayCaption(text: Utils.timeage(element.crtDtm.toString()), color: Colors.red),
+        // subCaption: NOverlayCaption(text: Utils.timeage(element.crtDtm.toString()), color: const Color.fromARGB(255, 53, 144, 58)),
+        // caption: NOverlayCaption(text: element.nickNm.toString(), color: Colors.black),
+      );
+      Get.find<MapCntr>().mapController.addOverlay(marker);
+      if (!StringUtils.isEmpty(element.contents)) {
+        final onMarkerInfoWindow = NInfoWindow.onMarker(alpha: 1, offsetX: 0, id: marker.info.id, text: "${element.contents}");
+        marker.openInfoWindow(onMarkerInfoWindow);
+      }
+
+      marker.setOnTapListener((overlay) async {
+        videoPlay(element.boardId.toString(), element.videoPath.toString());
+        onShowDialog(context, element);
+      });
+    });
   }
 
   @override
@@ -132,47 +152,84 @@ class _MapPageState extends State<MapPage> {
       videoCntroller.pause();
       videoCntroller.dispose();
     }
-
+    Get.find<RootCntr>().bottomBarStreamController.sink.add(true);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        resizeToAvoidBottomInset: false,
-        body: Obx(
-          () => Get.find<MapCntr>().isInit.value
-              ? Stack(
-                  children: [
-                    NaverMap(
+      resizeToAvoidBottomInset: false,
+      body: Obx(
+        () => mapCntr.isInit.value
+            ? Stack(
+                children: [
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: MediaQuery.of(context).size.height * 0.1,
+                    child: NaverMap(
                       options: NaverMapViewOptions(
                         locationButtonEnable: true,
                         initialCameraPosition: NCameraPosition(
-                            target: NLatLng(Get.find<WeatherGogoCntr>().currentLocation.value!.latLng.latitude,
-                                Get.find<WeatherGogoCntr>().currentLocation!.value!.latLng.longitude),
-                            zoom: 13,
-                            bearing: 0,
-                            tilt: 0),
+                          target: NLatLng(
+                            mapCntr.position.value!.latitude,
+                            mapCntr.position.value!.longitude,
+                          ),
+                          zoom: 13,
+                          bearing: 0,
+                          tilt: 0,
+                        ),
                       ),
-                      onMapReady: (controller) {
-                        print("네이버 맵 로딩됨!");
+                      onMapReady: (controller) async {
+                        mapCntr.mapController = controller;
 
-                        Get.find<MapCntr>().mapController = controller;
-
-                        //  Get.find<MapCntr>().getLocation();
-                        locationUpdate(Get.find<WeatherGogoCntr>().currentLocation.value!);
-
-                        // 파란색 점으로 현재위치 표시
-                        Get.find<MapCntr>().mapController.setLocationTrackingMode(NLocationTrackingMode.noFollow);
+                        buildMarker(10);
+                        mapCntr.mapController.setLocationTrackingMode(NLocationTrackingMode.noFollow);
                       },
+                      // onCameraChange: (reason, animated) {
+                      //   if (!animated) {
+                      //     mapCntr.buildMarker(mapCntr.searchDay.value);
+                      //   }
+                      // },
                     ),
-                    //   buildTop(),
-                    buildBottom(),
-                    MapSearchPage(onSelectClick: locationUpdate),
-                  ],
-                )
-              : const Center(child: CircularProgressIndicator()),
-        ));
+                  ),
+                  buildTopButton(),
+                  MapSearchPage(onSelectClick: locationUpdate),
+                  CustomIndicatorOffstage(isLoading: !mapCntr.isLoadingList.value, color: const Color(0xFFEA3799), opacity: 0.5),
+
+                  // 바텀시트를 Stack의 마지막에 추가하여 최상단에 표시
+                  _buildBottomSheet(),
+                ],
+              )
+            : const Center(child: CircularProgressIndicator()),
+      ),
+    );
+  }
+
+  Widget buildBoard() {
+    return Positioned(
+      bottom: 50,
+      left: 70,
+      right: 10,
+      child: Container(
+        height: 74,
+        decoration: BoxDecoration(
+          // 투명하게 해주세요.
+          color: Colors.white.withOpacity(0.75),
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.5),
+              spreadRadius: 1,
+              blurRadius: 7,
+              offset: const Offset(0, 7), // changes position of shadow
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // 상단 앱바
@@ -191,8 +248,6 @@ class _MapPageState extends State<MapPage> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  // border: Border.all(color: Colors.black),
-
                   shape: BoxShape.rectangle,
                   boxShadow: [
                     BoxShadow(
@@ -207,10 +262,11 @@ class _MapPageState extends State<MapPage> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     IconButton(
-                        onPressed: () => Get.find<MapCntr>().getLocation(), icon: const Icon(Icons.location_on, color: Colors.black)),
-                    // Text(videoListCntr.localName.value, style: const TextStyle(color: Colors.black, fontSize: 15)),
+                      onPressed: () => Get.find<MapCntr>().getLocation(),
+                      icon: const Icon(Icons.location_on, color: Colors.black),
+                    ),
                     TextScroll(
-                      '${Get.find<WeatherGogoCntr>().currentLocation.value!.name.toString()} ',
+                      '${Get.find<WeatherGogoCntr>().currentLocation.value.name.toString()} ',
                       mode: TextScrollMode.endless,
                       numberOfReps: 20000,
                       fadedBorder: true,
@@ -257,138 +313,87 @@ class _MapPageState extends State<MapPage> {
 
   ValueNotifier<double> isSlider = ValueNotifier<double>(0.0);
 
-  // 우측 하단 버튼
-  Widget buildBottom() {
+  Widget buildBottomSearch() {
     return Positioned(
-        bottom: 50,
-        right: 16,
-        child: Column(
-          children: [
-            // ValueListenableBuilder<double>(
-            //   valueListenable: isSlider,
-            //   builder: (context, value, child) {
-            //     return SizedBox(
-            //       height: 350,
-            // child: RotatedBox(
-            //   quarterTurns: 3,
-            //   child: Slider(
-            //     value: value,
-            //     min: 0,
-            //     max: 5,
-            //     divisions: 1,
-            //     label: '${value.round()}일',
-            //     onChanged: (double value) {
-            //       //  setState(() {
-            //       isSlider.value = value;
-            //       seachDay = value.round();
-            //       //});
-            //       buildMarker(context);
-            //     },
-            //     activeColor: Colors.blue,
-            //     inactiveColor: Colors.grey.shade300,
-            //   ),
-            // ),
+      bottom: 65,
+      left: 10,
+      right: 20,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.all(5),
+                minimumSize: const Size(70, 40),
+                backgroundColor: Colors.white,
+                elevation: 5,
+                shadowColor: Colors.grey,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            onPressed: () => Get.find<MapCntr>().buildMarker(10),
+            child: const Text("다시조회", style: TextStyle(color: Colors.black, fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
 
-            // child: SfSlider(
-            //   min: 1.0,
-            //   max: 5.0,
-            //   value: value,
-            //   interval: 1.0,
-            //   showTicks: true,
-            //   activeColor: Colors.blueGrey,
-            //   inactiveColor: Colors.grey.shade300,
-            //   labelPlacement: LabelPlacement.onTicks,
-            //   dividerShape: SfDividerShape(),
-            //   shouldAlwaysShowTooltip: true,
-            //   stepSize: 1.0,
-            //   showLabels: true,
-            //   enableTooltip: true,
-            //   minorTicksPerInterval: 1,
-            //   onChanged: (dynamic values) {
-            //     isSlider.value = values;
-            //     seachDay = values.start.toInt();
-            //     buildMarker(context);
-            //   },
-            // ),
-            //     );
-            //   },
-            // ),
+  // 우측 상단 조회 버튼
+  Widget buildTopButton() {
+    return Positioned(
+        top: Platform.isIOS ? MediaQuery.of(context).padding.top + 50 : MediaQuery.of(context).padding.top + 60,
+        right: 16,
+        left: 0,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.all(5),
-                  minimumSize: const Size(70, 40),
+                  minimumSize: const Size(55, 25),
                   backgroundColor: Colors.white,
                   elevation: 5,
                   shadowColor: Colors.grey,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5))),
-              onPressed: () => buildMarker(context),
-              child: const Text("근처영상보기", style: TextStyle(color: Colors.black, fontSize: 12)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+              onPressed: () => buildMarker(1),
+              child: const Text("오늘", style: TextStyle(color: Colors.black, fontSize: 12)),
+            ),
+            const Gap(10),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.all(5),
+                  minimumSize: const Size(55, 25),
+                  backgroundColor: Colors.white,
+                  elevation: 5,
+                  shadowColor: Colors.grey,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+              onPressed: () => buildMarker(7),
+              child: const Text("일주일", style: TextStyle(color: Colors.black, fontSize: 12)),
+            ),
+            const Gap(10),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.all(5),
+                  minimumSize: const Size(55, 25),
+                  backgroundColor: Colors.white,
+                  elevation: 5,
+                  shadowColor: Colors.grey,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+              onPressed: () => buildMarker(31),
+              child: const Text("한달", style: TextStyle(color: Colors.black, fontSize: 12)),
             ),
           ],
         ));
-  }
-
-  // 일반 동영상 마커 생성 하기
-  Future<void> buildMarker(BuildContext context) async {
-    Size size = const Size(45, 60);
-    var mapCntr = Get.find<MapCntr>();
-
-    var (southWest, northEast) = await getbounds();
-    // 현재 그려진 마커 삭제
-    mapCntr.mapController.clearOverlays();
-
-    BoardRepo boardRepo = BoardRepo();
-    ResData resListData = await boardRepo.searchBoardListByMaplonlatAndDay(southWest, northEast, seachDay, 0, 200);
-    if (resListData.code != '00') {
-      Utils.alert(resListData.msg.toString());
-      return;
-    }
-    List<BoardWeatherListData> _list = ((resListData.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
-
-    _list.forEach((element) async {
-      // final NOverlayImage icon = await buildMarket(size, element, context);
-      // NOverlayImage icon = const NOverlayImage.fromAssetImage('assets/images/map/blue_pin.png');
-      // final request = await http.get(Uri.parse(element.profilePath.toString()));
-      final request = await http.get(Uri.parse(element.thumbnailPath.toString()));
-      final icon = await NOverlayImage.fromByteArray(request.bodyBytes);
-
-      final marker = NMarker(
-        id: element.boardId.toString(),
-        position: NLatLng(double.parse(element.lat.toString()), double.parse(element.lon.toString())),
-        icon: icon,
-        size: size,
-        captionOffset: 10,
-        caption: NOverlayCaption(text: element.nickNm.toString()),
-      );
-      mapCntr.mapController.addOverlay(marker);
-      final onMarkerInfoWindow =
-          NInfoWindow.onMarker(offsetX: 0, id: marker.info.id, text: "${element.nickNm}·${Utils.timeage(element.crtDtm.toString())}");
-
-      marker.openInfoWindow(onMarkerInfoWindow);
-      marker.setOnTapListener((overlay) async {
-        videoPlay(element.boardId.toString(), element.videoPath.toString());
-        onShowDialog(context, element);
-      });
-    });
-    if (_list.length == 0) {
-      Utils.alert('근처에 영상이 없습니다.');
-    }
-    // Utils.alert('마커 생성 완료');
   }
 
   // 지역 및 서울 cctv 마커 생성
   Future<void> getCctv() async {
     //
     Size size = const Size(30, 30);
-    var (southWest, northEast) = await getbounds();
-
-    lo.g('southWest : ${southWest.toString()}');
-    lo.g('northEast : ${northEast.toString()}');
-    lo.g('Get.find<MapCntr>().position!.latitude : ${Get.find<MapCntr>().position!.latitude}');
+    var (southWest, northEast) = await Get.find<MapCntr>().getbounds();
 
     CctvRepo repo = CctvRepo();
-    List<CctvResData> res =
-        await repo.fetchCctv(southWest, northEast, Get.find<MapCntr>().position!.latitude, Get.find<MapCntr>().position!.longitude);
+    List<CctvResData> res = await repo.fetchCctv(
+        southWest, northEast, Get.find<MapCntr>().position.value!.latitude, Get.find<MapCntr>().position.value!.longitude);
     lo.g('===>${res.toString()}');
     if (res == []) {
       //  return;
@@ -445,25 +450,11 @@ class _MapPageState extends State<MapPage> {
     // });
   }
 
-  Future<(LatLng, LatLng)> getbounds() async {
-    final NLatLngBounds bounds = await Get.find<MapCntr>().mapController.getContentBounds().then((value) {
-      lo.g('southWest.latitude : ${value.southWest.latitude}');
-      lo.g('southWest.longitude : ${value.southWest.longitude}');
-      lo.g('northEast.latitude : ${value.northEast.latitude}');
-      lo.g('northEast.longitude : ${value.northEast.longitude}');
-      return value;
-    });
-    LatLng southWest = LatLng(bounds.southWest.latitude, bounds.southWest.longitude);
-    LatLng northEast = LatLng(bounds.northEast.latitude, bounds.northEast.longitude);
-    return (southWest, northEast);
-  }
-
   // 일반 영상 보기
   void onShowDialog(context, BoardWeatherListData data) {
     showModalBottomSheet(
       isScrollControlled: true,
       context: context,
-
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(15.0),
@@ -536,7 +527,7 @@ class _MapPageState extends State<MapPage> {
                         ),
                       ),
                     ),
-                    const Gap(5),
+                    const Gap(1),
                     Expanded(
                       child: Container(
                         alignment: Alignment.topLeft,
@@ -552,32 +543,37 @@ class _MapPageState extends State<MapPage> {
                           mainAxisAlignment: MainAxisAlignment.start,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                SizedBox(
-                                  width: 25,
-                                  child: CircleAvatar(
-                                    radius: 16,
-                                    backgroundColor: Colors.grey[100],
-                                    child: ClipOval(
-                                      child: CachedNetworkImage(
-                                        cacheKey: data.custId.toString(),
-                                        imageUrl: data.profilePath.toString(), //  'https://picsum.photos/200/300',
-                                        width: 23,
-                                        height: 23,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const Gap(5),
-                                Flexible(
-                                  child: Text(data.nickNm.toString(),
-                                      overflow: TextOverflow.clip,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)),
-                                ),
-                              ],
+                            // Row(
+                            //   children: [
+                            //     SizedBox(
+                            //       width: 25,
+                            //       child: CircleAvatar(
+                            //         radius: 16,
+                            //         backgroundColor: Colors.grey[100],
+                            //         child: ClipOval(
+                            //           child: CachedNetworkImage(
+                            //             cacheKey: data.custId.toString(),
+                            //             imageUrl: data.profilePath.toString(), //  'https://picsum.photos/200/300',
+                            //             width: 23,
+                            //             height: 23,
+                            //             fit: BoxFit.cover,
+                            //           ),
+                            //         ),
+                            //       ),
+                            //     ),
+                            //     const Gap(5),
+                            //     Flexible(
+                            //       child: Text(data.nickNm.toString(),
+                            //           overflow: TextOverflow.clip,
+                            //           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)),
+                            //     ),
+                            //   ],
+                            // ),
+                            Text(
+                              '${data.crtDtm.toString().split(':')[0].replaceAll('-', '/')}:${data.crtDtm.toString().split(':')[1]}',
+                              style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600),
                             ),
+                            const Gap(10),
                             const Divider(
                               color: Colors.grey,
                             ),
@@ -596,46 +592,67 @@ class _MapPageState extends State<MapPage> {
                                         color: Colors.green.withOpacity(0.9),
                                         borderRadius: BorderRadius.circular(5),
                                       ),
-                                      child: const Icon(Icons.location_on, color: Colors.white, size: 15)),
+                                      child: const Icon(Icons.location_on, color: Colors.white, size: 14)),
                                   const SizedBox(width: 5),
                                   Flexible(
                                     child: Text(data.location.toString(),
                                         overflow: TextOverflow.clip,
-                                        style: const TextStyle(fontSize: 13, color: Colors.black, fontWeight: FontWeight.bold)),
+                                        style: const TextStyle(fontSize: 12, color: Colors.black, fontWeight: FontWeight.bold)),
                                   ),
                                 ],
                               ),
                             ),
+                            const Gap(15),
                             Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.start,
                               children: [
-                                Text('${data.currentTemp.toString()}°C',
-                                    overflow: TextOverflow.clip,
-                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black)),
-                                // CachedNetworkImage(
-                                //   width: 50,
-                                //   height: 50,
-                                //   imageUrl: 'http://openweathermap.org/img/wn/${data.icon ?? '10n'}@2x.png',
-                                //   imageBuilder: (context, imageProvider) => Container(
-                                //     decoration: BoxDecoration(
-                                //       image: DecorationImage(
-                                //           image: imageProvider,
-                                //           fit: BoxFit.cover,
-                                //           colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn)),
-                                //     ),
-                                //   ),
-                                //   placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 1, color: Colors.white),
-                                //   errorWidget: (context, url, error) => const Icon(Icons.error),
-                                // ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          data.currentTemp.toString(),
+                                          style: const TextStyle(fontSize: 22, height: 1, fontWeight: FontWeight.bold, color: Colors.black),
+                                        ),
+                                        const Text(
+                                          '°C',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        )
+                                      ],
+                                    ),
+                                    Text(
+                                      data.weatherInfo.toString(),
+                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black),
+                                      overflow: TextOverflow.clip,
+                                    ),
+                                  ],
+                                ),
+                                const Gap(15),
+                                SizedBox(
+                                    height: 35,
+                                    width: 35,
+                                    child: WeatherDataProcessor.instance.getWeatherGogoImage(data.sky.toString(), data.rain.toString())
+                                    // child: Lottie.asset(
+                                    //   WeatherDataProcessor.instance.getWeatherGogoImage(data.sky.toString(), data.rain.toString()),
+                                    //   height: 138.0,
+                                    //   width: 138.0,
+                                    // ),
+                                    ),
                               ],
                             ),
-                            Text(
-                              data.weatherInfo.toString(),
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black),
-                              overflow: TextOverflow.clip,
-                            ),
-                            const Gap(6),
-                            Get.find<WeatherGogoCntr>().mistData.value!.mist10Grade.toString() == 'null' ||
-                                    Get.find<WeatherGogoCntr>().mistData.value!.mist25Grade.toString() == null
+
+                            const Gap(15),
+                            Get.find<WeatherGogoCntr>().mistData.value.mist10Grade.toString() == 'null' ||
+                                    Get.find<WeatherGogoCntr>().mistData.value.mist25Grade.toString() == null
                                 ? const SizedBox()
                                 : RichText(
                                     text: TextSpan(
@@ -646,12 +663,12 @@ class _MapPageState extends State<MapPage> {
                                         fontWeight: FontWeight.w500,
                                       ),
                                       children: <TextSpan>[
-                                        buildTextMist(Get.find<WeatherGogoCntr>().mistData.value!.mist10Grade.toString()),
+                                        buildTextMist(Get.find<WeatherGogoCntr>().mistData.value.mist10Grade.toString()),
                                         const TextSpan(
                                           text: ' 초미세',
                                           style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: Colors.black),
                                         ),
-                                        buildTextMist(Get.find<WeatherGogoCntr>().mistData.value!.mist25Grade.toString()),
+                                        buildTextMist(Get.find<WeatherGogoCntr>().mistData.value.mist25Grade.toString()),
                                       ],
                                     ),
                                   ),
@@ -684,19 +701,21 @@ class _MapPageState extends State<MapPage> {
                 ),
                 const Gap(10),
                 Container(
-                  height: 80,
-                  padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 5),
+                  height: 100,
+                  padding: const EdgeInsets.only(top: 5),
                   alignment: Alignment.topLeft,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(5),
-                    border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                    border: Border.all(color: Colors.grey.withOpacity(0.1)),
                     // color: ,
                   ),
-                  child: Text(
-                    // '2phpasidhfakjshfsdf asdhf alksdf va sdflasdhf. askldfhalsdhjf asd faskdf vajdsf asdkjfhalsdhfalksdhfa lsdfkh. asldkfhalsdf alsdf 2phpasidhfakjshfsdf asdhf alksdf va sdflasdhf. askldfhalsdhjf asd faskdf vajdsf asdkjfhalsdhfalksdhfa lsdfkh. asldkfhalsdf alsdf ',
-                    data.contents.toString(),
-                    style: const TextStyle(fontSize: 16, color: Colors.black),
-                    overflow: TextOverflow.clip,
+                  child: SingleChildScrollView(
+                    child: Text(
+                      //'2phpasidhfakjshfsdf asdhf alksdf va sdflasdhf. askldfhalsdhjf asd faskdf vajdsf 2phpasidhfakjshfsdf asdhf alksdf va sdflasdhf. askldfhalsdhjf asd faskdf vajdsf 2phpasidhfakjshfsdf asdhf alksdf va sdflasdhf. askldfhalsdhjf asd faskdf vajdsf 2phpasidhfakjshfsdf asdhf alksdf va sdflasdhf. askldfhalsdhjf asd faskdf vajdsf 2phpasidhfakjshfsdf asdhf alksdf va sdflasdhf. askldfhalsdhjf asd faskdf vajdsf 2phpasidhfakjshfsdf asdhf alksdf va sdflasdhf. askldfhalsdhjf asd faskdf vajdsf 2phpasidhfakjshfsdf asdhf alksdf va sdflasdhf. askldfhalsdhjf asd faskdf vajdsf asdkjfhalsdhfalksdhfa lsdfkh. asldkfhalsdf alsdf 2phpasidhfakjshfsdf asdhf alksdf va sdflasdhf. askldfhalsdhjf asd faskdf vajdsf asdkjfhalsdhfalksdhfa lsdfkh. asldkfhalsdf alsdf ',
+                      data.contents.toString(),
+                      style: const TextStyle(fontSize: 15, color: Colors.black),
+                      overflow: TextOverflow.clip,
+                    ),
                   ),
                 ),
               ],
@@ -713,65 +732,6 @@ class _MapPageState extends State<MapPage> {
   }
 
   TextSpan buildTextMist(String mist) {
-    /*
-      if (value >= 0 && value <= 30) {
-      return '좋음';
-    } else if (value >= 31 && value <= 80) {
-      return '보통';
-    } else if (value >= 81 && value <= 150) {
-      return '나쁨';
-    } else {Widget buildBottom() {
-  return Positioned(
-    bottom: 40,
-    left: 16,
-    right: 16,
-    child: Column(
-      children: [
-        // 기존 버튼들...
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.5),
-                spreadRadius: 1,
-                blurRadius: 7,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Text(
-                '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              Slider(
-                value: selectedDate.millisecondsSinceEpoch.toDouble(),
-                min: startDate.millisecondsSinceEpoch.toDouble(),
-                max: endDate.millisecondsSinceEpoch.toDouble(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedDate = DateTime.fromMillisecondsSinceEpoch(value.toInt());
-                  });
-                  // 여기에 선택된 날짜에 따른 마커 업데이트 로직을 추가할 수 있습니다.
-                  updateMarkersForDate(selectedDate);
-                },
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-      return '매우나쁨';
-    }
-    */
     Color color = Colors.blue;
     switch (mist) {
       case '좋음':
@@ -794,5 +754,301 @@ class _MapPageState extends State<MapPage> {
       text: mist,
       style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: color),
     );
+  }
+
+  Widget _buildBottomSheet() {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.1,
+      minChildSize: 0.1,
+      maxChildSize: (MediaQuery.of(context).size.height -
+              (Platform.isIOS ? MediaQuery.of(context).padding.top + 50 : MediaQuery.of(context).padding.top + 60)) /
+          MediaQuery.of(context).size.height,
+      builder: (BuildContext context, ScrollController scrollController) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.5),
+                spreadRadius: 5,
+                blurRadius: 7,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: CustomScrollView(
+            controller: scrollController,
+            slivers: [
+              SliverPersistentHeader(
+                delegate: _SliverAppBarDelegate(
+                  minHeight: 60,
+                  maxHeight: 70,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        height: 4,
+                        width: 40,
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 30,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${Get.find<MapCntr>().addr1.value} ${Get.find<MapCntr>().addr2.value}',
+                              style: const TextStyle(
+                                fontSize: 15,
+                                height: 1.0,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            Text(
+                              '총 ${Get.find<MapCntr>().listItems.length}개',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                height: 1.0,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              StreamBuilder<List<BoardWeatherListData>>(
+                stream: Get.find<MapCntr>().listItemsController.stream,
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return SliverFillRemaining(
+                      child: Center(child: Text('Error: ${snapshot.error}')),
+                    );
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const SliverFillRemaining(
+                      child: Center(child: Text('데이터가 없습니다.')),
+                    );
+                  } else {
+                    return SliverGrid(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.5,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 0,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          if (index < snapshot.data!.length) {
+                            return _buildGridItem(
+                              snapshot.data![index],
+                              Get.find<MapCntr>().southWest.value!,
+                              Get.find<MapCntr>().northEast.value!,
+                              Get.find<MapCntr>().searchDay.value,
+                            );
+                          } else {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+                        },
+                        childCount: snapshot.data!.length + (Get.find<MapCntr>().isLoadingList.value ? 1 : 0),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // 아래 바텅시트 리스트
+  Widget _buildGridItem(BoardWeatherListData item, LatLng southWest, LatLng northEast, int searchDay) {
+    return GestureDetector(
+      onTap: () async {
+        // var (southWest, northEast) = await getbounds();
+        Get.toNamed('/VideoMyinfoListPage', arguments: {
+          'datatype': 'LOCAL',
+          'custId': Get.find<AuthCntr>().resLoginData.value.custId.toString(),
+          'boardId': item.boardId.toString(),
+          'southWest': southWest,
+          'northEast': northEast,
+          'searchDay': searchDay,
+        });
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Stack(
+            children: [
+              AspectRatio(
+                  aspectRatio: 0.68,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(10.0),
+                      image: DecorationImage(
+                        image: CachedNetworkImageProvider(cacheKey: item.thumbnailPath, item.thumbnailPath!),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  )
+                  // child: CachedNetworkImage(
+                  //   key: Key(item.boardId.toString()),
+                  //   imageUrl: item.thumbnailPath!,
+                  //   fit: BoxFit.cover,
+                  // ),
+                  ),
+              Positioned(
+                bottom: 5,
+                left: 5,
+                child: Row(
+                  children: [
+                    const Icon(Icons.favorite, color: Colors.white, size: 15),
+                    Text(' ${item.likeCnt.toString()}',
+                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w400)),
+                  ],
+                ),
+              ),
+              Positioned(
+                bottom: 5,
+                right: 5,
+                child: Text('조회수 ${item.viewCnt.toString()}',
+                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w400)),
+              ),
+              item.hideYn == 'Y'
+                  ? const Positioned(
+                      top: 10,
+                      left: 10,
+                      child: Icon(Icons.lock, color: Colors.red, size: 20),
+                    )
+                  : const SizedBox.shrink(),
+            ],
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(1),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: const Icon(Icons.location_on, color: Colors.white, size: 15),
+                      ),
+                      const SizedBox(width: 5),
+                      SizedBox(
+                        width: 100,
+                        child: TextScroll(
+                          item.location.toString(),
+                          mode: TextScrollMode.endless,
+                          numberOfReps: 20000,
+                          fadedBorder: true,
+                          delayBefore: const Duration(milliseconds: 4000),
+                          pauseBetween: const Duration(milliseconds: 2000),
+                          velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
+                          style: const TextStyle(fontSize: 13, color: Colors.black, fontWeight: FontWeight.w500),
+                          textAlign: TextAlign.right,
+                          selectable: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Row(
+                  children: [
+                    // SizedBox(
+                    //   height: 20,
+                    //   child: TextButton(
+                    //     style: TextButton.styleFrom(
+                    //       padding: EdgeInsets.zero,
+                    //       minimumSize: Size.zero,
+                    //     ),
+                    //     onPressed: () => Get.toNamed('/OtherInfoPage/${item.custId.toString()}'),
+                    //     child: Text(
+                    //       '@${item.nickNm == null ? item.custNm.toString() : item.nickNm.toString()}',
+                    //       style: const TextStyle(
+                    //         fontWeight: FontWeight.bold,
+                    //         fontSize: 12.0,
+                    //         color: Colors.black87,
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ),
+                    // const Padding(
+                    //   padding: EdgeInsets.symmetric(horizontal: 6.0),
+                    //   child: Text(
+                    //     '·',
+                    //     style: TextStyle(color: Colors.black87, fontSize: 12),
+                    //   ),
+                    // ),
+                    Text(
+                      Utils.timeage(item.crtDtm.toString()),
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w400, color: Colors.black),
+                    ),
+                  ],
+                ),
+                Text(
+                  item.contents.toString() == 'null' ? '' : item.contents.toString(),
+                  // 'asdjfjkasdf as;dkfj asdkja s;dfja;skljfa;skdjfa;skljf;asjf asdklfj asf asdkfa sdfa askdfa sdkfas;kdjfas',
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.justify,
+                  maxLines: 2,
+                  softWrap: true,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: Colors.black),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  _SliverAppBarDelegate({
+    required this.minHeight,
+    required this.maxHeight,
+    required this.child,
+  });
+  final double minHeight;
+  final double maxHeight;
+  final Widget child;
+
+  @override
+  double get minExtent => minHeight;
+  @override
+  double get maxExtent => maxHeight;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return SizedBox.expand(child: child);
+  }
+
+  @override
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
+    return maxHeight != oldDelegate.maxHeight || minHeight != oldDelegate.minHeight || child != oldDelegate.child;
   }
 }

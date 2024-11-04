@@ -71,7 +71,7 @@ class _WeatherComPageState extends State<WeatherComPage> {
         title: Hero(
             tag: 'appbar',
             child: Text(
-              Get.find<WeatherGogoCntr>().currentLocation.value!.name,
+              Get.find<WeatherGogoCntr>().currentLocation.value.name,
               style: semiboldText.copyWith(
                 fontSize: 18.0,
                 decoration: TextDecoration.none,

@@ -1,9 +1,6 @@
-import 'dart:math';
-
 import 'package:flutter/services.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
-import 'package:project1/repo/chatting/chat_repo.dart';
-import 'package:project1/repo/chatting/data/signup_data.dart';
+import 'package:project1/repo/api/chat_api.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/kakao_join_data.dart' as Join;
@@ -78,13 +75,11 @@ class KakaoApi with SecureStorage {
     ResData<String> resData = ResData<String>();
     resData.code = "00";
     Kakao.User user;
-    bool result = false;
+
     user = await UserApi.instance.me();
-    log('사용자 정보 요청 성공'
-        '\nUser: ${user.toString()}');
+    log('사용자 정보 요청 성공 : ${user.toString()}');
 
     CustRepo repo = CustRepo();
-
     Join.KakaoJoinData kakaoJoinData = Join.KakaoJoinData();
     late ResData? res;
 
@@ -95,8 +90,8 @@ class KakaoApi with SecureStorage {
       kakaoAccount.ageRange = user.kakaoAccount?.ageRange.toString();
       kakaoAccount.birthday = user.kakaoAccount?.birthday;
       kakaoAccount.birthdayType = user.kakaoAccount?.birthdayType.toString();
-      kakaoAccount.ci = user.kakaoAccount?.ci;
-      kakaoAccount.email = user.kakaoAccount?.email ?? '';
+      kakaoAccount.ci = '';
+      kakaoAccount.email = user.kakaoAccount?.email;
       kakaoAccount.gender = user.kakaoAccount?.gender.toString();
       kakaoAccount.name = user.kakaoAccount?.name;
       kakaoAccount.phoneNumber = user.kakaoAccount?.phoneNumber;
@@ -105,19 +100,16 @@ class KakaoApi with SecureStorage {
       profile.nickname = user.kakaoAccount?.profile?.nickname ?? user.kakaoAccount?.name;
       profile.profileImageUrl = user.kakaoAccount?.profile?.profileImageUrl;
       profile.thumbnailImageUrl = user.kakaoAccount?.profile?.thumbnailImageUrl;
-
       kakaoAccount.profile = profile;
       kakaoJoinData.kakaoAccount = kakaoAccount;
-
-      // 채팅서버 회원가입
-      // 채팅서버 회원가입
-      kakaoJoinData.chatId = await chatSignUp(user);
-
       // deviceID 생성
       kakaoJoinData.deviceId = const Uuid().v4();
-      saveDeviceId(kakaoJoinData.deviceId.toString());
+      // 채팅서버 회원가입
+      ChatApi chatApi = ChatApi();
+      kakaoJoinData.chatId = await chatApi.chatSignUp(
+          kakaoAccount.email ?? '', kakaoJoinData.id.toString(), profile.nickname ?? '', profile.profileImageUrl ?? '');
+      resData.data = kakaoJoinData.id.toString();
 
-      // 회원 저장\
       res = await repo.createKakaoCust(kakaoJoinData);
       if (res.code != "00") {
         // Utils.alert(res.msg.toString());
@@ -125,6 +117,9 @@ class KakaoApi with SecureStorage {
         resData.msg = res.msg;
         return resData;
       }
+      saveDeviceId(kakaoJoinData.deviceId.toString());
+
+      return resData;
     } catch (e) {
       log('Kakao Login Result : $e');
       Utils.alert(e.toString());
@@ -132,10 +127,6 @@ class KakaoApi with SecureStorage {
       resData.msg = e.toString();
       return resData;
     }
-
-    // ResData signUpProcRes = await AuthCntr.to.signUpProc(kakaoJoinData.id.toString());
-    resData.data = kakaoJoinData.id.toString();
-    return resData;
 
 /*
     // 사용자의 추가 동의가 필요한 사용자 정보 동의항목 확인
@@ -226,23 +217,6 @@ class KakaoApi with SecureStorage {
     //   log('error : $error');
     // });
     */
-  }
-
-  Future<String> chatSignUp(Kakao.User user) async {
-    try {
-      ChatRepo chatRepo = ChatRepo();
-      ChatSignupData chatSignupData = ChatSignupData();
-      chatSignupData.email = user.kakaoAccount?.email ?? '${user.id}@codelabtiger.com';
-      chatSignupData.uid = user.id.toString();
-      chatSignupData.firstName = user.kakaoAccount?.profile?.nickname ?? user.kakaoAccount?.name;
-      chatSignupData.imageUrl = user.kakaoAccount?.profile?.profileImageUrl ?? user.kakaoAccount?.profile?.thumbnailImageUrl;
-      ResData resData1 = await chatRepo.signup(chatSignupData);
-
-      return resData1.data.toString();
-    } catch (e) {
-      log('chatSignup : $e');
-      return '';
-    }
   }
 
   Future<void> logOut() async {

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/widgets.dart' as flutterWidgets;
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
@@ -15,8 +16,11 @@ import 'package:project1/widget/error_page.dart';
 import 'package:project1/widget/no_data_widget.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+// import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+// Image 2개  오류  : https://github.com/xsahil03x/giffy_dialog/issues/110
+// giffy_model.dart 에서 import 'package:rive/rive.dart' as rive; 로 수정.
 abstract class Utils {
   Utils._();
 
@@ -27,15 +31,16 @@ abstract class Utils {
       builder: (BuildContext context) {
         return GiffyDialog.image(
           elevation: 5,
-          Image.asset(
+          flutterWidgets.Image.asset(
             'assets/images/app_update.png',
-            height: 200,
+            height: 110,
             scale: 0.4,
             fit: BoxFit.cover,
           ),
+          giffyPadding: const EdgeInsets.all(15),
           shadowColor: Colors.black.withOpacity(0.5),
           title: const Text(
-            '최신 버젼 업데이트',
+            '최신 업데이트 알림',
             textAlign: TextAlign.center,
           ),
           content: Text(
@@ -47,7 +52,7 @@ abstract class Utils {
             TextButton(
               style: TextButton.styleFrom(
                 backgroundColor: Colors.indigo[400],
-                padding: const EdgeInsets.symmetric(horizontal: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 // minimumSize: const Size(50, 28),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 shape: RoundedRectangleBorder(
@@ -65,7 +70,7 @@ abstract class Utils {
                 //   });
               },
               child: const Text(
-                '    확     인    ',
+                '필수 업데이트',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 15,
@@ -92,7 +97,7 @@ abstract class Utils {
       ),
       builder: (BuildContext context) {
         return GiffyBottomSheet.image(
-          Image.asset(
+          flutterWidgets.Image.asset(
             'assets/images/1.jpg',
             height: 200,
             fit: BoxFit.cover,
@@ -145,10 +150,7 @@ abstract class Utils {
   }
 
   static String timeage(String strTime) {
-    return timeago.format(
-        DateTime.now()
-            .subtract(Duration(milliseconds: DateTime.now().millisecondsSinceEpoch - DateTime.parse(strTime).millisecondsSinceEpoch)),
-        locale: 'ko_short');
+    return '${timeago.format(DateTime.now().subtract(Duration(milliseconds: DateTime.now().millisecondsSinceEpoch - DateTime.parse(strTime).millisecondsSinceEpoch)), locale: 'ko_short').replaceAll('~', '')}전';
   }
 
   static void alertLong(String msg) {
@@ -405,7 +407,7 @@ abstract class Utils {
                 ),
               ],
             ),
-        animationDuration: const Duration(milliseconds: 300));
+        animationDuration: const Duration(milliseconds: 250));
   }
 
   static void showNoConfirmDialog(String title, String subtitle, BackButtonBehavior backButtonBehavior,
@@ -497,17 +499,17 @@ abstract class Utils {
   }
 
   static Widget progressbar({double? size, Color? color}) {
-    // return Center(
-    //   child: LoadingAnimationWidget.threeRotatingDots(
-    //     color: color ?? Colors.pink,
-    //     size: size ?? 40,
-    //   ),
-    // );
     return Center(
-        child: LoadingAnimationWidget.fourRotatingDots(
-      color: color ?? const Color.fromARGB(255, 178, 76, 83), // const Color.fromARGB(255, 173, 32, 79),
-      size: size ?? 40,
-    ));
+      child: LoadingAnimationWidget.discreteCircle(
+        color: color ?? Colors.purple,
+        size: size ?? 30,
+      ),
+    );
+    // return Center(
+    //     child: LoadingAnimationWidget.fourRotatingDots(
+    //   color: color ?? const Color.fromARGB(255, 178, 76, 83), // const Color.fromARGB(255, 173, 32, 79),
+    //   size: size ?? 30,
+    // ));
   }
 
   static Widget progressUpload({double? size}) {

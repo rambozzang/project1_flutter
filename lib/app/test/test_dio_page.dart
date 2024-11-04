@@ -6,7 +6,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
-import 'package:project1/app/test/aa.dart';
+
 import 'package:project1/app/test/rain/RainAnimation.dart';
 
 import 'package:project1/app/test/snow/SnowAnimation.dart';
@@ -292,10 +292,10 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
   void getAlertJson() async {
     try {
       WeatherService weatherService = WeatherService();
-      List<WeatherAlert> weatherAlertList = await weatherService.getWeatherData<List<WeatherAlert>>(
-          const LatLng(37.5546788388674, 126.970606917394), ForecastType.weatherAlert);
+      // WeatherAlert> weatherAlertList = await weatherService.getWeatherData<List<WeatherAlert>>(
+      //     const LatLng(37.5546788388674, 126.970606917394), ForecastType.weatherAlert);
 
-      lo.g(weatherAlertList.toString());
+      // lo.g(weatherAlertList.toString());
     } catch (e) {
       Lo.g('특보예보 가져오기 오류 : $e');
     }
@@ -368,25 +368,10 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
               ),
 
               ElevatedButton(
-                onPressed: () async {
-                  var result = await WeatherCrawler.crawlWeatherForecast();
-                  print(json.encode(result));
-                },
-                child: const Text('네이버영상 '),
-              ),
-
-              ElevatedButton(
                 onPressed: () => findYesterDayCache(),
                 child: const Text('어제 날씨 '),
               ),
-              ElevatedButton(
-                onPressed: () async {
-                  Navigator.of(context).push(MaterialPageRoute(
-                      // fullscreenDialog: true,
-                      builder: (context) => PageViewWidget()));
-                },
-                child: const Text('햇빛화면'),
-              ),
+
               ElevatedButton(
                 onPressed: () async {
                   Navigator.of(context).push(MaterialPageRoute(

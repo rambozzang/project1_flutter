@@ -1,28 +1,27 @@
-import 'dart:math';
-
-import 'package:cached_network_image/cached_network_image.dart';
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 // import 'package:chips_choice/chips_choice.dart';
-import 'package:dio/dio.dart';
+
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:giffy_dialog/giffy_dialog.dart';
+
 import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/admob/banner_ad_widget.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
+import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/repo/common/code_data.dart';
 import 'package:project1/repo/common/comm_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/secure_storge.dart';
-import 'package:project1/app/weather/cntr/weather_cntr.dart';
-import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
-import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
+import 'package:project1/utils/StringUtils.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:dio/src/response.dart' as r;
-import 'package:project1/widget/ads_page.dart';
+import 'package:project1/widget/custom_tabbarview.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({Key? key}) : super(key: key);
@@ -32,28 +31,25 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> with SecureStorage {
-  final ValueNotifier<List<String>> urls = ValueNotifier<List<String>>([]);
+  final ValueNotifier<List<DataMap>> urls = ValueNotifier<List<DataMap>>([]);
   // 최근 검색어
   final ValueNotifier<List<String>> lastSearchWordList = ValueNotifier<List<String>>([]);
 
   // 추천 검색어
-  final ValueNotifier<List<String>> recoWordlist = ValueNotifier<List<String>>([]);
+  final ValueNotifier<List<DataMap>> recoWordlist = ValueNotifier<List<DataMap>>([]);
 
   // 급등 검색어
-  final ValueNotifier<List<String>> suddenlylist = ValueNotifier<List<String>>([]);
+  final ValueNotifier<List<DataMap>> suddenlylist = ValueNotifier<List<DataMap>>([]);
   // 지하철역
-  final ValueNotifier<List<String>> subwaylist = ValueNotifier<List<String>>([]);
+  final ValueNotifier<List<DataMap>> subwaylist = ValueNotifier<List<DataMap>>([]);
   // 학교
-  final ValueNotifier<List<String>> schoollist = ValueNotifier<List<String>>([]);
+  final ValueNotifier<List<DataMap>> schoollist = ValueNotifier<List<DataMap>>([]);
   // 캡핑장
-  final ValueNotifier<List<String>> campinglist = ValueNotifier<List<String>>([]);
+  final ValueNotifier<List<DataMap>> campinglist = ValueNotifier<List<DataMap>>([]);
   // 골프장
-  final ValueNotifier<List<String>> golflist = ValueNotifier<List<String>>([]);
+  final ValueNotifier<List<DataMap>> golflist = ValueNotifier<List<DataMap>>([]);
   // Tag
-  final ValueNotifier<List<String>> taglist = ValueNotifier<List<String>>([]);
-
-  // upslash api 로 날씨 관련 이미지 가져오기
-  final ValueNotifier<String> bgImaggeUrl = ValueNotifier<String>('');
+  final ValueNotifier<List<DataMap>> taglist = ValueNotifier<List<DataMap>>([]);
 
   TextEditingController searchController = TextEditingController();
   FocusNode textFocus = FocusNode();
@@ -84,9 +80,8 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
     searchWord('CAMP', campinglist);
     // 골프 검색어
     searchWord('GOLF', golflist);
-
-    // Tag 검색어
-    // searchWord('RECOM' , taglist);
+    //Tag 검색어
+    searchWord('RECOM', taglist);
   }
 
   Future<void> _loadAd() async {
@@ -111,12 +106,12 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
     lastSearchWordList.value = await getSearchWord();
   }
 
-  List<String> tags = [];
+  List<DataMap> tags = [];
 
   late String value;
 
   // 추천 검색어 조회
-  Future<void> searchWord(String grpCd, ValueNotifier<List<String>> valueListenable) async {
+  Future<void> searchWord(String grpCd, ValueNotifier<List<DataMap>> valueListenable) async {
     try {
       CommRepo repo = CommRepo();
       CodeReq reqData = CodeReq();
@@ -131,9 +126,14 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
         Utils.alert(res.msg.toString());
         return;
       }
-      List<CodeRes> list = (res.data as List)!.map<CodeRes>((e) => CodeRes.fromMap(e)).toList();
+      List<CodeRes> list = (res.data as List).map<CodeRes>((e) => CodeRes.fromMap(e)).toList();
+      List<DataMap> dataList = list.map<DataMap>((e) => DataMap(e.codeNm!, e.etc1 ?? '', e.etc2 ?? '')).toList();
 
-      valueListenable.value = list.map((e) => e.codeNm!).toList();
+      // List<CodeRes> 를 List<DataMap> 으로 파싱해주세요.
+
+      // List<DataMap> dataList = list.map<DataMap>((e) => DataMap(e.codeNm!, e.lat!, e.lon!)).toList();
+
+      valueListenable.value = dataList;
 
       lo.g('searchRecomWord : ${res.data}');
     } catch (e) {
@@ -203,9 +203,8 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
           color: Colors.white,
         ),
         child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
+          physics: const CustomTabBarViewScrollPhysics(),
           child: Column(
-            //   controller: RootCntr.to.hideButtonController4,
             children: [
               buildLastSearch(),
               const Gap(20),
@@ -237,20 +236,20 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
               // buildTodayWeather(),
               // buildAddmob(),
               // ValueListenableBuilder 만들어서 이미지 가져오기
-              ValueListenableBuilder<String>(
-                valueListenable: bgImaggeUrl,
-                builder: (context, value, child) {
-                  return Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      image: DecorationImage(
-                        image: NetworkImage(value),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  );
-                },
-              ),
+              // ValueListenableBuilder<String>(
+              //   valueListenable: bgImaggeUrl,
+              //   builder: (context, value, child) {
+              //     return Container(
+              //       width: double.infinity,
+              //       decoration: BoxDecoration(
+              //         image: DecorationImage(
+              //           image: NetworkImage(value),
+              //           fit: BoxFit.cover,
+              //         ),
+              //       ),
+              //     );
+              //   },
+              // ),
               //   Image.asset('assets/images/girl-6356393_640.jpg', fit: BoxFit.cover, width: double.infinity, height: 700),
               //   myFeeds()
             ],
@@ -284,11 +283,17 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
               //     style: const TextStyle(color: Colors.white, fontSize: 13),
               //   ),
               // ),
-              Lottie.asset(
-                WeatherDataProcessor.instance.getWeatherGogoImage(Get.find<WeatherGogoCntr>().currentWeather.value.sky.toString(),
+              // Lottie.asset(
+              //   WeatherDataProcessor.instance.getWeatherGogoImage(Get.find<WeatherGogoCntr>().currentWeather.value.sky.toString(),
+              //       Get.find<WeatherGogoCntr>().currentWeather.value.rain.toString()),
+              //   height: 128.0,
+              //   width: 90.0,
+              // ),
+              SizedBox(
+                width: 90,
+                height: 128,
+                child: WeatherDataProcessor.instance.getWeatherGogoImage(Get.find<WeatherGogoCntr>().currentWeather.value.sky.toString(),
                     Get.find<WeatherGogoCntr>().currentWeather.value.rain.toString()),
-                height: 128.0,
-                width: 90.0,
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,7 +357,7 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
       ),
       child: Stack(
         children: [
-          Image.asset('assets/images/1.jpg', fit: BoxFit.cover, width: double.infinity, height: double.infinity),
+          //   Image.asset('assets/images/1.jpg', fit: BoxFit.cover, width: double.infinity, height: double.infinity),
           Align(
             alignment: Alignment.bottomRight,
             child: Container(
@@ -386,7 +391,7 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
             const SizedBox(
               height: 10,
             ),
-            ValueListenableBuilder<List<String>>(
+            ValueListenableBuilder<List<DataMap>>(
                 valueListenable: valueListenable,
                 builder: (context, value, child) {
                   return Wrap(
@@ -480,9 +485,9 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
               spacing: 6.0,
               runSpacing: 6.0,
               children: <Widget>[
-                buildChip2('홍제역'),
-                buildChip2('광화문'),
-                buildChip2('개화'),
+                buildChip2(DataMap('홍제역', '0', '0')),
+                buildChip2(DataMap('광화문', '0', '0')),
+                buildChip2(DataMap('개화', '0', '0')),
               ],
             ),
           ],
@@ -504,28 +509,34 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
           label: Text(label),
           onDeleted: () async {
             // Perform delete
-            lastSearchWordList.value = await removeSearchWord(label);
+            // lastSearchWordList.value = await removeSearchWord(label);
           },
         ));
   }
 
   // 금등검색어 칩
-  Widget buildChip2(String label) {
+  Widget buildChip2(DataMap data) {
     return InkWell(
-        onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/0/${Uri.encodeComponent(label)}'),
+        onTap: () {
+          if (!StringUtils.isEmpty(data.lat)) {
+            Get.toNamed('/MapPage', arguments: {'lat': double.parse(data.lat), 'lon': double.parse(data.lon)});
+          } else {
+            Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/0/${Uri.encodeComponent(data.label)}');
+          }
+        },
         child: Chip(
           backgroundColor: Colors.grey[200],
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: const BorderSide(color: Colors.transparent),
           ),
-          label: Text(label),
+          label: Text(data.label),
           // onDeleted: () async {
           // },
         ));
   }
 
-  Widget buildChip3(String label, int colorNo) {
+  Widget buildChip3(DataMap data, int colorNo) {
     final Map<int, Map<String, Color>> colorMap = {
       1: {'textColor': const Color(0xFF1A61CD), 'backgroundColor': const Color(0xFFE5E5E5)},
       2: {'textColor': const Color(0xFF2AA100), 'backgroundColor': const Color(0xFFEFFAEA)},
@@ -538,7 +549,13 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
     };
 
     return InkWell(
-        onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/0/${Uri.encodeComponent(label)}'),
+        onTap: () {
+          if (!StringUtils.isEmpty(data.lat)) {
+            Get.toNamed('/MapPage', arguments: {'lat': double.parse(data.lat), 'lon': double.parse(data.lon)});
+          } else {
+            Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/0/${Uri.encodeComponent(data.label)}');
+          }
+        },
         child: Chip(
           backgroundColor:
               colorMap[colorMap ?? 8]?['textColor'] ?? const Color.fromARGB(255, 251, 251, 252), //  const Color.fromARGB(255, 81, 94, 165),
@@ -549,11 +566,67 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
 
           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
           label: Text(
-            label,
+            data.label,
             style: const TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.bold),
           ),
           // onDeleted: () async {
           // },
         ));
   }
+}
+
+class DataMap {
+  String label;
+  String lat;
+  String lon;
+  DataMap(
+    this.label,
+    this.lat,
+    this.lon,
+  );
+
+  DataMap copyWith({
+    String? label,
+    String? lat,
+    String? lon,
+  }) {
+    return DataMap(
+      label ?? this.label,
+      lat ?? this.lat,
+      lon ?? this.lon,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'label': label,
+      'lat': lat,
+      'lon': lon,
+    };
+  }
+
+  factory DataMap.fromMap(Map<String, dynamic> map) {
+    return DataMap(
+      map['label'] as String,
+      map['lat'] as String,
+      map['lon'] as String,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory DataMap.fromJson(String source) => DataMap.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  @override
+  String toString() => 'DataMap(label: $label, lat: $lat, lon: $lon)';
+
+  @override
+  bool operator ==(covariant DataMap other) {
+    if (identical(this, other)) return true;
+
+    return other.label == label && other.lat == lat && other.lon == lon;
+  }
+
+  @override
+  int get hashCode => label.hashCode ^ lat.hashCode ^ lon.hashCode;
 }

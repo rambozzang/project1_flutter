@@ -83,13 +83,14 @@ class ChatRepo {
       Map<String, dynamic> metadata = {
         'email': resLoginData.email ?? '',
         'custId': resLoginData.custId ?? '',
-        'nickNm': resLoginData.nickNm ?? '',
-        'custNm': resLoginData.nickNm ?? '',
+        'nickNm': data.firstName ?? resLoginData.nickNm,
+        'custNm': data.firstName ?? resLoginData.nickNm,
         'selfId': resLoginData.custData?.selfId ?? '',
       };
 
       await SupabaseChatCore.instance.updateUser(
-        types.User(firstName: resLoginData.nickNm, id: data.uid!, lastName: '', imageUrl: data.imageUrl, metadata: metadata),
+        types.User(
+            firstName: data.firstName ?? resLoginData.nickNm, id: data.uid!, lastName: '', imageUrl: data.imageUrl, metadata: metadata),
       );
       resData.code = '00';
       resData.msg = '업데이트 성공';

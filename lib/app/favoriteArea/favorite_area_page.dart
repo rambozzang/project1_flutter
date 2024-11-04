@@ -223,8 +223,8 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
                 Container(
                   decoration: BoxDecoration(
                     // color: Colors.black,
-                    // borderRadius: const BorderRadius.all(Radius.circular(15)),
-                    border: Border.all(color: Colors.grey),
+                    borderRadius: const BorderRadius.all(Radius.circular(15)),
+                    // border: Border.all(color: Colors.grey),
                   ),
                   height: 240,
                   child: initialized

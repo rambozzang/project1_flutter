@@ -1,4 +1,5 @@
 import 'package:flutter_naver_login/flutter_naver_login.dart';
+import 'package:project1/repo/api/chat_api.dart';
 import 'package:project1/repo/chatting/chat_repo.dart';
 import 'package:project1/repo/chatting/data/signup_data.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -14,76 +15,62 @@ class NaverApi with SecureStorage {
   Future<ResData<String>> signInWithNaver() async {
     ResData<String> resData = ResData<String>();
     resData.code = "00";
-
-    NaverLoginResult result = await FlutterNaverLogin.logIn();
-    log('Naver Login Result : $result');
-    NaverJoinData naverJoinData = NaverJoinData();
+    CustRepo repo = CustRepo();
 
     try {
-      CustRepo repo = CustRepo();
-
-      naverJoinData.stauts = result.status.toString();
-
+      final NaverLoginResult result = await FlutterNaverLogin.logIn();
+      if (result.status == NaverLoginStatus.error || result.status == NaverLoginStatus.cancelledByUser) {
+        resData.code = '99';
+        resData.msg = '사용자 취소';
+        return resData;
+      }
       NaverAccount naverAccount = NaverAccount();
       naverAccount.nickname = result.account.nickname;
       naverAccount.id = result.account.id.toString();
       naverAccount.name = result.account.name;
       naverAccount.email = result.account.email;
-      naverAccount.gender = result.account.gender;
-      naverAccount.age = result.account.age;
-      naverAccount.birthday = result.account.birthday;
-      naverAccount.birthyear = result.account.birthyear;
       naverAccount.profileImage = result.account.profileImage;
-      naverAccount.mobile = result.account.mobile!.replaceAll('-', '');
+      naverAccount.gender = '';
+      naverAccount.age = '';
+      naverAccount.birthday = '';
+      naverAccount.birthyear = '';
+      naverAccount.mobile = '';
 
+      NaverJoinData naverJoinData = NaverJoinData();
+      naverJoinData.stauts = result.status.toString();
       naverJoinData.account = naverAccount;
-
-      // 채팅서버 회원가입
-      naverJoinData.chatId = await chatSignUp(result);
-
-      // deviceID 생성
       naverJoinData.deviceId = const Uuid().v4();
-      saveDeviceId(naverJoinData.deviceId.toString());
+      // naverJoinData.chatId = await chatSignUp(result);
+      // 채팅서버 회원가입
+      ChatApi chatApi = ChatApi();
+      naverJoinData.chatId = await chatApi.chatSignUp(
+          naverAccount.email ?? '', naverAccount.id.toString(), naverAccount.nickname ?? '', naverAccount.profileImage ?? '');
 
       ResData res = await repo.createNaverCust(naverJoinData);
+
       if (res.code != "00") {
         resData.code = res.code.toString();
         resData.msg = res.msg.toString();
         return resData;
       }
+
+      saveDeviceId(naverJoinData.deviceId.toString());
+      resData.data = naverJoinData.account!.id.toString();
+      return resData;
     } catch (e) {
+      lo.g('err :${e.toString()}');
       resData.code = '99';
       resData.msg = e.toString();
       return resData;
-    }
-
-    // ResData signUpProcRes = await AuthCntr.to.signUpProc(naverJoinData.account!.id.toString());
-    // return signUpProcRes;
-    resData.data = naverJoinData.account!.id.toString();
-    return resData;
-  }
-
-  Future<String> chatSignUp(NaverLoginResult result) async {
-    try {
-      ChatRepo chatRepo = ChatRepo();
-      ChatSignupData chatSignupData = ChatSignupData();
-      chatSignupData.email = result.account.email;
-      chatSignupData.uid = result.account.id.toString();
-      chatSignupData.firstName = result.account.nickname ?? result.account.name;
-      chatSignupData.imageUrl = result.account.profileImage;
-      ResData resData1 = await chatRepo.signup(chatSignupData);
-
-      return resData1.data.toString();
-    } catch (e) {
-      log('chatSignup : $e');
-      return '';
     }
   }
 
   Future<void> logOut() async {
     try {
       // await FlutterNaverLogin.logOut();
-      await FlutterNaverLogin.logOutAndDeleteToken();
+      NaverLoginResult result = await FlutterNaverLogin.logOutAndDeleteToken();
+      lo.g("logout:" + result.toString());
+
       print('로그아웃 성공, SDK에서 토큰 삭제');
     } catch (error) {
       print('로그아웃 실패, SDK에서 토큰 삭제 $error');

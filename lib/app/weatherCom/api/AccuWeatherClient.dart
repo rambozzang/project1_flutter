@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
+import 'package:project1/utils/WeatherLottie.dart';
 import 'package:project1/utils/log_utils.dart';
 import '../models/weather_data.dart';
 
@@ -180,6 +182,8 @@ class AccuWeatherClient {
 
   String mapAccuWeatherIconToWeatherCategory(int iconCode) {
     String assetPath = 'assets/lottie/';
+
+    bool isDayTime = DateTime.now().hour >= 6 && DateTime.now().hour < 18;
 
     switch (iconCode) {
       case 1:

@@ -33,13 +33,13 @@ class VideoListCntr extends GetxController {
   int playAtFirst = 0;
 
   var isLoadingMore = true.obs;
-  int preLoadingCount = 4;
+  int preLoadingCount = 5;
 
   //현재 영상의 index값 저장
   var currentIndex = 0.obs;
 
   get position => null;
-  bool isLoading = false;
+  RxBool isLoading = false.obs;
 
   // StreamController<List<int>> mountedListCntr = StreamController<List<int>>.broadcast();
   RxList<int> mountedList = <int>[].obs;
@@ -60,15 +60,18 @@ class VideoListCntr extends GetxController {
 
   void swichSearchType(String type) {
     searchType.value = type;
+    isLoadingMore.value = true;
+
     pageNum = 0;
-    getDataProcess();
+    getDataWithPagination(isInitialLoad: true);
     update();
   }
 
   void getData() async {
     pageNum = 0;
     searchType.value = 'TOTAL';
-    getDataProcess();
+
+    getDataWithPagination(isInitialLoad: true);
   }
 
   void getSingAfterGetData(String? singoCd) async {
@@ -78,28 +81,30 @@ class VideoListCntr extends GetxController {
     }
   }
 
-  Future<void> getDataProcess() async {
-    log("getData() : ");
+  Future<void> getDataWithPagination({bool isInitialLoad = false}) async {
+    log("getDataWithPagination() : list length  = ${list.length}");
     try {
-      if (isLoading == true) {
-        //  Utils.alert(resListData.msg.toString());
+      if (isLoading.value == true) {
         return;
       }
-      isLoading = true;
-      videoListCntr.sink.add(ResStream.loading());
-      late String lat;
-      late String lon;
+      isLoading.value = true;
 
-      // 위치 좌표 가져오기
+      if (isInitialLoad) {
+        pageNum = 0;
+        list.clear();
+        videoListCntr.sink.add(ResStream.loading());
+      } else {
+        if (!isLoadingMore.value) {
+          return;
+        }
+        pageNum++;
+      }
 
-      var currentLocation = Get.find<WeatherGogoCntr>().currentLocation.value?.latLng;
+      var currentLocation = Get.find<WeatherGogoCntr>().currentLocation.value.latLng;
+      String lat = currentLocation?.latitude.toString() ?? '';
+      String lon = currentLocation?.longitude.toString() ?? '';
 
-      lat = currentLocation?.latitude.toString() ?? '';
-      lon = currentLocation?.longitude.toString() ?? '';
-
-      // 비디오 리스트 가져오기
       BoardRepo boardRepo = BoardRepo();
-      // 각 searchType에 대한 API 호출 매핑
       final apiCallMap = {
         'TOTAL': () => boardRepo.getTotalBoardList(lat, lon, pageNum, pagesize),
         'LOCAL': () => boardRepo.getLocalBoardList(lat, lon, pageNum, pagesize),
@@ -108,105 +113,53 @@ class VideoListCntr extends GetxController {
         'DIST': () => boardRepo.getDistinceBoardList(lat, lon, pageNum, pagesize),
       };
 
-      // API 호출
       ResData resListData = await apiCallMap[searchType.value]!();
 
       if (resListData.code != '00') {
         Utils.alert(resListData.msg.toString());
-        isLoading = false;
+        isLoading.value = false;
         return;
       }
-      // 리스트 초기화
-      mountedList.clear();
 
       List<BoardWeatherListData> _list = ((resListData.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
 
       if (_list.isEmpty) {
-        // Utils.alert('데이터가 없습니다.');
-        isLoading = false;
-        videoListCntr.sink.add(ResStream.completed([]));
+        if (isInitialLoad) {
+          videoListCntr.sink.add(ResStream.completed([]));
+        }
+        isLoadingMore.value = false;
+        isLoading.value = false;
         return;
       }
 
-      list = _list;
-      videoListCntr.sink.add(ResStream.completed(_list));
+      if (isInitialLoad) {
+        list = _list;
+        mountedList.clear();
+      } else {
+        list.addAll(_list);
+      }
 
-      // List<BoardWeatherListData> initList = _list.sublist(0, _list.length > 1 ? 2 : 1);
-      // videoListCntr.sink.add(ResStream.completed(initList));
-      // Future.delayed(const Duration(milliseconds: 2000), () {
-      //   // 1번째 비디오를 플레이 화면에 바로 노출하도록 나머지 스트림 전송
-      //   videoListCntr.sink.add(ResStream.completed(_list));
-      // });
-      // videoListCntr.sink.add(ResStream.completed(list));
-      isLoading = false;
-    } catch (e) {
-      // Lo.g('getDate() error : $e');
-      isLoading = false;
-      videoListCntr.sink.add(ResStream.error(e.toString()));
-    } finally {
-      isLoading = false;
-      // 리스트가 다 구성이 끝나면 날씨 데이터 가져온다.
-      // 날씨 정보가 없을때만 다시 가져온다.  - 최초시만 가져온다.
-      if (Get.find<WeatherGogoCntr>().currentWeather.value.temp == '0.0') {
+      if (_list.length < pagesize) {
+        isLoadingMore.value = false;
+      }
+
+      lo.g('list : ${list.length}');
+
+      videoListCntr.sink.add(ResStream.completed(list));
+
+      if (isInitialLoad && Get.find<WeatherGogoCntr>().currentWeather.value.temp == '0.0') {
         Future.delayed(const Duration(milliseconds: 3000), () {
           Get.find<WeatherGogoCntr>().getInitWeatherData(true);
         });
       }
-    }
-  }
-
-  // 참고 싸이트 : https://github.com/octomato/preload_page_view/issues/43
-  Future<void> getMoreData(int index, int length) async {
-    currentIndex.value = index;
-    try {
-      bool isBottom = index >= list.length - (preLoadingCount + 1);
-      isBottom = length < pagesize ? false : isBottom;
-      // if (isBottom && !postCubit.state.hasReachedMax && !postCubit.state.isLoading) {
-      //    getAllPost();
-      // }
-      var len = list.length;
-
-      if (!isBottom) {
-        return;
-      }
-
-      if (!isLoadingMore.value) {
-        return;
-      }
-
-      pageNum++;
-      var currentLocation = Get.find<WeatherGogoCntr>().currentLocation.value?.latLng;
-      String lat = currentLocation?.latitude.toString() ?? '';
-      String lon = currentLocation?.longitude.toString() ?? '';
-
-      BoardRepo boardRepo = BoardRepo();
-      // ResData resListData = await boardRepo.searchBoardBylatlon(lat.toString(), lon.toString(), pageNum, pagesize);
-      // 각 searchType에 대한 API 호출 매핑
-      final apiCallMap = {
-        'TOTAL': () => boardRepo.getTotalBoardList(lat, lon, pageNum, pagesize),
-        'LOCAL': () => boardRepo.getLocalBoardList(lat, lon, pageNum, pagesize),
-        'TAG': () => boardRepo.getTagBoardList(lat, lon, pageNum, pagesize),
-        'DIST': () => boardRepo.getDistinceBoardList(lat, lon, pageNum, pagesize),
-      };
-
-      // API 호출
-      ResData resListData = await apiCallMap[searchType.value]!();
-
-      if (resListData.code != '00') {
-        Utils.alert(resListData.msg.toString());
-        return;
-      }
-      List<BoardWeatherListData> _list = ((resListData.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
-
-      if (_list.isEmpty || _list.length < pagesize) {
-        isLoadingMore.value = false;
-      }
-
-      list.addAll(_list);
-
-      videoListCntr.sink.add(ResStream.completed(list));
     } catch (e) {
-      lo.g('getMoreData() error : $e');
+      lo.g('getDataWithPagination() error : $e');
+      isLoading.value = false;
+      if (isInitialLoad) {
+        videoListCntr.sink.add(ResStream.error(e.toString()));
+      }
+    } finally {
+      isLoading.value = false;
     }
   }
 

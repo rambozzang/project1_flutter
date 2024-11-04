@@ -66,7 +66,7 @@ class _MyboardListPageState extends State<MyboardListPage> {
       List<BoardWeatherListData> list = ((res.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
       myboardlist.addAll(list);
 
-      if (list.length < myboardageSize) {
+      if (list.length < myboardageSize || list.isEmpty) {
         isMyBoardLastPage = true;
       }
       isMyBoardMoreLoading.value = false;
@@ -162,7 +162,7 @@ class _MyboardListPageState extends State<MyboardListPage> {
                     color: Colors.grey[300],
                     borderRadius: BorderRadius.circular(10.0),
                     image: DecorationImage(
-                      image: CachedNetworkImageProvider(list[index].thumbnailPath!),
+                      image: CachedNetworkImageProvider(cacheKey: list[index].thumbnailPath.toString(), list[index].thumbnailPath!),
                       fit: BoxFit.cover,
                     ),
                   ),

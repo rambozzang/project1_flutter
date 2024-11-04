@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/chatting/chat_room_page.dart';
 import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
@@ -20,6 +19,7 @@ import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/cust_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
+import 'package:project1/utils/StringUtils.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:image_picker/image_picker.dart';
@@ -57,12 +57,12 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
 
   // 내게시물 리스트 가져오기
   int myboardPageNum = 0;
-  int myboardageSize = 5000;
+  int myboardageSize = 30;
   StreamController<ResStream<List<BoardWeatherListData>>> myVideoListCntr = BehaviorSubject();
 
   // 팔로워 리스트 가져오기
   int followboardPageNum = 0;
-  int followboardageSize = 5000;
+  int followboardageSize = 30;
   StreamController<ResStream<List<BoardWeatherListData>>> followVideoListCntr = BehaviorSubject();
 
   // 관심태그 리스트 가져오기
@@ -93,6 +93,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
     getCountData(custId!);
     getMyBoard(custId!);
     getFollowBoard(custId!);
+
     textFocus.addListener(() {
       if (textFocus.hasFocus) {
         RootCntr.to.bottomBarStreamController.sink.add(false);
@@ -443,6 +444,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
   Widget _info() {
     return Container(
         margin: const EdgeInsets.all(10.0),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: Colors.grey.shade100,
           shape: BoxShape.rectangle,
@@ -502,12 +504,6 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                     width: 47,
                     borderRadius: BorderRadius.circular(7.0),
                   ),
-                  const Gap(5),
-                  CustomShimmer(
-                    height: 47.0,
-                    width: 47,
-                    borderRadius: BorderRadius.circular(7.0),
-                  ),
                 ],
               ),
               const Gap(10),
@@ -537,88 +533,154 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
   }
 
   Widget _builtCount(CustCountData data) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-              height: 70,
-              width: 70,
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                // color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(25),
-                image: DecorationImage(
-                  image: CachedNetworkImageProvider(data.custInfo!.profilePath.toString()),
-                  fit: BoxFit.cover,
-                ),
-              ),
-              child: Get.find<AuthCntr>().resLoginData.value.profilePath == null ? const Icon(Icons.person, color: Colors.white) : null),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              !StringUtils.isEmpty(data.custInfo!.profilePath)
+                  ? GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ProfileImagePage(imageUrl: data.custInfo!.profilePath.toString(), nickNm: data.custInfo!.nickNm.toString()),
+                          ),
+                        );
+                      },
+                      child: Hero(
+                        tag: data.custInfo!.profilePath.toString(),
+                        child: Container(
+                          height: 70,
+                          width: 70,
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            // color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(25),
+                            image: DecorationImage(
+                              image: CachedNetworkImageProvider(
+                                  cacheKey: data.custInfo!.profilePath.toString(), data.custInfo!.profilePath.toString()),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  : Container(
+                      height: 70,
+                      width: 70,
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        // color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      child: Center(
+                        child: Text(
+                          data.custInfo!.nickNm.toString().substring(0, 1),
+                          style: const TextStyle(fontSize: 19, color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+              const Gap(20),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.all(3.0),
-                      child: OtherInfoPageInfo(
-                        count: data.boardCnt!.toInt(),
-                        label: '게시물',
-                        onTap: () => Get.toNamed('/MainView1/$custId/0/${null}'), //Get.toNamed('/MainView1
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(3.0),
-                      child: OtherInfoPageInfo(
-                        count: data.likeCnt!.toInt(),
-                        label: '좋아요',
-                        onTap: () => Get.toNamed('/MainView1/$custId/1/${null}'),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(3.0),
-                      child: OtherInfoPageInfo(
-                        count: data.followCnt!.toInt(),
-                        label: '팔로워',
-                        onTap: () => Get.toNamed('/MainView1/$custId/2/${null}'),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(3.0),
-                      child: OtherInfoPageInfo(
-                        count: data.followerCnt!.toInt(),
-                        label: '팔로잉',
-                        onTap: () => Get.toNamed('/MainView1/$custId/3/${null}'),
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(3.0),
+                          child: OtherInfoPageInfo(
+                            count: data.boardCnt!.toInt(),
+                            label: '게시물',
+                            onTap: () => Get.toNamed('/MainView1/$custId/0/${null}'), //Get.toNamed('/MainView1
+                          ),
+                        ),
+                        // Padding(
+                        //   padding: const EdgeInsets.all(3.0),
+                        //   child: OtherInfoPageInfo(
+                        //     count: data.likeCnt!.toInt(),
+                        //     label: '좋아요',
+                        //     onTap: () => Get.toNamed('/MainView1/$custId/1/${null}'),
+                        //   ),
+                        // ),
+                        const Gap(20),
+                        Padding(
+                          padding: const EdgeInsets.all(3.0),
+                          child: OtherInfoPageInfo(
+                            count: data.followCnt!.toInt(),
+                            label: '팔로워',
+                            onTap: () => Get.toNamed('/MainView1/$custId/2/${null}'),
+                          ),
+                        ),
+                        const Gap(20),
+                        Padding(
+                          padding: const EdgeInsets.all(3.0),
+                          child: OtherInfoPageInfo(
+                            count: data.followerCnt!.toInt(),
+                            label: '팔로잉',
+                            onTap: () => Get.toNamed('/MainView1/$custId/3/${null}'),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const Gap(10),
-                data.custInfo!.custNm.toString() == 'null'
-                    ? const Text(
-                        '-',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-                      )
-                    : Text(
-                        data.custInfo!.custNm.toString(),
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-                      ),
-                data.custInfo!.selfId.toString() == 'null'
-                    ? const SizedBox()
-                    : Text(
-                        data.custInfo!.selfIntro.toString() == 'null' ? '자기소개 없음' : data.custInfo!.selfIntro.toString(),
-                        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
-                      ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        const Gap(5),
+        data.custInfo!.custNm == 'null' || data.custInfo!.custNm == null || data.custInfo!.custNm == ''
+            ? const Text(
+                '-',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              )
+            : Text(
+                data.custInfo!.custNm.toString(),
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              ),
+        // Container(
+        //   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        //   decoration: BoxDecoration(
+        //     color: Colors.grey.shade200,
+        //     borderRadius: BorderRadius.circular(10),
+        //   ),
+        //   child: Text(
+        //     data.custInfo!.email!.toString(),
+        //     style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+        //   ),
+        // ),
+        const Gap(5),
+        data.custInfo!.selfIntro == 'null' || data.custInfo!.selfIntro == null || data.custInfo!.selfIntro == ''
+            ? const Text(
+                '자기 소개 내용이 없습니다.',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+              )
+            : Text(
+                data.custInfo!.selfIntro.toString(),
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+              ),
+        const Gap(5),
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            const Text('👍좋아요', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
+            const Gap(5),
+            Text('${data.likeCnt}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+          ],
+        ),
+        const Gap(15),
+      ],
     );
   }
 
@@ -657,7 +719,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                     color: Colors.grey,
                     borderRadius: BorderRadius.circular(10.0),
                     image: DecorationImage(
-                      image: CachedNetworkImageProvider(list[index].thumbnailPath!),
+                      image: CachedNetworkImageProvider(cacheKey: list[index].thumbnailPath.toString(), list[index].thumbnailPath!),
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -742,6 +804,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
               borderRadius: BorderRadius.circular(10.0),
               image: DecorationImage(
                 image: CachedNetworkImageProvider(
+                  cacheKey: list[index].thumbnailPath.toString(),
                   list[index].thumbnailPath!,
                 ),
                 fit: BoxFit.cover,
@@ -808,7 +871,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
   }
 
   Widget _tabs() {
-    return const TabBar(indicatorColor: Colors.black, tabs: [
+    return const TabBar(indicatorColor: Colors.black, indicatorPadding: EdgeInsets.symmetric(horizontal: 50), tabs: [
       Tab(
         // child: Icon(Icons.grid_on),
         child: Row(
@@ -926,12 +989,12 @@ class OtherInfoPageInfo extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         minimumSize: Size.zero,
         //   backgroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 1, horizontal: 6),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        visualDensity: const VisualDensity(horizontal: 0, vertical: 0),
-        elevation: 0.2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
         backgroundColor: Colors.grey.shade100,
+        foregroundColor: Colors.grey.shade100,
+        elevation: 0,
+        side: const BorderSide(color: Colors.white, width: 0.0),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
       ),
       onPressed: onTap,
       child: Column(
@@ -940,9 +1003,12 @@ class OtherInfoPageInfo extends StatelessWidget {
             count.toString(),
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black),
           ),
+          const SizedBox(
+            height: 4,
+          ),
           Text(
             label,
-            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: Colors.black54),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black54),
           ),
         ],
       ),
@@ -997,6 +1063,56 @@ class _DraggablePageState extends State<DraggablePage> {
                 child: const Text('Back'),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ProfileImagePage extends StatelessWidget {
+  final String imageUrl;
+  final String nickNm;
+
+  const ProfileImagePage({super.key, required this.imageUrl, required this.nickNm});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        forceMaterialTransparency: true,
+        centerTitle: false,
+        title: Hero(tag: nickNm, child: Text(nickNm, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.close,
+              color: Colors.black,
+              // size: 11,
+            ),
+            onPressed: () => Get.back(),
+          ),
+        ],
+      ),
+      body: InteractiveViewer(
+        child: Padding(
+          padding: const EdgeInsets.only(
+            left: 2.0,
+            right: 2.0,
+            top: 0.0,
+          ),
+          child: Center(
+            child: Hero(
+              tag: imageUrl,
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
+                fadeInDuration: const Duration(milliseconds: 100),
+                fadeOutDuration: const Duration(milliseconds: 100),
+                // placeholder: (context, url) => const CircularProgressIndicator(),
+                errorWidget: (context, url, error) => const Icon(Icons.error),
+              ),
+            ),
           ),
         ),
       ),

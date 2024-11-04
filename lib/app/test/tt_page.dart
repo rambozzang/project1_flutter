@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:project1/utils/WeatherLottie.dart';
 
 class AaaaaaPAge extends StatelessWidget {
   @override
@@ -7,11 +8,7 @@ class AaaaaaPAge extends StatelessWidget {
     return Scaffold(
       body: Center(
         child: SizedBox.expand(
-          child: Lottie.asset(
-            'assets/login/bg1.json',
-            fit: BoxFit.cover,
-            renderCache: RenderCache.raster,
-          ),
+          child: WeatherLottie.background(),
         ),
       ),
     );

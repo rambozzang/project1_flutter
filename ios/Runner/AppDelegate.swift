@@ -9,6 +9,8 @@ import flutter_local_notifications
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
+        GeneratedPluginRegistrant.register(with: self)
+
         // FCM 설정
         FlutterLocalNotificationsPlugin.setPluginRegistrantCallback { (registry) in
             GeneratedPluginRegistrant.register(with: registry)
@@ -18,21 +20,31 @@ import flutter_local_notifications
             UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
         }
 
-        // 네이버 로그인 설정
-        let instance = NaverThirdPartyLoginConnection.getSharedInstance()
-        instance?.isNaverAppOauthEnable = true  // 네이버 앱으로 인증하는 방식을 활성화
-        instance?.isInAppOauthEnable = true     // Safari 등 외부 브라우저로 인증하는 방식을 활성화
+        NaverThirdPartyLoginConnection.getSharedInstance().isInAppOauthEnable = true
+        NaverThirdPartyLoginConnection.getSharedInstance().isNaverAppOauthEnable = true
 
-        GeneratedPluginRegistrant.register(with: self)
+            // 네이버 로그인 설정
+        let instance = NaverThirdPartyLoginConnection.getSharedInstance()     
+        instance?.serviceUrlScheme =  "com.codelabtiger.skysnap" // 앱을 등록할 때 입력한 URL Scheme
+        instance?.consumerKey = "iC9RuDfC4wmdwHXS02Sa" // 애플리케이션에서 사용하는 클라이언트 아이디
+        instance?.consumerSecret = "VYG6_hVGkl" // 애플리케이션에서 사용하는 클라이언트 시크릿
+        instance?.appName = "SkySnap"// 애플리케이션 이름
+
+
+
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
 
     // URL 처리를 위한 메서드
     override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
-        if NaverThirdPartyLoginConnection.getSharedInstance().application(app, open: url, options: options) {
-            return true
+        var applicationResult = false
+        if(!applicationResult){
+            applicationResult = NaverThirdPartyLoginConnection.getSharedInstance().application(app, open: url, options: options)
         }
-        return super.application(app, open: url, options: options)
+        if(!applicationResult){
+            applicationResult = super.application(app, open: url, options: options)
+        }
+        return applicationResult
     }
 }
 

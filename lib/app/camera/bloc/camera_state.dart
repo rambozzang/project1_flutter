@@ -2,7 +2,6 @@
 import 'dart:io';
 
 import 'package:equatable/equatable.dart';
-import 'package:project1/app/camera/enums/color_constant.dart';
 
 // Abstract class representing the various states of the camera
 abstract class CameraState extends Equatable {
@@ -50,4 +49,19 @@ class CameraError extends CameraState {
   });
   @override
   List<Object> get props => [error];
+}
+
+// Camera switching state when the camera is in the process of switching
+class CameraSwitching extends CameraState {}
+
+// Camera disposed state when the camera is disposed
+class CameraDisposed extends CameraState {}
+
+// 카메라 초기화 중 상태
+class CameraInitializing extends CameraState {}
+
+enum CameraErrorType {
+  permission,
+  other,
+  initialization, // 여기에 'initialization' 상수를 추가했습니다.
 }

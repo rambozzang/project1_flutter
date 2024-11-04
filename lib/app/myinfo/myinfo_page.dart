@@ -12,6 +12,7 @@ import 'package:get/get.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/myinfo/otherinfo_page.dart';
 import 'package:project1/app/weather/widgets/customShimmer.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
@@ -25,6 +26,7 @@ import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/cust_tag_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
+import 'package:project1/utils/StringUtils.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:image_picker/image_picker.dart';
@@ -97,6 +99,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance!.addObserver(this);
     fetchAllData();
 
     textFocus.addListener(() {
@@ -110,21 +113,6 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
 
     mainScrollController.addListener(() {
       RootCntr.to.changeScrollListner(mainScrollController);
-
-      // lo.g(
-      //     'ttps://www.tigerbk.com/api/board/getMyBoard?custId=352348794 : ${mainScrollController.position.pixels} ${mainScrollController.position.maxScrollExtent} ${tabController.index} ${isMyBoardLastPage}');
-      // if (mainScrollController.position.pixels == mainScrollController.position.maxScrollExtent) {
-      //   if (!isMyBoardLastPage && tabController.index == 0) {
-      //     myboardPageNum++;
-      //     isMyBoardMoreLoading.value = true;
-      //     getMyBoard(myboardPageNum);
-      //   }
-      //   if (!isFollowLastPage && tabController.index == 1) {
-      //     followboardPageNum++;
-      //     isFollowMoreLoading.value = true;
-      //     getFollowBoard(followboardPageNum);
-      //   }
-      // }
     });
   }
 
@@ -225,96 +213,6 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     }
   }
 
-  // //이미지를 가져오는 함수
-  // Future getImage(ImageSource imageSource) async {
-  //   isLoading.value = true;
-
-  //   PermissionStatus status = await Permission.photos.request();
-  //   lo.g('status : $status');
-
-  //   try {
-  //     //pickedFile에 ImagePicker로 가져온 이미지가 담긴다.
-  //     final XFile? pickedFile = await picker.pickImage(source: imageSource);
-  //     lo.g('pickedFile :  $pickedFile');
-  //     if (pickedFile != null) {
-  //       _image = XFile(pickedFile.path); //가져온 이미지를 _image에 저장
-
-  //       CroppedFile? croppedFile = await ImageCropper().cropImage(
-  //         sourcePath: pickedFile.path,
-  //         compressFormat: ImageCompressFormat.jpg,
-  //         compressQuality: 80,
-  //         uiSettings: [
-  //           AndroidUiSettings(
-  //             toolbarTitle: '사진 편집기',
-  //             toolbarColor: const Color(0xFF262B49),
-  //             toolbarWidgetColor: Colors.white,
-  //             initAspectRatio: CropAspectRatioPreset.original,
-  //             lockAspectRatio: false,
-  //             aspectRatioPresets: [
-  //               CropAspectRatioPreset.square,
-  //               CropAspectRatioPreset.ratio3x2,
-  //               CropAspectRatioPreset.original,
-  //               CropAspectRatioPreset.ratio4x3,
-  //               CropAspectRatioPreset.ratio16x9
-  //             ],
-  //           ),
-  //           IOSUiSettings(
-  //             title: '사진 편집기',
-  //             aspectRatioPresets: [
-  //               CropAspectRatioPreset.square,
-  //               CropAspectRatioPreset.ratio3x2,
-  //               CropAspectRatioPreset.original,
-  //               CropAspectRatioPreset.ratio4x3,
-  //               CropAspectRatioPreset.ratio16x9
-  //             ],
-  //           ),
-  //           WebUiSettings(
-  //             context: context,
-  //           ),
-  //         ],
-  //       );
-
-  //       if (croppedFile != null) {
-  //         _image = XFile(croppedFile.path);
-  //       }
-
-  //       // File aa = await CompressAndGetFile(croppedFile!.path);
-
-  //       File aa = File(croppedFile!.path);
-
-  //       // 1. 파일 업로드
-  //       final String resthumbnail = await uploadImage(aa);
-
-  //       AuthCntr.to.resLoginData.value.profilePath = resthumbnail;
-
-  //       CustRepo repo = CustRepo();
-  //       ResData res = await repo.modiProfilePath(AuthCntr.to.resLoginData.value.custId.toString(), resthumbnail);
-  //       if (res.code != '00') {
-  //         Utils.alert(res.msg.toString());
-  //         isLoading.value = false;
-  //         return;
-  //       }
-  //       isLoading.value = false;
-  //       getCountData();
-
-  //       // chatting 서버 이미지도 변경한다.
-  //       ChatRepo chatRepo = ChatRepo();
-  //       ChatUpdateData chatUpdateData = ChatUpdateData();
-  //       chatUpdateData.firstName = AuthCntr.to.resLoginData.value.nickNm;
-  //       chatUpdateData.uid = AuthCntr.to.resLoginData.value.chatId.toString();
-  //       chatUpdateData.imageUrl = resthumbnail;
-  //       chatRepo.updateUserino(chatUpdateData);
-
-  //       Utils.alert('프로필 사진이 변경되었습니다.');
-  //     } else {
-  //       isLoading.value = false;
-  //     }
-  //   } catch (e) {
-  //     Utils.alert(e.toString());
-  //     isLoading.value = false;
-  //   }
-  // }
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (state == AppLifecycleState.resumed && _needToCheckPermission) {
@@ -331,14 +229,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     isLoading.value = true;
 
     try {
-      // 권한 요청
-      PermissionStatus status = await Permission.photos.request();
-
-      lo.g('status : $status');
-      lo.g('status : ${status.isGranted}');
-
-      if (status.isGranted) {
-        // 권한이 허용된 경우
+      if (Platform.isAndroid || Platform.isIOS) {
         final XFile? pickedFile = await picker.pickImage(source: imageSource);
         if (pickedFile != null) {
           _processImage(pickedFile);
@@ -346,30 +237,42 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
           isLoading.value = false;
         }
       } else {
-        // 권한이 거부된 경우
-        bool openSettings = await showDialog(
-              context: context,
-              builder: (BuildContext context) => AlertDialog(
-                title: const Text('권한이 필요합니다'),
-                content: const Text('사진을 선택하기 위해 갤러리 접근 권한이 필요합니다. 설정에서 권한을 허용해주세요.'),
-                actions: <Widget>[
-                  TextButton(
-                    child: const Text('취소'),
-                    onPressed: () => Navigator.of(context).pop(false),
-                  ),
-                  TextButton(
-                    child: const Text('설정으로 이동'),
-                    onPressed: () => Navigator.of(context).pop(true),
-                  ),
-                ],
-              ),
-            ) ??
-            false;
+        // 권한 요청
+        PermissionStatus status = await Permission.photos.request();
+        if (status.isGranted || status.isLimited) {
+          // 권한이 허용된 경우
+          final XFile? pickedFile = await picker.pickImage(source: imageSource);
+          if (pickedFile != null) {
+            _processImage(pickedFile);
+          } else {
+            isLoading.value = false;
+          }
+        } else {
+          // 권한이 거부된 경우
+          bool openSettings = await showDialog(
+                context: context,
+                builder: (BuildContext context) => AlertDialog(
+                  title: const Text('권한이 필요합니다'),
+                  content: const Text('사진을 선택하기 위해 갤러리 접근 권한이 필요합니다. 설정에서 권한을 허용해주세요.'),
+                  actions: <Widget>[
+                    TextButton(
+                      child: const Text('취소'),
+                      onPressed: () => Navigator.of(context).pop(false),
+                    ),
+                    TextButton(
+                      child: const Text('설정으로 이동'),
+                      onPressed: () => Navigator.of(context).pop(true),
+                    ),
+                  ],
+                ),
+              ) ??
+              false;
 
-        if (openSettings) {
-          _needToCheckPermission = true;
-          await openAppSettings();
-          // 설정에서 돌아온 후 다시 권한 체크
+          if (openSettings) {
+            _needToCheckPermission = true;
+            await openAppSettings();
+            // 설정에서 돌아온 후 다시 권한 체크
+          }
         }
       }
     } catch (e) {
@@ -417,9 +320,12 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
         ),
       ],
     );
-
+    isLoading.value = true;
     if (croppedFile != null) {
       _image = XFile(croppedFile.path);
+    } else {
+      isLoading.value = false;
+      return;
     }
 
     File aa = File(croppedFile!.path);
@@ -428,15 +334,15 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     final String resthumbnail = await uploadImage(aa);
 
     AuthCntr.to.resLoginData.value.profilePath = resthumbnail;
-
+    isLoading.value = true;
     CustRepo repo = CustRepo();
     ResData res = await repo.modiProfilePath(AuthCntr.to.resLoginData.value.custId.toString(), resthumbnail);
+    isLoading.value = false;
     if (res.code != '00') {
       Utils.alert(res.msg.toString());
       isLoading.value = false;
       return;
     }
-    isLoading.value = false;
 
     Utils.alert('프로필 사진이 변경되었습니다.');
     getCountData();
@@ -602,69 +508,73 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
       child: DefaultTabController(
         length: 2,
         initialIndex: 0,
-        child: Scaffold(
-          resizeToAvoidBottomInset: true,
-          appBar: _appBar(),
-          body: Stack(
-            children: [
-              RefreshIndicator.adaptive(
-                notificationPredicate: (notification) {
-                  if (notification is OverscrollNotification || Platform.isIOS) {
-                    return notification.depth == 2;
-                  }
-                  return notification.depth == 0;
-                },
-                onRefresh: () async {
-                  // 3가지 갯수 가져오기
-                  getCountData();
-                  getInitMyBoard();
+        child: Stack(
+          children: [
+            Scaffold(
+              resizeToAvoidBottomInset: true,
+              appBar: _appBar(),
+              body: Stack(
+                children: [
+                  RefreshIndicator.adaptive(
+                    notificationPredicate: (notification) {
+                      if (notification is OverscrollNotification || Platform.isIOS) {
+                        return notification.depth == 2;
+                      }
+                      return notification.depth == 0;
+                    },
+                    onRefresh: () async {
+                      // 3가지 갯수 가져오기
+                      getCountData();
+                      getInitMyBoard();
 
-                  getInitFollowBoard();
-                  getTag();
-                  Get.find<WeatherGogoCntr>().getLocalTag();
-                },
-                child: NestedScrollView(
-                  controller: mainScrollController,
-                  physics: const BouncingScrollPhysics(),
-                  headerSliverBuilder: (context, innerBoxIsScrolled) {
-                    return [
-                      SliverList(
-                        delegate: SliverChildListDelegate(
-                          [
-                            Column(children: [
-                              _info(),
-                              _buildFavoriteArea(),
-                              _buildFavoriteTag(),
-                            ]),
-                          ],
-                        ),
+                      getInitFollowBoard();
+                      getTag();
+                      Get.find<WeatherGogoCntr>().getLocalTag();
+                    },
+                    child: NestedScrollView(
+                      controller: mainScrollController,
+                      physics: const BouncingScrollPhysics(),
+                      headerSliverBuilder: (context, innerBoxIsScrolled) {
+                        return [
+                          SliverList(
+                            delegate: SliverChildListDelegate(
+                              [
+                                Column(children: [
+                                  _info(),
+                                  _buildFavoriteArea(),
+                                  _buildFavoriteTag(),
+                                ]),
+                              ],
+                            ),
+                          ),
+                          SliverAppBar(
+                            backgroundColor: Colors.white,
+                            surfaceTintColor: Colors.white,
+                            pinned: true,
+                            primary: false, // no reserve space for status bar
+                            toolbarHeight: 0, // title height = 0
+                            bottom: _tabs(),
+                          )
+                        ];
+                      },
+                      body: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _tabBarView(),
+                        ],
                       ),
-                      SliverAppBar(
-                        backgroundColor: Colors.white,
-                        surfaceTintColor: Colors.white,
-                        pinned: true,
-                        primary: false, // no reserve space for status bar
-                        toolbarHeight: 0, // title height = 0
-                        bottom: _tabs(),
-                      )
-                    ];
-                  },
-                  body: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _tabBarView(),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
-              ValueListenableBuilder<bool>(
-                valueListenable: isLoading,
-                builder: (context, value, child) {
-                  return CustomIndicatorOffstage(isLoading: !value, color: const Color(0xFFEA3799), opacity: 0.5);
-                },
-              )
-            ],
-          ),
+            ),
+            ValueListenableBuilder<bool>(
+              valueListenable: isLoading,
+              builder: (context, value, child) {
+                return CustomIndicatorOffstage(isLoading: !value, color: const Color(0xFFEA3799), opacity: 0.5);
+              },
+            )
+          ],
         ),
       ),
     );
@@ -843,7 +753,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
           ),
           const Gap(10),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Obx(() {
               if (Get.find<WeatherGogoCntr>().areaList.isEmpty) {
                 return Container(
@@ -867,7 +777,10 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                 verticalDirection: VerticalDirection.down,
                 runAlignment: WrapAlignment.start,
                 alignment: WrapAlignment.start,
-                children: Get.find<WeatherGogoCntr>().areaList.map((e) => buildLocalChip(e.id!.tagNm.toString())).toList(),
+                children: Get.find<WeatherGogoCntr>()
+                    .areaList
+                    .map((e) => buildLocalChip(e.id!.tagNm.toString(), double.parse(e.lat.toString()), double.parse(e.lon.toString())))
+                    .toList(),
               );
             }),
             // child: StreamBuilder<ResStream<List<String>>>(
@@ -1043,149 +956,215 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
   }
 
   Widget _builtCount(CustCountData data) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 0),
-          child: GestureDetector(
-            onTap: () => getImage(ImageSource.gallery),
-            // child: Obx(
-            //   () => ImageAvatar(width: 70, url: Get.find<AuthCntr>().resLoginData.value.profilePath!, type: AvatarType.MYSTORY),
-            child: Stack(
-              children: [
-                Obx(
-                  () => Container(
-                      height: 70,
-                      width: 70,
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(25),
-                        image: Get.find<AuthCntr>().resLoginData.value.profilePath == ''
-                            ? null
-                            : DecorationImage(
-                                image: CachedNetworkImageProvider(Get.find<AuthCntr>().resLoginData.value.profilePath.toString()),
-                                fit: BoxFit.cover,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 0),
+              // color: Colors.yellow,
+              width: 100,
+              child: Stack(
+                children: [
+                  Obx(
+                    () => !StringUtils.isEmpty(Get.find<AuthCntr>().resLoginData.value.profilePath)
+                        ? GestureDetector(
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ProfileImagePage(
+                                    imageUrl: data.custInfo!.profilePath.toString(), nickNm: data.custInfo!.nickNm.toString()),
                               ),
+                            ),
+                            child: Hero(
+                              tag: Get.find<AuthCntr>().resLoginData.value.profilePath.toString(),
+                              child: Container(
+                                  height: 70,
+                                  width: 70,
+                                  decoration: BoxDecoration(
+                                    color: Colors.transparent,
+                                    borderRadius: BorderRadius.circular(25),
+                                    border: Border.all(color: Colors.grey.withOpacity(0.5), width: 1),
+                                    image: DecorationImage(
+                                      image: CachedNetworkImageProvider(
+                                          cacheKey: Get.find<AuthCntr>().resLoginData.value.profilePath.toString(),
+                                          Get.find<AuthCntr>().resLoginData.value.profilePath.toString()),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  )),
+                            ),
+                          )
+                        : Container(
+                            height: 70,
+                            width: 70,
+                            decoration: BoxDecoration(
+                              color: Colors.green,
+                              // color: Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                            child: Center(
+                              child: Text(
+                                (Get.find<AuthCntr>().resLoginData.value.nickNm == null ||
+                                        Get.find<AuthCntr>().resLoginData.value.nickNm == '')
+                                    ? 'S'
+                                    : Get.find<AuthCntr>().resLoginData.value.nickNm!.substring(0, 1),
+                                style: const TextStyle(fontSize: 35, color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: () => getImage(ImageSource.gallery),
+                      child: Container(
+                        height: 25,
+                        width: 25,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.black, width: 1),
+                        ),
+                        child: const Icon(
+                          Icons.add,
+                          size: 17,
+                          color: Colors.black,
+                        ),
                       ),
-                      child: Get.find<AuthCntr>().resLoginData.value.profilePath == ''
-                          ? const Icon(
-                              Icons.person,
-                              color: Colors.black,
-                              size: 25,
-                            )
-                          : null),
-                ),
-                Positioned(
-                  bottom: -4,
-                  right: -4,
-                  child: Container(
-                    height: 25,
-                    width: 25,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.black, width: 1),
-                    ),
-                    child: const Icon(
-                      Icons.add,
-                      size: 17,
-                      color: Colors.black,
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ),
-        Expanded(
-          flex: 3,
-          child: Padding(
-            padding: const EdgeInsets.all(5.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+            Expanded(
+              flex: 3,
+              child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    MyPageInfo(
-                      count: data.boardCnt!.toInt(),
-                      label: '게시물',
-                      onTap: () =>
-                          Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/0/${null}'), //Get.toNamed('/MainView1
-                    ),
-                    MyPageInfo(
-                      count: data.likeCnt!.toInt(),
-                      label: '좋아요',
-                      onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/1/${null}'),
-                    ),
-                    MyPageInfo(
-                      count: data.followCnt!.toInt(),
-                      label: '팔로워',
-                      onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/2/${null}'),
-                    ),
-                    MyPageInfo(
-                      count: data.followerCnt!.toInt(),
-                      label: '팔로잉',
-                      onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/3/${null}'),
+                    IntrinsicHeight(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          MyPageInfo(
+                            count: data.boardCnt!.toInt(),
+                            label: '게시물',
+                            onTap: () => Get.toNamed(
+                                '/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/0/${null}'), //Get.toNamed('/MainView1
+                          ),
+                          // const VerticalDivider(
+                          //   color: Colors.grey,
+                          //   thickness: 1,
+                          // ),
+                          // MyPageInfo(
+                          //   count: data.likeCnt!.toInt(),
+                          //   label: '좋아요',
+                          //   onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/1/${null}'),
+                          // ),
+                          MyPageInfo(
+                            count: data.followCnt!.toInt(),
+                            label: '팔로워',
+                            onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/2/${null}'),
+                          ),
+                          // const VerticalDivider(
+                          //   color: Colors.grey,
+                          //   thickness: 1,
+                          // ),
+                          MyPageInfo(
+                            count: data.followerCnt!.toInt(),
+                            label: '팔로잉',
+                            onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/3/${null}'),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-                const Gap(15),
-                data.custInfo!.custNm.toString() == 'null'
-                    ? const Text(
-                        '-',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-                      )
-                    : Text(
-                        data.custInfo!.custNm.toString(),
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-                      ),
-                data.custInfo!.selfIntro.toString() == 'null'
-                    ? const Text(
-                        '자신 소개 내용을 만들어주세요.\n아래 프로필 수정 버튼을 클릭해주세요!',
-                        style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
-                      )
-                    : Text(
-                        data.custInfo!.selfIntro.toString(),
-                        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
-                      ),
-                const Gap(5),
-                SizedBox(
-                  height: 25,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          minimumSize: Size.zero,
-                          // backgroundColor: Colors.red,
-                        ),
-                        onPressed: () => Get.toNamed('/MyinfoModifyPage')!.then((value) => value == true ? getCountData() : null),
-                        child: const Row(
-                          children: [
-                            Text(
-                              '회원정보 수정',
-                              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12.0, color: Colors.black),
-                            ),
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              size: 13.0,
-                              color: Colors.black54,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
+          ],
+        ),
+        const Gap(15),
+        data.custInfo!.custNm == 'null' || data.custInfo!.custNm == null || data.custInfo!.custNm == ''
+            ? const Text(
+                '-',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+              )
+            : Text(
+                data.custInfo!.custNm.toString(),
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+              ),
+        const Gap(5),
+        data.custInfo!.selfIntro == 'null' || data.custInfo!.selfIntro == null || data.custInfo!.selfIntro == ''
+            ? const Text(
+                '자기 소개 내용을 만들어주세요.\n아래 프로필 수정 버튼을 클릭해주세요!',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+              )
+            : Text(
+                data.custInfo!.selfIntro.toString(),
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+              ),
+        const Gap(5),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            data.custInfo!.email!.toString(),
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
           ),
         ),
+        SizedBox(
+          height: 25,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 0.0, top: 5),
+                child: Row(
+                  children: [
+                    const Text('👍좋아요',
+                        style: TextStyle(color: Color.fromARGB(255, 42, 96, 44), fontWeight: FontWeight.w500, fontSize: 12)),
+                    const Gap(5),
+                    Text('${data.likeCnt}',
+                        style: const TextStyle(color: Color.fromARGB(255, 42, 96, 44), fontWeight: FontWeight.w700, fontSize: 12)),
+                  ],
+                ),
+              ),
+              TextButton(
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  // backgroundColor: Colors.red,
+                ),
+                onPressed: () => Get.toNamed('/MyinfoModifyPage')!.then((value) => value == true ? getCountData() : null),
+                child: const Row(
+                  children: [
+                    Text(
+                      '회원정보 수정',
+                      style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12.0, color: Colors.black),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 13.0,
+                      color: Colors.black54,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Gap(15),
       ],
     );
   }
@@ -1266,14 +1245,17 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                       fit: StackFit.expand,
                       children: [
                         CachedNetworkImage(
+                          key: Key(list[index].thumbnailPath!),
                           imageUrl: list[index].thumbnailPath!,
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => const Center(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 3.0,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
-                            ),
-                          ),
+                          // placeholder: (context, url) => const Center(
+                          //   child: CircularProgressIndicator(
+                          //     strokeWidth: 1.0,
+                          //     valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+                          //   ),
+                          // ),
+                          fadeInDuration: const Duration(milliseconds: 100),
+                          fadeOutDuration: const Duration(milliseconds: 100),
                           errorWidget: (context, url, error) => const Icon(Icons.error),
                         ),
                         Align(
@@ -1361,6 +1343,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                   borderRadius: BorderRadius.circular(10.0),
                   image: DecorationImage(
                     image: CachedNetworkImageProvider(
+                      cacheKey: list[index].thumbnailPath!,
                       list[index].thumbnailPath!,
                     ),
                     fit: BoxFit.cover,
@@ -1425,30 +1408,36 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
   }
 
   PreferredSizeWidget _tabs() {
-    return TabBar(controller: tabController, indicatorColor: Colors.black, tabs: const [
-      Tab(
-        // child: Icon(Icons.grid_on),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.grid_on),
-            Gap(10),
-            Text('내 게시물'),
-          ],
-        ),
-      ),
-      Tab(
-        // child: Icon(Icons.person_pin),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.person_pin),
-            Gap(10),
-            Text('팔로잉게시물'),
-          ],
-        ),
-      ),
-    ]);
+    return TabBar(
+        controller: tabController,
+        indicatorColor: Colors.black,
+        indicatorPadding: const EdgeInsets.symmetric(horizontal: 60),
+        dividerColor: Colors.transparent,
+        tabs: const [
+          Tab(
+            // child: Icon(Icons.grid_on),
+
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.grid_on),
+                Gap(10),
+                Text('내 게시물'),
+              ],
+            ),
+          ),
+          Tab(
+            // child: Icon(Icons.person_pin),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.person_pin),
+                Gap(10),
+                Text('팔로잉게시물'),
+              ],
+            ),
+          ),
+        ]);
   }
 
   PreferredSizeWidget _appBar() {
@@ -1504,7 +1493,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
         return Padding(
           padding: MediaQuery.of(context).viewInsets,
           child: SizedBox(
-            height: 210,
+            height: 180,
             child: Column(
               children: [
                 Container(
@@ -1537,7 +1526,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                   ),
                 ),
                 Container(
-                  height: 150,
+                  height: 130,
                   // padding: const EdgeInsets.only(
                   //   right: 16,
                   //   left: 16,
@@ -1615,7 +1604,6 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                                 Navigator.pop(context);
                               });
                         }),
-                    const Gap(23)
                   ]),
                 ),
               ],
@@ -1630,47 +1618,56 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
   Widget buildTagChip(String label) {
     return SizedBox(
         height: 40,
-        child: Chip(
-          elevation: 0,
-          padding: EdgeInsets.zero,
-          backgroundColor: const Color.fromARGB(255, 140, 131, 221), // Color.fromARGB(255, 76, 70, 124),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-            side: const BorderSide(color: Colors.transparent),
+        child: GestureDetector(
+          onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/0/${Uri.encodeComponent(label)}'),
+          child: Chip(
+            elevation: 0,
+            padding: EdgeInsets.zero,
+            backgroundColor: const Color.fromARGB(255, 140, 131, 221), // Color.fromARGB(255, 76, 70, 124),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: const BorderSide(color: Colors.transparent),
+            ),
+            label: Text(
+              '  $label',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+            labelPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+            onDeleted: () => removeTag(label, 'TAG'),
+            deleteButtonTooltipMessage: '삭제',
+            deleteIconColor: Colors.white60,
           ),
-          label: Text(
-            '  $label',
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-          ),
-          labelPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-          onDeleted: () => removeTag(label, 'TAG'),
-          deleteButtonTooltipMessage: '삭제',
-          deleteIconColor: Colors.white60,
         ));
   }
 
   // 지역
-  Widget buildLocalChip(String label) {
+  Widget buildLocalChip(String label, double lat, double lon) {
     return SizedBox(
         height: 40,
-        child: Chip(
-          elevation: 0,
-          padding: EdgeInsets.zero,
-          backgroundColor: const Color.fromARGB(255, 140, 131, 221), // Color.fromARGB(255, 76, 70, 124),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-            side: const BorderSide(color: Colors.transparent),
+        child: GestureDetector(
+          onTap: () => Get.toNamed('/MapPage', arguments: {
+            'lat': lat,
+            'lon': lon,
+          }),
+          child: Chip(
+            elevation: 0,
+            padding: EdgeInsets.zero,
+            backgroundColor: const Color.fromARGB(255, 140, 131, 221), // Color.fromARGB(255, 76, 70, 124),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: const BorderSide(color: Colors.transparent),
+            ),
+            label: Text(
+              '  $label',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+            labelPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+            onDeleted: () => removeTag(label, 'LOCAL'),
+            deleteButtonTooltipMessage: '삭제',
+            deleteIconColor: Colors.white60,
           ),
-          label: Text(
-            '  $label',
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-          ),
-          labelPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-          onDeleted: () => removeTag(label, 'LOCAL'),
-          deleteButtonTooltipMessage: '삭제',
-          deleteIconColor: Colors.white60,
         ));
   }
 }
@@ -1709,25 +1706,27 @@ class MyPageInfo extends StatelessWidget {
     //       minimumSize: Size.zero, padding: EdgeInsets.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap, elevation: 8),
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-        minimumSize: const Size(50, 40),
-        //   backgroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 1, horizontal: 6),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        visualDensity: const VisualDensity(horizontal: 0, vertical: 0),
-        elevation: 2,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        elevation: 0,
+        side: const BorderSide(color: Colors.white, width: 0.0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-        backgroundColor: Colors.grey.shade50,
+        // backgroundColor: Colors.grey.shade50,
       ),
       onPressed: onTap,
       child: Column(
         children: [
           Text(
             count.toString(),
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black),
+          ),
+          const SizedBox(
+            height: 4,
           ),
           Text(
             label,
-            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: Colors.black54),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black54),
           ),
         ],
       ),

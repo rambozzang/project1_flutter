@@ -13,8 +13,8 @@ class HideBottomBar extends StatefulWidget {
 }
 
 class _HideBottomBarState extends State<HideBottomBar> {
-  double andHeight = 60;
-  double iosHeight = 30;
+  // double andHeight = 60;
+  // double iosHeight = 30;
 
   // double andHeight = 40;
   // double iosHeight = 44;

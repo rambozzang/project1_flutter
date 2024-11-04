@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:project1/repo/api/chat_api.dart';
 import 'package:project1/repo/chatting/chat_repo.dart';
 import 'package:project1/repo/chatting/data/signup_data.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -20,13 +21,14 @@ class GoogleApi with SecureStorage {
       // ---------------------------------------------------------
       lo.g('UserCredential gogo');
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      // final GoogleSignInAccount? googleUser = await GoogleSignIn(scopes: ['profile', 'email']).signIn();
       lo.g('googleUser : $googleUser');
       if (googleUser == null) {
         resData.code = '99';
         resData.msg = '로그인 취소';
         return resData;
       }
-      final GoogleSignInAuthentication googleAuth = await googleUser!.authentication;
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       lo.g('googleAuth.accessToken : ${googleAuth.accessToken}');
 
       lo.g('googleAuth.idToken : ${googleAuth.idToken}');
@@ -35,6 +37,7 @@ class GoogleApi with SecureStorage {
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
+
       // ---------------------------------------------------------
       // 2. firebase 회원가입,로그인 처리
       // ---------------------------------------------------------
@@ -52,7 +55,11 @@ class GoogleApi with SecureStorage {
       });
 
       // 채팅서버 회원가입
-      googleJoinData.chatId = await chatSignUp(googleJoinData);
+      // googleJoinData.chatId = await chatSignUp(googleJoinData);
+      // 채팅서버 회원가입
+      ChatApi chatApi = ChatApi();
+      googleJoinData.chatId = await chatApi.chatSignUp(
+          googleJoinData.email ?? '', googleJoinData.uid.toString(), googleJoinData.displayName ?? '', googleJoinData.photoURL ?? '');
 
       // deviceID 생성
       googleJoinData.deviceId = const Uuid().v4();
@@ -75,18 +82,6 @@ class GoogleApi with SecureStorage {
       resData.msg = e.toString();
       return resData;
     }
-  }
-
-  Future<String> chatSignUp(GoogleJoinData googleJoinData) async {
-    ChatRepo chatRepo = ChatRepo();
-    ChatSignupData chatSignupData = ChatSignupData();
-    chatSignupData.email = googleJoinData.email;
-    chatSignupData.uid = googleJoinData.uid.toString();
-    chatSignupData.firstName = googleJoinData.displayName;
-    chatSignupData.imageUrl = googleJoinData.photoURL;
-    ResData resData1 = await chatRepo.signup(chatSignupData);
-
-    return resData1.data.toString();
   }
 
   Future<void> logOut() async {

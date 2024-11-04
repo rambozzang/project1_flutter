@@ -98,7 +98,7 @@ class WeatherCache {
         final decodedJson = json.decode(rawString);
         final cachedTime = DateTime.parse(decodedJson['timestamp']);
         final decodedData = decodedJson['data'];
-        lo.g('[CACHING] 캐시에서 데이터 로드 : ${cachedTime.toString()} : ${type.toString()}');
+        // lo.g('[CACHING] 캐시에서 데이터 로드 : ${cachedTime.toString()} : ${type.toString()}');
         return _convertData<T>(decodedData);
       }
       return null;
@@ -264,7 +264,7 @@ class WeatherService {
       // 캐시 확인
       final cachedData = await _cache.getWeatherData<T>(location, type);
       if (cachedData != null) {
-        lo.g('[CACHING] 캐시에서 데이터 로드 : ${type.toString()}');
+        // lo.g('[CACHING] 캐시에서 데이터 로드 : ${type.toString()}');
         return cachedData;
       }
 
@@ -327,9 +327,9 @@ class WeatherService {
       case ForecastType.midTa:
         return await _repo.getMidTaJson(location, isLog: true) as T;
       case ForecastType.weatherAlert:
-        return await _repo.getSpecialFctJson(location, isLog: true) as T;
-      case ForecastType.mistInfo:
-        return await _repo.getSpecialFctJson(location, isLog: true) as T;
+        return await _repo.getSpecialAlertJson(location, isLog: true) as T;
+      // case ForecastType.mistInfo:
+      //   return await _repo.getSpecialFctJson(location, isLog: true) as T;
       default:
         throw ArgumentError('Invalid forecast type: $type');
     }
@@ -351,9 +351,9 @@ class WeatherService {
       case ForecastType.midTa:
         return await _repo.getMidTaJson(location, isLog: true) as T;
       case ForecastType.weatherAlert:
-        return await _repo.getSpecialFctJson(location, isLog: true) as T;
-      case ForecastType.mistInfo:
-        return await _repo.getSpecialFctJson(location, isLog: true) as T;
+        return await _repo.getSpecialAlertJson(location, isLog: true) as T;
+      // case ForecastType.mistInfo:
+      //   return await _repo.getSpecialFctJson(location, isLog: true) as T;
       default:
         throw ArgumentError('Invalid forecast type: $type');
     }

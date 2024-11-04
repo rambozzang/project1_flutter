@@ -45,6 +45,8 @@ class _AgreePageState extends State<AgreePage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && _needToCheckPermission) {
+      lo.e('didChangeAppLifecycleState _needToCheckPermission : $_needToCheckPermission');
+
       _needToCheckPermission = false;
       _checkLocationPermission();
     }
@@ -131,10 +133,13 @@ class _AgreePageState extends State<AgreePage> with WidgetsBindingObserver {
   }
 
   Future<void> _checkLocationPermission() async {
+    lo.e('checkLocationPermission 1');
     // 권한 상태 확인 전 잠시 대기
     await Future.delayed(const Duration(milliseconds: 500));
+    lo.e('checkLocationPermission 2');
 
     LocationPermission locationPermission = await Geolocator.checkPermission();
+    lo.e('checkLocationPermission 3 : $locationPermission');
 
     if (locationPermission == LocationPermission.always || locationPermission == LocationPermission.whileInUse) {
       _proceedWithSignUp();
@@ -168,6 +173,7 @@ class _AgreePageState extends State<AgreePage> with WidgetsBindingObserver {
     if (retry == true) {
       bool locationPermissionGranted = await requestLocationPermission();
       if (locationPermissionGranted) {
+        _needToCheckPermission = false;
         await _proceedWithSignUp();
       }
     } else {
@@ -197,14 +203,20 @@ class _AgreePageState extends State<AgreePage> with WidgetsBindingObserver {
 
   Future<void> completed() async {
     // bool locationPermissionGranted = await requestLocationPermission();
-    _needToCheckPermission = true;
-    PermissionHandler handler = PermissionHandler();
 
+    lo.e('completed() 1 ');
+    PermissionHandler handler = PermissionHandler();
+    lo.e('completed() 2 ');
     bool locationPermissionGranted = await handler.completed();
+    lo.e('completed() 3 : $locationPermissionGranted');
 
     if (locationPermissionGranted) {
+      _needToCheckPermission = false;
       await _proceedWithSignUp();
+    } else {
+      _checkLocationPermission();
     }
+
     // 권한이 거부되었거나 설정 화면으로 이동한 경우, AppLifecycleState.resumed에서 처리될 것임
   }
 

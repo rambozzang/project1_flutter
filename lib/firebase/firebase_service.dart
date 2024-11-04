@@ -12,6 +12,8 @@ import 'package:project1/app/chatting/chat_room_page.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
 import 'package:project1/firebase_options.dart';
+import 'package:project1/route/app_route.dart';
+import 'package:project1/utils/StringUtils.dart';
 import 'package:project1/utils/log_utils.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
@@ -59,11 +61,13 @@ void _processMessageData(Map<String, dynamic> messageData) async {
   if (boardId == "" || boardId == null || boardId == 'null') {
     return;
   }
-
-  Future.delayed(
-      const Duration(milliseconds: 300),
-      () async =>
-          Get.toNamed('/VideoMyinfoListPage', arguments: {'datatype': 'ONE', 'custId': receiveCustId, 'boardId': boardId.toString()}));
+  Future.delayed(const Duration(milliseconds: 300), () async => AppPages.goRoute(messageData["alramCd"], receiveCustId, boardId.toString())
+      //Get.toNamed('/VideoMyinfoListPage', arguments: {'datatype': 'ONE', 'custId': receiveCustId, 'boardId': boardId.toString()})
+      );
+  // Future.delayed(
+  //     const Duration(milliseconds: 300),
+  //     () async =>
+  //         Get.toNamed('/VideoMyinfoListPage', arguments: {'datatype': 'ONE', 'custId': receiveCustId, 'boardId': boardId.toString()}));
 }
 
 class FirebaseService {
@@ -198,9 +202,9 @@ class FirebaseService {
         summaryText: '${message.notification?.title}: ${message.notification?.body}',
       ),
 
-      largeIcon: message.data["senderProfilePath"] != null
-          ? FilePathAndroidBitmap(await downloadAndSaveFile(message.data["senderProfilePath"], 'largeIcon'))
-          : null,
+      largeIcon: StringUtils.isEmpty(message.data["senderProfilePath"])
+          ? null
+          : FilePathAndroidBitmap(await downloadAndSaveFile(message.data["senderProfilePath"], 'largeIcon')),
     );
     Lo.g("onMessage body 3");
 
@@ -242,9 +246,9 @@ class FirebaseService {
       }
 
       Future.delayed(
-          const Duration(milliseconds: 800),
-          () async =>
-              Get.toNamed('/VideoMyinfoListPage', arguments: {'datatype': 'ONE', 'custId': receiveCustId, 'boardId': boardId.toString()}));
+          const Duration(milliseconds: 800), () async => AppPages.goRoute(message.data["alramCd"], receiveCustId, boardId.toString())
+          //Get.toNamed('/VideoMyinfoListPage', arguments: {'datatype': 'ONE', 'custId': receiveCustId, 'boardId': boardId.toString()})
+          );
     }
   }
 
@@ -271,11 +275,14 @@ class FirebaseService {
     if (boardId == "" || boardId == null || boardId == 'null') {
       return;
     }
-
     Future.delayed(
-        const Duration(milliseconds: 3000),
-        () async =>
-            Get.toNamed('/VideoMyinfoListPage', arguments: {'datatype': 'ONE', 'custId': receiveCustId, 'boardId': boardId.toString()}));
+        const Duration(milliseconds: 3000), () async => AppPages.goRoute(message.data["alramCd"], receiveCustId, boardId.toString())
+        //Get.toNamed('/VideoMyinfoListPage', arguments: {'datatype': 'ONE', 'custId': receiveCustId, 'boardId': boardId.toString()})
+        );
+    // Future.delayed(
+    //     const Duration(milliseconds: 3000),
+    //     () async =>
+    //         Get.toNamed('/VideoMyinfoListPage', arguments: {'datatype': 'ONE', 'custId': receiveCustId, 'boardId': boardId.toString()}));
   }
 
   Future<String> downloadAndSaveFile(String url, String fileName) async {

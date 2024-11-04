@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
@@ -224,15 +225,16 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 0),
             padding: const EdgeInsets.only(top: 5),
-            height: 54,
+            height: 70,
             child: TextFormField(
               controller: nickNmController,
               // focusNode: textFocus,
               maxLines: 1,
               // cursorHeight: 14,
+              maxLength: 15,
               style: const TextStyle(decorationThickness: 0), // 한글밑줄제거
               decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 filled: true,
                 fillColor: Colors.grey[100],
                 // suffixIcon: const Icon(Icons.search, color: Colors.grey),
@@ -260,16 +262,17 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 15.0),
+          padding: const EdgeInsets.symmetric(vertical: 0.0),
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 0),
             padding: const EdgeInsets.only(top: 5),
-            height: 54,
+            height: 70,
             child: TextFormField(
               controller: custNmController,
               // focusNode: textFocus,
               maxLines: 1,
               // cursorHeight: 14,
+              maxLength: 15,
               style: const TextStyle(decorationThickness: 0), // 한글밑줄제거
               decoration: InputDecoration(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
@@ -342,12 +345,13 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 0),
           padding: const EdgeInsets.only(top: 15),
-          height: 154,
+          height: 200,
           child: TextFormField(
             controller: selfIntroController,
             // focusNode: textFocus,
             // cursorHeight: 12,
-            maxLines: 6,
+            maxLines: 7,
+            maxLength: 100,
             style: const TextStyle(decorationThickness: 0), // 한글밑줄제거
             decoration: InputDecoration(
               alignLabelWithHint: true, // label 과 입력창을 같은 높이로 맞춤
@@ -378,6 +382,22 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
           ),
         ),
         const Gap(50),
+        if (kDebugMode ||
+            Get.find<AuthCntr>().custId.value == '3523487940' ||
+            Get.find<AuthCntr>().custId.value == 'AAq0s2u7wvXkekyymwPyTe0XwkH3' ||
+            Get.find<AuthCntr>().custId.value == 'ArvPO0n2nNf1SDTZAutlnAhXNRp2' ||
+            Get.find<AuthCntr>().custId.value == 'T5bNV8_g9vKxWCpAA_uKmvQQ9qlukx_V5af5T_Gmk94' ||
+            Get.find<AuthCntr>().custId.value == 'ZfMbSYO6ZJMahuBWpTMHpbTmHND3' ||
+            Get.find<AuthCntr>().custId.value == '5p3DvtPFzjMghS1oef3JlqEfgpj1' ||
+            Get.find<AuthCntr>().custId.value == '3728884228') ...[
+          ElevatedButton(
+            onPressed: () async {
+              await AuthCntr.to.logout();
+            },
+            child: const Text('로그아웃'),
+          ),
+        ],
+
         Align(
             alignment: Alignment.centerRight,
             child: InkWell(

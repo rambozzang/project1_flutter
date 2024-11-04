@@ -7,6 +7,7 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/videocomment/comment_header_widget.dart';
 import 'package:project1/app/videocomment/comment_item_widget.dart';
+import 'package:project1/repo/bbs/comment_repo.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_comment_res_data.dart';
 import 'package:project1/repo/board/data/board_comment_data.dart';
@@ -65,6 +66,8 @@ class _CommentsPageState extends State<CommentsPage> {
   ValueNotifier<bool> isSend = ValueNotifier<bool>(false);
   bool isFirst = true;
 
+  bool isDarkTheme = true;
+
   @override
   void initState() {
     replyController.clear();
@@ -105,7 +108,7 @@ class _CommentsPageState extends State<CommentsPage> {
 
       isSend.value = true;
 
-      BoardRepo repo = BoardRepo();
+      CommentRepo repo = CommentRepo();
       BoardCommentData replyData = BoardCommentData();
       replyData.custId = AuthCntr.to.resLoginData.value.custId.toString();
       replyData.parentId = int.parse(widget.boardId);
@@ -113,11 +116,13 @@ class _CommentsPageState extends State<CommentsPage> {
       replyData.depthNo = 1;
       replyData.sortNo = 1;
       replyData.typeCd = 'V';
+      replyData.rootId = int.parse(widget.boardId);
       replyData.typeDtCd = 'V';
+      replyData.fileListData = [];
 
       await repo.saveComment(replyData).then((value) async {
         if (value.code == '00') {
-          Utils.alert("댓글이 등록되었습니다.");
+          // Utils.alert("댓글이 등록되었습니다.");
 
           // 키보드만 내리기
           SystemChannels.textInput.invokeMethod('TextInput.hide');
@@ -149,6 +154,12 @@ class _CommentsPageState extends State<CommentsPage> {
     }
   }
 
+  void toggleTheme() {
+    setState(() {
+      isDarkTheme = !isDarkTheme;
+    });
+  }
+
   @override
   void dispose() {
     replyController.dispose();
@@ -160,7 +171,14 @@ class _CommentsPageState extends State<CommentsPage> {
   @override
   Widget build(BuildContext context) {
     Lo.g('CommentsPage2 build');
-    return Padding(
+    Color backgroundColor = isDarkTheme ? Colors.black : Colors.white;
+    Color textColor = isDarkTheme ? Colors.white : Colors.black;
+    return Theme(
+      data: ThemeData(
+        brightness: isDarkTheme ? Brightness.dark : Brightness.light,
+        // 다른 테마 속성들도 여기에 추가할 수 있습니다.
+      ),
+      child: Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: Column(
           children: [
@@ -170,10 +188,18 @@ class _CommentsPageState extends State<CommentsPage> {
                   if (snapshot.hasData) {
                     if (snapshot.data?.status == Status.COMPLETED) {
                       var list = snapshot.data!.data;
-                      return CommentHeaderWidget(listLength: list!.length, getData: () => getFakeData());
+                      return CommentHeaderWidget(
+                        listLength: list!.length,
+                        getData: () => getFakeData(),
+                        isDarkTheme: isDarkTheme,
+                      );
                     }
                   }
-                  return CommentHeaderWidget(listLength: 0, getData: () => getFakeData());
+                  return CommentHeaderWidget(
+                    listLength: 0,
+                    getData: () => getFakeData(),
+                    isDarkTheme: isDarkTheme,
+                  );
                 }),
             Expanded(
               child: SingleChildScrollView(
@@ -203,7 +229,7 @@ class _CommentsPageState extends State<CommentsPage> {
                                       child: Padding(
                                         padding: EdgeInsets.all(68.0),
                                         child: Text(
-                                          '댓글이 없습니다.',
+                                          '댓글 없습니다.',
                                           style: TextStyle(color: Colors.white, fontSize: 13),
                                         ),
                                       ),
@@ -212,6 +238,7 @@ class _CommentsPageState extends State<CommentsPage> {
                                       focus: replyFocusNode,
                                       boardCommentData: list[index],
                                       controller: replyController,
+                                      isDarkTheme: isDarkTheme, // 추가된 부분
                                     );
                             },
                           );
@@ -238,13 +265,15 @@ class _CommentsPageState extends State<CommentsPage> {
             ),
             buildBottomWidget(),
           ],
-        ));
+        ),
+      ),
+    );
   }
 
   // 댓글 입력창
   Widget buildBottomWidget() {
     return Container(
-      color: Colors.grey[900],
+      color: isDarkTheme ? Colors.grey[900] : Colors.grey[100],
       height: 64,
       padding: const EdgeInsets.only(left: 5, right: 5),
       child: Row(
@@ -257,7 +286,8 @@ class _CommentsPageState extends State<CommentsPage> {
               decoration: BoxDecoration(
                 color: const Color(0xff7c94b6),
                 image: DecorationImage(
-                  image: CachedNetworkImageProvider(AuthCntr.to.resLoginData.value.profilePath!),
+                  image: CachedNetworkImageProvider(
+                      cacheKey: AuthCntr.to.resLoginData.value.profilePath!, AuthCntr.to.resLoginData.value.profilePath!),
                   fit: BoxFit.cover,
                 ),
                 borderRadius: const BorderRadius.all(Radius.circular(30.0)),
@@ -283,31 +313,19 @@ class _CommentsPageState extends State<CommentsPage> {
                 focusNode: replyFocusNode,
                 // cursorHeight: 5,
                 textAlignVertical: TextAlignVertical.center,
-                style: const TextStyle(color: Colors.white, decorationThickness: 0),
+                style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black, decorationThickness: 0),
                 onSubmitted: (value) => saveComment(),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: '댓글 ...',
-                  hintStyle: TextStyle(color: Colors.white),
-
+                  hintStyle: TextStyle(color: isDarkTheme ? Colors.white70 : Colors.black54),
                   prefixIconConstraints: BoxConstraints(minWidth: 27, maxHeight: 27),
                   enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey, width: 0.4),
+                    borderSide: BorderSide(color: isDarkTheme ? Colors.grey : Colors.grey.shade300, width: 0.4),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white, width: 1.0),
+                    borderSide: BorderSide(color: isDarkTheme ? Colors.white : Colors.black, width: 1.0),
                   ),
-
-                  // suffixIconConstraints: const BoxConstraints(minWidth: 23, maxHeight: 20),
-                  // suffixIcon: Padding(
-                  //   padding: const EdgeInsets.only(left: 10, right: 10),
-                  //   child: IconButton(
-                  //     onPressed: () => saveComment(),
-                  //     icon: const Icon(Icons.send),
-                  //     color: Colors.white,
-                  //   ),
-                  // ),
                   border: InputBorder.none,
-                  //border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.only(left: 10, bottom: 5, top: 15),
                 ),
               ),

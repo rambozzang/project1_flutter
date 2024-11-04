@@ -1,4 +1,25 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:project1/app/bbs/bbs_list_page.dart';
+import 'package:project1/app/bbs/bbs_modify_page.dart';
+import 'package:project1/app/bbs/bbs_my_list_page.dart';
+import 'package:project1/app/bbs/bbs_search_list_page.dart';
+import 'package:project1/app/bbs/bbs_view_page.dart';
+import 'package:project1/app/bbs/bbs_write_page.dart';
+import 'package:project1/app/bbs/cntr/bbs_my_list_cntr.dart';
+import 'package:project1/app/bbs/cntr/bbs_search_list_cntr.dart';
+import 'package:project1/app/bbs/cntr/bbs_view_cntr.dart';
+import 'package:project1/app/bbs/cntr/bbs_write_cntr.dart';
+
+import 'package:project1/app/bbs/cntr/bbs_modify_cntr.dart';
+import 'package:project1/app/short/cntr/short_list_cntr.dart';
+import 'package:project1/app/short/cntr/short_modify_cntr.dart';
+import 'package:project1/app/short/cntr/short_view_cntr.dart';
+import 'package:project1/app/short/cntr/short_write_cntr.dart';
+import 'package:project1/app/short/short_list_page.dart';
+import 'package:project1/app/short/short_modify_page.dart';
+import 'package:project1/app/short/short_view_page.dart';
+import 'package:project1/app/short/short_write_page.dart';
 import 'package:project1/app/join/join_page.dart';
 import 'package:project1/app/auth/agree_page.dart';
 import 'package:project1/app/auth/auth_page.dart';
@@ -25,14 +46,10 @@ import 'package:project1/app/setting/open_source_page.dart';
 import 'package:project1/app/setting/privecy_page.dart';
 import 'package:project1/app/setting/setting_page.dart';
 import 'package:project1/app/test/test_dio_page.dart';
-import 'package:project1/app/weather/page/sevenday_detail_page.dart';
 import 'package:project1/app/weather/page/weather_page.dart';
 import 'package:project1/app/weatherCom/cntr/weather_com_controller.dart';
 import 'package:project1/app/weatherCom/weather_com_page.dart';
-import 'package:project1/app/weathergogo/24_page.dart';
 import 'package:project1/app/weathergogo/weathergogo_page.dart';
-import 'package:project1/app/webview/weather_webview.dart';
-import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/root/main_view1.dart';
 import 'package:project1/root/root_page.dart';
@@ -41,6 +58,28 @@ abstract class AppPages {
   AppPages._();
   // ignore: constant_identifier_names
   static const INITIAL = '/AuthPage';
+
+  // fcm 또는 알람 리스트에서 알람을 클릭했을 때 해당 알람에 대한 상세 페이지로 이동하는 라우트
+  static goRoute(String alramCd, String custId, String? boardId) {
+    // alramCd에 따라 이동할 페이지를 분기
+    // 08: 게시판 좋아요
+    // 09: 게시판 댓글
+
+    if (boardId == null || boardId == '' || boardId == 'null') {
+      Get.toNamed('/OtherInfoPage/$custId');
+      return;
+    }
+    switch (alramCd) {
+      case '08':
+      case '09':
+        RootCntr.to.changeRootPageIndex(3);
+        Get.toNamed('/BbsViewPage', arguments: {'boardId': boardId.toString(), 'tag': 'list'});
+        break;
+      default:
+        Get.toNamed('/VideoMyinfoListPage', arguments: {'datatype': 'ONE', 'custId': custId, 'boardId': boardId.toString()});
+        break;
+    }
+  }
 
   static final routes = [
     GetPage(
@@ -165,17 +204,17 @@ abstract class AppPages {
 
       // transition: Transition.downToUp,
     ),
-    GetPage(
-      name: '/SevendayDetailPage/:initialIndex',
-      page: () => const SevendayDetailPage(),
-      // transition: Transition.downToUp,
-    ),
-    GetPage(
-      name: '/WeatherWebView',
-      page: () => const WeatherWebView(
-        isBackBtn: true,
-      ),
-    ),
+    // GetPage(
+    //   name: '/SevendayDetailPage/:initialIndex',
+    //   page: () => const SevendayDetailPage(),
+    //   // transition: Transition.downToUp,
+    // ),
+    // GetPage(
+    //   name: '/WeatherWebView',
+    //   page: () => const WeatherWebView(
+    //     isBackBtn: true,
+    //   ),
+    // ),
 
     GetPage(
       name: '/SupaTestPage',
@@ -184,7 +223,7 @@ abstract class AppPages {
     ),
     GetPage(
       name: '/ChatMainApp',
-      page: () => const ChatMainApp(),
+      page: () => ChatMainApp(scrollController: ScrollController()),
       // transition: Transition.downToUp,
     ),
     GetPage(
@@ -219,14 +258,76 @@ abstract class AppPages {
       binding: WeatherComControllerBinding(),
       // transition: Transition.downToUp,
     ),
-    GetPage(
-      name: '/T24Page',
-      page: () => T24Page(),
-      // transition: Transition.downToUp,
-    ),
+
     GetPage(
       name: '/BlockListPage',
       page: () => BlockListPage(),
+      // transition: Transition.downToUp,
+    ),
+    GetPage(
+      name: '/BbsListPage',
+      page: () => BbsListPage(
+        scrollController: ScrollController(),
+      ),
+      // transition: Transition.downToUp,
+    ),
+
+    GetPage(
+      name: '/BbsViewPage',
+      page: () => const BbsViewPage(),
+      // binding: BbsViewBinding()
+      // transition: Transition.downToUp,
+    ),
+
+    GetPage(
+      name: '/BbsWritePage',
+      page: () => const BbsWritePage(),
+      binding: BbsWriteBinding(),
+      // transition: Transition.downToUp,
+    ),
+
+    GetPage(
+      name: '/BBsModifyPage/:boardId',
+      page: () => const BbsModifyPage(),
+      binding: BbsModifyBinding(),
+      // transition: Transition.downToUp,
+    ),
+
+    GetPage(
+      name: '/ShortListPage',
+      page: () => const ShortListPage(),
+      binding: ShortListBinding(),
+    ),
+
+    GetPage(
+      name: '/ShortViewPage',
+      page: () => const ShortViewPage(),
+      binding: ShortViewBinding(),
+    ),
+
+    GetPage(
+      name: '/ShortWritePage',
+      page: () => const ShortWritePage(),
+      binding: ShortWriteBinding(),
+      // transition: Transition.downToUp,
+    ),
+
+    GetPage(
+      name: '/ShortModifyPage/:boardId',
+      page: () => const ShortModifyPage(),
+      binding: ShortModifyBinding(),
+      // transition: Transition.downToUp,
+    ),
+    GetPage(
+      name: '/BbsMyListPage/:custId',
+      page: () => const BbsMyListPage(),
+      binding: BbsMyListinding(),
+      // transition: Transition.downToUp,
+    ),
+    GetPage(
+      name: '/BbsSearchListPage',
+      page: () => const BbsSearchListPage(),
+      binding: BbsSearchListinding(),
       // transition: Transition.downToUp,
     ),
   ];

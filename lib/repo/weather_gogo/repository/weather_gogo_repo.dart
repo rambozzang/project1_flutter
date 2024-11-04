@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/weathergogo/services/WeatherStation_utils.dart';
 import 'package:project1/config/url_config.dart';
 import 'package:project1/repo/api/auth_dio.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -13,6 +14,7 @@ import 'package:project1/repo/weather_gogo/interface/imp_super_nct_repository.da
 import 'package:project1/repo/weather_gogo/models/enum/data_type.dart';
 import 'package:project1/repo/weather_gogo/models/request/midland_fct_req.dart';
 import 'package:project1/repo/weather_gogo/models/request/midta_fct_req.dart';
+import 'package:project1/repo/weather_gogo/models/request/special_alert_req.dart';
 import 'package:project1/repo/weather_gogo/models/request/weather.dart';
 import 'package:project1/repo/weather_gogo/models/request/weather_cache_req.dart';
 import 'package:project1/repo/weather_gogo/models/request/weather_version.dart';
@@ -20,6 +22,7 @@ import 'package:project1/repo/weather_gogo/models/response/fct/fct_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/fct_version/fct_version_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/midland_fct/midlan_fct_res.dart';
 import 'package:project1/repo/weather_gogo/models/response/midta_fct/midta_fct_res.dart';
+import 'package:project1/repo/weather_gogo/models/response/special_alert/special_alert_res.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_fct/super_fct_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_nct/super_nct_model.dart';
 import 'package:project1/repo/weather_gogo/repository/midland_fct_repo.dart';
@@ -244,15 +247,36 @@ class WeatherGogoRepo {
   }
 
   // 특보 예보 - 기온 정보 정보
-  Future<List<WeatherAlert>> getSpecialFctJson(LatLng latLng, {isLog = true}) async {
+  Future<WeatherAlertRes?> getSpecialAlertJson(LatLng latLng, {isLog = true}) async {
     try {
-      WeatherAlertAPI weatherAlertAPI = WeatherAlertAPI();
-      // regId 구하기
-      List<WeatherAlert> list = await weatherAlertAPI.getWeatherAlerts();
-      return list;
+      /*
+         final today = DateTime.now();
+    final to = today.add(const Duration(days: 6));
+    final fromTmFc = '${today.year}${today.month.toString().padLeft(2, '0')}${today.day.toString().padLeft(2, '0')}';
+    final toTmFc = '${to.year}${to.month.toString().padLeft(2, '0')}${to.day.toString().padLeft(2, '0')}';
+      */
+      final today = DateTime.now();
+      final fromTmFc = '${today.year}${today.month.toString().padLeft(2, '0')}${today.day.toString().padLeft(2, '0')}';
+
+      final Map<String, String> mapData = await WeatherStationFinder.findNearestStation(latLng.latitude, latLng.longitude);
+      WeatherAlertRepo weatherAlertRepo = WeatherAlertRepo();
+      SpecialAlertReq req = SpecialAlertReq(
+        serviceKey: _key,
+        dataType: 'JSON',
+        numOfRows: 10,
+        pageNo: 1,
+        stnId: mapData['stnId'].toString(),
+        fromTmFc: fromTmFc,
+        toTmFc: fromTmFc,
+      );
+      lo.g("8888");
+      WeatherAlertRes res = await weatherAlertRepo.getWeatherAlerts(req);
+      lo.g("999");
+
+      return res;
     } catch (e) {
       lo.g(e.toString());
-      return [];
+      return null;
     }
   }
 

@@ -35,6 +35,7 @@ class AuthDio {
   late CacheOptions customCacheOptions;
   bool _isInitialized = false;
   late Future<void> _initialization;
+  bool multiLogin = false;
 
   Future<void> _initialize() async {
     var cacheDir = await getTemporaryDirectory();
@@ -260,7 +261,7 @@ class AuthDio {
       }
     }
 
-    if (message.contains('다른 기기에서')) {
+    if (message.contains('다른 기기에서') && !multiLogin) {
       Utils.showAlertDialog(
         '2중 로그인',
         '다른 기기에서 로그인 되었습니다.\n\n더 이상 이 기기에서 사용 할수 없습니다.',
@@ -269,6 +270,7 @@ class AuthDio {
         backgroundReturn: () => AuthCntr.to.logout(),
         confirm: () => AuthCntr.to.logout(),
       );
+      multiLogin = true;
     }
 
     return ResData(code: "99", msg: message);

@@ -6,7 +6,7 @@ import 'package:project1/repo/common/res_data.dart';
 
 class CommRepo {
   Future<ResData> searchCode(CodeReq reqData) async {
-    final dio = await AuthDio.instance.getDio();
+    final dio = await AuthDio.instance.getDio(debug: true);
     try {
       var url = '${UrlConfig.baseURL}/comm/searchcommcode';
       Response response = await dio.post(url, data: reqData.toJson());

@@ -23,6 +23,7 @@ import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
+import 'package:project1/utils/StringUtils.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_button.dart';
@@ -201,16 +202,16 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
   void dispose() {
     initialized = false;
     _controller.removeListener(() {});
+    _controller.setVolume(0);
     _controller.pause();
     _controller.dispose();
-
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF262B49),
+      backgroundColor: Colors.transparent,
       resizeToAvoidBottomInset: false,
       extendBodyBehindAppBar: true,
       extendBody: true,
@@ -239,7 +240,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                       );
                     },
                     child: initialized == false
-                        ? buildLoading(ValueKey('${widget.data.boardId.toString()}loading'))
+                        ? const SizedBox.shrink() //buildLoading(ValueKey('${widget.data.boardId.toString()}loading'))
                         : VisibilityDetector(
                             onVisibilityChanged: (info) {
                               initPlay = false;
@@ -351,10 +352,18 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                           type: 'XS',
                           isEnable: true,
                           onPressed: () async {
-                            String result = await VideoManagePageSheet().open(
+                            Map<String, dynamic>? returnMap = await VideoManagePageSheet().open(
                                 context, widget.data.boardId.toString(), widget.data.hideYn.toString(), widget.data.contents.toString());
+                            if (returnMap == null) {
+                              return;
+                            }
+                            if (returnMap['isDelete'] == 'Y') {
+                              Get.back();
+                              return;
+                            }
+                            widget.data.contents = returnMap['contents'];
+                            widget.data.hideYn = returnMap['hideYn'];
 
-                            widget.data.contents = result;
                             setState(() {});
                           },
                         ),
@@ -374,24 +383,29 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
   }
 
   Widget buildLoading(Key key) {
-    String imgPath = widget.data.videoPath!.replaceAll('/manifest/video.m3u8', '/thumbnails/thumbnail.jpg');
+    // String imgPath = widget.data.videoPath?.replaceAll('/manifest/video.m3u8', '/thumbnails/thumbnail.jpg') ?? '';
+    // Uri? imgUri = Uri.tryParse(imgPath);
+    // ImageProvider imageProvider;
+    // if (imgUri == null || !imgUri.hasScheme || !imgUri.hasAuthority) {
+    //   // 유효하지 않은 URI일 경우, 기본 이미지 사용
+    //   imageProvider = const AssetImage('assets/images/default_thumbnail.jpg');
+    // } else {
+    //   imageProvider = CachedNetworkImageProvider(imgPath, cacheKey: widget.data.boardId.toString());
+    // }
+
     return ClipRect(
       key: key,
-      // ClipRect을 사용하여 블러 효과가 자식 위젯 영역을 벗어나지 않도록 합니다.
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 25.0, sigmaY: 25.0),
         child: Container(
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: CachedNetworkImageProvider(
-                imgPath,
-                cacheKey: widget.data.boardId.toString(),
-              ),
-              fit: BoxFit.cover,
-            ),
-          ),
+          // decoration: BoxDecoration(
+          //   image: DecorationImage(
+          //     image: imageProvider,
+          //     fit: BoxFit.cover,
+          //   ),
+          // ),
           child: Container(
-            color: Colors.black.withOpacity(0.3), // 약간의 어두운 오버레이 추가
+            color: Colors.black.withOpacity(0.1),
           ),
         ),
       ),
@@ -414,6 +428,12 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
 
   // 하단 컨텐츠
   Widget buildBottomContent() {
+    String profilePath = widget.data.profilePath ?? '';
+    // Uri? profileUri = Uri.tryParse(profilePath);
+    // ImageProvider profileImage = (profileUri != null && profileUri.hasScheme && profileUri.hasAuthority)
+    //     ? CachedNetworkImageProvider(profilePath)
+    //     : const AssetImage('assets/images/default_profile.png');
+
     String locationNm = widget.data.location.toString();
 
     return Positioned(
@@ -431,34 +451,16 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                 style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
               ),
               const SizedBox(width: 20, height: 13, child: VerticalDivider(thickness: 1, color: Colors.white)),
-              // Text(
-              //   '${widget.data.weatherInfo?.split('.')[0]} ${widget.data.currentTemp}°',
-              //   style: const TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w700),
-              // ),
               SizedBox(
-                height: 30,
-                width: 30,
-                child: Lottie.asset(
-                  WeatherDataProcessor.instance.getWeatherGogoImage(widget.data!.sky.toString(), widget.data!.rain.toString()),
-                  height: 138.0,
-                  width: 138.0,
-                ),
-                // child: CachedNetworkImage(
-                //   width: 50,
-                //   height: 50,
-                //   imageUrl: 'http://openweathermap.org/img/wn/${widget.data.icon}@2x.png',
-                //   imageBuilder: (context, imageProvider) => Container(
-                //     decoration: BoxDecoration(
-                //       image: DecorationImage(
-                //           image: imageProvider,
-                //           fit: BoxFit.cover,
-                //           colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn)),
-                //     ),
-                //   ),
-                //   placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 0.6, color: Colors.white),
-                //   errorWidget: (context, url, error) => const Icon(Icons.error),
-                // ),
-              ),
+                  height: 30,
+                  width: 30,
+                  child: WeatherDataProcessor.instance.getWeatherGogoImage(widget.data!.sky.toString(), widget.data!.rain.toString())
+                  // child: Lottie.asset(
+                  //   WeatherDataProcessor.instance.getWeatherGogoImage(widget.data!.sky.toString(), widget.data!.rain.toString()),
+                  //   height: 138.0,
+                  //   width: 138.0,
+                  // ),
+                  ),
               SizedBox(
                 width: MediaQuery.of(context).size.width * 0.35,
                 child: TextScroll(
@@ -483,7 +485,6 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                 width: MediaQuery.of(context).size.width * 0.75,
                 child: TextScroll(
                   '${locationNm.toString()} ${widget.data.distance?.toStringAsFixed(1)}km ',
-                  // '${locationNm.toString()} ${widget.data.distance!.toStringAsFixed(1)}km ',
                   mode: TextScrollMode.endless,
                   numberOfReps: 20000,
                   fadedBorder: true,
@@ -504,12 +505,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                   child: HashTagText(
                     text: "${widget.data.contents}",
                     basicStyle: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w700),
-                    decoratedStyle: const TextStyle(
-                        fontSize: 17,
-                        color: Color.fromARGB(255, 218, 245, 253),
-                        // color: Color.fromARGB(255, 205, 240, 122),
-                        // color: Color.fromARGB(255, 189, 230, 220),
-                        fontWeight: FontWeight.bold),
+                    decoratedStyle: const TextStyle(fontSize: 17, color: Color.fromARGB(255, 218, 245, 253), fontWeight: FontWeight.bold),
                     textAlign: TextAlign.left,
                     onTap: (text) {
                       print(text);
@@ -522,22 +518,39 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
             children: [
               GestureDetector(
                 onTap: () => Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}'),
-                child: Container(
-                  width: 35.0,
-                  height: 35.0,
-                  decoration: BoxDecoration(
-                    color: const Color(0xff7c94b6),
-                    image: DecorationImage(
-                      image: CachedNetworkImageProvider(widget.data.profilePath!),
-                      fit: BoxFit.cover,
-                    ),
-                    borderRadius: const BorderRadius.all(Radius.circular(50.0)),
-                    border: Border.all(
-                      color: Colors.green,
-                      width: 2.0,
-                    ),
-                  ),
-                ),
+                child: !StringUtils.isEmpty(widget.data.profilePath)
+                    ? Container(
+                        width: 35.0,
+                        height: 35.0,
+                        decoration: BoxDecoration(
+                          color: const Color(0xff7c94b6),
+                          image: DecorationImage(
+                            image: CachedNetworkImageProvider(
+                                cacheKey: widget.data.profilePath.toString(), widget.data.profilePath.toString()),
+                            fit: BoxFit.cover,
+                          ),
+                          borderRadius: const BorderRadius.all(Radius.circular(50.0)),
+                          border: Border.all(
+                            color: Colors.green,
+                            width: 2.0,
+                          ),
+                        ),
+                      )
+                    : Container(
+                        height: 35,
+                        width: 35,
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          // color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        child: Center(
+                          child: Text(
+                            (widget.data.nickNm == null || widget.data.nickNm == '') ? 'S' : widget.data.nickNm!.substring(0, 1),
+                            style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
               ),
               const Gap(10),
               GestureDetector(
@@ -551,7 +564,6 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
               widget.data.custId.toString() == AuthCntr.to.custId.value.toString()
                   ? const SizedBox.shrink()
                   : GetBuilder<VideoMyinfoListCntr>(
-                      //  init: VideoMyinfoListCntr(),
                       builder: (_) {
                         return ElevatedButton(
                           onPressed: () {
@@ -571,13 +583,11 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                             minimumSize: const Size(0, 0),
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             backgroundColor: widget.data.followYn.toString() == 'N' ? Colors.transparent : Colors.white,
-                            // backgroundColor: widget.data.followYn.toString().contains('N') ? Colors.black : Colors.white,
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10.0), side: const BorderSide(color: Colors.white, width: 0.7)),
                           ),
                           child: Text(
                             widget.data.followYn.toString() == 'N' ? '팔로우' : '팔로잉',
-                            // widget.data.followYn.toString().contains('N') ? '팔로우' : '팔로잉',
                             style: TextStyle(
                               color: widget.data.followYn.toString().contains('N') ? Colors.white : Colors.black,
                               fontSize: 15,
@@ -643,7 +653,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                 if (count == 0) {
                   result = Text(
                     "love",
-                    style: TextStyle(color: color),
+                    style: TextStyle(color: color, fontSize: 12),
                   );
                 } else {
                   result = SizedBox(
@@ -653,7 +663,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                     child: Text(
                       text,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
                     ),
                   );
                 }
@@ -668,7 +678,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
           ),
           Text(
             widget.data.replyCnt == null ? '0' : widget.data.replyCnt.toString(),
-            style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600),
           ),
 
           const Gap(10),
@@ -678,7 +688,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
           ),
           Text(
             widget.data.viewCnt.toString(),
-            style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600),
           ),
           const Gap(5),
           // IconButton(

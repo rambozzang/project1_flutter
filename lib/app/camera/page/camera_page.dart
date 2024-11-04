@@ -6,15 +6,15 @@ import 'package:camera/camera.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/camera/bloc/camera_state.dart';
-import 'package:project1/app/camera/enums/color_constant.dart';
 import 'package:project1/app/camera/page/video_reg_page.dart';
 import 'package:project1/app/camera/page/widgets/animated_bar.dart';
-import 'package:project1/app/camera/utils/screenshot_utils.dart';
 import 'package:project1/app/camera/utils/zoom_widget.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
@@ -41,98 +41,12 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
 
   @override
   void initState() {
+    super.initState();
     cameraBloc = BlocProvider.of<CameraBloc>(context);
     WidgetsBinding.instance.addObserver(this);
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    // Clean up resources and reset the CameraBloc on page dispose
-    cameraBloc.add(CameraReset());
-    cameraBloc.close();
-
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  /*
-  Camera 패키지에서 제안한 카메라 생명주기 관리 코드
-  */
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // App state changed before we got the chance to initialize.
-    if (cameraBloc.getController() == null) return;
-
-    // Handle app lifecycle state changes (e.g., background, foreground)
-    if (state == AppLifecycleState.inactive) {
-      // Disable the camera when the app is inactive
-      cameraBloc.add(CameraDisable());
-    }
-    if (state == AppLifecycleState.resumed) {
-      lo.g("AppLifecycleState.resumed 1");
-      // if (isThisPageVisibe) {
-      // Enable the camera when the app is resumed and this page is visible
-      lo.g("AppLifecycleState.resumed 2");
-      cameraBloc.add(CameraEnable());
-      // }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 54, 53, 53),
-      extendBodyBehindAppBar: true,
-      resizeToAvoidBottomInset: true,
-      body: Stack(children: [
-        VisibilityDetector(
-          key: const Key("my_camera"),
-          onVisibilityChanged: _handleVisibilityChanged,
-          child: BlocConsumer<CameraBloc, CameraState>(
-            listener: _cameraBlocListener,
-            builder: _cameraBlocBuilder,
-          ),
-        ),
-        Positioned(
-            top: 20,
-            right: 4,
-            child: SizedBox(
-              width: 80,
-              height: 80,
-              child: IconButton(
-                icon: const Icon(
-                  Icons.close,
-                  color: Colors.white,
-                  weight: 450,
-                  size: 27,
-                ),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ))
-      ]),
-    );
-  }
-
-  /// Display the preview from the camera (or a message if the preview is not available).
-  Widget _cameraPreviewWidget() {
-    if (cameraBloc.getController() == null || !cameraBloc.getController()!.value.isInitialized!) {
-      return const Text(
-        'Tap a camera',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 24.0,
-          fontWeight: FontWeight.w900,
-        ),
-      );
-    } else {
-      return AspectRatio(
-        aspectRatio: cameraBloc.getController()!.value.aspectRatio,
-        child: CameraPreview(cameraBloc.getController()!),
-      );
-    }
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
   }
 
   void _cameraBlocListener(BuildContext context, CameraState state) {
@@ -182,7 +96,7 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
     cameraBloc.add(CameraRecordingStop());
   }
 
-  Future getImage(ImageSource imageSource) async {
+  Future getImage(BuildContext context, ImageSource imageSource) async {
     try {
       //pickedFile에 ImagePicker로 가져온 이미지가 담긴다.
       final XFile? pickedFile = await ImagePicker().pickVideo(source: imageSource);
@@ -200,151 +114,246 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
     }
   }
 
+  @override
+  void dispose() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+    cameraBloc.add(CameraReset());
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /*
+  Camera 패키지에서 제안한 카메라 생명주기 관리 코드
+  */
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (cameraBloc.getController() == null) return;
+    if (state == AppLifecycleState.inactive) {
+      cameraBloc.add(CameraDisable());
+    }
+    if (state == AppLifecycleState.resumed) {
+      cameraBloc.add(const CameraInitialize());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: false,
+      resizeToAvoidBottomInset: true,
+      body: SafeArea(
+        child: Stack(children: [
+          //   SizedBox(height: MediaQuery.of(context).padding.top),
+          VisibilityDetector(
+            key: const Key("my_camera"),
+            onVisibilityChanged: _handleVisibilityChanged,
+            child: BlocConsumer<CameraBloc, CameraState>(
+              listener: _cameraBlocListener,
+              builder: _cameraBlocBuilder,
+            ),
+          ),
+          Positioned(
+            top: 5,
+            right: 5,
+            child: IconButton(
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.3),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+              icon: const Icon(
+                Icons.close,
+                color: Colors.white,
+                size: 17,
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ),
+          Positioned(
+            top: 5,
+            left: 10,
+            child: TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.3),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+              onPressed: () => getImage(context, ImageSource.gallery),
+              child: const Text(
+                "갤러리",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 0,
+            left: 2,
+            child: Text(
+              "Camera Screen Auto Resized.",
+              style: TextStyle(color: Colors.yellow[200], fontSize: 8),
+            ),
+          )
+        ]),
+      ),
+    );
+  }
+
   Widget _cameraBlocBuilder(BuildContext context, CameraState state) {
+    lo.g("################################ state ==> ${state.runtimeType}");
+
     bool disableButtons = !(state is CameraReady && !state.isRecordingVideo);
-    //  bool isRecording = state is CameraReady && state.isRecordingVideo;
     return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: Stack(
-            alignment: Alignment.center,
+            alignment: Alignment.topCenter,
             children: [
-              RepaintBoundary(
-                key: screenshotKey,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 400),
-                  switchInCurve: Curves.linear,
-                  transitionBuilder: (Widget child, Animation<double> animation) {
-                    return FadeTransition(
-                      opacity: animation,
-                      alwaysIncludeSemantics: true,
-                      child: child,
-                    );
-                  },
-                  child: state is CameraReady
-                      ? Builder(builder: (context) {
-                          var controller = cameraBloc.getController();
+              if (state is! CameraReady) const Center(child: CircularProgressIndicator()),
+              if (state is CameraReady)
+                RepaintBoundary(
+                  key: screenshotKey,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 150),
+                    switchInCurve: Curves.easeInOut,
+                    child: Builder(builder: (context) {
+                      var controller = cameraBloc.getController();
+                      lo.g("################################ controller in builder ==> ${controller?.value.isInitialized}");
 
-                          return Transform.scale(
-                            scale: 1 /
-                                ((controller!.value == null ? 1.6 : controller.value.aspectRatio) *
-                                    MediaQuery.of(context).size.aspectRatio),
-                            child: ZoomableWidget(
-                                child: _cameraPreviewWidget(),
-                                onTapUp: (scaledPoint) {
-                                  //controller.setPointOfInterest(scaledPoint);
-                                },
-                                onZoom: (zoom) {
-                                  print('zoom');
-                                  if (zoom < 11) {
-                                    controller!.setZoomLevel(zoom);
-                                  }
-                                }),
-                          );
-                        })
-                      : state is CameraInitial && screenshotBytes != null
-                          ? Container(
-                              constraints: const BoxConstraints.expand(),
-                              decoration: BoxDecoration(
-                                image: DecorationImage(
-                                  image: MemoryImage(screenshotBytes!),
-                                  fit: BoxFit.cover,
+                      if (controller == null || !controller.value.isInitialized) {
+                        return const SizedBox.shrink();
+                      }
+
+                      final mediaSize = MediaQuery.of(context).size;
+                      final isBackCamera = controller.description.lensDirection == CameraLensDirection.back;
+                      final previewSize = controller.value.previewSize!;
+                      final previewRatio = previewSize.height / previewSize.width;
+                      final screenRatio = mediaSize.height / mediaSize.width;
+
+                      var scale = 1.0;
+                      if (screenRatio > previewRatio) {
+                        scale = mediaSize.height / (previewSize.width * previewRatio);
+                      } else {
+                        scale = mediaSize.width / previewSize.width;
+                      }
+
+                      // 프론트 카메라일 경우 줌 레벨 조정
+                      if (!isBackCamera) {
+                        controller.setZoomLevel(1.0); // 줌 레벨을 1.0으로 설정 (기본값)
+                      }
+
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Transform.scale(
+                          scale: scale,
+                          child: Stack(
+                            children: [
+                              AspectRatio(
+                                aspectRatio: previewRatio,
+                                child: ZoomableWidget(
+                                  child: ClipRRect(borderRadius: BorderRadius.circular(20), child: CameraPreview(controller)),
+                                  onTapUp: (scaledPoint) {
+                                    controller.setFocusPoint(scaledPoint);
+                                  },
+                                  onZoom: (zoom) {
+                                    if (zoom < 11) {
+                                      controller.setZoomLevel(zoom);
+                                    }
+                                  },
                                 ),
                               ),
-                              child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
-                                child: Container(),
+                              Positioned(
+                                bottom: Platform.isIOS ? 60 : 40,
+                                left: 0,
+                                right: 0,
+                                child: Center(
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Visibility(
+                                        visible: !disableButtons,
+                                        child: StatefulBuilder(builder: (context, localSetState) {
+                                          return GestureDetector(
+                                            onTap: () {
+                                              final List<int> time = [15, 30, 60, 90];
+                                              int currentIndex = time.indexOf(cameraBloc.recordDurationLimit);
+                                              localSetState(() {
+                                                cameraBloc.setRecordDurationLimit = time[(currentIndex + 1) % time.length];
+                                              });
+                                            },
+                                            child: CircleAvatar(
+                                              backgroundColor: Colors.white.withOpacity(0.5),
+                                              radius: 25,
+                                              child: FittedBox(
+                                                  child: Text(
+                                                "${cameraBloc.recordDurationLimit}",
+                                                style: const TextStyle(
+                                                  color: Colors.black,
+                                                ),
+                                              )),
+                                            ),
+                                          );
+                                        }),
+                                      ),
+                                      const SizedBox(width: 20),
+                                      IgnorePointer(
+                                        ignoring: state is! CameraReady || state.decativateRecordButton,
+                                        child: Opacity(
+                                          opacity: state is! CameraReady || state.decativateRecordButton ? 0.4 : 1,
+                                          child: animatedProgressButton(state),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 20),
+                                      Visibility(
+                                        visible: !disableButtons,
+                                        child: CircleAvatar(
+                                          backgroundColor: Colors.white.withOpacity(0.5),
+                                          radius: 25,
+                                          child: IconButton(
+                                            onPressed: () async {
+                                              try {
+                                                // screenshotBytes = await takeCameraScreenshot(key: screenshotKey);
+                                                if (context.mounted) cameraBloc.add(CameraSwitch());
+                                              } catch (e) {
+                                                //screenshot error
+                                              }
+                                            },
+                                            icon: const Icon(
+                                              Icons.cameraswitch,
+                                              color: Colors.black,
+                                              size: 28,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                            )
-                          : const SizedBox.shrink(),
-                ),
-              ),
-              if (state is CameraError) errorWidget(state),
-              Positioned(
-                bottom: 30,
-                child: SizedBox(
-                  width: 250,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      IgnorePointer(
-                        ignoring: state is! CameraReady || state.decativateRecordButton,
-                        child: Opacity(
-                          opacity: state is! CameraReady || state.decativateRecordButton ? 0.4 : 1,
-                          child: animatedProgressButton(state),
-                        ),
-                      ),
-                      Positioned(
-                        right: 10,
-                        top: 20,
-                        child: Visibility(
-                          visible: !disableButtons,
-                          child: CircleAvatar(
-                            backgroundColor: Colors.white.withOpacity(0.5),
-                            radius: 25,
-                            child: IconButton(
-                              onPressed: () async {
-                                try {
-                                  // screenshotBytes = await takeCameraScreenshot(key: screenshotKey);
-                                  if (context.mounted) cameraBloc.add(CameraSwitch());
-                                } catch (e) {
-                                  //screenshot error
-                                }
-                              },
-                              icon: const Icon(
-                                Icons.cameraswitch,
-                                color: Colors.black,
-                                size: 28,
-                              ),
-                            ),
+                            ],
                           ),
                         ),
-                      ),
-                      Positioned(
-                        left: 0,
-                        child: Visibility(
-                          visible: !disableButtons,
-                          child: StatefulBuilder(builder: (context, localSetState) {
-                            return GestureDetector(
-                              onTap: () {
-                                final List<int> time = [15, 30, 60, 90];
-                                int currentIndex = time.indexOf(cameraBloc.recordDurationLimit);
-                                localSetState(() {
-                                  cameraBloc.setRecordDurationLimit = time[(currentIndex + 1) % time.length];
-                                });
-                              },
-                              child: CircleAvatar(
-                                backgroundColor: Colors.white.withOpacity(0.5),
-                                radius: 25,
-                                child: FittedBox(
-                                    child: Text(
-                                  "${cameraBloc.recordDurationLimit}",
-                                  style: const TextStyle(
-                                    color: Colors.black,
-                                  ),
-                                )),
-                              ),
-                            );
-                          }),
-                        ),
-                      ),
-                    ],
+                      );
+                    }),
                   ),
                 ),
-              ),
-              Positioned(
-                  left: 15,
-                  top: MediaQuery.of(context).padding.top + 20,
-                  child: GestureDetector(
-                    onTap: () => getImage(ImageSource.gallery),
-                    child: const Text(
-                      "갤러리",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ))
+              if (state is CameraError) errorWidget(state),
             ],
           ),
         ),
+        // const SizedBox(height: 35),
       ],
     );
   }

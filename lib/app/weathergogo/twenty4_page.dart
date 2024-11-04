@@ -41,40 +41,36 @@ class _Twenty4PageState extends State<Twenty4Page> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      // decoration: const BoxDecoration(color: Color(0xFF262B49)),
-      // padding: const EdgeInsets.symmetric(vertical: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(),
-          const SizedBox(height: 10.0),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Stack(
-              children: [
-                _buildHourlyWeatherWidget(),
-                Positioned(
-                    top: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.arrow_forward_ios,
-                        color: Colors.white38,
-                        size: 20,
-                      ),
-                      onPressed: () {},
-                    )),
-              ],
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeader(),
+        const SizedBox(height: 10.0),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Stack(
+            children: [
+              _buildHourlyWeatherWidget(),
+              Positioned(
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.arrow_forward_ios,
+                      color: Colors.white38,
+                      size: 20,
+                    ),
+                    onPressed: () {},
+                  )),
+            ],
           ),
-          const SizedBox(height: 10.0),
-          _buildScrollHint(),
-          const SizedBox(height: 15.0),
-          // _buildWeatherChart(context),
-        ],
-      ),
+        ),
+        const SizedBox(height: 10.0),
+        _buildScrollHint(),
+        const SizedBox(height: 15.0),
+        // _buildWeatherChart(context),
+      ],
     );
   }
 
@@ -171,6 +167,7 @@ class _Twenty4PageState extends State<Twenty4Page> {
                           humidity: 0,
                           temperature: e.temp,
                           rainProbability: double.parse((e.rainPo ?? 0.0).toString()), // 실제 데이터로 대체 필요
+
                           source: 'Yesterday',
                         ))
                     .toList()
@@ -183,6 +180,7 @@ class _Twenty4PageState extends State<Twenty4Page> {
                           temperature: e.temp,
                           humidity: 0,
                           rainProbability: double.parse((e.rainPo ?? 0.0).toString()), // 실제 데이터로 대체 필요
+
                           source: 'Today',
                         ))
                     .toList()
@@ -218,7 +216,7 @@ class _Twenty4PageState extends State<Twenty4Page> {
             ? SizedBox(
                 height: 23,
                 child: Text('${intl.DateFormat('dd', 'ko').format(data.date)}(${intl.DateFormat('EE', 'ko').format(data.date)})',
-                    style: const TextStyle(fontSize: 13, color: Colors.white70, fontWeight: FontWeight.bold)),
+                    style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.bold)),
               )
             : const SizedBox(height: 23),
         Container(
@@ -239,20 +237,21 @@ class _Twenty4PageState extends State<Twenty4Page> {
 
               const SizedBox(height: 5.0),
               SizedBox(
-                height: weatherIconSize,
-                width: weatherIconSize,
-                child: Lottie.asset(
-                  WeatherDataProcessor.instance.getFinalWeatherIcon(data.date.hour, data.sky.toString(), data.rain.toString()),
-                  fit: BoxFit.cover,
-                ),
-              ),
+                  height: weatherIconSize,
+                  width: weatherIconSize,
+                  child: WeatherDataProcessor.instance.getFinalWeatherIcon(data.date.hour, data.sky.toString(), data.rain.toString())
+                  // child: Lottie.asset(
+                  //   WeatherDataProcessor.instance.getFinalWeatherIcon(data.date.hour, data.sky.toString(), data.rain.toString()),
+                  //   fit: BoxFit.cover,
+                  // ),
+                  ),
               const SizedBox(height: 4.0),
 
               FittedBox(
                 child: Text(
                   WeatherDataProcessor.instance.combineWeatherCondition(data.sky.toString(), data.rain.toString()),
                   overflow: TextOverflow.clip,
-                  style: const TextStyle(fontSize: 13.0, color: Colors.white, fontWeight: FontWeight.w400),
+                  style: const TextStyle(fontSize: 13.0, color: Colors.white, fontWeight: FontWeight.w700),
                 ),
               ),
               const SizedBox(height: 4.0),
@@ -262,16 +261,16 @@ class _Twenty4PageState extends State<Twenty4Page> {
                     ? const Text(
                         '-',
                         overflow: TextOverflow.clip,
-                        style: TextStyle(fontSize: 13.0, color: Color.fromARGB(255, 204, 226, 240), fontWeight: FontWeight.w400),
+                        style: TextStyle(fontSize: 13.0, color: Colors.white, fontWeight: FontWeight.w400),
                       )
                     : Row(
                         children: [
-                          const Icon(CupertinoIcons.umbrella_fill, size: 12, color: Color.fromARGB(255, 204, 226, 240)),
+                          const Icon(CupertinoIcons.umbrella_fill, size: 12, color: Colors.white),
                           const SizedBox(width: 2.0),
                           Text(
                             '${data.rainPo}%',
                             overflow: TextOverflow.clip,
-                            style: const TextStyle(fontSize: 13.0, color: Color.fromARGB(255, 204, 226, 240), fontWeight: FontWeight.w400),
+                            style: const TextStyle(fontSize: 13.0, color: Colors.white, fontWeight: FontWeight.w400),
                           ),
                         ],
                       ),

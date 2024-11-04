@@ -39,3 +39,8 @@ class CameraReset extends CameraEvent {}
 class CameraRecordingStarting extends CameraState {}
 
 class CameraRecording extends CameraState {}
+
+class CameraInitialized extends CameraEvent {}
+
+// Event to dispose the camera
+class CameraDispose extends CameraEvent {}

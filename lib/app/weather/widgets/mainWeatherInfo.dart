@@ -85,12 +85,12 @@ class MainWeatherInfo extends StatelessWidget {
                 ],
               ),
             ),
-            Lottie.asset(
-              // getWeatherImage(weatherProv.weather.value!.weatherCategory!),
-              getWeatherImage(weatherProv.oneCallCurrentWeather.value!.weather![0].main!),
-              height: 138.0,
-              width: 138.0,
-            ),
+            // Lottie.asset(
+            //   // getWeatherImage(weatherProv.weather.value!.weatherCategory!),
+            //   getWeatherImage(weatherProv.oneCallCurrentWeather.value!.weather![0].main!),
+            //   height: 138.0,
+            //   width: 138.0,
+            // ),
           ],
         ),
       );

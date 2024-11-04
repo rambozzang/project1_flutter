@@ -14,7 +14,6 @@ import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'chat_room_page.dart';
 import 'util.dart';
@@ -237,7 +236,7 @@ class _UsersPageState extends State<UsersPage> {
                   // color: Colors.grey.shade200,
                   borderRadius: BorderRadius.circular(10),
                   image: DecorationImage(
-                    image: CachedNetworkImageProvider(data.profilePath.toString()),
+                    image: CachedNetworkImageProvider(cacheKey: data.profilePath.toString(), data.profilePath.toString()),
                     fit: BoxFit.cover,
                   ),
                 ),

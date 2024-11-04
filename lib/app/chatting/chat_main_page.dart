@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +21,8 @@ import 'chat_room_page.dart';
 import 'util.dart';
 
 class ChatMainApp extends StatefulWidget {
-  const ChatMainApp({super.key});
+  const ChatMainApp({super.key, required this.scrollController});
+  final ScrollController scrollController;
 
   @override
   State<ChatMainApp> createState() => ChatMainAppState();
@@ -36,6 +38,8 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
   ValueNotifier<bool> isAdLoading = ValueNotifier<bool>(false);
 
   List<String> roomlist = [];
+  double appbarBottomHeight = Platform.isIOS ? 120 : 90;
+
   @override
   void initState() {
     super.initState();
@@ -200,7 +204,7 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
             borderRadius: BorderRadius.circular(10),
             image: hasImage
                 ? DecorationImage(
-                    image: CachedNetworkImageProvider(room.imageUrl!),
+                    image: CachedNetworkImageProvider(cacheKey: room.imageUrl!, room.imageUrl!),
                     fit: BoxFit.cover,
                   )
                 : null,
@@ -278,8 +282,10 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
           initSupaBaseSession();
         },
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Gap(10),
+            Gap(appbarBottomHeight),
             ValueListenableBuilder<bool>(
                 valueListenable: isAdLoading,
                 builder: (context, value, child) {
@@ -320,7 +326,8 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
                   roomlist.clear();
                   return ListView.builder(
                     itemCount: rooms.length,
-                    controller: RootCntr.to.hideButtonController4,
+                    padding: const EdgeInsets.only(top: 10),
+                    controller: widget.scrollController, //
                     physics: const AlwaysScrollableScrollPhysics(),
                     itemBuilder: (context, index) {
                       final room = rooms[index];

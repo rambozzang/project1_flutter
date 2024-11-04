@@ -53,7 +53,7 @@ class AppbarPage extends StatelessWidget {
                       padding: WidgetStateProperty.all(EdgeInsets.zero),
                       // backgroundColor: WidgetStateProperty.all(Colors.grey[500]),
                     ),
-                    icon: const Icon(Icons.my_location, color: Colors.white, size: 24.0),
+                    icon: const Icon(Icons.my_location, color: Color.fromARGB(255, 196, 211, 196), size: 24.0),
                     onPressed: () => Get.find<WeatherGogoCntr>().getCurrentWeatherData(true),
                   ),
                 ),

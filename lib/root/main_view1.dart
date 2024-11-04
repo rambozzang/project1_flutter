@@ -225,6 +225,7 @@ class TabBarDelegate extends SliverPersistentHeaderDelegate {
         ),
         padding: const EdgeInsets.all(0.0),
         indicatorColor: Colors.transparent,
+        indicatorPadding: const EdgeInsets.symmetric(horizontal: 15),
         dividerColor: Colors.grey[300],
         unselectedLabelStyle: TextStyle(
           fontSize: 13,

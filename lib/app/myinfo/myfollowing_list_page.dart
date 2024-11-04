@@ -158,6 +158,7 @@ class _MyFollowingListPageState extends State<MyFollowingListPage> {
                   borderRadius: BorderRadius.circular(10.0),
                   image: DecorationImage(
                     image: CachedNetworkImageProvider(
+                      cacheKey: Get.find<AuthCntr>().resLoginData.value.profilePath.toString(),
                       list[index].thumbnailPath!,
                     ),
                     fit: BoxFit.cover,

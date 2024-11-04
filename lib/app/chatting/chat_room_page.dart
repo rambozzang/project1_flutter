@@ -502,7 +502,8 @@ class _ChatPageState extends State<ChatPage> {
                   child: CircleAvatar(
                     radius: 16,
                     backgroundColor: Colors.white,
-                    backgroundImage: author.imageUrl != null ? CachedNetworkImageProvider(author.imageUrl!) : null,
+                    backgroundImage:
+                        author.imageUrl != null ? CachedNetworkImageProvider(cacheKey: author.imageUrl, author.imageUrl!) : null,
                     child: author.imageUrl == null ? const Icon(Icons.person) : null,
                   ),
                 ),

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
+import 'package:giffy_dialog/giffy_dialog.dart';
 import 'package:hashtagable_v3/hashtagable.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
@@ -42,7 +43,7 @@ class VideoRegPage extends StatefulWidget {
 class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderStateMixin {
   late VideoPlayerController _videoController;
   final TextEditingController hashTagController = TextEditingController();
-
+  final FocusNode hashTagFocusNode = FocusNode();
   // late Subscription _subscription;
   // late MediaInfo? pickedFile;
 
@@ -95,7 +96,7 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
 
     WidgetsBinding.instance!.addPostFrameCallback((_) {
       initializeVideo();
-      initData();
+      // initData();
       getDate();
     });
   }
@@ -156,8 +157,10 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
     currentWeather.value = Get.find<WeatherGogoCntr>().currentWeather.value;
   }
 
+  int retry = 3;
   Future<void> getDate() async {
     try {
+      isWeathering.value = true;
       // 현재위치와 지명 가져오기
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
@@ -166,14 +169,23 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
       LatLng location = LatLng(position.latitude, position.longitude);
 
       LocationService locationService = LocationService();
-      final (onValue1, onValue2) = await locationService.getLocalName(location);
+      var (onValue1, onValue2) = await locationService.getLocalName(location);
       if (onValue1 == null || onValue2 == null) {
-        return;
+        // 3. 재시도 로직 아니면 '' 값으로 셋팅
+        if (retry > 0) {
+          retry--;
+          getDate();
+        } else {
+          // geocodeData.value = GeocodeData(name: '', latLng: location);
+          // mistData.value = MistViewData(mist10Grade: '좋음', mist25Grade: '좋음');
+          // currentWeather.value = CurrentWeatherData(
+          // temp: '0', description: '맑음', humidity: '0', rain: '0', sky: '1', speed: '0');
+        }
       }
 
-      geocodeData.value = GeocodeData(name: onValue2, latLng: location);
+      geocodeData.value = GeocodeData(name: onValue2 ?? ' ', latLng: location);
 
-      mistData.value = (await locationService.getMistData(onValue1))!;
+      mistData.value = (await locationService.getMistData(onValue1 ?? ' '))!;
 
       WeatherGogoRepo repo = WeatherGogoRepo();
       List<ItemSuperFct> itemFctList = await repo.getSuperFctListJson(location);
@@ -201,10 +213,11 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
 
       currentWeather.value = _currentWeatherData;
       lo.g('currentWeather : ${currentWeather.value}');
-      isWeathering.value = false;
-      // 현재날씨 가져오기
     } catch (e) {
       lo.g("getDate() error : $e");
+
+      isWeathering.value = false;
+    } finally {
       isWeathering.value = false;
     }
   }
@@ -235,23 +248,23 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
       boardSaveWeatherData.city = '';
       boardSaveWeatherData.country = '';
 
-      boardSaveWeatherData.currentTemp = currentWeather.value!.temp;
+      boardSaveWeatherData.currentTemp = currentWeather.value!.temp ?? '0';
       // boardSaveWeatherData.feelsTemp = currentWeather!.feels_like?.toStringAsFixed(1);
-      boardSaveWeatherData.humidity = currentWeather.value?.humidity.toString();
+      boardSaveWeatherData.humidity = currentWeather.value?.humidity.toString() ?? '1';
       // boardSaveWeatherData.icon = currentWeather.weather![0].icon;
-      boardSaveWeatherData.lat = geocodeData.value?.latLng.latitude.toString();
-      boardSaveWeatherData.lon = geocodeData.value?.latLng.longitude.toString();
-      boardSaveWeatherData.speed = currentWeather.value?.speed.toString();
-      boardSaveWeatherData.sky = currentWeather.value?.sky.toString();
-      boardSaveWeatherData.rain = currentWeather.value?.rain.toString();
+      boardSaveWeatherData.lat = geocodeData.value?.latLng.latitude.toString() ?? '1';
+      boardSaveWeatherData.lon = geocodeData.value?.latLng.longitude.toString() ?? '1';
+      boardSaveWeatherData.speed = currentWeather.value?.speed.toString() ?? '1';
+      boardSaveWeatherData.sky = currentWeather.value?.sky.toString() ?? '1';
+      boardSaveWeatherData.rain = currentWeather.value?.rain.toString() ?? '0';
 
       boardSaveWeatherData.tempMax = ''; // currentWeather.main!.temp_max?.toStringAsFixed(1);
       boardSaveWeatherData.tempMin = ''; // currentWeather.main!.temp_min?.toStringAsFixed(1);
 
-      boardSaveWeatherData.location = Get.find<WeatherGogoCntr>().currentLocation.value.name;
+      boardSaveWeatherData.location = Get.find<WeatherGogoCntr>().currentLocation.value.name ?? '대한민국';
       // boardSaveWeatherData.thumbnailPath = res2.secureUrl;
       // boardSaveWeatherData.videoPath = res.secureUrl;
-      boardSaveWeatherData.weatherInfo = currentWeather.value?.description;
+      boardSaveWeatherData.weatherInfo = currentWeather.value?.description ?? '맑음';
       boardSaveData.boardMastInVo = boardSaveMainData;
       boardSaveData.boardWeatherVo = boardSaveWeatherData;
       boardSaveWeatherData.mist10 = Get.find<WeatherGogoCntr>().mistData.value.mist10Grade.toString();
@@ -289,7 +302,8 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
 
   @override
   void dispose() {
-    _videoController.pause();
+    _videoController.removeListener(() {});
+    _videoController.setVolume(0);
     _videoController.dispose();
     _controller.dispose();
     hashTagController.dispose();
@@ -362,7 +376,20 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
                                               child: VideoPlayer(_videoController)),
                                         ),
                                       ),
-                                      const Positioned(left: 5, bottom: 5, child: Icon(Icons.zoom_in, size: 30, color: Colors.white)),
+                                      Positioned(
+                                          left: 5,
+                                          bottom: 5,
+                                          child: IconButton(
+                                              onPressed: () {
+                                                Navigator.push<_PlayerVideoAndPopPage>(
+                                                  context,
+                                                  MaterialPageRoute<_PlayerVideoAndPopPage>(
+                                                    builder: (BuildContext context) =>
+                                                        _PlayerVideoAndPopPage(videoPlayerController: _videoController),
+                                                  ),
+                                                );
+                                              },
+                                              icon: const Icon(Icons.zoom_in, size: 30, color: Colors.white))),
                                       Positioned(
                                         right: 5,
                                         bottom: 5,
@@ -410,6 +437,7 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
                         basicStyle: const TextStyle(fontSize: 15, color: Colors.black, decorationThickness: 0),
                         decoratedStyle: const TextStyle(fontSize: 15, color: Colors.blue),
                         keyboardType: TextInputType.multiline,
+                        focusNode: hashTagFocusNode,
                         maxLines: 4,
                         decoration: InputDecoration(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
@@ -474,10 +502,8 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
                           horizontal: 25,
                         ),
                         padding: EdgeInsets.all(15),
-                        message: "음악 저작권자의 허락 없이 동영상에 음악을 사용하면 법적 책임을 지실 수 있습니다.\n\n" +
-                            "1.동영상에 사용된 음악이 저작권자의 허락을 받은 음원인지 확인해야 합니다.\n" +
-                            "2.무료 이용이 가능한 저작권 free 음원을 사용하시는 것을 권장드립니다.\n" +
-                            "3.만약 저작권자의 허락 없이 음악을 사용하셨다면 동영상 게시가 제한될 수 있습니다.",
+                        message:
+                            "음악 저작권자의 허락 없이 동영상에 음악을 사용하면 법적 책임을 지실 수 있습니다.\n\n1.동영상에 사용된 음악이 저작권자의 허락을 받은 음원인지 확인해야 합니다.\n2.무료 이용이 가능한 저작권 free 음원을 사용하시는 것을 권장드립니다.\n3.만약 저작권자의 허락 없이 음악을 사용하셨다면 동영상 게시가 제한될 수 있습니다.",
                         triggerMode: TooltipTriggerMode.tap,
                         showDuration: Duration(seconds: 10),
                         child: Row(
@@ -562,7 +588,11 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
             children: [
               ElevatedButton(
                 onPressed: () {
-                  hashTagController.text = hashTagController.text + ' #';
+                  // 포커스
+                  FocusScope.of(context).requestFocus(hashTagFocusNode);
+                  // 키보드 보이기
+
+                  hashTagController.text = '${hashTagController.text} #';
                 },
                 clipBehavior: Clip.none,
                 style: ElevatedButton.styleFrom(
@@ -622,27 +652,27 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
           Row(
             children: [
               SizedBox(
-                width: 25,
+                width: 34,
                 child: CircleAvatar(
                   radius: 16,
                   backgroundColor: Colors.grey[100],
                   child: ClipOval(
                     child: Get.find<AuthCntr>().resLoginData.value.profilePath == ''
-                        ? const Icon(Icons.person, size: 23, color: Colors.black87)
+                        ? const Icon(Icons.person, size: 35, color: Colors.black87)
                         : CachedNetworkImage(
                             cacheKey: Get.find<AuthCntr>().resLoginData.value.custId.toString(),
                             imageUrl: Get.find<AuthCntr>().resLoginData.value.profilePath.toString(), //  'https://picsum.photos/200/300',
-                            width: 23,
-                            height: 23,
+                            width: 35,
+                            height: 35,
                             fit: BoxFit.cover,
                           ),
                   ),
                 ),
               ),
-              const Gap(5),
+              const Gap(3),
               Flexible(
                 child: Text(Get.find<AuthCntr>().resLoginData.value.nickNm.toString(),
-                    overflow: TextOverflow.clip, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)),
+                    overflow: TextOverflow.clip, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)),
               ),
             ],
           ),
@@ -663,7 +693,7 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
                       color: Colors.green.withOpacity(0.9),
                       borderRadius: BorderRadius.circular(5),
                     ),
-                    child: const Icon(Icons.location_on, color: Colors.white, size: 15)),
+                    child: const Icon(Icons.location_on, color: Colors.white, size: 13)),
                 const SizedBox(width: 5),
                 Flexible(
                   child: ValueListenableBuilder<GeocodeData?>(
@@ -689,15 +719,50 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
                 }
                 return Row(
                   children: [
-                    Text(
-                      '${value.temp}°C',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${value.temp}',
+                              style: const TextStyle(
+                                fontSize: 23,
+                                height: 1,
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Text(
+                              '°C',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            )
+                          ],
+                        ),
+                        Text(
+                          value.description ?? '-',
+                          style: const TextStyle(fontSize: 14, color: Colors.black),
+                          overflow: TextOverflow.clip,
+                        )
+                      ],
                     ),
                     const Gap(10),
+                    SizedBox(
+                      height: 60,
+                      width: 60,
+                      child: WeatherDataProcessor.instance.getWeatherGogoImage(value.sky.toString(), value.rain.toString()),
+                      // child: Lottie.asset(
+                      //   WeatherDataProcessor.instance.getWeatherGogoImage(value.sky.toString(), value.rain.toString()),
+                      //   height: 138.0,
+                      //   width: 138.0,
+                      // ),
+                    ),
+
                     // Text(
                     //   '습도:${value.humidity}%',
                     //   style: const TextStyle(
@@ -706,18 +771,6 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
                     //   ),
                     // ),
                   ],
-                );
-              }),
-          ValueListenableBuilder<CurrentWeatherData?>(
-              valueListenable: currentWeather,
-              builder: (context, value, child) {
-                if (value == null) {
-                  return const SizedBox.shrink();
-                }
-                return Text(
-                  value.description ?? '-',
-                  style: const TextStyle(fontSize: 14, color: Colors.black),
-                  overflow: TextOverflow.clip,
                 );
               }),
           const Gap(15),
@@ -843,26 +896,30 @@ class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
+        forceMaterialTransparency: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text(
           '동영상 재생',
-          style: TextStyle(fontSize: 16),
+          style: TextStyle(fontSize: 15),
         ),
-        automaticallyImplyLeading: true,
       ),
-      body: Center(
-        child: FutureBuilder<bool>(
-          future: started(),
-          builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
-            if (snapshot.data ?? false) {
-              return AspectRatio(
-                aspectRatio: widget.videoPlayerController.value.aspectRatio,
-                child: VideoPlayer(widget.videoPlayerController),
-              );
-            } else {
-              return const Text('');
-            }
-          },
-        ),
+      body: FutureBuilder<bool>(
+        future: started(),
+        builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+          if (snapshot.data ?? false) {
+            return Container(
+              padding: const EdgeInsets.only(left: 8, right: 8, bottom: 3),
+              width: MediaQuery.of(context).size.width,
+              height: MediaQuery.of(context).size.height,
+              child: ClipRRect(borderRadius: BorderRadius.circular(15), child: VideoPlayer(widget.videoPlayerController)),
+            );
+          } else {
+            return const Text('');
+          }
+        },
       ),
     );
   }

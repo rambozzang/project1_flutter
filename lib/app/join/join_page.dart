@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:lottie/lottie.dart';
+import 'package:pretty_animated_text/pretty_animated_text.dart';
 import 'package:project1/app/join/widget/ConstellationPainter.dart';
 import 'package:project1/app/join/widget/TwinklingStar.dart';
 import 'package:project1/repo/api/apple_api.dart';
@@ -13,6 +13,7 @@ import 'package:project1/repo/api/google_api.dart';
 import 'package:project1/repo/api/kakao_api.dart';
 import 'package:project1/repo/api/naver_api.dart';
 import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
 
@@ -24,7 +25,7 @@ class JoinPage extends StatefulWidget {
   State<JoinPage> createState() => _JoinPageState();
 }
 
-class _JoinPageState extends State<JoinPage> with SingleTickerProviderStateMixin {
+class _JoinPageState extends State<JoinPage> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   // 로딩 상태를 관리하는 ValueNotifier
   final ValueNotifier<bool> isLoading = ValueNotifier<bool>(false);
   List<MovingConstellations> constellations = [];
@@ -142,7 +143,8 @@ class _JoinPageState extends State<JoinPage> with SingleTickerProviderStateMixin
   @override
   void initState() {
     super.initState();
-    createConstellations();
+    WidgetsBinding.instance.addObserver(this);
+    // createConstellations();
 
     _controller = AnimationController(
       duration: const Duration(milliseconds: 950),
@@ -154,8 +156,8 @@ class _JoinPageState extends State<JoinPage> with SingleTickerProviderStateMixin
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    createTwinklingStars();
-    startObjectMovement();
+    // createTwinklingStars();
+    // startObjectMovement();
   }
 
   void createTwinklingStars() {
@@ -196,16 +198,24 @@ class _JoinPageState extends State<JoinPage> with SingleTickerProviderStateMixin
       }
 
       if (result.code != "00") {
-        Utils.alert("오류가 발생했습니다. 다시 시도해 주세요. ${result.msg}");
+        Utils.alert("다시 시도해 주세요!");
         isLoading.value = false;
         return;
       }
+
+      lo.g(result.data.toString());
+
       isLoading.value = false;
       Get.offAllNamed('/AgreePage/${result.data}');
     } catch (e) {
       Utils.alert(e.toString());
       isLoading.value = false;
     }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    isLoading.value = false;
   }
 
   @override
@@ -220,30 +230,37 @@ class _JoinPageState extends State<JoinPage> with SingleTickerProviderStateMixin
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          // gradient: LinearGradient(
-          //   begin: Alignment.topCenter,
-          //   end: Alignment.bottomCenter,
-          //   colors: [Color(0xFF1E3C72), Color(0xFF2A5298)],
-          // ),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF0D1B2A),
-              Color(0xFF1B263B),
-              Color(0xFF2A3B50),
-            ],
-          ),
-        ),
+            // gradient: LinearGradient(
+            //   begin: Alignment.topCenter,
+            //   end: Alignment.bottomCenter,
+            //   colors: [Color(0xFF1E3C72), Color(0xFF2A5298)],
+            // ),
+
+            // gradient: LinearGradient(
+            //   begin: Alignment.topCenter,
+            //   end: Alignment.bottomCenter,
+            //   colors: [
+            //     // Color(0xFF0D1B2A),
+            //     Color.fromARGB(255, 44, 68, 112),
+            //     Color.fromARGB(255, 57, 82, 113),
+            //     Color.fromARGB(255, 60, 81, 108),
+            //   ],
+            // ),
+            ),
         child: Stack(
           children: [
+            SizedBox(
+              width: double.infinity,
+              height: MediaQuery.of(context).size.height,
+              child: Lottie.asset('assets/login/join_ani.json', fit: BoxFit.fill),
+            ),
             Padding(
               padding: const EdgeInsets.all(26.0),
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Gap(85),
+                    const Gap(95),
                     // 앱 소개 텍스트
                     _buildAppIntroText(),
                     const Spacer(),
@@ -290,22 +307,38 @@ class _JoinPageState extends State<JoinPage> with SingleTickerProviderStateMixin
   Widget _buildAppIntroText() {
     return const Column(
       children: [
-        Text(
-          '날씨, 일상의 모든 영상 공유',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-          ),
+        // Text(
+        //   '날씨, 일상의 모든 영상 공유',
+        //   style: TextStyle(
+        //     color: Colors.white,
+        //     fontSize: 15,
+        //     fontWeight: FontWeight.bold,
+        //   ),
+        // ),
+        OffsetText(
+          text: '날씨, 일상의 모든 영상 공유',
+          duration: const Duration(milliseconds: 450),
+          type: AnimationType.letter,
+          mode: AnimationMode.repeatNoReverse,
+          textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+          slideType: SlideAnimationType.topBottom,
         ),
-        Text(
-          'SKYSNAP',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 35,
-            fontWeight: FontWeight.w900,
-          ),
+        OffsetText(
+          text: 'SKYSNAP',
+          duration: const Duration(milliseconds: 5500),
+          type: AnimationType.word,
+          mode: AnimationMode.repeatNoReverse,
+          textStyle: const TextStyle(fontSize: 36, color: Colors.white, fontWeight: FontWeight.bold),
+          slideType: SlideAnimationType.bottomTop,
         ),
+        // Text(
+        //   'SKYSNAP',
+        //   style: TextStyle(
+        //     color: Colors.white,
+        //     fontSize: 35,
+        //     fontWeight: FontWeight.w900,
+        //   ),
+        // ),
       ],
     );
   }
@@ -314,19 +347,27 @@ class _JoinPageState extends State<JoinPage> with SingleTickerProviderStateMixin
   Widget _buildSignUpSection() {
     return Column(
       children: [
-        const Text(
-          'SIGN UP',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 15,
-            fontWeight: FontWeight.w900,
-          ),
+        // const Text(
+        //   'SIGN UP',
+        //   style: TextStyle(
+        //     color: Colors.white,
+        //     fontSize: 15,
+        //     fontWeight: FontWeight.w900,
+        //   ),
+        // ),
+        const OffsetText(
+          text: 'SIGN UP',
+          duration: Duration(milliseconds: 350),
+          type: AnimationType.letter,
+          mode: AnimationMode.repeatWithReverse,
+          textStyle: TextStyle(fontSize: 15, color: Colors.amber, fontWeight: FontWeight.w900),
+          slideType: SlideAnimationType.rightLeft,
         ),
-        const Gap(10),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 60.0),
-          child: Divider(color: Colors.white),
-        ),
+        // const Gap(10),
+        // const Padding(
+        //   padding: EdgeInsets.symmetric(horizontal: 60.0),
+        //   child: Divider(color: Colors.white),
+        // ),
         const Gap(25),
         // 소셜 로그인 버튼들
         Row(

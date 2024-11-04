@@ -3,13 +3,11 @@ import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
-import 'package:project1/app/weather/widgets/customShimmer.dart';
 import 'package:project1/app/weathergogo/cntr/data/current_weather_data.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/weather/data/weather_view_data.dart';
 import 'package:project1/utils/log_utils.dart';
-import 'package:project1/utils/utils.dart';
 
 class HeaderMainPage extends GetView<WeatherGogoCntr> {
   const HeaderMainPage({super.key});
@@ -18,7 +16,7 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
   Widget build(BuildContext context) {
     return Obx(
       () => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 12.0),
         child: Row(
           children: [
             Expanded(
@@ -45,9 +43,9 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
   }
 
   Widget _buildYesterdayInfo(String? yesterdayDesc) {
-    if (yesterdayDesc == null || yesterdayDesc.isEmpty) return const SizedBox(height: 15);
+    if (yesterdayDesc == null || yesterdayDesc.isEmpty) return const SizedBox(height: 16);
     return SizedBox(
-      height: 15,
+      height: 16,
       child: Text(
         yesterdayDesc,
         textAlign: TextAlign.left,
@@ -153,22 +151,14 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
   Widget _buildWeatherAnimation(CurrentWeatherData weather) {
     lo.g('weather.sky: ${weather.sky}, weather.rain: ${weather.rain}');
 
-    return LottieBuilder.asset(
-      // WeatherDataProcessor.instance.getWeatherGogoImage(
-      //   weather.sky?.toString() ?? '',
-      //   weather.rain?.toString() ?? '',
-      // ),
-      WeatherDataProcessor.instance.getFinalWeatherIcon(
+    return SizedBox(
+      height: 120.0,
+      width: 120.0,
+      child: WeatherDataProcessor.instance.getFinalWeatherIcon(
         DateTime.now().hour,
         weather.sky?.toString() ?? '',
         weather.rain?.toString() ?? '',
       ),
-      height: 120.0,
-      width: 120.0,
-      frameRate: FrameRate.max,
-      filterQuality: FilterQuality.high,
-      repeat: true,
-      options: LottieOptions(enableMergePaths: true, enableApplyingOpacityToLayers: true),
     );
   }
 }

@@ -1,0 +1,96 @@
+# 디스크 사용량 확인
+df -h
+
+# 대용량 파일 및 디렉토리 찾기
+du -h / | sort -rh | head -n 20
+
+# 로그 파일 크기 확인
+ls -lh /var/log
+
+# 열린 파일 확인
+lsof | grep deleted
+
+# 파일시스템 상태 확인
+tune2fs -l /dev/[root partition]
+
+# 저널 크기 확인 (ext4의 경우)
+dumpe2fs /dev/[root partition] | grep "Journal size"
+
+# systemd-tmpfiles 설정 확인
+systemd-tmpfiles --cat-config
+
+# 최근 삭제된 파일 찾기
+find / -type f -mtime -1 -delete
+
+
+ubuntu@server-1:/$ sudo du -hsx * | sort -rh | head -n 10
+du: cannot access 'proc/1716/task/1716/fd/4': No such file or directory
+du: cannot access 'proc/1716/task/1716/fdinfo/4': No such file or directory
+du: cannot access 'proc/1716/fd/3': No such file or directory
+du: cannot access 'proc/1716/fdinfo/3': No such file or directory
+6.5G    var
+2.4G    usr
+2.2G    home
+153M    data
+107M    boot
+12M     root
+8.8M    etc
+4.6M    tmp
+1.1M    run
+52K     snap
+
+6.6G    var
+2.5G    tmp
+2.4G    usr
+2.2G    home
+207M    data
+107M    boot
+12M     root
+8.8M    etc
+1.2M    run
+52K     snap
+
+6.6G    var
+2.9G    tmp
+2.4G    usr
+2.4G    home
+202M    data
+107M    boot
+12M     root
+8.8M    etc
+1.2M    run
+52K     snap
+
+ubuntu@server-1:/tmp$ sudo du -hsx * | sort -rh | head -n 10
+3.0G    snap-private-tmp
+4.4M    winstone1902331505099509513.jar
+100K    hsperfdata_jenkins
+20K     tomcat.7010.8285111175690579812
+20K     tomcat.7010.1567405795488641089
+8.0K    systemd-private-1bdcea3cb342409f9a2322b77c212ca3-systemd-timesyncd.service-i0F22i
+8.0K    systemd-private-1bdcea3cb342409f9a2322b77c212ca3-systemd-resolved.service-ogSkVL
+8.0K    systemd-private-1bdcea3cb342409f9a2322b77c212ca3-systemd-logind.service-abOJ0e
+8.0K    systemd-private-1bdcea3cb342409f9a2322b77c212ca3-redis-server.service-Oq5LnZ
+
+ubuntu@server-1:/tmp$ sudo du -hsx * | sort -rh | head -n 10
+3.1G    snap-private-tmp
+4.4M    winstone1902331505099509513.jar
+100K    hsperfdata_jenkins
+20K     tomcat.7010.8285111175690579812
+20K     tomcat.7010.7213938122619215707
+20K     tomcat.7010.3537291120935078757
+20K     tomcat.7010.1567405795488641089
+8.0K    systemd-private-1bdcea3cb342409f9a2322b77c212ca3-systemd-timesyncd.service-i0F22i
+8.0K    systemd-private-1bdcea3cb342409f9a2322b77c212ca3-systemd-resolved.service-ogSkVL
+8.0K    systemd-private-1bdcea3cb342409f9a2322b77c212ca3-systemd-logind.service-abOJ0e
+
+6.6G    var
+3.1G    tmp
+2.4G    usr
+2.4G    home
+204M    data
+107M    boot
+12M     root
+8.8M    etc
+1.2M    run
+52K     snap

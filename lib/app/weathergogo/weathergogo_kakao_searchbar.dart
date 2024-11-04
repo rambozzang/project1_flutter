@@ -75,7 +75,7 @@ class _WeathergogoKakaoSearchPageState extends State<WeathergogoKakaoSearchPage>
       onSubmitted: _search,
       transition: SlideFadeFloatingSearchBarTransition(),
       actions: [
-        _buildSearchIcon(),
+        // _buildSearchIcon(),
         _buildClearIcon(),
       ],
       builder: (context, transition) => _buildSearchResults(),

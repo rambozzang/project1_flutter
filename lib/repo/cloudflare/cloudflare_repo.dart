@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:cloudflare/cloudflare.dart';
 import 'package:dio/dio.dart';
+import 'package:heif_converter/heif_converter.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:project1/config/url_config.dart';
@@ -74,6 +75,12 @@ class CloudflareRepo {
   }
 
   Future<CloudflareHTTPResponse<CloudflareImage?>?> imageFileUpload(File imageFile) async {
+    // heic, heif 컨버젼
+    if (imageFile.path.endsWith('.heif') || imageFile.path.endsWith('.heic')) {
+      String? jpgPath = await HeifConverter.convert(imageFile.path, format: 'png');
+      imageFile = File(jpgPath!);
+    }
+
     //From file
     CloudflareHTTPResponse<CloudflareImage?> response = await cloudflare.imageAPI.upload(
       contentFromFile: DataTransmit<File>(
@@ -114,9 +121,14 @@ class CloudflareRepo {
   }
 
   // 이미지 삭제
-  Future<void> imageDelete(String imageId) async {
+  Future<bool> imageDelete(String imageId) async {
+    lo.g(
+        'imageDelete > imageId : ${imageId}'); // 3c97b84c-6985-4fbf-3a26-237cced6eb00 , https://imagedelivery.net/9YWIIqEOHWVHkJjEYps8eQ/3c97b84c-6985-4fbf-3a26-237cced6eb00/public
+
     //Delete image
-    final response = await cloudflare.imageAPI.delete(id: imageId);
+    CloudflareHTTPResponse response = await cloudflare.imageAPI.delete(id: imageId);
+    lo.g('imageDelete > CloudflareHTTPResponse : ${response.base.statusCode}');
+    return response.base.statusCode == 200;
   }
 
   // 비디오 업로드

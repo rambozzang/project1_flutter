@@ -17,10 +17,12 @@ class CommentItemWidget extends StatefulWidget {
     this.focus,
     required this.boardCommentData,
     required this.controller,
+    required this.isDarkTheme,
   });
   final FocusNode? focus;
   final BoardCommentResData boardCommentData;
   final TextEditingController? controller;
+  final bool isDarkTheme;
 
   @override
   State<CommentItemWidget> createState() => _CommentItemWidgetState();
@@ -46,7 +48,7 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
         Utils.alert(resData.msg.toString());
         return;
       }
-      Utils.alert('좋아요! 저장되었습니다.');
+      // Utils.alert('좋아요! 저장되었습니다.');
       likeCnt.value = likeCnt.value + 1;
       likeYn.value = 'Y';
       widget.boardCommentData.likeYn = 'Y';
@@ -63,12 +65,12 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
         Utils.alert(resData.msg.toString());
         return;
       }
-      Utils.alert('좋아요! 취소 되었습니다.');
+      // Utils.alert('좋아요! 취소 되었습니다.');
       likeCnt.value = likeCnt.value - 1;
       likeYn.value = 'N';
       widget.boardCommentData.likeYn = 'N';
     } catch (e) {
-      Utils.alert('좋아요 취소 실패! 다시 시도해주세요');
+      // Utils.alert('좋아요 취소 실패! 다시 시도해주세요');
     }
   }
 
@@ -80,11 +82,16 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
 
   @override
   Widget build(BuildContext context) {
+    Color backgroundColor = widget.isDarkTheme ? Colors.black : Colors.white;
+    Color textColorMain = widget.isDarkTheme ? Colors.white : Colors.black;
+    Color textColorSub = widget.isDarkTheme ? Colors.white54 : Colors.black87;
+    Color iconColor = widget.isDarkTheme ? Colors.white54 : Colors.black87;
+
     return Material(
-      color: Colors.black, // const Color(0xFF0F0F0F),
+      color: backgroundColor,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.only(top: 12, bottom: 0, left: 10, right: 10),
+        padding: const EdgeInsets.only(top: 6, bottom: 0, left: 10, right: 10),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -108,8 +115,8 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
                   Row(
                     children: [
                       Text(
-                        '@${widget.boardCommentData.nickNm.toString()}',
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w400, color: Color(0xFFAEAEAE)),
+                        '${widget.boardCommentData.nickNm.toString()}',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: textColorSub),
                       ),
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 7.0),
@@ -120,15 +127,15 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
                       ),
                       Text(
                         Utils.timeage(widget.boardCommentData.crtDtm!),
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w400, color: Color(0xFFAEAEAE)),
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: textColorSub),
                       ),
                     ],
                   ),
                   Padding(
-                    padding: const EdgeInsets.only(top: 6, bottom: 12),
+                    padding: const EdgeInsets.only(top: 2, bottom: 4),
                     child: Text(
                       widget.boardCommentData.contents.toString(),
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w400, color: Color(0xFFF6F6F6)),
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: textColorMain),
                     ),
                   ),
                   Row(
@@ -141,21 +148,21 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
                             builder: (contex, value, child) {
                               return IconButton(
                                 padding: EdgeInsets.zero,
-                                iconSize: 16,
+                                iconSize: 14,
                                 icon: value == 'Y'
-                                    ? const Icon(Icons.thumb_up, color: Colors.white)
-                                    : const Icon(Icons.thumb_up_outlined, color: Colors.white),
+                                    ? Icon(Icons.thumb_up, color: textColorSub)
+                                    : Icon(Icons.thumb_up_outlined, color: iconColor),
                                 onPressed: () => value == 'Y' ? likeCancle() : like(),
                               );
                             }),
                       ),
-                      const Gap(4),
+                      const Gap(2),
                       ValueListenableBuilder<int>(
                           valueListenable: likeCnt,
                           builder: (contex, value, child) {
                             return Text(
                               value.toString(),
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w400, color: Color(0xFFF6F6F6)),
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: textColorSub),
                             );
                           }),
                       // const Padding(
@@ -166,14 +173,14 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
                       //     color: Colors.white,
                       //   ),
                       // ),
-                      const Gap(17),
+                      const Gap(12),
                       SizedBox(
                         height: 15,
                         width: 22,
                         child: IconButton(
                           padding: EdgeInsets.zero,
-                          iconSize: 16,
-                          icon: const Icon(Icons.comment_outlined, color: Colors.white),
+                          iconSize: 14,
+                          icon: Icon(Icons.comment_outlined, color: iconColor),
                           onPressed: () {
                             widget.focus?.requestFocus();
                             widget.controller?.text = '@${widget.boardCommentData.nickNm.toString()} ';

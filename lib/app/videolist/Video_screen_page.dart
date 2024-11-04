@@ -1,7 +1,6 @@
 //import 'package:cached_video_player_plus/cached_video_player_plus.dart';
 
 import 'dart:io';
-import 'dart:math';
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -13,7 +12,6 @@ import 'package:giffy_dialog/giffy_dialog.dart';
 import 'package:hashtagable_v3/hashtagable.dart';
 import 'package:like_button/like_button.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
-import 'package:project1/app/myinfo/otherinfo_page.dart';
 
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/app/videocomment/comment_page.dart';
@@ -26,13 +24,9 @@ import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:text_scroll/text_scroll.dart';
-import 'package:flutter/src/painting/gradient.dart' as ui;
 
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
-import 'package:http/http.dart' as http;
-
-// video_player 오류  https://github.com/flutter/flutter/issues/61309 , https://github.com/flutter/flutter/issues/25558
 
 class VideoScreenPage extends StatefulWidget {
   const VideoScreenPage({super.key, required this.index, required this.data});
@@ -215,43 +209,46 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       // backgroundColor: const Color(0xFF262B49),
-      resizeToAvoidBottomInset: true,
+      resizeToAvoidBottomInset: false,
       extendBodyBehindAppBar: true,
       extendBody: true,
       body: Stack(
         children: [
-          GestureDetector(
-            onTap: () {
-              initPlay = true;
-              if (_controller.value.isPlaying) {
-                _controller.pause();
-              } else {
-                _controller.play();
-              }
-            },
-            onHorizontalDragEnd: (DragEndDetails details) {
-              if (details.primaryVelocity! < 0) {
-                Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}');
-              } else if (details.primaryVelocity! > 0) {
-                // Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}');
-              }
-            },
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              switchInCurve: Curves.easeIn,
-              switchOutCurve: Curves.ease,
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: child,
-                );
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () {
+                initPlay = true;
+                if (_controller.value.isPlaying) {
+                  _controller.pause();
+                } else {
+                  _controller.play();
+                }
+              },
+              onHorizontalDragEnd: (DragEndDetails details) {
+                if (details.primaryVelocity! < 0) {
+                  Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}');
+                } else if (details.primaryVelocity! > 0) {
+                  // Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}');
+                }
               },
               child: ValueListenableBuilder<bool>(
                 valueListenable: initialized,
                 builder: (builder, value, child) {
-                  return value == false
-                      ? buildLoading(ValueKey('${widget.data.boardId.toString()}loading'))
-                      : buildVideoScreen(ValueKey('${widget.data.boardId.toString()}videoScreen'), value);
+                  return AnimatedSwitcher(
+                      key: ValueKey('${widget.data.boardId.toString()}AnimatedSwitcher'),
+                      duration: const Duration(milliseconds: 250),
+                      switchInCurve: Curves.easeInOut,
+                      switchOutCurve: Curves.easeInOut,
+                      transitionBuilder: (Widget child, Animation<double> animation) {
+                        return FadeTransition(
+                          key: ValueKey('${widget.data.boardId.toString()}FadeTransition'),
+                          opacity: animation,
+                          child: child,
+                        );
+                      },
+                      child: value == false
+                          ? const SizedBox.shrink() // buildLoading(ValueKey('${widget.data.boardId.toString()}loading'))
+                          : buildVideoScreen(ValueKey('${widget.data.boardId.toString()}videoScreen'), value));
                 },
               ),
             ),
@@ -278,35 +275,36 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   }
 
   Widget buildVideoScreen(Key key, bool init) {
-    return VisibilityDetector(
-      onVisibilityChanged: (info) {
-        initPlay = false;
-        if (info.visibleFraction > 0.1) {
-          if (init) {
-            _controller.play();
-            Get.find<VideoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
+    return Container(
+      key: key, // key를 상위 Container에 적용
+      child: VisibilityDetector(
+        key: key,
+        onVisibilityChanged: (info) {
+          initPlay = false;
+          if (info.visibleFraction > 0.1) {
+            if (init) {
+              _controller.play();
+              Get.find<VideoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
+            }
+          } else if (info.visibleFraction < 0.3) {
+            // } else {
+            if (init) {
+              _controller.pause();
+              _controller.seekTo(Duration.zero);
+              Get.find<VideoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
+            }
           }
-        } else if (info.visibleFraction < 0.3) {
-          // } else {
-          if (init) {
-            _controller.pause();
-            _controller.seekTo(Duration.zero);
-            Get.find<VideoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
-          }
-        }
-      },
-      key: key,
-      child: Center(
-        child: InteractiveViewer(
-          transformationController: transformationController,
-          minScale: 1.0,
-          maxScale: 4.0,
-          // child: AspectRatio(
-          //   aspectRatio: _controller.value.aspectRatio,
-          //   child: VideoPlayer(_controller),
-          // ),
+        },
+        child: Center(
           child: SizedBox.expand(
-            child: VideoPlayer(_controller),
+            child: InteractiveViewer(
+                transformationController: transformationController,
+                boundaryMargin: const EdgeInsets.all(0.0),
+                minScale: 1.0,
+                maxScale: 4.0,
+                scaleEnabled: true,
+                panEnabled: true,
+                child: VideoPlayer(_controller)),
           ),
         ),
       ),
@@ -340,12 +338,12 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   Widget buildLoading(Key key) {
     String imgPath = widget.data.videoPath!.replaceAll('/manifest/video.m3u8', '/thumbnails/thumbnail.jpg');
     return Container(
-      key: key,
+      key: key, // key를 상위 Container에 적용
       decoration: BoxDecoration(
         image: DecorationImage(
           image: CachedNetworkImageProvider(
             imgPath,
-            cacheKey: widget.data.boardId.toString(),
+            cacheKey: imgPath,
           ),
           fit: BoxFit.fill,
         ),
@@ -353,7 +351,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     );
   }
 
-  Widget buildLoading2() {
+  Widget buildLoading21111111() {
     String imgPath = widget.data.videoPath!.replaceAll('/manifest/video.m3u8', '/thumbnails/thumbnail.jpg');
     return ClipRect(
       // ClipRect을 사용하여 블러 효과가 자식 위젯 영역을 벗어나지 않도록 합니다.
@@ -364,7 +362,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
             image: DecorationImage(
               image: CachedNetworkImageProvider(
                 imgPath,
-                cacheKey: widget.data.boardId.toString(),
+                cacheKey: imgPath,
               ),
               fit: BoxFit.cover,
             ),
@@ -390,37 +388,56 @@ class VideoScreenPageState extends State<VideoScreenPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Gap(5),
+          GestureDetector(
+            onTap: () => Get.toNamed('/MapPage', arguments: {'lat': double.parse(widget.data.lat!), 'lon': double.parse(widget.data.lon!)}),
+            child: Container(
+              height: 30,
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: IntrinsicWidth(
+                child: Row(
+                  children: [
+                    Container(
+                        color: Colors.green, height: 17, width: 17, child: const Icon(Icons.location_on, color: Colors.white, size: 16)),
+                    const SizedBox(
+                      width: 5,
+                    ),
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.4,
+                      child: TextScroll(
+                        locationNm.toString(),
+                        // '${locationNm.toString()}, ${widget.data.distance!.toStringAsFixed(1)}km',
+                        mode: TextScrollMode.endless,
+                        numberOfReps: 20000,
+                        fadedBorder: true,
+                        delayBefore: const Duration(milliseconds: 4000),
+                        pauseBetween: const Duration(milliseconds: 2000),
+                        velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
+                        style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w600),
+                        textAlign: TextAlign.right,
+                        selectable: false,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
           Row(
             children: [
               Text(
                 '${widget.data.crtDtm.toString().split(':')[0].replaceAll('-', '/')}:${widget.data.crtDtm.toString().split(':')[1]}',
-                style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
+                style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w600),
               ),
-              const SizedBox(width: 20, height: 13, child: VerticalDivider(thickness: 1, color: Colors.white)),
+              const SizedBox(width: 18, height: 14, child: VerticalDivider(thickness: 1, color: Colors.white)),
               SizedBox(
                 height: 30,
                 width: 30,
-                child: Lottie.asset(
-                  WeatherDataProcessor.instance.getWeatherGogoImage(widget.data!.sky.toString(), widget.data!.rain.toString()),
-                  height: 138.0,
-                  width: 138.0,
-                ),
-                // child: CachedNetworkImage(
-                //   width: 50,
-                //   height: 50,
-                //   imageUrl: 'http://openweathermap.org/img/wn/${widget.data.icon}@2x.png',
-                //   imageBuilder: (context, imageProvider) => Container(
-                //     decoration: BoxDecoration(
-                //       image: DecorationImage(
-                //           image: imageProvider,
-                //           fit: BoxFit.cover,
-                //           colorFilter: const ColorFilter.mode(Colors.transparent, BlendMode.colorBurn)),
-                //     ),
-                //   ),
-                //   placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 0.6, color: Colors.white),
-                //   errorWidget: (context, url, error) => const Icon(Icons.error),
-                // ),
+                child: WeatherDataProcessor.instance.getWeatherGogoImage(widget.data!.sky.toString(), widget.data!.rain.toString()),
               ),
+              const SizedBox(width: 2),
               SizedBox(
                 width: MediaQuery.of(context).size.width * 0.35,
                 child: TextScroll(
@@ -431,42 +448,22 @@ class VideoScreenPageState extends State<VideoScreenPage> {
                   delayBefore: const Duration(milliseconds: 4000),
                   pauseBetween: const Duration(milliseconds: 2000),
                   velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
-                  style: const TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w700),
+                  style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w600),
                   textAlign: TextAlign.right,
                   selectable: true,
                 ),
               ),
             ],
           ),
-          Row(
-            children: [
-              const Icon(Icons.location_on, color: Colors.white, size: 16),
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.75,
-                child: TextScroll(
-                  '${locationNm.toString()} - 거리: ${widget.data.distance!.toStringAsFixed(1)}km',
-                  mode: TextScrollMode.endless,
-                  numberOfReps: 20000,
-                  fadedBorder: true,
-                  delayBefore: const Duration(milliseconds: 4000),
-                  pauseBetween: const Duration(milliseconds: 2000),
-                  velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
-                  style: const TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w700),
-                  textAlign: TextAlign.right,
-                  selectable: true,
-                ),
-              ),
-            ],
-          ),
-          const Gap(5),
+          // const Gap(5),
           widget.data.contents != ""
               ? Padding(
-                  padding: const EdgeInsets.only(right: 40),
+                  padding: const EdgeInsets.only(right: 40, bottom: 12, top: 5),
                   child: HashTagText(
                     text: "${widget.data.contents}",
-                    basicStyle: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w700),
+                    basicStyle: const TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w700),
                     decoratedStyle: const TextStyle(
-                        fontSize: 17,
+                        fontSize: 16,
                         color: Color.fromARGB(255, 218, 245, 253),
                         // color: Color.fromARGB(255, 205, 240, 122),
                         // color: Color.fromARGB(255, 189, 230, 220),
@@ -477,26 +474,44 @@ class VideoScreenPageState extends State<VideoScreenPage> {
                     },
                   ),
                 )
-              : const SizedBox(),
-          const Gap(5),
+              : const SizedBox(
+                  height: 5,
+                ),
+          // const Gap(15),
           Row(
             children: [
               GestureDetector(
                 onTap: () => Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}'),
-                child: Container(
-                    height: 35,
-                    width: 35,
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      // color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.white, width: 0.5),
-                      image: DecorationImage(
-                        image: CachedNetworkImageProvider(widget.data.profilePath.toString()),
-                        fit: BoxFit.cover,
+                child: widget.data.profilePath != ''
+                    ? Container(
+                        height: 35,
+                        width: 35,
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white, width: 0.5),
+                          image: DecorationImage(
+                            image: CachedNetworkImageProvider(
+                                cacheKey: widget.data.profilePath.toString(), widget.data.profilePath.toString()),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      )
+                    : Container(
+                        height: 35,
+                        width: 35,
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          borderRadius: BorderRadius.circular(10),
+                          //   border: Border.all(color: Colors.white, width: 0.5),
+                        ),
+                        child: Center(
+                          child: Text(
+                            widget.data.nickNm.toString().substring(0, 1),
+                            style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                        ),
                       ),
-                    ),
-                    child: widget.data.profilePath == null ? const Icon(Icons.person, color: Colors.white) : null),
               ),
               const Gap(10),
               GestureDetector(
@@ -604,7 +619,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
                 if (count == 0) {
                   result = Text(
                     "Love",
-                    style: TextStyle(color: color),
+                    style: TextStyle(color: color, fontSize: 10),
                   );
                 } else {
                   result = SizedBox(
@@ -614,7 +629,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
                     child: Text(
                       text,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
                     ),
                   );
                 }
@@ -622,7 +637,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
               },
             ),
           ),
-          const Gap(15),
+          const Gap(10),
           SizedBox(
             width: 40,
             height: 30,
@@ -635,10 +650,10 @@ class VideoScreenPageState extends State<VideoScreenPage> {
           ),
           Text(
             widget.data.replyCnt.toString() == 'null' ? '0' : widget.data.replyCnt.toString(),
-            style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600),
           ),
 
-          const Gap(15),
+          const Gap(10),
           SizedBox(
             height: 30,
             child: IconButton(
@@ -649,7 +664,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
           ),
           Text(
             widget.data.viewCnt.toString(),
-            style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600),
           ),
           // IconButton(
           //     icon: const Icon(Icons.report_gmailerrorred, color: Colors.white),
@@ -665,7 +680,6 @@ class VideoScreenPageState extends State<VideoScreenPage> {
           //   icon: const Icon(Icons.send, color: Colors.white),
           //   onPressed: () => share(),
           // ),
-          const Gap(5),
         ],
       ),
     );

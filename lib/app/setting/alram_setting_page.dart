@@ -42,7 +42,7 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
   @override
   initState() {
     super.initState();
-
+    WidgetsBinding.instance.addObserver(this);
     checkPermission();
     getData();
   }
@@ -164,6 +164,21 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
     } catch (e) {
       Utils.alert(e.toString());
     }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    lo.g('state : $state , isPermisstion.value : ${isPermisstion.value}');
+    if (state == AppLifecycleState.resumed && !isPermisstion.value) {
+      checkPermission();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance!.removeObserver(this);
+    streamController.close();
+    super.dispose();
   }
 
   @override

@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/weathergogo/cntr/data/current_weather_data.dart';
 import 'package:project1/app/weathergogo/cntr/data/daily_weather_data.dart';
@@ -8,6 +9,7 @@ import 'package:project1/repo/weather_gogo/models/response/midland_fct/midlan_fc
 import 'package:project1/repo/weather_gogo/models/response/midta_fct/midta_fct_res.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_fct/super_fct_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_nct/super_nct_model.dart';
+import 'package:project1/utils/WeatherLottie.dart';
 import 'package:project1/utils/log_utils.dart';
 
 class WeatherDataProcessor {
@@ -470,7 +472,118 @@ class WeatherDataProcessor {
     }
   }
 
-  String getWeatherGogoImage(String skyCode, String ptyCode) {
+  Widget getWeatherGogoImage(String skyCode, String ptyCode) {
+    int sky = int.tryParse(skyCode) ?? 0;
+    int pty = int.tryParse(ptyCode) ?? 0;
+
+    // 강수 형태
+    switch (pty) {
+      case 1: // 비
+      case 2: // 비/눈
+        return WeatherLottie.getWeatherAnimation('rain');
+      case 3: // 눈
+        return WeatherLottie.getWeatherAnimation('snow');
+      case 4: // 소나기
+        return WeatherLottie.getWeatherAnimation('rain');
+    }
+
+    // 하늘 상태
+    switch (sky) {
+      case 1: // 맑음
+        return WeatherLottie.getWeatherAnimation('sun');
+      case 3: // 구름많음
+        return WeatherLottie.getWeatherAnimation('mostly_cloudy');
+      case 4: // 흐림
+        return WeatherLottie.getWeatherAnimation('cloudy');
+      default: // 기본값 (알 수 없는 상태)
+        return WeatherLottie.getWeatherAnimation('mostly_cloudy');
+    }
+  }
+
+//초단기예보, 단기예보 모두 수용 가능한 함수
+  Widget getFinalWeatherIcon(int hour, String skyCode, String ptyCode) {
+    Widget ptyIcon = getWeatherIcon(hour, 'PTY', ptyCode);
+    if (ptyCode != '0') {
+      return ptyIcon; // 강수가 있으면 PTY 아이콘 사용
+    } else {
+      return getWeatherIcon(hour, 'SKY', skyCode); // 강수가 없으면 SKY 아이콘 사용
+    }
+  }
+
+  //초단기예보, 단기예보 모두 수용 가능한 함수
+  Widget getWeatherIcon(int hour, String category, String code) {
+    int value = int.tryParse(code) ?? 0;
+
+    switch (category) {
+      case 'PTY': // 강수형태 (Precipitation type)
+        switch (value) {
+          case 0:
+            return WeatherLottie.getWeatherAnimation('sun');
+          case 1:
+            return WeatherLottie.getWeatherAnimation('rain');
+          case 2:
+            return WeatherLottie.getWeatherAnimation('snow');
+          case 3:
+            return WeatherLottie.getWeatherAnimation('snow');
+          case 4:
+            return WeatherLottie.getWeatherAnimation('rain');
+          case 5:
+            return WeatherLottie.getWeatherAnimation('rain');
+          case 6:
+            return WeatherLottie.getWeatherAnimation('snow');
+          case 7:
+            return WeatherLottie.getWeatherAnimation('snow');
+          default:
+            return WeatherLottie.getWeatherAnimation('cloudy');
+        }
+
+      case 'SKY': // 하늘상태 (Sky condition)
+        switch (value) {
+          case 1:
+            return WeatherLottie.getWeatherAnimation('sun');
+          case 3:
+            return WeatherLottie.getWeatherAnimation('mostly_cloudy');
+          case 4:
+            return WeatherLottie.getWeatherAnimation('cloudy');
+          default:
+            return WeatherLottie.getWeatherAnimation('cloudy');
+        }
+
+      default:
+        return WeatherLottie.getWeatherAnimation('cloudy');
+    }
+  }
+
+  // 중기 예보에서만 사용가능한 아이콘 가져오기
+  Widget getWeatherIconForMidtermForecast(String forecastState) {
+    // 예보 상태에 따른 아이콘 매핑
+    switch (forecastState.toLowerCase()) {
+      case '맑음':
+        return WeatherLottie.getWeatherAnimation('sun');
+      case '구름많음':
+        return WeatherLottie.getWeatherAnimation('mostly_cloudy');
+      case '구름많고 비':
+      case '구름많고 비/눈':
+      case '구름많고 소나기':
+        return WeatherLottie.getWeatherAnimation('rain');
+      case '구름많고 눈':
+      case '구름많고 진눈깨비':
+        return WeatherLottie.getWeatherAnimation('snow');
+      case '흐림':
+        return WeatherLottie.getWeatherAnimation('cloudy');
+      case '흐리고 비':
+      case '흐리고 비/눈':
+      case '흐리고 소나기':
+        return WeatherLottie.getWeatherAnimation('rain');
+      case '흐리고 눈':
+      case '흐리고 진눈깨비':
+        return WeatherLottie.getWeatherAnimation('snow');
+      default:
+        return WeatherLottie.getWeatherAnimation('cloudy');
+    }
+  }
+
+  String getWeatherGogoImageString(String skyCode, String ptyCode) {
     int sky = int.tryParse(skyCode) ?? 0;
     int pty = int.tryParse(ptyCode) ?? 0;
 
@@ -500,18 +613,18 @@ class WeatherDataProcessor {
     }
   }
 
-//초단기예보, 단기예보 모두 수용 가능한 함수
-  String getFinalWeatherIcon(int hour, String skyCode, String ptyCode) {
-    String ptyIcon = getWeatherIcon(hour, 'PTY', ptyCode);
+  //초단기예보, 단기예보 모두 수용 가능한 함수
+  String getFinalWeatherIconString(int hour, String skyCode, String ptyCode) {
+    String ptyIcon = getWeatherIconString(hour, 'PTY', ptyCode);
     if (ptyCode != '0') {
       return ptyIcon; // 강수가 있으면 PTY 아이콘 사용
     } else {
-      return getWeatherIcon(hour, 'SKY', skyCode); // 강수가 없으면 SKY 아이콘 사용
+      return getWeatherIconString(hour, 'SKY', skyCode); // 강수가 없으면 SKY 아이콘 사용
     }
   }
 
   //초단기예보, 단기예보 모두 수용 가능한 함수
-  String getWeatherIcon(int hour, String category, String code) {
+  String getWeatherIconString(int hour, String category, String code) {
     int value = int.tryParse(code) ?? 0;
     String assetPath = 'assets/lottie/';
 
@@ -562,7 +675,7 @@ class WeatherDataProcessor {
   }
 
   // 중기 예보에서만 사용가능한 아이콘 가져오기
-  String getWeatherIconForMidtermForecast(String forecastState) {
+  String getWeatherIconForMidtermForecastString(String forecastState) {
     // 아이콘 파일들이 저장된 기본 경로
     const String assetPath = 'assets/lottie/';
 

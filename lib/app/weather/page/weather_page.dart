@@ -202,11 +202,11 @@ class _WeatherPageState extends State<WeatherPage> with TickerProviderStateMixin
                   // 주간예보 / 7일 예보
                   // const SevenDayForecast(),
                   const SizedBox(height: 28.0),
-                  const SizedBox(
-                      height: 458.0,
-                      child: WeatherWebView(
-                        isBackBtn: false,
-                      )),
+                  // const SizedBox(
+                  //     height: 458.0,
+                  //     child: WeatherWebView(
+                  //       isBackBtn: false,
+                  //     )),
                   TextButton(
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.all(0.0),

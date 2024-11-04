@@ -50,4 +50,16 @@ class LocationService {
       return null;
     }
   }
+
+  Future<String> getAdressName(LatLng posi) async {
+    try {
+      KakaoRepo kakaoRepo = KakaoRepo();
+      var (localNm1, localNm2, localNm3) = await kakaoRepo.getAddressbylatlon(posi.latitude, posi.longitude);
+
+      return '$localNm1 $localNm2 $localNm3';
+    } catch (e) {
+      Lo.g('동네이름 조회 오류 ${posi.latitude} , ${posi.longitude}: $e');
+      return '';
+    }
+  }
 }

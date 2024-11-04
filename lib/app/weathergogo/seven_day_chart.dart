@@ -3,71 +3,74 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart' as intl;
 
 import 'package:lottie/lottie.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:project1/app/weathergogo/cntr/data/daily_weather_data.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/app/weathergogo/twenty4_page.dart';
+import 'package:project1/utils/utils.dart';
 
-class T24Page extends StatefulWidget {
-  const T24Page({super.key});
+class DailyWeatherChart extends StatefulWidget {
+  const DailyWeatherChart({super.key});
 
   @override
-  State<T24Page> createState() => _T24PageState();
+  State<DailyWeatherChart> createState() => _DailyWeatherChartState();
 }
 
-class _T24PageState extends State<T24Page> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF262B49),
-      appBar: AppBar(
-        title: const Text('24 Page'),
-      ),
-      body: SingleChildScrollView(
-        child: Expanded(
-          child: Column(
-            children: [
-              const Center(
-                child: Text('24 Page'),
-              ),
-              const Twenty4Page(),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.0),
-                child: Text('7일 예보', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
-              ),
-              DailyWeatherChart(weatherData: Get.find<WeatherGogoCntr>().sevenDayWeather),
-              const SizedBox(
-                height: 200,
-              )
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class DailyWeatherChart extends StatelessWidget {
-  final List<SevenDayWeather> weatherData;
+class _DailyWeatherChartState extends State<DailyWeatherChart> {
   final double itemWidth = 95.0;
+
   final double itemHeight = 310.0;
+
   final double graphHeight = 140.0;
 
-  const DailyWeatherChart({super.key, required this.weatherData});
+  final cntr = Get.find<WeatherGogoCntr>();
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: itemHeight,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: weatherData.length,
-        itemBuilder: (context, index) => _buildDailyWeatherItem(index, weatherData[index]),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 20.0),
+        _buildHeader(),
+        const SizedBox(height: 15.0),
+        SizedBox(
+          height: itemHeight,
+          child: Obx(() {
+            final sevenDayWeather = cntr.sevenDayWeather;
+            if (sevenDayWeather.isEmpty) {
+              return Utils.progressbar();
+            }
+            return ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: sevenDayWeather.length,
+              itemBuilder: (context, index) => _buildDailyWeatherItem(index, sevenDayWeather[index], sevenDayWeather),
+            );
+          }),
+        ),
+        const SizedBox(height: 25.0),
+      ],
+    );
+  }
+
+  Widget _buildHeader() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 8.0),
+      child: Row(
+        children: [
+          PhosphorIcon(PhosphorIconsRegular.calendar, color: Colors.white),
+          SizedBox(width: 4.0),
+          Text(
+            '주간 예보',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          Spacer(),
+        ],
       ),
     );
   }
 
-  Widget _buildDailyWeatherItem(int index, SevenDayWeather dayWeather) {
+  Widget _buildDailyWeatherItem(int index, SevenDayWeather dayWeather, List<SevenDayWeather> weatherData) {
     final minTemp = double.parse(dayWeather.morning.minTemp ?? dayWeather.afternoon.minTemp ?? '0');
     final maxTemp = double.parse(dayWeather.afternoon.maxTemp ?? dayWeather.morning.maxTemp ?? '0');
 
@@ -120,23 +123,19 @@ class DailyWeatherChart extends StatelessWidget {
 
   Widget _buildHalfDayWeather(int index, DayWeatherData data, String period) {
     // 2부터는 중기예보 아이콘으로 변경
-    final weathIcon = index > 1
+    final Widget weathIcon = index > 1
         ? WeatherDataProcessor.instance.getWeatherIconForMidtermForecast(data.skyDesc.toString())
         : WeatherDataProcessor.instance.getWeatherGogoImage(data.sky.toString(), data.rain.toString());
-    // String desc = index > 1
-    //     ? data.skyDesc.toString()
-    //     : WeatherDataProcessor.instance.combineWeatherCondition(data.sky.toString(), data.rain.toString());
+
     return Column(
       children: [
         Text(period, style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.white)),
-        SizedBox(
-          height: 40,
-          width: 40,
-          child: Lottie.asset(
-            weathIcon,
-            fit: BoxFit.cover,
-          ),
-        ),
+        SizedBox(height: 40, width: 40, child: weathIcon
+            // child: Lottie.asset(
+            //   weathIcon,
+            //   fit: BoxFit.cover,
+            // ),
+            ),
         Text('${data.rainPo ?? '0'}%',
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color.fromARGB(255, 204, 226, 240))),
         const SizedBox(

@@ -45,12 +45,12 @@ class AuthCntr extends GetxController with SecureStorage {
   RxBool locationServiceAgreed = false.obs;
 
   @override
-  void onInit() async {
+  void onInit() {
     super.onInit();
 
     // removeAll();
 
-    await loginCheck();
+    loginCheck();
   }
 
   Future<void> loginCheck() async {
@@ -72,11 +72,19 @@ class AuthCntr extends GetxController with SecureStorage {
     }
 
     try {
+      isLogged.value = false;
+      update();
       String _fcmId = await _getFcmToken();
       fcmId = _fcmId;
+      lo.g("fcmId: $_fcmId");
       deviceId = await getDeviceId() ?? '';
       ResData res = await _custRepo.login(custId.value, _fcmId);
       if (res.code != "00") {
+        if ('회원 정보가 없습니다!' == res.msg) {
+          Utils.alert("회원 정보가 없습니다!");
+          Get.offAllNamed('/JoinPage');
+          return;
+        }
         Utils.alert("잠시 후 다시 시도해주세요. ${res.msg}");
         sleep(const Duration(seconds: 3));
         if (Platform.isIOS) {
@@ -86,6 +94,7 @@ class AuthCntr extends GetxController with SecureStorage {
         }
         return;
       }
+      print("login success res.data: ${res.data}");
       resLoginData.value = LoginRes.fromMap(res.data);
       isLogged.value = true;
       update();
@@ -111,7 +120,6 @@ class AuthCntr extends GetxController with SecureStorage {
       Lo.g("fcmId 발급 에러: $e");
       _fcmId = "0000000000";
     }
-    Lo.g("fcmId: $_fcmId");
     return _fcmId;
   }
 

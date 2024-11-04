@@ -3,6 +3,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:project1/config/url_config.dart';
 import 'package:project1/repo/api/auth_dio.dart';
 import 'package:project1/repo/board/data/board_comment_data.dart';
+import 'package:project1/repo/board/data/board_comment_update_req_data.dart';
 import 'package:project1/repo/board/data/board_save_data.dart';
 import 'package:project1/repo/board/data/board_update_data.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -75,7 +76,7 @@ class BoardRepo {
 
   // 댓글 조회
   Future<ResData> searchComment(String boardId, int pageNum, int pageSize) async {
-    final dio = await AuthDio.instance.getDio();
+    final dio = await AuthDio.instance.getDio(debug: false);
     try {
       var url = '${UrlConfig.baseURL}/board/searchComment';
       Response response = await dio.post(url, data: {'parentId': boardId, 'pageNum': pageNum, 'pageSize': pageSize});
@@ -86,10 +87,10 @@ class BoardRepo {
   }
 
   // 좋아요 클릭시
-  Future<ResData> like(String boardId, String custId, String pushYn) async {
-    final dio = await AuthDio.instance.getDio();
+  Future<ResData> like(String boardId, String custId, String pushYn, {String? alramCd}) async {
+    final dio = await AuthDio.instance.getDio(debug: true);
     try {
-      var url = '${UrlConfig.baseURL}/like/save?boardId=$boardId&custId=$custId&pushYn=$pushYn';
+      var url = '${UrlConfig.baseURL}/like/save?boardId=$boardId&custId=$custId&pushYn=$pushYn&alramCd=$alramCd';
       Response response = await dio.post(url);
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
@@ -256,18 +257,6 @@ class BoardRepo {
     } finally {}
   }
 
-  // 댓글 달기
-  Future<ResData> saveComment(BoardCommentData data) async {
-    final dio = await AuthDio.instance.getDio();
-    try {
-      var url = '${UrlConfig.baseURL}/board/saveComment';
-      Response response = await dio.post(url, data: data.toJson());
-      return AuthDio.instance.dioResponse(response);
-    } on DioException catch (e) {
-      return AuthDio.instance.dioException(e);
-    } finally {}
-  }
-
   //
   Future<ResData> updateBoard(BoardUpdateData data) async {
     final dio = await AuthDio.instance.getDio();
@@ -295,7 +284,7 @@ class BoardRepo {
 
   // 거리 + 태그 + 관심지역 3개 쿼리를 유니온으로 데이터 조회
   Future<ResData> getTotalBoardList(String lat, String lon, int pageNum, int pageSize) async {
-    final dio = await AuthDio.instance.getDio();
+    final dio = await AuthDio.instance.getDio(debug: true);
     try {
       var url = '${UrlConfig.baseURL}/board/getTotalBoardList';
 

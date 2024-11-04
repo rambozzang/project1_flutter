@@ -8,6 +8,7 @@ import 'package:preload_page_view/preload_page_view.dart';
 import 'package:project1/app/videomylist/Video_myScreen_page.dart';
 import 'package:project1/app/videomylist/cntr/video_myinfo_list_cntr.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
+import 'package:project1/utils/WeatherLottie.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 
@@ -58,7 +59,7 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
     return Scaffold(
       key: Scaffoldkey,
       extendBodyBehindAppBar: true,
-      resizeToAvoidBottomInset: true,
+      resizeToAvoidBottomInset: false,
       backgroundColor: Colors.black54, // const Color(0xFF262B49),
       extendBody: true,
       // body: RefreshIndicator(
@@ -71,9 +72,9 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
           buildLoading(),
           Utils.commonStreamList<BoardWeatherListData>(
             Get.find<VideoMyinfoListCntr>().videoMyListCntr,
-            loadingWidget: SizedBox.shrink(), //  Utils.progressbar(color: Colors.white),
+            loadingWidget: const SizedBox.shrink(), //  Utils.progressbar(color: Colors.white),
             buildVideoBody,
-            Get.find<VideoMyinfoListCntr>().getData,
+            Get.find<VideoMyinfoListCntr>().getInitData,
           ),
           buildCloseButton(),
         ],
@@ -85,10 +86,11 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
   // 전체 하면을 차지하면서 이미지를 보여주는 위젯
   Widget buildLoading() {
     return Center(
-      child: Lottie.asset(
-        'assets/lottie/day_bg.json',
-        fit: BoxFit.cover,
-      ),
+      child: WeatherLottie.dayBg(),
+      // child: Lottie.asset(
+      //   'assets/lottie/day_bg.json',
+      //   fit: BoxFit.fill,
+      // ),
     );
     // return SizedBox.expand(
     //   child: Container(
@@ -132,18 +134,12 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
         physics: const AlwaysScrollableScrollPhysics(),
         onPageChanged: (int? inx) {
           if (inx == null) return;
-
-          Get.find<VideoMyinfoListCntr>().getMoreData(inx, data.length);
+          if (inx >= data.length - (Get.find<VideoMyinfoListCntr>().preLoadingCount + 1)) {
+            Get.find<VideoMyinfoListCntr>().getDataWithPagination();
+          }
         },
         itemBuilder: (context, i) {
-          // if (Get.find<VideoMyinfoListCntr>().isLoadingMore.value && Get.find<VideoMyinfoListCntr>().currentIndex.value == data.length) {
-          //   return Utils.progressbar();
-          // }
           PageStorageKey key = PageStorageKey('key_$i');
-          // if (i < 2) {
-          //   return VideoMySreenPage2(key: key, index: i, data: data[i]);
-          // }
-
           return VideoMySreenPage(key: key, data: data[i], index: i);
         });
   }

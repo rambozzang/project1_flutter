@@ -202,7 +202,7 @@ class _BlockListPageState extends State<BlockListPage> with AutomaticKeepAliveCl
                   // color: Colors.grey.shade200,
                   borderRadius: BorderRadius.circular(10),
                   image: DecorationImage(
-                    image: CachedNetworkImageProvider(data.profilePath.toString()),
+                    image: CachedNetworkImageProvider(cacheKey: data.profilePath.toString(), data.profilePath.toString()),
                     fit: BoxFit.cover,
                   ),
                 ),
