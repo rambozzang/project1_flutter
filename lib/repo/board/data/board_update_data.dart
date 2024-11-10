@@ -5,11 +5,13 @@ class BoardUpdateData {
   String? boardId;
   String? delYn;
   String? hideYn;
+  String? anonyYn;
   String? contents;
   BoardUpdateData({
     this.boardId,
     this.delYn,
     this.hideYn,
+    this.anonyYn,
     this.contents,
   });
 
@@ -17,12 +19,14 @@ class BoardUpdateData {
     String? boardId,
     String? delYn,
     String? hideYn,
+    String? anonyYn,
     String? contents,
   }) {
     return BoardUpdateData(
       boardId: boardId ?? this.boardId,
       delYn: delYn ?? this.delYn,
       hideYn: hideYn ?? this.hideYn,
+      anonyYn: anonyYn ?? this.anonyYn,
       contents: contents ?? this.contents,
     );
   }
@@ -32,6 +36,7 @@ class BoardUpdateData {
       'boardId': boardId,
       'delYn': delYn,
       'hideYn': hideYn,
+      'anonyYn': anonyYn,
       'contents': contents,
     };
   }
@@ -41,6 +46,7 @@ class BoardUpdateData {
       boardId: map['boardId'] != null ? map['boardId'] as String : null,
       delYn: map['delYn'] != null ? map['delYn'] as String : null,
       hideYn: map['hideYn'] != null ? map['hideYn'] as String : null,
+      anonyYn: map['anonyYn'] != null ? map['anonyYn'] as String : null,
       contents: map['contents'] != null ? map['contents'] as String : null,
     );
   }
@@ -51,18 +57,22 @@ class BoardUpdateData {
 
   @override
   String toString() {
-    return 'BoardUpdateData(boardId: $boardId, delYn: $delYn, hideYn: $hideYn, contents: $contents)';
+    return 'BoardUpdateData(boardId: $boardId, delYn: $delYn, anonyYn: $anonyYn, hideYn: $hideYn, contents: $contents)';
   }
 
   @override
   bool operator ==(covariant BoardUpdateData other) {
     if (identical(this, other)) return true;
 
-    return other.boardId == boardId && other.delYn == delYn && other.hideYn == hideYn && other.contents == contents;
+    return other.boardId == boardId &&
+        other.delYn == delYn &&
+        other.hideYn == hideYn &&
+        other.anonyYn == anonyYn &&
+        other.contents == contents;
   }
 
   @override
   int get hashCode {
-    return boardId.hashCode ^ delYn.hashCode ^ hideYn.hashCode ^ contents.hashCode;
+    return boardId.hashCode ^ delYn.hashCode ^ hideYn.hashCode ^ anonyYn.hashCode ^ contents.hashCode;
   }
 }

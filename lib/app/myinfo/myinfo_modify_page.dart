@@ -50,6 +50,7 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
   @override
   initState() {
     super.initState();
+
     getData();
   }
 
@@ -64,6 +65,10 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
         return;
       }
       CustData data = CustData.fromMap(res.data);
+      emailController.text = data.email ?? '';
+      nickNmController.text = data.nickNm ?? '';
+      custNmController.text = data.custNm ?? '';
+      selfIntroController.text = data.selfIntro ?? '';
       dataCntr.sink.add(ResStream.completed(data));
     } catch (e) {
       Utils.alert(e.toString());
@@ -160,16 +165,12 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
               valueListenable: isProgressing,
               builder: (context, value, child) {
                 return CustomButton(
-                    text: '변경사항 저장', isProgressing: value, type: 'XL', heightValue: 55, isEnable: true, onPressed: () => save());
+                    text: '변경사항 저장', isProgressing: value, type: 'XL', heightValue: 50, isEnable: true, onPressed: () => save());
               })),
     );
   }
 
   Widget buildBody(CustData data) {
-    emailController.text = data.email ?? '';
-    nickNmController.text = data.nickNm ?? '';
-    custNmController.text = data.custNm ?? '';
-    selfIntroController.text = data.selfIntro ?? '';
     // selfIdController.text = data.selfId ?? '';
 
     return Column(
@@ -390,7 +391,7 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
             Get.find<AuthCntr>().custId.value == 'ZfMbSYO6ZJMahuBWpTMHpbTmHND3' ||
             Get.find<AuthCntr>().custId.value == '5p3DvtPFzjMghS1oef3JlqEfgpj1' ||
             Get.find<AuthCntr>().custId.value == '3728884228') ...[
-          ElevatedButton(
+          TextButton(
             onPressed: () async {
               await AuthCntr.to.logout();
             },

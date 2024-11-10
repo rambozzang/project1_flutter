@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/admob/ad_manager.dart';
@@ -12,11 +13,13 @@ import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/bbs/bbs_list_page.dart';
 import 'package:project1/app/bbs/cntr/bbs_list_cntr.dart';
 import 'package:project1/app/chatting/chat_main_page.dart';
+import 'package:project1/main.dart';
 import 'package:project1/repo/alram/data/alram_res_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/route/app_route.dart';
 import 'package:project1/utils/StringUtils.dart';
 import 'package:project1/utils/utils.dart';
+import 'package:project1/widget/animation_searchbar.dart';
 import 'package:project1/widget/custom_tabbarview.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:project1/app/alram/controllers/alram_controller.dart';
@@ -37,10 +40,15 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
   final ScrollController bbsListScrollController = ScrollController();
   final ScrollController chatListScrollController = ScrollController();
 
+  TextEditingController searChWordController = TextEditingController();
+
   final alramController = Get.put(AlramController());
+  final bbsListController = Get.put(BbsListController());
+
   late TabController tabController;
   final GlobalKey<ChatMainAppState> chatMainPageKey = GlobalKey();
   final ValueNotifier<bool> isAdLoading = ValueNotifier<bool>(false);
+  final ValueNotifier<int> tabIndex = ValueNotifier<int>(0);
   final globalKey = GlobalKey<NestedScrollViewState>();
   double appbarBottomHeight = Platform.isIOS ? 120 : 90;
   Timer? debounceTimer; // 타이머 변수
@@ -54,6 +62,11 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
 
   void _initializeControllers() {
     tabController = TabController(vsync: this, length: 3);
+
+    tabController.addListener(() {
+      tabIndex.value = tabController.index;
+    });
+
     alramController.getData(0);
   }
 
@@ -115,6 +128,7 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context); // 상단에서 한 번만 선언
     super.build(context);
 
     return DefaultTabController(
@@ -128,18 +142,30 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
     return TabBar(
       controller: tabController,
       indicatorColor: Colors.black,
-      dividerColor: Colors.transparent,
-      // indicatorSize: TabBarIndicatorSize.label,
+      dividerColor: Colors.grey[100],
+      indicatorSize: TabBarIndicatorSize.label,
       indicatorWeight: 2.0,
-      indicatorPadding: const EdgeInsets.symmetric(horizontal: 30),
+      tabAlignment: TabAlignment.start,
+      // indicatorPadding: const EdgeInsets.symmetric(horizontal: 10),
+      indicator: const UnderlineTabIndicator(
+          borderSide: BorderSide(
+            width: 4,
+            color: Color(0xFF646464),
+          ),
+          insets: EdgeInsets.only(left: 2, right: 0, bottom: 0)),
+      isScrollable: true,
+      labelPadding: const EdgeInsets.only(left: 16, right: 15),
       tabs: const [
         Tab(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.fireplace_rounded),
-              Gap(10),
-              Text('라운지'),
+              Icon(
+                Icons.fireplace_rounded,
+                size: 17,
+              ),
+              Gap(5),
+              Text('라운지', style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500)),
             ],
           ),
         ),
@@ -147,9 +173,12 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.alarm),
-              Gap(10),
-              Text('알람'),
+              Icon(
+                Icons.alarm,
+                size: 17,
+              ),
+              Gap(5),
+              Text('알람', style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500)),
             ],
           ),
         ),
@@ -157,9 +186,12 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.message),
-              Gap(10),
-              Text('대화하기'),
+              Icon(
+                Icons.message,
+                size: 17,
+              ),
+              Gap(5),
+              Text('채팅', style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500)),
             ],
           ),
         ),
@@ -180,6 +212,7 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
               sliver: SliverAppBar(
                   pinned: true,
                   floating: true,
+                  scrolledUnderElevation: 0,
                   snap: false,
                   forceElevated: innerBoxIsScrolled,
                   backgroundColor: Colors.white,
@@ -188,6 +221,49 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
                   title: const Text('스카이 라운지', style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
                   centerTitle: false,
                   actions: [
+                    ValueListenableBuilder<int>(
+                        valueListenable: tabIndex,
+                        builder: (context, value, child) {
+                          return AnimatedSwitcher(
+                              key: const ValueKey('AnimatedSwitcher9'),
+                              duration: const Duration(milliseconds: 200),
+                              switchInCurve: Curves.easeIn,
+                              switchOutCurve: Curves.ease,
+                              transitionBuilder: (Widget child, Animation<double> animation) {
+                                return ScaleTransition(
+                                  key: const ValueKey('FadeTransition9'),
+                                  // opacity: animation,
+                                  filterQuality: FilterQuality.high,
+                                  scale: animation,
+                                  child: child,
+                                );
+                              },
+                              child: value != 0
+                                  ? const SizedBox.shrink()
+                                  : AnimSearchBar(
+                                      height: 48,
+                                      autoFocus: true,
+                                      helpText: '검색어를 입력하세요',
+                                      width: (MediaQuery.of(context).size.width - 63),
+                                      style: const TextStyle(fontSize: 14, decorationThickness: 0),
+                                      textController: searChWordController,
+                                      textFieldColor: Colors.grey.shade100,
+                                      onSuffixTap: () {
+                                        searChWordController.clear();
+                                      },
+                                      rtl: true,
+                                      onSubmitted: (String value) {
+                                        if (value.isEmpty) return;
+                                        bbsListController.searchWord.value = value;
+                                        bbsListController.getDataInit();
+                                      },
+                                      textInputAction: TextInputAction.search,
+                                      searchBarOpen: (_) {
+                                        searChWordController.text = '';
+                                        bbsListController.isShowRegButton.value = false;
+                                      },
+                                    ));
+                        }),
                     IconButton(
                       onPressed: () {
                         switch (tabController.index) {
@@ -202,7 +278,10 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
                             break;
                         }
                       },
-                      icon: const Icon(Icons.refresh_outlined),
+                      icon: Icon(
+                        Icons.refresh_outlined,
+                        color: Theme.of(context).primaryColor,
+                      ),
                     ),
                   ],
                   bottom: _tabBar()),

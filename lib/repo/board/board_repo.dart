@@ -162,7 +162,7 @@ class BoardRepo {
 
   // 내 게시물 가져오기
   Future<ResData> getMyBoard(String custId, int pageNum, int pageSize) async {
-    final dio = await AuthDio.instance.getDio();
+    final dio = await AuthDio.instance.getDio(debug: true);
     try {
       var url = '${UrlConfig.baseURL}/board/getMyBoard?custId=$custId&pageNum=$pageNum&pageSize=$pageSize';
       Response response = await dio.post(url);
@@ -186,7 +186,7 @@ class BoardRepo {
 
   // 팔로우 게시물 가져오기
   Future<ResData> getFollowBoard(String custId, int pageNum, int pageSize) async {
-    final dio = await AuthDio.instance.getDio();
+    final dio = await AuthDio.instance.getDio(debug: true);
     try {
       var url = '${UrlConfig.baseURL}/board/getFollowBoard?custId=$custId&pageNum=$pageNum&pageSize=$pageSize';
       Response response = await dio.post(url);

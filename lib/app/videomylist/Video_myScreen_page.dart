@@ -352,8 +352,8 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                           type: 'XS',
                           isEnable: true,
                           onPressed: () async {
-                            Map<String, dynamic>? returnMap = await VideoManagePageSheet().open(
-                                context, widget.data.boardId.toString(), widget.data.hideYn.toString(), widget.data.contents.toString());
+                            Map<String, dynamic>? returnMap = await VideoManagePageSheet().open(context, widget.data.boardId.toString(),
+                                widget.data.hideYn.toString(), widget.data.anonyYn.toString(), widget.data.contents.toString());
                             if (returnMap == null) {
                               return;
                             }
@@ -429,10 +429,6 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
   // 하단 컨텐츠
   Widget buildBottomContent() {
     String profilePath = widget.data.profilePath ?? '';
-    // Uri? profileUri = Uri.tryParse(profilePath);
-    // ImageProvider profileImage = (profileUri != null && profileUri.hasScheme && profileUri.hasAuthority)
-    //     ? CachedNetworkImageProvider(profilePath)
-    //     : const AssetImage('assets/images/default_profile.png');
 
     String locationNm = widget.data.location.toString();
 
@@ -514,92 +510,99 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                 )
               : const SizedBox(),
           const Gap(15),
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () => Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}'),
-                child: !StringUtils.isEmpty(widget.data.profilePath)
-                    ? Container(
-                        width: 35.0,
-                        height: 35.0,
-                        decoration: BoxDecoration(
-                          color: const Color(0xff7c94b6),
-                          image: DecorationImage(
-                            image: CachedNetworkImageProvider(
-                                cacheKey: widget.data.profilePath.toString(), widget.data.profilePath.toString()),
-                            fit: BoxFit.cover,
-                          ),
-                          borderRadius: const BorderRadius.all(Radius.circular(50.0)),
-                          border: Border.all(
-                            color: Colors.green,
-                            width: 2.0,
-                          ),
-                        ),
-                      )
-                    : Container(
-                        height: 35,
-                        width: 35,
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          // color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                        child: Center(
-                          child: Text(
-                            (widget.data.nickNm == null || widget.data.nickNm == '') ? 'S' : widget.data.nickNm!.substring(0, 1),
-                            style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-              ),
-              const Gap(10),
-              GestureDetector(
-                onTap: () => Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}'),
-                child: Text(
-                  widget.data.nickNm.toString(),
-                  style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const Gap(15),
-              widget.data.custId.toString() == AuthCntr.to.custId.value.toString()
-                  ? const SizedBox.shrink()
-                  : GetBuilder<VideoMyinfoListCntr>(
-                      builder: (_) {
-                        return ElevatedButton(
-                          onPressed: () {
-                            if (widget.data.followYn.toString() == 'N') {
-                              widget.data.followYn = 'Y';
-                              Get.find<VideoMyinfoListCntr>().follow(widget.data.custId.toString());
-                            } else {
-                              widget.data.followYn = 'N';
-                              Get.find<VideoMyinfoListCntr>().followCancle(widget.data.custId.toString());
-                            }
-                            setState(() {});
-                          },
-                          clipBehavior: Clip.none,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-                            elevation: 0.5,
-                            minimumSize: const Size(0, 0),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            backgroundColor: widget.data.followYn.toString() == 'N' ? Colors.transparent : Colors.white,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10.0), side: const BorderSide(color: Colors.white, width: 0.7)),
-                          ),
-                          child: Text(
-                            widget.data.followYn.toString() == 'N' ? '팔로우' : '팔로잉',
-                            style: TextStyle(
-                              color: widget.data.followYn.toString().contains('N') ? Colors.white : Colors.black,
-                              fontSize: 15,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-            ],
-          ),
+          buildProfile()
         ],
       ),
+    );
+  }
+
+  Widget buildProfile() {
+    // anonyYn 이면
+    if (widget.data.anonyYn == "Y") {
+      return Utils.buildRanDomProfile(widget.data.custId ?? '', 35, 16, Colors.white);
+    }
+    return Row(
+      children: [
+        GestureDetector(
+          onTap: () => Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}'),
+          child: !StringUtils.isEmpty(widget.data.profilePath)
+              ? Container(
+                  width: 35.0,
+                  height: 35.0,
+                  decoration: BoxDecoration(
+                    color: const Color(0xff7c94b6),
+                    image: DecorationImage(
+                      image: CachedNetworkImageProvider(cacheKey: widget.data.profilePath.toString(), widget.data.profilePath.toString()),
+                      fit: BoxFit.cover,
+                    ),
+                    borderRadius: const BorderRadius.all(Radius.circular(50.0)),
+                    border: Border.all(
+                      color: Colors.green,
+                      width: 2.0,
+                    ),
+                  ),
+                )
+              : Container(
+                  height: 35,
+                  width: 35,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    // color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  child: Center(
+                    child: Text(
+                      (widget.data.nickNm == null || widget.data.nickNm == '') ? 'S' : widget.data.nickNm!.substring(0, 1),
+                      style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+        ),
+        const Gap(10),
+        GestureDetector(
+          onTap: () => Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}'),
+          child: Text(
+            widget.data.nickNm.toString(),
+            style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+        ),
+        const Gap(15),
+        widget.data.custId.toString() == AuthCntr.to.custId.value.toString()
+            ? const SizedBox.shrink()
+            : GetBuilder<VideoMyinfoListCntr>(
+                builder: (_) {
+                  return ElevatedButton(
+                    onPressed: () {
+                      if (widget.data.followYn.toString() == 'N') {
+                        widget.data.followYn = 'Y';
+                        Get.find<VideoMyinfoListCntr>().follow(widget.data.custId.toString());
+                      } else {
+                        widget.data.followYn = 'N';
+                        Get.find<VideoMyinfoListCntr>().followCancle(widget.data.custId.toString());
+                      }
+                      setState(() {});
+                    },
+                    clipBehavior: Clip.none,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                      elevation: 0.5,
+                      minimumSize: const Size(0, 0),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      backgroundColor: widget.data.followYn.toString() == 'N' ? Colors.transparent : Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.0), side: const BorderSide(color: Colors.white, width: 0.7)),
+                    ),
+                    child: Text(
+                      widget.data.followYn.toString() == 'N' ? '팔로우' : '팔로잉',
+                      style: TextStyle(
+                        color: widget.data.followYn.toString().contains('N') ? Colors.white : Colors.black,
+                        fontSize: 15,
+                      ),
+                    ),
+                  );
+                },
+              ),
+      ],
     );
   }
 

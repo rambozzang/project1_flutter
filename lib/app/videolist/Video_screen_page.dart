@@ -6,6 +6,7 @@ import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:giffy_dialog/giffy_dialog.dart';
@@ -20,6 +21,7 @@ import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
+import 'package:project1/utils/anony_profile.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:share_plus/share_plus.dart';
@@ -478,93 +480,100 @@ class VideoScreenPageState extends State<VideoScreenPage> {
                   height: 5,
                 ),
           // const Gap(15),
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () => Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}'),
-                child: widget.data.profilePath != ''
-                    ? Container(
-                        height: 35,
-                        width: 35,
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.white, width: 0.5),
-                          image: DecorationImage(
-                            image: CachedNetworkImageProvider(
-                                cacheKey: widget.data.profilePath.toString(), widget.data.profilePath.toString()),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      )
-                    : Container(
-                        height: 35,
-                        width: 35,
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          borderRadius: BorderRadius.circular(10),
-                          //   border: Border.all(color: Colors.white, width: 0.5),
-                        ),
-                        child: Center(
-                          child: Text(
-                            widget.data.nickNm.toString().substring(0, 1),
-                            style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-              ),
-              const Gap(10),
-              GestureDetector(
-                onTap: () => Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}'),
-                child: Text(
-                  widget.data.nickNm.toString(),
-                  style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const Gap(15),
-              widget.data.custId.toString() == AuthCntr.to.custId.value.toString()
-                  ? const SizedBox.shrink()
-                  : GetBuilder<VideoListCntr>(
-                      init: VideoListCntr(),
-                      builder: (_) {
-                        return ElevatedButton(
-                          onPressed: () {
-                            if (widget.data.followYn.toString() == 'N') {
-                              widget.data.followYn = 'Y';
-                              Get.find<VideoListCntr>().follow(widget.data.custId.toString());
-                            } else {
-                              widget.data.followYn = 'N';
-                              Get.find<VideoListCntr>().followCancle(widget.data.custId.toString());
-                            }
-                            setState(() {});
-                          },
-                          clipBehavior: Clip.none,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-                            elevation: 0.5,
-                            minimumSize: const Size(0, 0),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            backgroundColor: widget.data.followYn.toString() == 'N' ? Colors.transparent : Colors.white,
-                            // backgroundColor: widget.data.followYn.toString().contains('N') ? Colors.black : Colors.white,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10.0), side: const BorderSide(color: Colors.white, width: 0.7)),
-                          ),
-                          child: Text(
-                            widget.data.followYn.toString() == 'N' ? '팔로우' : '팔로잉',
-                            // widget.data.followYn.toString().contains('N') ? '팔로우' : '팔로잉',
-                            style: TextStyle(
-                              color: widget.data.followYn.toString().contains('N') ? Colors.white : Colors.black,
-                              fontSize: 14,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-            ],
-          ),
+          _buildProfile(),
           const Gap(10)
         ],
       ),
+    );
+  }
+
+  Widget _buildProfile() {
+    // anonyYn 이면
+    if (widget.data.anonyYn == "Y") {
+      return Utils.buildRanDomProfile(widget.data.custId ?? '', 35, 16, Colors.white);
+    }
+    return Row(
+      children: [
+        GestureDetector(
+          onTap: () => Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}'),
+          child: widget.data.profilePath != ''
+              ? Container(
+                  height: 35,
+                  width: 35,
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white, width: 0.5),
+                    image: DecorationImage(
+                      image: CachedNetworkImageProvider(cacheKey: widget.data.profilePath.toString(), widget.data.profilePath.toString()),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                )
+              : Container(
+                  height: 35,
+                  width: 35,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.circular(10),
+                    //   border: Border.all(color: Colors.white, width: 0.5),
+                  ),
+                  child: Center(
+                    child: Text(
+                      widget.data.nickNm.toString().substring(0, 1),
+                      style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+        ),
+        const Gap(10),
+        GestureDetector(
+          onTap: () => Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}'),
+          child: Text(
+            widget.data.nickNm.toString(),
+            style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+        ),
+        const Gap(15),
+        widget.data.custId.toString() == AuthCntr.to.custId.value.toString()
+            ? const SizedBox.shrink()
+            : GetBuilder<VideoListCntr>(
+                init: VideoListCntr(),
+                builder: (_) {
+                  return ElevatedButton(
+                    onPressed: () {
+                      if (widget.data.followYn.toString() == 'N') {
+                        widget.data.followYn = 'Y';
+                        Get.find<VideoListCntr>().follow(widget.data.custId.toString());
+                      } else {
+                        widget.data.followYn = 'N';
+                        Get.find<VideoListCntr>().followCancle(widget.data.custId.toString());
+                      }
+                      setState(() {});
+                    },
+                    clipBehavior: Clip.none,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                      elevation: 0.5,
+                      minimumSize: const Size(0, 0),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      backgroundColor: widget.data.followYn.toString() == 'N' ? Colors.transparent : Colors.white,
+                      // backgroundColor: widget.data.followYn.toString().contains('N') ? Colors.black : Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.0), side: const BorderSide(color: Colors.white, width: 0.7)),
+                    ),
+                    child: Text(
+                      widget.data.followYn.toString() == 'N' ? '팔로우' : '팔로잉',
+                      // widget.data.followYn.toString().contains('N') ? '팔로우' : '팔로잉',
+                      style: TextStyle(
+                        color: widget.data.followYn.toString().contains('N') ? Colors.white : Colors.black,
+                        fontSize: 14,
+                      ),
+                    ),
+                  );
+                },
+              ),
+      ],
     );
   }
 

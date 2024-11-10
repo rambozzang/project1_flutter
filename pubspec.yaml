@@ -3,7 +3,7 @@ description: "SkySnap Flutter project."
 
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.7+27 # Ios 초기 버전
+version: 1.0.10+38 # Ios 초기 버전
 # version: 1.0.0+25  # Android 초기 버전
 
 
@@ -12,7 +12,11 @@ environment:
 
 dependency_overrides:
   video_player_android:
-    path: /Users/bumkyuchun/work/app/flutter_plugins/packages/video_player/video_player_android
+    path: ./package/video_player/video_player_android  
+  video_player_avfoundation:
+    path: ./package/video_player/video_player_avfoundation
+
+
   # flutter_inappwebview_android:
   #   git:
   #     url: https://github.com/holzgeist/flutter_inappwebview
@@ -24,14 +28,17 @@ dependency_overrides:
   #     path: flutter_inappwebview_ios
   #     ref: master
   # webview_flutter_android: 3.16.1
-  video_player_avfoundation:
-    path: /Users/bumkyuchun/work/app/flutter_plugins/packages/video_player/video_player_avfoundation
+
 
 dependencies:
   flutter:
     sdk: flutter
   flutter_localizations:
     sdk: flutter    
+  video_player_android:
+    path: ./package/video_player/video_player_android  
+  video_player_avfoundation:
+    path: ./package/video_player/video_player_avfoundation
   bot_toast: ^4.1.3
   cupertino_icons: ^1.0.6
   dio: ^5.4.1
@@ -44,6 +51,7 @@ dependencies:
   flutter_spinkit: ^5.2.0
   gap: ^3.0.1
   get: ^4.6.6
+  # get: ^5.0.0-release-candidate-9.2.1
   loading_animation_widget: ^1.2.1
   pretty_dio_logger: ^1.3.1
   uuid: ^4.3.3
@@ -115,10 +123,7 @@ dependencies:
   sign_in_with_apple: ^6.1.1
   # flutter_weather_bg_null_safety: ^1.0.0
   
-  video_player_android:
-    path: /Users/bumkyuchun/work/app/flutter_plugins/packages/video_player/video_player_android  
-  video_player_avfoundation:
-    path: /Users/bumkyuchun/work/app/flutter_plugins/packages/video_player/video_player_avfoundation
+  
 
   url_launcher_ios: ^6.3.1
   webview_flutter: ^4.9.0
@@ -189,3 +194,4 @@ flutter_native_splash:
   # flutter pub run flutter_native_splash:create
   # To restore Flutter's default white splash screen, run the following command in the terminal:
   # flutter pub run flutter_native_splash:remove
+# Wife 는 전혀 문제없고 Cellular 일때 앱이 죽는 문제가 있었는데 분석해서 왜 발생하는지 알수 있나요?

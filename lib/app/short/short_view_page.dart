@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:bot_toast/bot_toast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
@@ -48,6 +51,11 @@ class _ShortViewPageState extends State<ShortViewPage> {
     super.initState();
     _initializeBoardId();
     _loadAd();
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
+    ));
   }
 
   Future<void> _loadAd() async {
@@ -90,20 +98,29 @@ class _ShortViewPageState extends State<ShortViewPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Scaffold(
-          backgroundColor: Colors.white,
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-              child: _buildBody(),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        // systemNavigationBarColor: Colors.white, // 안드로이드 하단 네비게이션 바 색상
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Stack(
+          children: [
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: _buildBody(),
+              ),
             ),
-          ),
-          bottomNavigationBar: ShortCommentsBottomPage(),
+            _buildSavingIndicator()
+          ],
         ),
-        _buildSavingIndicator()
-      ],
+        bottomNavigationBar: ShortCommentsBottomPage(),
+      ),
     );
   }
 
@@ -184,6 +201,7 @@ class _ShortViewPageState extends State<ShortViewPage> {
       snap: true,
       elevation: 0,
       stretch: true,
+      systemOverlayStyle: SystemUiOverlayStyle.dark,
       scrolledUnderElevation: 0, // 백그라운드 색 지정에 가장 중요한 옵션
       backgroundColor: Colors.white,
       leading: IconButton(
@@ -217,15 +235,15 @@ class _ShortViewPageState extends State<ShortViewPage> {
       //         : const SizedBox();
       //   },
       // ),
-      actions: const [
+      actions: [
         // SizedBox(
-        //   height: 25,
-        //   width: 60,
+        //   height: 35,
+        //   width: 80,
         //   child: ElevatedButton(
         //     onPressed: () => Get.toNamed('/ShortListPage'),
-        //     child: Text(
+        //     child: const Text(
         //       "라운지",
-        //       style: const TextStyle(fontSize: 16, color: Colors.black, fontWeight: FontWeight.bold),
+        //       style: TextStyle(fontSize: 12, color: Colors.black, fontWeight: FontWeight.bold),
         //     ),
         //   ),
         // ),

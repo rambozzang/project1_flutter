@@ -426,9 +426,7 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
         valueListenable: isAdLoading,
         builder: (context, value, child) {
           if (!value) {
-            return const SizedBox(
-              height: 20,
-            );
+            return const SizedBox.shrink();
           }
           return const Center(
             child: Padding(

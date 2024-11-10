@@ -17,6 +17,8 @@ class CameraUtils {
       throw CameraException('NoCameraAvailable', '디바이스에 카메라가 없습니다.');
     }
 
+    // lensDirection에 해당하는 카메라를 찾습니다.
+
     // Find the camera that matches the specified lens direction
     final camera = cameras.firstWhere(
       (camera) => camera.lensDirection == lensDirection,

@@ -14,21 +14,41 @@ class ShortWeatherCardPage extends GetView<WeatherGogoCntr> {
 
   @override
   Widget build(BuildContext context) {
+    final temp = controller.currentWeather.value.temp ?? '0.0';
     return Obx(
       () => Row(
         mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // _buildWeatherAnimation(controller.currentWeather.value),
-          _buildTemperature(controller.currentWeather.value.temp ?? '0.0'),
+          // _buildTemperature(controller.currentWeather.value.temp ?? '0.0'),
+          Text(
+            temp.contains('.') ? temp : '$temp.0',
+            key: ValueKey<String>(temp),
+            style: const TextStyle(
+              fontSize: 15,
+              height: 1,
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const Text(
+            '°C',
+            style: TextStyle(
+              fontSize: 8,
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
           const Gap(6),
           Text(
             controller.currentWeather.value.description ?? '맑음',
             style: const TextStyle(
               fontSize: 14,
               height: 1,
-              color: Colors.black87,
-              fontWeight: FontWeight.w500,
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
             ),
           ),
           const Gap(5),
@@ -43,39 +63,12 @@ class ShortWeatherCardPage extends GetView<WeatherGogoCntr> {
     if (yesterdayDesc == null || yesterdayDesc.isEmpty) return const SizedBox(width: 80);
     return Text(
       yesterdayDesc.replaceAll('낮아요', '↓').replaceAll('높아요', '↑'),
-      textAlign: TextAlign.left,
       style: TextStyle(
-        fontSize: 11,
+        height: 1,
+        fontSize: 14,
         color: !yesterdayDesc.contains('낮') ? Colors.green : const Color.fromARGB(255, 157, 121, 10),
         fontWeight: FontWeight.bold,
       ),
-    );
-  }
-
-  Widget _buildTemperature(String temp) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          temp.contains('.') ? temp : '$temp.0',
-          key: ValueKey<String>(temp),
-          style: const TextStyle(
-            fontSize: 15,
-            height: 1,
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const Text(
-          '°C',
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
     );
   }
 

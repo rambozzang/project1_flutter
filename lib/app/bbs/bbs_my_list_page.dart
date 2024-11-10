@@ -135,7 +135,7 @@ class _BbsMyListPageState extends State<BbsMyListPage> with AutomaticKeepAliveCl
       child: AnimatedFloatingButton(
         onPressed: () async {
           final result = await Get.toNamed('/BbsWritePage');
-          if (result) {
+          if (result != null && (result == 'true' || result == true)) {
             cntr.getData(1, custId!);
           }
         },
@@ -163,7 +163,7 @@ class _BbsMyListPageState extends State<BbsMyListPage> with AutomaticKeepAliveCl
       onTap: () async {
         final result = await Get.toNamed('/BbsViewPage',
             arguments: {'boardId': data.boardId.toString(), 'tag': 'mylist', 'isDisplayMyListPage': false});
-        if (result != null && result) {
+        if (result != null && (result == 'true' || result == true)) {
           cntr.getData(1, custId!);
         }
       },

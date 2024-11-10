@@ -43,7 +43,7 @@ class _BBsCommentItemWidgetState extends State<BBsCommentItemWidget> with Automa
   // 스타일 상수들
   static const double _avatarSize = 22.0;
   static const double _nickNmFontSize = 12.0;
-  static const double _iconSize = 14.0;
+  static const double _iconSize = 15.0;
   static const double _fontSize = 12.0;
   static const double _contentsFontSize = 15.0;
 
@@ -412,45 +412,52 @@ class _BBsCommentItemWidgetState extends State<BBsCommentItemWidget> with Automa
           ),
         ],
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 0, right: 5),
-                    child: _buildAvatar(),
-                  ),
-                  Text(
-                    widget.bbsListData.nickNm.toString(),
-                    style: _defaultTextStyle,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                    child: Text(
-                      '·',
-                      style: TextStyle(color: colors.textSub, fontSize: 16),
+          child: InkWell(
+            onTap: () => widget.callback(widget.bbsListData),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    if (widget.bbsListData.typeDtCd != "ANON") ...[
+                      Padding(
+                        padding: const EdgeInsets.only(left: 0, right: 5),
+                        child: _buildAvatar(),
+                      ),
+                      Text(
+                        widget.bbsListData.nickNm.toString(),
+                        style: _defaultTextStyle,
+                      ),
+                    ] else ...[
+                      Utils.buildRanDomProfile(widget.bbsListData.crtCustId ?? '', 22, 12, Colors.black54)
+                    ],
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                      child: Text(
+                        '·',
+                        style: TextStyle(color: colors.textSub, fontSize: 16),
+                      ),
                     ),
-                  ),
-                  Text(
-                    Utils.timeage(widget.bbsListData.crtDtm!),
-                    style: _defaultTextStyle,
-                  ),
-                  const Spacer(),
-                  _buildActionButtons(colors),
-                  const Gap(5),
-                  modifyWindow(widget.bbsListData),
-                ],
-              ),
-              _buildImagePreview(),
-              Padding(
-                padding: const EdgeInsets.only(top: 5, bottom: 1, left: 2),
-                child: _buildCommentContent(),
-              ),
-            ],
+                    Text(
+                      Utils.timeage(widget.bbsListData.crtDtm!),
+                      style: _defaultTextStyle,
+                    ),
+                    const Spacer(),
+                    _buildActionButtons(colors),
+                    const Gap(5),
+                    modifyWindow(widget.bbsListData),
+                  ],
+                ),
+                _buildImagePreview(),
+                Padding(
+                  padding: const EdgeInsets.only(top: 5, bottom: 1, left: 2),
+                  child: _buildCommentContent(),
+                ),
+              ],
+            ),
           ),
         )
       ],

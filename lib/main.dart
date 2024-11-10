@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 // import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
@@ -14,9 +13,11 @@ import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/chatting/supabase_options.dart';
 import 'package:project1/common/life_cycle_getx.dart';
 import 'package:project1/config/app_theme.dart';
+// import 'package:project1/config/app_theme.dart';
 import 'package:project1/firebase/firebase_service.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/route/app_route.dart';
+import 'package:project1/theme/theme_controller.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // import com.kakao.sdk.common.util.Utility
@@ -49,6 +50,8 @@ void main() async {
   // 안드로이드  : Network : CERTIFICATE_VERIFY_FAILED 오류 수정
   HttpOverrides.global = MyHttpOverrides();
 
+  Get.put(ThemeController());
+
   runApp(const TigerBk());
 }
 
@@ -62,14 +65,6 @@ class MyHttpOverrides extends HttpOverrides {
 class TigerBk extends StatelessWidget {
   const TigerBk({super.key});
 
-  // flutter_splach_native 패키지를 사용하면 아래 코드를 사용해야함. Ios 상태바가 안보임.
-  // TigerBk() {
-  //   SystemChrome.setEnabledSystemUIMode(
-  //     SystemUiMode.manual,
-  //     overlays: SystemUiOverlay.values,
-  //   );
-  // }
-
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
@@ -78,10 +73,13 @@ class TigerBk extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       builder: BotToastInit(),
       theme: AppTheme.theme,
+      // theme: AppTheme.light,
+      // darkTheme: AppTheme.dark,
+      // themeMode: controller.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       initialRoute: AppPages.INITIAL,
       initialBinding: BindingsBuilder(() {
         Get.put(AuthCntr());
-        Get.put(LifeCycleGetx());
+        // Get.put(LifeCycleGetx());
         Get.put(WeatherGogoCntr());
       }),
       locale: const Locale('ko'),

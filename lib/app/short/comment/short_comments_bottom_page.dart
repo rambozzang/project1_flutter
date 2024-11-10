@@ -10,10 +10,11 @@ import 'package:project1/app/short/comment/cntr/short_comments_cntr.dart';
 class ShortCommentsBottomPage extends StatelessWidget {
   ShortCommentsBottomPage({super.key});
 
-  final commentsController = Get.put(ShortCommentsController());
-
+  late var commentsController;
   @override
   Widget build(BuildContext context) {
+    commentsController = Get.find<ShortCommentsController>();
+
     return Obx(() => _buildAnimatedSlide(context));
   }
 
@@ -193,7 +194,7 @@ class ShortCommentsBottomPage extends StatelessWidget {
 
   InputDecoration _buildTextFieldDecoration() {
     return InputDecoration(
-      hintText: '소소한 애기를 입력해주세요...',
+      hintText: '내용을 입력해주세요...',
       hintStyle: const TextStyle(color: Colors.black45, fontSize: 15),
       filled: true,
       fillColor: Colors.grey[200],

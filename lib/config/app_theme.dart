@@ -31,20 +31,5 @@ class AppTheme {
             fontWeight: FontWeight.w400,
           ),
         ),
-        // appBarTheme: const AppBarTheme(
-        //   //     backgroundColor: Colors.white,
-        //   //    foregroundColor: Colors.black,
-        //   // systemOverlayStyle: SystemUiOverlayStyle(
-        //   //   statusBarColor: Colors.white,
-        //   //   statusBarIconBrightness: Brightness.dark,
-        //   // ),
-        //   elevation: 0,
-        //   iconTheme: IconThemeData(color: Colors.black),
-        //   titleTextStyle: TextStyle(
-        //     color: Colors.black,
-        //     fontSize: 18,
-        //     fontWeight: FontWeight.w700,
-        //   ),
-        // ),
       );
 }

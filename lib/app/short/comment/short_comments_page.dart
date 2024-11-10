@@ -21,7 +21,7 @@ class ShortCommentsPage extends GetView<ShortCommentsController> {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            buildTitle(),
+            buildTitle(context),
             Utils.commonStreamList<BbsListData>(
                 controller.replyStreamController,
                 buildList,
@@ -38,7 +38,7 @@ class ShortCommentsPage extends GetView<ShortCommentsController> {
     );
   }
 
-  Widget buildTitle() {
+  Widget buildTitle(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,7 +87,7 @@ class ShortCommentsPage extends GetView<ShortCommentsController> {
                       activeColor: CupertinoColors.activeOrange,
                       onChanged: (bool value) {
                         print('value: $value');
-                        controller.fetchRealTimeUpdate(!value);
+                        controller.fetchRealTimeUpdate(!value, context);
                       },
                     )),
               ),

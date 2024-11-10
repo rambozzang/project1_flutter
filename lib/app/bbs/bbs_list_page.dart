@@ -27,6 +27,8 @@ class _BbsListPageState extends State<BbsListPage> with AutomaticKeepAliveClient
   final formKey = GlobalKey<FormState>();
   final ValueNotifier<bool> isAdLoading = ValueNotifier<bool>(false);
 
+  ScrollController typeScrollCtrl = ScrollController();
+
   final cntr = Get.put(BbsListController());
   double appbarBottomHeight = Platform.isIOS ? 110 : 80;
 
@@ -39,6 +41,7 @@ class _BbsListPageState extends State<BbsListPage> with AutomaticKeepAliveClient
   void initState() {
     super.initState();
     init();
+
     _loadAd();
   }
 
@@ -90,6 +93,7 @@ class _BbsListPageState extends State<BbsListPage> with AutomaticKeepAliveClient
               alignment: Alignment.centerLeft,
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
+                controller: typeScrollCtrl,
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Obx(() => Row(
                       mainAxisAlignment: MainAxisAlignment.start,
@@ -102,6 +106,52 @@ class _BbsListPageState extends State<BbsListPage> with AutomaticKeepAliveClient
                     )),
               )),
           const Gap(10),
+          Obx(() => cntr.searchWord.value == ''
+              ? const SizedBox.shrink()
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "검색어:  ",
+                      style: TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                    InkWell(
+                      onTap: () {
+                        cntr.searchWord.value = '';
+                        cntr.getData(1, searchType: cntr.typeDtCd.value);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        margin: const EdgeInsets.only(bottom: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: Row(
+                          children: [
+                            Text(
+                              cntr.searchWord.value.toString(),
+                              style: const TextStyle(color: Colors.purple, fontSize: 13, fontWeight: FontWeight.bold),
+                            ),
+                            const Gap(6),
+                            const CircleAvatar(
+                                radius: 8,
+                                backgroundColor: Colors.black,
+                                child: Icon(
+                                  Icons.clear_rounded,
+                                  size: 12,
+                                  fill: 1,
+                                  color: Colors.white,
+                                  weight: 22,
+                                )),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                  ],
+                )),
           Utils.commonStreamList<BbsListData>(cntr.listCtrl, _buildList, cntr.getDataInit),
           _buildLoadingIndicator(),
         ],
@@ -165,22 +215,29 @@ class _BbsListPageState extends State<BbsListPage> with AutomaticKeepAliveClient
 
   Widget _buildFloatingActionButton() {
     double kFloatingActionButtonMargin = Platform.isAndroid ? 65.0 : 50.0;
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom) +
-          EdgeInsets.only(right: 5, bottom: kFloatingActionButtonMargin),
-      child: AnimatedFloatingButton(
-        onPressed: () async {
-          final result = await Get.toNamed(
-            '/BbsWritePage',
-          );
-          if (result) {
-            cntr.getData(1, searchType: cntr.typeDtCd.value);
-          }
-        },
-        text: '글쓰기',
-        icon: Icons.edit_square,
-      ),
-    );
+
+    return Obx(() => AnimatedSlide(
+          curve: Curves.ease,
+          offset: cntr.isShowRegButton.value ? Offset.zero : const Offset(0, 2),
+          duration: const Duration(milliseconds: 180),
+          child: Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom) +
+                EdgeInsets.only(right: 5, bottom: kFloatingActionButtonMargin),
+            child: AnimatedFloatingButton(
+              onPressed: () async {
+                final result = await Get.toNamed(
+                  '/BbsWritePage',
+                );
+                lo.g("resultresultresult : ");
+                if (result != null && (result == 'true' || result == true)) {
+                  cntr.getData(1, searchType: cntr.typeDtCd.value);
+                }
+              },
+              text: '글쓰기',
+              icon: Icons.edit_square,
+            ),
+          ),
+        ));
   }
 
   Widget _buildList(List<BbsListData> list) {
@@ -203,7 +260,7 @@ class _BbsListPageState extends State<BbsListPage> with AutomaticKeepAliveClient
       onTap: () async {
         var result = await Get.toNamed('/BbsViewPage', arguments: {'boardId': data.boardId.toString(), 'tag': 'list'});
         lo.g("resultresultresult : $result");
-        if (result) {
+        if (result != null && (result == 'true' || result == true)) {
           await cntr.getData(1, searchType: cntr.typeDtCd.value);
           return;
         }
@@ -235,8 +292,6 @@ class _BbsListPageState extends State<BbsListPage> with AutomaticKeepAliveClient
       mainAxisAlignment: MainAxisAlignment.center,
       // crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        _buildProfileImage(data),
-        const Gap(4),
         _buildUserInfo(data),
         const Spacer(),
         cntr.typeDtCd.value == 'ALL' ? _buildBbsType(data.typeDtNm.toString()) : const SizedBox.shrink(),
@@ -249,17 +304,25 @@ class _BbsListPageState extends State<BbsListPage> with AutomaticKeepAliveClient
         ? const SizedBox.shrink()
         : Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            // margin: const EdgeInsets.only(right: 5),
             decoration: BoxDecoration(
-              // color: Colors.brown[400],
-              // color: const Color.fromARGB(255, 114, 137, 120),
               color: Colors.deepPurple[300],
-              // color: Colors.black54,
-              // color: const Color(0xff93C90F),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Text(title,
-                textAlign: TextAlign.center, style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w500)),
+            child: title == "익명게시판"
+                ? Row(
+                    children: [
+                      const Icon(
+                        Icons.person_off,
+                        size: 10,
+                        color: Colors.yellow,
+                      ),
+                      Text(title,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w500)),
+                    ],
+                  )
+                : Text(title,
+                    textAlign: TextAlign.center, style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w500)),
           );
   }
 
@@ -298,24 +361,23 @@ class _BbsListPageState extends State<BbsListPage> with AutomaticKeepAliveClient
   }
 
   Widget _buildUserInfo(BbsListData data) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
+    return Row(
       children: [
-        Row(
-          children: [
-            Text(data.nickNm.toString(), style: getStyle),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2.0),
-              child: Text(
-                '·',
-                style: getStyle,
-              ),
-            ),
-            Text(Utils.timeage(data.crtDtm.toString()), style: getStyle),
-          ],
+        if (cntr.typeDtCd.value == "ANON" || (cntr.typeDtCd.value == "ALL" && data.typeDtNm == "익명게시판")) ...[
+          Utils.buildRanDomProfile(data.crtCustId ?? '', 22, 13, Colors.grey)
+        ] else ...[
+          _buildProfileImage(data),
+          const Gap(4),
+          Text(data.nickNm.toString(), style: getStyle),
+        ],
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2.0),
+          child: Text(
+            '·',
+            style: getStyle,
+          ),
         ),
-        // Text(intl.DateFormat('yyyy.MM.dd(EE) HH:MM:ss', 'ko').format(DateTime.parse(data.crtDtm.toString())), style: getStyle),
+        Text(Utils.timeage(data.crtDtm.toString()), style: getStyle),
       ],
     );
   }

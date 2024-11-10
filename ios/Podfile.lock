@@ -218,6 +218,7 @@ PODS:
     - Flutter
   - video_player_avfoundation (0.0.1):
     - Flutter
+    - FlutterMacOS
   - webview_flutter_wkwebview (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -257,7 +258,7 @@ DEPENDENCIES:
   - sqflite (from `.symlinks/plugins/sqflite/darwin`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
   - video_compress (from `.symlinks/plugins/video_compress/ios`)
-  - video_player_avfoundation (from `.symlinks/plugins/video_player_avfoundation/ios`)
+  - video_player_avfoundation (from `.symlinks/plugins/video_player_avfoundation/darwin`)
   - webview_flutter_wkwebview (from `.symlinks/plugins/webview_flutter_wkwebview/darwin`)
 
 SPEC REPOS:
@@ -357,7 +358,7 @@ EXTERNAL SOURCES:
   video_compress:
     :path: ".symlinks/plugins/video_compress/ios"
   video_player_avfoundation:
-    :path: ".symlinks/plugins/video_player_avfoundation/ios"
+    :path: ".symlinks/plugins/video_player_avfoundation/darwin"
   webview_flutter_wkwebview:
     :path: ".symlinks/plugins/webview_flutter_wkwebview/darwin"
 
@@ -422,9 +423,9 @@ SPEC CHECKSUMS:
   TOCropViewController: 80b8985ad794298fb69d3341de183f33d1853654
   url_launcher_ios: 5334b05cef931de560670eeae103fd3e431ac3fe
   video_compress: fce97e4fb1dfd88175aa07d2ffc8a2f297f87fbe
-  video_player_avfoundation: 8a9732478e658961c817c5ef07567975bf6736e4
+  video_player_avfoundation: 7c6c11d8470e1675df7397027218274b6d2360b3
   webview_flutter_wkwebview: 0982481e3d9c78fd5c6f62a002fcd24fc791f1e4
 
 PODFILE CHECKSUM: 90a7544731036f258322385faa23df34159eaced
 
-COCOAPODS: 1.15.2
+COCOAPODS: 1.16.2

@@ -24,6 +24,18 @@ class NaverApi with SecureStorage {
         resData.msg = '사용자 취소';
         return resData;
       }
+
+      if (result.account.nickname == null || result.account.nickname == '') {
+        resData.code = '99';
+        resData.msg = '네이버에서 정보를 가져오지 못했습니다.\n다른 SNS를 이용해주세요.';
+        return resData;
+      }
+      if (result.account.id == null || result.account.id == '') {
+        resData.code = '99';
+        resData.msg = '네이버에서 정보를 가져오지 못했습니다.\n다른 SNS를 이용해주세요.';
+        return resData;
+      }
+
       NaverAccount naverAccount = NaverAccount();
       naverAccount.nickname = result.account.nickname;
       naverAccount.id = result.account.id.toString();
@@ -36,10 +48,17 @@ class NaverApi with SecureStorage {
       naverAccount.birthyear = '';
       naverAccount.mobile = '';
 
-      NaverJoinData naverJoinData = NaverJoinData();
-      naverJoinData.stauts = result.status.toString();
-      naverJoinData.account = naverAccount;
-      naverJoinData.deviceId = const Uuid().v4();
+      NaverJoinData naverJoinData = NaverJoinData(
+        stauts: result.status.toString(),
+        chatId: '',
+        deviceId: const Uuid().v4(),
+        account: naverAccount,
+      );
+      // naverJoinData.stauts = result.status.toString();
+      // naverJoinData.account = naverAccount;
+
+      // naverJoinData.account =   naverAccount;
+      // naverJoinData.deviceId = const Uuid().v4();
       // naverJoinData.chatId = await chatSignUp(result);
       // 채팅서버 회원가입
       ChatApi chatApi = ChatApi();

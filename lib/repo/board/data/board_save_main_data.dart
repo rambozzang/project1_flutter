@@ -9,6 +9,7 @@ class BoardSaveMainData {
   String? subject;
   String? contents;
   String? depthNo;
+  String? anonyYn;
   String? hideYn;
   BoardSaveMainData({
     this.typeCd,
@@ -18,6 +19,7 @@ class BoardSaveMainData {
     this.subject,
     this.contents,
     this.depthNo,
+    this.anonyYn,
     this.hideYn,
   });
 
@@ -29,6 +31,7 @@ class BoardSaveMainData {
     String? subject,
     String? contents,
     String? depthNo,
+    String? anonyYn,
     String? hideYn,
   }) {
     return BoardSaveMainData(
@@ -39,6 +42,7 @@ class BoardSaveMainData {
       subject: subject ?? this.subject,
       contents: contents ?? this.contents,
       depthNo: depthNo ?? this.depthNo,
+      anonyYn: anonyYn ?? this.anonyYn,
       hideYn: hideYn ?? this.hideYn,
     );
   }
@@ -52,6 +56,7 @@ class BoardSaveMainData {
       'subject': subject,
       'contents': contents,
       'depthNo': depthNo,
+      'anonyYn': anonyYn,
       'hideYn': hideYn,
     };
   }
@@ -65,6 +70,7 @@ class BoardSaveMainData {
       subject: map['subject'] != null ? map['subject'] as String : null,
       contents: map['contents'] != null ? map['contents'] as String : null,
       depthNo: map['depthNo'] != null ? map['depthNo'] as String : null,
+      anonyYn: map['anonyYn'] != null ? map['anonyYn'] as String : null,
       hideYn: map['hideYn'] != null ? map['hideYn'] as String : null,
     );
   }
@@ -75,7 +81,7 @@ class BoardSaveMainData {
 
   @override
   String toString() {
-    return 'BoardSaveMainData(typeCd: $typeCd, typeDtCd: $typeDtCd, notiStAt: $notiStAt, notiEdAt: $notiEdAt, subject: $subject, contents: $contents, depthNo: $depthNo, hideYn: $hideYn)';
+    return 'BoardSaveMainData(typeCd: $typeCd, typeDtCd: $typeDtCd, notiStAt: $notiStAt, notiEdAt: $notiEdAt, subject: $subject, contents: $contents, depthNo: $depthNo, anonyYn : $anonyYn, hideYn: $hideYn)';
   }
 
   @override
@@ -89,6 +95,7 @@ class BoardSaveMainData {
         other.subject == subject &&
         other.contents == contents &&
         other.depthNo == depthNo &&
+        other.anonyYn == anonyYn &&
         other.hideYn == hideYn;
   }
 
@@ -101,6 +108,7 @@ class BoardSaveMainData {
         subject.hashCode ^
         contents.hashCode ^
         depthNo.hashCode ^
+        anonyYn.hashCode ^
         hideYn.hashCode;
   }
 }

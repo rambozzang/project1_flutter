@@ -1,6 +1,7 @@
 import 'package:bot_toast/bot_toast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart' as intl;
@@ -16,6 +17,7 @@ import 'package:project1/app/bbs/comments/cntr/bbs_comments_cntr.dart';
 import 'package:project1/app/bbs/image/image_list_preview.dart';
 import 'package:project1/app/videolist/video_sigo_page.dart';
 import 'package:project1/repo/bbs/data/bbs_list_data.dart';
+import 'package:project1/utils/anony_profile.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
@@ -204,6 +206,9 @@ class _BbsViewPageState extends State<BbsViewPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           data.typeDtNm == 'null' || data.typeDtNm == null ? const SizedBox.shrink() : _buildBbsType(data.typeDtNm.toString()),
+          const SizedBox(
+            height: 2,
+          ),
           Row(
             children: [
               _buildProfileImage(data),
@@ -218,6 +223,19 @@ class _BbsViewPageState extends State<BbsViewPage> {
   }
 
   Widget _buildProfileImage(BbsListData data) {
+    if (data.typeDtCd == "ANON") {
+      final profile1 = AnonymousProfileGenerator.generateProfile();
+      return Container(
+        height: 28,
+        width: 28,
+        decoration: BoxDecoration(
+          color: Colors.green,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.white, width: 0.5),
+        ),
+        child: SvgPicture.network(profile1.avatarUrl, placeholderBuilder: (context) => const CircularProgressIndicator()),
+      );
+    }
     return GestureDetector(
       onTap: () => Get.toNamed('/OtherInfoPage/${data.crtCustId.toString()}'),
       child: data.profilePath != ''
@@ -256,7 +274,21 @@ class _BbsViewPageState extends State<BbsViewPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(data.nickNm.toString(), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black)),
+        if (data.typeDtCd == "ANON") ...[
+          Row(
+            children: [
+              Text(AnonymousProfileGenerator.generateProfile().nickname.toString(),
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black)),
+              if (data.crtCustId == Get.find<AuthCntr>().resLoginData.value.custId) ...[
+                const Gap(5),
+                const Icon(Icons.verified, color: Colors.red, size: 16),
+                const Text("Me", style: TextStyle(fontSize: 11, color: Colors.red)),
+              ]
+            ],
+          ),
+        ] else ...[
+          Text(data.nickNm.toString(), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black)),
+        ],
         Row(
           children: [
             Text(
@@ -337,6 +369,9 @@ class _BbsViewPageState extends State<BbsViewPage> {
   }
 
   Widget _buildMyListPageButton(BbsListData data) {
+    if (data.typeDtCd == "ANON" && data.crtCustId != Get.find<AuthCntr>().resLoginData.value.custId) {
+      return const SizedBox.shrink();
+    }
     return InkWell(
       onTap: () async {
         final result = await Get.toNamed('/BbsMyListPage/${data.crtCustId.toString()}');
@@ -352,13 +387,13 @@ class _BbsViewPageState extends State<BbsViewPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '${data.nickNm.toString()}님 글 보기',
-              style: const TextStyle(color: Colors.black54, fontSize: 11),
+              '${data.nickNm.toString()}님 글보기',
+              style: const TextStyle(color: Colors.black87, fontSize: 12),
             ),
             const Gap(3),
             const Icon(
               Icons.arrow_forward_ios,
-              color: Colors.black54,
+              color: Colors.black87,
               size: 10,
             ),
           ],
@@ -382,18 +417,18 @@ class _BbsViewPageState extends State<BbsViewPage> {
                   color: Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: Colors.green, width: 0.5),
-                  image: DecorationImage(
+                  image: const DecorationImage(
                     image: CachedNetworkImageProvider(cacheKey: 'data.profilePath.toString()', 'data.profilePath.toString()'),
                     fit: BoxFit.cover,
                   ),
                 ),
               ),
               const Gap(5),
-              Column(
+              const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('data.nickNm.toString()', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black)),
-                  Text('data.crtDtm.toString()', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: Colors.black54)),
+                  Text('data.nickNm.toString()', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black)),
+                  Text('data.crtDtm.toString()', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: Colors.black54)),
                 ],
               ),
               const Spacer(),

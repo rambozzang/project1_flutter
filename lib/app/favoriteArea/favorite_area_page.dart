@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:gap/gap.dart';
@@ -198,117 +199,127 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        forceMaterialTransparency: true,
-        backgroundColor: Colors.transparent,
-        titleSpacing: 0,
-        elevation: 0,
-        centerTitle: false,
-        title: const Text(
-          '관심지역 등록',
-          // style: TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.w600),
-        ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        // systemNavigationBarColor: Colors.white, // 안드로이드 하단 네비게이션 바 색상
+        systemNavigationBarIconBrightness: Brightness.dark,
       ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            // padding: EdgeInsets.only(left: 10, right: 10, top: Platform.isIOS ? kToolbarHeight : kToolbarHeight - 30, bottom: 18),
-            padding: const EdgeInsets.only(left: 10, right: 10, top: 10),
-            // physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                const Gap(kToolbarHeight + 10),
-                Container(
-                  decoration: BoxDecoration(
-                    // color: Colors.black,
-                    borderRadius: const BorderRadius.all(Radius.circular(15)),
-                    // border: Border.all(color: Colors.grey),
+      child: Scaffold(
+        appBar: AppBar(
+          forceMaterialTransparency: true,
+          backgroundColor: Colors.white,
+          titleSpacing: 0,
+          elevation: 0,
+          centerTitle: false,
+          title: const Text(
+            '관심지역 등록',
+            style: TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.w600),
+          ),
+        ),
+        body: Stack(
+          children: [
+            SingleChildScrollView(
+              // padding: EdgeInsets.only(left: 10, right: 10, top: Platform.isIOS ? kToolbarHeight : kToolbarHeight - 30, bottom: 18),
+              padding: const EdgeInsets.only(left: 10, right: 10, top: 10),
+              // physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const Gap(kToolbarHeight + 10),
+                  Container(
+                    decoration: const BoxDecoration(
+                      // color: Colors.black,
+                      borderRadius: BorderRadius.all(Radius.circular(15)),
+                      // border: Border.all(color: Colors.grey),
+                    ),
+                    height: 240,
+                    child: initialized
+                        ? NaverMap(
+                            forceGesture: true,
+                            options: NaverMapViewOptions(
+                              locationButtonEnable: false,
+                              initialCameraPosition: NCameraPosition(
+                                  target: NLatLng(Get.find<WeatherGogoCntr>().currentLocation.value.latLng.latitude,
+                                      Get.find<WeatherGogoCntr>().currentLocation.value.latLng.longitude),
+                                  zoom: 13,
+                                  bearing: 0,
+                                  tilt: 0),
+                            ),
+                            onMapReady: (controller) {
+                              mapController = controller;
+                              // 파란색 점으로 현재위치 표시
+                              mapController.setLocationTrackingMode(NLocationTrackingMode.noFollow);
+                            },
+                          )
+                        : const SizedBox.shrink(),
                   ),
-                  height: 240,
-                  child: initialized
-                      ? NaverMap(
-                          forceGesture: true,
-                          options: NaverMapViewOptions(
-                            locationButtonEnable: false,
-                            initialCameraPosition: NCameraPosition(
-                                target: NLatLng(Get.find<WeatherGogoCntr>().currentLocation.value.latLng.latitude,
-                                    Get.find<WeatherGogoCntr>().currentLocation.value.latLng.longitude),
-                                zoom: 13,
-                                bearing: 0,
-                                tilt: 0),
-                          ),
-                          onMapReady: (controller) {
-                            mapController = controller;
-                            // 파란색 점으로 현재위치 표시
-                            mapController.setLocationTrackingMode(NLocationTrackingMode.noFollow);
-                          },
-                        )
-                      : const SizedBox.shrink(),
-                ),
-                const Gap(20),
-                // const Divider(),
-                // const Gap(10),
-                const Align(
-                    alignment: Alignment.centerLeft, child: Text('관심 지역 리스트', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800))),
-                const Gap(10),
-                buildLocalTag(),
-                const Gap(200),
-              ],
+                  const Gap(20),
+                  // const Divider(),
+                  // const Gap(10),
+                  const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('관심 지역 리스트', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800))),
+                  const Gap(10),
+                  buildLocalTag(),
+                  const Gap(200),
+                ],
+              ),
             ),
-          ),
-          FavoriteAreaSearchPage(
-            onSelectClick: locationUpdate,
-          ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: ValueListenableBuilder(
-                valueListenable: geocodeDataValue,
-                builder: (builder, value, child) {
-                  if (value.name == '') return const SizedBox.shrink();
-                  return Container(
-                    padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: Colors.grey.shade300),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(value.name.toString(), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-                              Text(value.addr.toString(),
-                                  overflow: TextOverflow.clip, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                            ],
+            FavoriteAreaSearchPage(
+              onSelectClick: locationUpdate,
+            ),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: ValueListenableBuilder(
+                  valueListenable: geocodeDataValue,
+                  builder: (builder, value, child) {
+                    if (value.name == '') return const SizedBox.shrink();
+                    return Container(
+                      padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(value.name.toString(), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+                                Text(value.addr.toString(),
+                                    overflow: TextOverflow.clip, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
                           ),
-                        ),
-                        SizedBox(
-                            height: 40,
-                            width: 90,
-                            child: CustomButton(
-                                text: '등록하기',
-                                isEnable: true,
-                                listColors: const [
-                                  Color.fromARGB(255, 36, 77, 158),
-                                  Color.fromARGB(255, 35, 81, 172),
-                                ],
-                                type: 'S',
-                                onPressed: () => addLocalTag(value))),
-                      ],
-                    ),
-                  );
-                }),
-          )
-        ],
+                          SizedBox(
+                              height: 40,
+                              width: 90,
+                              child: CustomButton(
+                                  text: '등록하기',
+                                  isEnable: true,
+                                  listColors: const [
+                                    Color.fromARGB(255, 36, 77, 158),
+                                    Color.fromARGB(255, 35, 81, 172),
+                                  ],
+                                  type: 'S',
+                                  onPressed: () => addLocalTag(value))),
+                        ],
+                      ),
+                    );
+                  }),
+            )
+          ],
+        ),
       ),
     );
   }

@@ -17,6 +17,7 @@ class BoardWeatherListData {
   int? parentId;
   double? distance;
   int? boardId;
+  String? anonyYn;
   String? hideYn;
   String? lat;
   String? lon;
@@ -62,6 +63,7 @@ class BoardWeatherListData {
     this.parentId,
     this.distance,
     this.boardId,
+    this.anonyYn,
     this.hideYn,
     this.lat,
     this.lon,
@@ -109,6 +111,7 @@ class BoardWeatherListData {
     int? parentId,
     double? distance,
     int? boardId,
+    String? anonyYn,
     String? hideYn,
     String? lat,
     String? lon,
@@ -155,6 +158,7 @@ class BoardWeatherListData {
       parentId: parentId ?? this.parentId,
       distance: distance ?? this.distance,
       boardId: boardId ?? this.boardId,
+      anonyYn: anonyYn ?? this.anonyYn,
       hideYn: hideYn ?? this.hideYn,
       lat: lat ?? this.lat,
       lon: lon ?? this.lon,
@@ -204,6 +208,7 @@ class BoardWeatherListData {
       'parentId': parentId,
       'distance': distance,
       'boardId': boardId,
+      'anonyYn': anonyYn,
       'hideYn': hideYn,
       'lat': lat,
       'lon': lon,
@@ -253,6 +258,7 @@ class BoardWeatherListData {
       parentId: map['parentId'] != null ? map['parentId'] as int : null,
       distance: map['distance'] != null ? map['distance'] as double : null,
       boardId: map['boardId'] != null ? map['boardId'] as int : null,
+      anonyYn: map['anonyYn'] != null ? map['anonyYn'] as String : null,
       hideYn: map['hideYn'] != null ? map['hideYn'] as String : null,
       lat: map['lat'] != null ? map['lat'] as String : null,
       lon: map['lon'] != null ? map['lon'] as String : null,
@@ -293,7 +299,7 @@ class BoardWeatherListData {
 
   @override
   String toString() {
-    return 'BoardWeatherListData(custId: $custId, custNm: $custNm, nickNm: $nickNm, profilePath: $profilePath, likeYn: $likeYn, followYn: $followYn, suject: $suject, location: $location, country: $country, contents: $contents, parentId: $parentId, distance: $distance, boardId: $boardId, hideYn: $hideYn, lat: $lat, lon: $lon, sky: $sky, rain: $rain, weatherInfo: $weatherInfo, videoPath: $videoPath, thumbnailPath: $thumbnailPath, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, city: $city, typeCd: $typeCd, typeDtCd: $typeDtCd, depthNo: $depthNo, crtDtm: $crtDtm, replyCnt: $replyCnt, likeCnt: $likeCnt, viewCnt: $viewCnt, icon: $icon, videoId: $videoId, size1: $size1, thumbnail: $thumbnail, preview: $preview, mp4: $mp4, hls: $hls, range1: $range1, total: $total)';
+    return 'BoardWeatherListData(custId: $custId, custNm: $custNm, nickNm: $nickNm, profilePath: $profilePath, likeYn: $likeYn, followYn: $followYn, suject: $suject, location: $location, country: $country, contents: $contents, parentId: $parentId, distance: $distance, boardId: $boardId, anonyYn: $anonyYn,  hideYn: $hideYn, lat: $lat, lon: $lon, sky: $sky, rain: $rain, weatherInfo: $weatherInfo, videoPath: $videoPath, thumbnailPath: $thumbnailPath, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, city: $city, typeCd: $typeCd, typeDtCd: $typeDtCd, depthNo: $depthNo, crtDtm: $crtDtm, replyCnt: $replyCnt, likeCnt: $likeCnt, viewCnt: $viewCnt, icon: $icon, videoId: $videoId, size1: $size1, thumbnail: $thumbnail, preview: $preview, mp4: $mp4, hls: $hls, range1: $range1, total: $total)';
   }
 
   @override
@@ -304,6 +310,7 @@ class BoardWeatherListData {
         other.custNm == custNm &&
         other.nickNm == nickNm &&
         other.profilePath == profilePath &&
+        other.anonyYn == anonyYn &&
         other.likeYn == likeYn &&
         other.followYn == followYn &&
         other.suject == suject &&
@@ -361,6 +368,7 @@ class BoardWeatherListData {
         parentId.hashCode ^
         distance.hashCode ^
         boardId.hashCode ^
+        anonyYn.hashCode ^
         hideYn.hashCode ^
         lat.hashCode ^
         lon.hashCode ^

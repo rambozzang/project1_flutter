@@ -25,7 +25,7 @@ class MainActivity: FlutterFragmentActivity() {
         return when {
             // 캐시된 엔진이 있는 경우
             cachedEngineId != null -> {
-                logCachedEngine()
+                // logCachedEngine()
                 FlutterFragment.withCachedEngine(cachedEngineId!!)
                     .renderMode(renderMode)
                     .transparencyMode(transparencyMode)
@@ -38,7 +38,7 @@ class MainActivity: FlutterFragmentActivity() {
             }
             // 엔진 그룹이 있는 경우
             cachedEngineGroupId != null -> {
-                logNewEngine()
+               // logNewEngine()
                 FlutterFragment.withNewEngineInGroup(cachedEngineGroupId!!)
                     .dartEntrypoint(dartEntrypointFunctionName)
                     .initialRoute(getInitialRoute())
@@ -52,7 +52,7 @@ class MainActivity: FlutterFragmentActivity() {
             }
             // 새 엔진을 생성하는 경우
             else -> {
-                logNewEngine()
+               // logNewEngine()
                 createNewEngineFragment(renderMode, transparencyMode, shouldDelayFirstAndroidViewDraw)
             }
         }

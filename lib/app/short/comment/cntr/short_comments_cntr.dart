@@ -529,11 +529,15 @@ class ShortCommentsController extends GetxController {
     }
   }
 
-  void fetchRealTimeUpdate(bool isRealTime) {
+  void fetchRealTimeUpdate(bool isRealTime, BuildContext context) {
     isRealTimeUpdate.value = !isRealTime;
     // 5초마다 새로고침
     if (isRealTimeUpdate.value) {
       realTimeTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+        lo.g('MediaQuery.of(context).viewInsets.bottom : ${MediaQuery.of(context).viewInsets.bottom}');
+        if (MediaQuery.of(context).viewInsets.bottom > 0) {
+          return;
+        }
         if (isRealTimeUpdate.value) {
           fetchComments();
         } else {

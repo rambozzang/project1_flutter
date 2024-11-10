@@ -205,10 +205,16 @@ class WeatherGogoCntr extends GetxController {
     try {
       LatLng location = LatLng(geocodeData.latLng.latitude, geocodeData.latLng.longitude);
 
-      currentLocation.update((val) {
-        val?.latLng = location;
-        val?.name = geocodeData.name;
-      });
+      // 20241105 Getx5.0.1 버전
+      // currentLocation.update((val) {
+      //   val?.latLng = location;
+      //   val?.name = geocodeData.name;
+      // });
+
+      currentLocation.value.latLng = location;
+      currentLocation.value.name = geocodeData.name;
+      currentLocation.refresh();
+
       await getWeatherDataByLatLng(location, true);
       // update();
     } catch (e) {
@@ -301,10 +307,16 @@ class WeatherGogoCntr extends GetxController {
       }
 
       // currentLocation.value!.name = onValue2!;
-      currentLocation.update((val) {
-        val?.name = onValue2;
-        val?.addr = '$onValue1 $onValue2';
-      });
+      // 20241105 Getx5.0.1 버전
+      // currentLocation.update((val) {
+      //   val?.name = onValue2;
+      //   val?.addr = '$onValue1 $onValue2';
+      // });
+
+      currentLocation.value.name = onValue2;
+      currentLocation.value.addr = '$onValue1 $onValue2';
+      currentLocation.refresh();
+
       mistData.value = (await locationService.getMistData(onValue1))!;
       // ==========================================================
       lo.g('완료!! => fetchLocalNameAndMistinfo() time : ${stopwatch.elapsedMilliseconds}ms');
@@ -351,17 +363,30 @@ class WeatherGogoCntr extends GetxController {
       // 1.초단기 실황 파싱처리
       CurrentWeatherData value = WeatherDataProcessor.instance.parsingSuperNct(itemSuperNctList);
       lo.e('초단기 실황 현재온도 : ${value.temp}');
-      currentWeather.update((val) {
-        val?.temp = value.temp;
-        // val?.rain = value.rain;
-        val?.fcsTime = compareFcsTime(val.fcsTime, value.fcsTime!); // 발표시간 -> 날이 바뀌면?? 20240822 2300 하고 20240823 0100 하고 비교
-        val?.fcstDate = value.fcstDate; // 예보시간
-        val?.humidity = value.humidity;
-        val?.speed = value.speed;
-        val?.deg = value.deg;
-        // val?.rainDesc = value.rainDesc;
-        // val?.rain1h = value.rain1h;
-      });
+
+      // 20241105 Getx5.0.1 버전
+      // currentWeather.update((val) {
+      //   val?.temp = value.temp;
+      //   // val?.rain = value.rain;
+      //   val?.fcsTime = compareFcsTime(val.fcsTime, value.fcsTime!); // 발표시간 -> 날이 바뀌면?? 20240822 2300 하고 20240823 0100 하고 비교
+      //   val?.fcstDate = value.fcstDate; // 예보시간
+      //   val?.humidity = value.humidity;
+      //   val?.speed = value.speed;
+      //   val?.deg = value.deg;
+      //   // val?.rainDesc = value.rainDesc;
+      //   // val?.rain1h = value.rain1h;
+      // });
+
+      currentWeather.value.temp = value.temp;
+      currentWeather.value.humidity = value.humidity;
+      currentWeather.value.speed = value.speed;
+      currentWeather.value.deg = value.deg;
+      // currentWeather.value.rain = value.rain;
+      // currentWeather.value.rainDesc = value.rainDesc;
+      // currentWeather.value.rain1h = value.rain1h;
+      currentWeather.value.fcsTime = compareFcsTime(currentWeather.value.fcsTime, value.fcsTime!);
+      currentWeather.value.fcstDate = value.fcstDate;
+      currentWeather.refresh();
 
       lo.g('완료!! => fetchSuperNct() time : ${stopwatch.elapsedMilliseconds}ms');
 
@@ -410,16 +435,27 @@ class WeatherGogoCntr extends GetxController {
 
       lo.e('초단기 예보 현재온도 : ${data[0].temp.toString()}');
 
-      currentWeather.update((val) {
-        val?.temp = val.temp == '0.0' ? data[0].temp.toString() : val.temp;
-        val?.description = weatherDesc;
-        val?.sky = data[0].sky;
-        val?.skyDesc = skyDesc;
-        val?.rain1h = rain1h == '강수없음' ? '0' : rain1h;
-        val?.rain = data[0].rain;
-        val?.rainDesc = weatherDesc;
-        val?.fcsTime = compareFcsTime(val.fcsTime, itemFctList[0].baseTime); // 발표시간
-      });
+      // 20241105 Getx5.0.1 버전
+      // currentWeather.update((val) {
+      //   val?.temp = val.temp == '0.0' ? data[0].temp.toString() : val.temp;
+      //   val?.description = weatherDesc;
+      //   val?.sky = data[0].sky;
+      //   val?.skyDesc = skyDesc;
+      //   val?.rain1h = rain1h == '강수없음' ? '0' : rain1h;
+      //   val?.rain = data[0].rain;
+      //   val?.rainDesc = weatherDesc;
+      //   val?.fcsTime = compareFcsTime(val.fcsTime, itemFctList[0].baseTime); // 발표시간
+      // });
+
+      currentWeather.value.temp = currentWeather.value.temp == '0.0' ? data[0].temp.toString() : currentWeather.value.temp;
+      currentWeather.value.description = weatherDesc;
+      currentWeather.value.sky = data[0].sky;
+      currentWeather.value.skyDesc = skyDesc;
+      currentWeather.value.rain1h = rain1h == '강수없음' ? '0' : rain1h;
+      currentWeather.value.rain = data[0].rain;
+      currentWeather.value.rainDesc = weatherDesc;
+      currentWeather.value.fcsTime = compareFcsTime(currentWeather.value.fcsTime, itemFctList[0].baseTime); // 발표시간
+      currentWeather.refresh();
 
       resultList.addAll(data);
       // 중복 제거 date 기준으로

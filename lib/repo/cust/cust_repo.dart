@@ -31,11 +31,11 @@ class CustRepo {
 
   // Naver 회원가입
   Future<ResData> createNaverCust(NaverJoinData data) async {
-    final dio = await AuthDio.instance.getDio(debug: false);
+    final dio = await AuthDio.instance.getDio(debug: true);
     try {
       var url = '${UrlConfig.baseURL}/auth/naverjoin';
 
-      log(data.toString());
+      lo.g("createNaverCust : ${data.toString()}");
       Response response = await dio.post(url, data: data.toJson());
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {

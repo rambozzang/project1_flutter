@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:get/get_connect/http/src/utils/utils.dart';
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:project1/app/alram/alram_page.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/camera/page/camera_page.dart';
@@ -20,7 +21,9 @@ import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/app/videolist/video_list_page.dart';
 import 'package:project1/app/weathergogo/weathergogo_page.dart';
 import 'package:project1/config/app_config.dart';
+import 'package:project1/main.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
+import 'package:project1/theme/theme_controller.dart';
 import 'package:project1/utils/WeatherLottie.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
@@ -108,27 +111,27 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     RootCntr.to.changeRootPageIndex(index);
   }
 
-  late DateTime? currentBackPressTime;
+  DateTime? currentBackPressTime = DateTime.now();
 
   //뒤로가기 로직(핸드폰 뒤로가기 버튼 클릭시)
   Future<void> onGoBack(didPop) async {
     lo.g('didPop : ${didPop} ');
-
     if (didPop) return;
 
     DateTime now = DateTime.now();
-    if (currentBackPressTime == null || now.difference(currentBackPressTime!) > const Duration(milliseconds: 2000)) {
+    if (currentBackPressTime == null || now.difference(currentBackPressTime!).inMilliseconds > 2000) {
       currentBackPressTime = now;
-      Utils.alertIcon('한번 더 백버튼을 누르면 앱이 종료됩니다.', // Page No : ${RootCntr.to.rootPageIndex.value}',
+      Utils.alertIcon('더 뒤로 버튼을 누르면 앱이 종료됩니다.', // Page No : ${RootCntr.to.rootPageIndex.value}',
           icontype: 'W',
           duration: const Duration(milliseconds: 2000));
       return Future.value(false);
-    }
-    //앱 종료
-    if (Platform.isIOS) {
-      exit(0);
     } else {
-      SystemNavigator.pop();
+      //앱 종료
+      if (Platform.isIOS) {
+        exit(0);
+      } else {
+        SystemNavigator.pop();
+      }
     }
   }
 
@@ -140,96 +143,120 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     //   onPointerDown: handleUserInteraction,
     //   onPointerMove: handleUserInteraction,
     //   onPointerUp: handleUserInteraction,
-    return UserOnlineStateObserver(
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        extendBodyBehindAppBar: true,
-        resizeToAvoidBottomInset: false,
-        body: Stack(
-          children: [
-            // SizedBox(
-            //   width: double.infinity,
-            //   child: Lottie.asset(
-            //     'assets/login/bg1.json',
-            //     fit: BoxFit.cover,
-            //   ),
-            // ),
-            Positioned.fill(
-                child: PopScope(
-              canPop: false,
-              onPopInvoked: (bool didPop) async => onGoBack(didPop),
-              child: Obx(() => FadeIndexedStack(
-                  index: RootCntr.to.rootPageIndex.value, // RootCntr.to.rootPageIndex.value,
-                  key: scaffoldKey,
-                  children: mainlist)),
-            )),
-            Positioned(
-              top: 100,
-              right: 20,
-              child: Obx(() => Column(
-                    children: [
-                      if (RootCntr.to.isFileUploading.value == UploadingType.UPLOADING) ...[
-                        Column(
-                          children: [
-                            Utils.progressUpload(size: 25),
-                            const Gap(5),
-                            Container(
-                              color: Colors.black,
-                              padding: const EdgeInsets.all(3),
-                              child: const Center(
-                                child: Row(
-                                  children: [
-                                    // Icon(Icons.check, color: Colors.yellow, size: 20),
-                                    Text(
-                                      "Uploading..",
-                                      style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                          ],
-                        )
-                      ],
-                      if (RootCntr.to.isFileUploading.value == UploadingType.SUCCESS) ...[
-                        Container(
-                          color: Colors.black,
-                          padding: const EdgeInsets.all(5),
-                          child: const Center(
-                            child: Row(
-                              children: [
-                                // Icon(Icons.check, color: Colors.yellow, size: 20),
-                                Text(
-                                  "게시물이 정상 게시 되었습니다.",
-                                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                      ],
-                      if (RootCntr.to.isFileUploading.value == UploadingType.FAIL) ...[
-                        const SizedBox(),
-                      ]
-                    ],
-                  )),
-            ),
-            ValueListenableBuilder(
-                valueListenable: isEventBox,
-                builder: (BuildContext context, bool value, Widget? child) {
-                  return value ? centerEventContainer() : Container();
-                }),
-          ],
-        ),
-        extendBody: true,
-        floatingActionButtonLocation: Platform.isIOS ? FloatingActionButtonLocation.centerDocked : FloatingActionButtonLocation.centerFloat,
-        floatingActionButtonAnimator: FloatingActionButtonAnimator.scaling,
-        // floatingActionButton: makeBottomItem(),
-        bottomSheet: const Padding(padding: EdgeInsets.only(bottom: 0.0)),
+    return PopScope(
+      canPop: false, // ㄷ뒤로가기 버튼 막기(제어)
+      onPopInvokedWithResult: (didPop, result) async {
+        lo.g("gogogooogogo : $didPop");
 
-        floatingActionButton: Obx(() => HideBottomBar(childWdiget: makeBottomItem())),
-        // bottomNavigationBar: Obx(() => HideBottomBar(children: makeBottomItem())),
-        // ),
+        onGoBack(didPop);
+      },
+      child: UserOnlineStateObserver(
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          extendBodyBehindAppBar: true,
+          resizeToAvoidBottomInset: false,
+          body: Stack(
+            children: [
+              // PopScope(
+              //   canPop: false, // ㄷ뒤로가기 버튼 막기(제어)
+              //   onPopInvokedWithResult: (didPop, result) async {
+              //     lo.g("gogogooogogo : $didPop");
+              //     if (didPop) return;
+
+              //     onGoBack(didPop);
+              //   },
+              // child:
+              Positioned.fill(
+                child: Obx(() => FadeIndexedStack(
+                    index: RootCntr.to.rootPageIndex.value, // RootCntr.to.rootPageIndex.value,
+                    key: scaffoldKey,
+                    children: mainlist)),
+              ),
+              // ),
+              Positioned(
+                top: 100,
+                right: 20,
+                child: Obx(() => Column(
+                      children: [
+                        if (RootCntr.to.isFileUploading.value == UploadingType.UPLOADING) ...[
+                          Column(
+                            children: [
+                              Utils.progressUpload(size: 25),
+                              const Gap(5),
+                              Container(
+                                color: Colors.black,
+                                padding: const EdgeInsets.all(3),
+                                child: const Center(
+                                  child: Row(
+                                    children: [
+                                      // Icon(Icons.check, color: Colors.yellow, size: 20),
+                                      Text(
+                                        "Uploading..",
+                                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            ],
+                          )
+                        ],
+                        if (RootCntr.to.isFileUploading.value == UploadingType.SUCCESS) ...[
+                          Container(
+                            color: Colors.black,
+                            padding: const EdgeInsets.all(5),
+                            child: const Center(
+                              child: Row(
+                                children: [
+                                  // Icon(Icons.check, color: Colors.yellow, size: 20),
+                                  Text(
+                                    "게시물이 정상 게시 되었습니다.",
+                                    style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        ],
+                        if (RootCntr.to.isFileUploading.value == UploadingType.FAIL) ...[
+                          const SizedBox(),
+                        ]
+                      ],
+                    )),
+              ),
+              // Positioned(
+              //   top: 150,
+              //   right: 10,
+              //   child: TextButton(
+              //     onPressed: () => Get.find<ThemeController>().toggleTheme(),
+              //     child: Container(
+              //       color: Theme.of(context).scaffoldBackgroundColor,
+              //       child: Text(
+              //         Get.isDarkMode ? 'Dark Theme' : 'Light Theme',
+              //         style: TextStyle(color: Theme.of(context).primaryColor),
+              //       ),
+              //     ),
+              //   ),
+              // ),
+
+              ValueListenableBuilder(
+                  valueListenable: isEventBox,
+                  builder: (BuildContext context, bool value, Widget? child) {
+                    return value ? centerEventContainer() : Container();
+                  }),
+            ],
+          ),
+          extendBody: true,
+          floatingActionButtonLocation:
+              Platform.isIOS ? FloatingActionButtonLocation.centerDocked : FloatingActionButtonLocation.centerFloat,
+          floatingActionButtonAnimator: FloatingActionButtonAnimator.scaling,
+          // floatingActionButton: makeBottomItem(),
+          bottomSheet: const Padding(padding: EdgeInsets.only(bottom: 0.0)),
+
+          floatingActionButton: Obx(() => HideBottomBar(childWdiget: makeBottomItem())),
+          // bottomNavigationBar: Obx(() => HideBottomBar(children: makeBottomItem())),
+          // ),
+        ),
       ),
     );
   }

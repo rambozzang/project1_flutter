@@ -34,6 +34,7 @@ class BbsListController extends GetxController {
 
   String typeCd = 'BBS';
   RxString typeDtCd = 'ALL'.obs;
+  RxString searchWord = ''.obs;
 
   String topYn = 'N';
 
@@ -44,6 +45,7 @@ class BbsListController extends GetxController {
   Timer? debounceTimer; // 타이머 변수
   bool isLoading = false;
   bool isLastPage = false;
+  RxBool isShowRegButton = true.obs;
 
   final ValueNotifier<bool> isMoreLoading = ValueNotifier<bool>(false);
 
@@ -75,6 +77,7 @@ class BbsListController extends GetxController {
 
   Future<void> getData(int _page, {String? searchType = 'ALL'}) async {
     currentPage = _page;
+
     if (_page != 1) {
       isMoreLoading.value = true;
     } else {
@@ -90,7 +93,7 @@ class BbsListController extends GetxController {
           typeCd: typeCd,
           typeDtCd: searchType ?? typeDtCd.value,
           depthNo: '0',
-          searchWord: '',
+          searchWord: searchWord.value,
           searchCustId: '');
 
       ResData resData = await repo.list(bbsSearchData);

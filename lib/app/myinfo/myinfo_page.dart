@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
@@ -512,6 +513,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
           children: [
             Scaffold(
               resizeToAvoidBottomInset: true,
+              backgroundColor: Colors.white,
               appBar: _appBar(),
               body: Stack(
                 children: [
@@ -710,13 +712,6 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                         shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
                         padding: WidgetStateProperty.all(EdgeInsets.zero),
                         backgroundColor: WidgetStateProperty.all(
-                          // const Color.fromARGB(255, 116, 150, 195),
-                          // const Color.fromARGB(255, 110, 169, 86),
-                          // const Color.fromARGB(255, 84, 98, 167),
-                          // const Color.fromARGB(255, 103, 103, 103),
-                          // Colors.indigo[400]
-                          //Color.fromARGB(255, 50, 125, 237)
-                          // const Color.fromARGB(255, 231, 171, 87),
                           const Color.fromARGB(255, 95, 96, 103),
                         ),
                         shadowColor: const WidgetStatePropertyAll(Color.fromARGB(255, 50, 125, 237))),
@@ -1043,50 +1038,47 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
             ),
             Expanded(
               flex: 3,
-              child: Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    IntrinsicHeight(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          MyPageInfo(
-                            count: data.boardCnt!.toInt(),
-                            label: '게시물',
-                            onTap: () => Get.toNamed(
-                                '/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/0/${null}'), //Get.toNamed('/MainView1
-                          ),
-                          // const VerticalDivider(
-                          //   color: Colors.grey,
-                          //   thickness: 1,
-                          // ),
-                          // MyPageInfo(
-                          //   count: data.likeCnt!.toInt(),
-                          //   label: '좋아요',
-                          //   onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/1/${null}'),
-                          // ),
-                          MyPageInfo(
-                            count: data.followCnt!.toInt(),
-                            label: '팔로워',
-                            onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/2/${null}'),
-                          ),
-                          // const VerticalDivider(
-                          //   color: Colors.grey,
-                          //   thickness: 1,
-                          // ),
-                          MyPageInfo(
-                            count: data.followerCnt!.toInt(),
-                            label: '팔로잉',
-                            onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/3/${null}'),
-                          ),
-                        ],
-                      ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  IntrinsicHeight(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        MyPageInfo(
+                          count: data.boardCnt!.toInt(),
+                          label: '게시물',
+                          onTap: () => Get.toNamed(
+                              '/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/0/${null}'), //Get.toNamed('/MainView1
+                        ),
+                        // const VerticalDivider(
+                        //   color: Colors.grey,
+                        //   thickness: 1,
+                        // ),
+                        // MyPageInfo(
+                        //   count: data.likeCnt!.toInt(),
+                        //   label: '좋아요',
+                        //   onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/1/${null}'),
+                        // ),
+                        MyPageInfo(
+                          count: data.followCnt!.toInt(),
+                          label: '팔로워',
+                          onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/2/${null}'),
+                        ),
+                        // const VerticalDivider(
+                        //   color: Colors.grey,
+                        //   thickness: 1,
+                        // ),
+                        MyPageInfo(
+                          count: data.followerCnt!.toInt(),
+                          label: '팔로잉',
+                          onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/3/${null}'),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -1291,7 +1283,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                                     ),
                                     const Gap(5),
                                     Text(
-                                      list[index].likeCnt.toString(),
+                                      list[index].viewCnt.toString(),
                                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                     ),
                                   ],
@@ -1300,12 +1292,20 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                             ],
                           ),
                         ),
-                        if (list[index].hideYn == 'Y')
+                        if (list[index].hideYn == 'Y') ...[
                           const Positioned(
                             top: 10,
                             left: 10,
                             child: Icon(Icons.lock, color: Colors.red, size: 20),
                           ),
+                        ],
+                        if (list[index].anonyYn == 'Y') ...[
+                          const Positioned(
+                            top: 10,
+                            right: 10,
+                            child: Icon(Icons.person_off, color: Colors.green, size: 20),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -1384,7 +1384,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                                 ),
                                 const Gap(5),
                                 Text(
-                                  list[index].likeCnt.toString(),
+                                  list[index].viewCnt.toString(),
                                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                 ),
                               ],
@@ -1411,7 +1411,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     return TabBar(
         controller: tabController,
         indicatorColor: Colors.black,
-        indicatorPadding: const EdgeInsets.symmetric(horizontal: 60),
+        indicatorPadding: const EdgeInsets.symmetric(horizontal: 10),
+        indicatorSize: TabBarIndicatorSize.label,
         dividerColor: Colors.transparent,
         tabs: const [
           Tab(
@@ -1708,7 +1709,7 @@ class MyPageInfo extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.white,
         foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
         elevation: 0,
         side: const BorderSide(color: Colors.white, width: 0.0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),

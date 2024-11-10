@@ -4,12 +4,15 @@ import 'dart:io';
 import 'package:flutter/widgets.dart' as flutterWidgets;
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:giffy_dialog/giffy_dialog.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/repo/common/res_stream.dart';
+import 'package:project1/utils/anony_profile.dart';
 import 'package:project1/widget/custom_button.dart';
 import 'package:project1/widget/custom_sec_button.dart';
 import 'package:project1/widget/error_page.dart';
@@ -23,6 +26,35 @@ import 'package:url_launcher/url_launcher.dart';
 // giffy_model.dart 에서 import 'package:rive/rive.dart' as rive; 로 수정.
 abstract class Utils {
   Utils._();
+
+  static Widget buildRanDomProfile(String custId, double? imageSize, double? fontSize, Color? fontColor) {
+    // 개별 생성도 가능
+    final profile1 = AnonymousProfileGenerator.generateProfile();
+    return Row(
+      children: [
+        Container(
+          height: imageSize ?? 35,
+          width: imageSize ?? 35,
+          decoration: BoxDecoration(
+            color: Colors.green,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.white, width: 0.5),
+          ),
+          child: SvgPicture.network(profile1.avatarUrl, placeholderBuilder: (context) => const CircularProgressIndicator()),
+        ),
+        const Gap(10),
+        Text(
+          profile1.nickname.toString(),
+          style: TextStyle(fontSize: fontSize ?? 16, color: fontColor ?? Colors.white, fontWeight: FontWeight.bold),
+        ),
+        if (custId == Get.find<AuthCntr>().resLoginData.value.custId) ...[
+          const Gap(5),
+          const Icon(Icons.verified, color: Colors.red, size: 16),
+          const Text("Me", style: TextStyle(fontSize: 11, color: Colors.red)),
+        ]
+      ],
+    );
+  }
 
   static void appUpdateAlert(BuildContext context, String storeUrl) {
     showDialog(
@@ -700,7 +732,7 @@ abstract class Utils {
             const Center(
               child: Padding(
                 padding: EdgeInsets.all(48.0),
-                child: Text("조회 된 데이터가 없습니다."),
+                child: Text("조회 된 데이터가 없습니다.", style: TextStyle(fontSize: 14, color: Colors.black87)),
               ),
             );
       },

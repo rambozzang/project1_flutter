@@ -6,9 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'package:giffy_dialog/giffy_dialog.dart';
-import 'package:hashtagable_v3/hashtagable.dart';
+import 'package:hashtagable_v3/widgets/hashtag_text_field.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:pretty_animated_text/pretty_animated_text.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/weather/models/geocode.dart';
 import 'package:project1/app/weathergogo/services/location_service.dart';
@@ -31,6 +31,8 @@ import 'package:project1/widget/custom_indicator_offstage.dart';
 // import 'package:video_compress/video_compress.dart';
 import 'package:video_player/video_player.dart';
 
+import 'package:intl/intl.dart' as intl;
+
 // 동영상 압축 FFmpeg로 동영상 압축하기
 class VideoRegPage extends StatefulWidget {
   const VideoRegPage({super.key, required this.videoFile});
@@ -40,7 +42,7 @@ class VideoRegPage extends StatefulWidget {
   State<VideoRegPage> createState() => _VideoRegPageState();
 }
 
-class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderStateMixin {
+class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMixin {
   late VideoPlayerController _videoController;
   final TextEditingController hashTagController = TextEditingController();
   final FocusNode hashTagFocusNode = FocusNode();
@@ -64,10 +66,15 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
   Duration durationOfVideo = Duration.zero;
   bool initVideo = false;
   String hideYn = 'N';
+  String anonyYn = 'N';
 
-  bool _checked = false;
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
+  bool _hideChecked = false;
+  bool _anonyChecked = false;
+  late AnimationController _hideController;
+  late AnimationController _anonyController;
+
+  late Animation<double> _hideScaleAnimation;
+  late Animation<double> _anonyScaleAnimation;
 
   final ValueNotifier<bool> soundOff = ValueNotifier<bool>(false);
 
@@ -80,42 +87,66 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
-    // currentWeather.value = widget.currentWeather;
 
-    _controller = AnimationController(
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      initializeVideo();
+      getDate();
+    });
+    _initAnimationController();
+  }
+
+  void _initAnimationController() {
+    _hideController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
+    _hideScaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
       CurvedAnimation(
-        parent: _controller,
+        parent: _hideController,
         curve: Curves.easeInOut,
       ),
     );
 
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
-      initializeVideo();
-      // initData();
-      getDate();
-    });
+    _anonyController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    _anonyScaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
+      CurvedAnimation(
+        parent: _anonyController,
+        curve: Curves.easeInOut,
+      ),
+    );
   }
 
   Future<void> _retryInitialization() async {
-    // await _videoController.dispose();
     lo.g('retryInitialization');
     await Future.delayed(const Duration(seconds: 1));
     initializeVideo();
   }
 
-  void _toggleCheckbox() {
+  void _toggleHideCheckbox() {
     setState(() {
-      _checked = !_checked;
-      hideYn = _checked ? 'Y' : 'N';
-      if (_checked) {
-        _controller.forward();
+      _hideChecked = !_hideChecked;
+      hideYn = _hideChecked ? 'Y' : 'N';
+      if (_hideChecked) {
+        _hideController.forward();
       } else {
-        _controller.reverse();
+        _hideController.reverse();
+      }
+    });
+  }
+
+  void _toggleAnonyCheckbox() {
+    setState(() {
+      _anonyChecked = !_anonyChecked;
+      anonyYn = _anonyChecked ? 'Y' : 'N';
+      if (_anonyChecked) {
+        _anonyController.forward();
+      } else {
+        _anonyController.reverse();
       }
     });
   }
@@ -123,6 +154,10 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
   void initializeVideo() async {
     try {
       lo.g("initializeVideo() widget.videoFile : ${widget.videoFile.path}");
+
+      // 초기화 전 딜레이 추가
+      await Future.delayed(const Duration(milliseconds: 300));
+
       _videoController = VideoPlayerController.file(
         widget.videoFile,
         videoPlayerOptions: VideoPlayerOptions(mixWithOthers: false, allowBackgroundPlayback: false),
@@ -139,13 +174,14 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
       _videoController.addListener(() {
         if (_videoController.value.hasError) {
           lo.g('Video error: ${_videoController.value.errorDescription}');
-          // 4. 재시도 로직
+          // 재시도 로직
           _retryInitialization();
         }
       });
     } catch (e) {
       Utils.alert("비디오초기화 오류 : $e");
       lo.g("initializeVideo() error : $e");
+      _retryInitialization();
     }
   }
 
@@ -161,6 +197,7 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
   Future<void> getDate() async {
     try {
       isWeathering.value = true;
+
       // 현재위치와 지명 가져오기
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
@@ -170,111 +207,118 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
 
       LocationService locationService = LocationService();
       var (onValue1, onValue2) = await locationService.getLocalName(location);
+
+      // 지명 조회 실패시 재시도
       if (onValue1 == null || onValue2 == null) {
-        // 3. 재시도 로직 아니면 '' 값으로 셋팅
-        if (retry > 0) {
-          retry--;
-          getDate();
+        if (Get.find<WeatherGogoCntr>().currentLocation.value.addr == null ||
+            Get.find<WeatherGogoCntr>().currentLocation.value.name == '') {
+          if (retry > 0 && onValue1 == '') {
+            retry--;
+            lo.g("지명 조회 재시도 (남은 시도: $retry)");
+            await Future.delayed(const Duration(milliseconds: 300));
+            return await getDate();
+          }
         } else {
-          // geocodeData.value = GeocodeData(name: '', latLng: location);
-          // mistData.value = MistViewData(mist10Grade: '좋음', mist25Grade: '좋음');
-          // currentWeather.value = CurrentWeatherData(
-          // temp: '0', description: '맑음', humidity: '0', rain: '0', sky: '1', speed: '0');
+          onValue2 = Get.find<WeatherGogoCntr>().currentLocation.value.name;
+          onValue1 = Get.find<WeatherGogoCntr>().currentLocation.value.addr!.split(' ')[0];
         }
       }
 
-      geocodeData.value = GeocodeData(name: onValue2 ?? ' ', latLng: location);
+      // 미세먼지 가져오기
+      geocodeData.value = GeocodeData(name: onValue2!, latLng: location);
+      mistData.value = (await locationService.getMistData(onValue1!))!;
 
-      mistData.value = (await locationService.getMistData(onValue1 ?? ' '))!;
-
+      // 현재 위치 날씨 가져오기
       WeatherGogoRepo repo = WeatherGogoRepo();
-      List<ItemSuperFct> itemFctList = await repo.getSuperFctListJson(location);
 
-      String fcstDate = itemFctList.first.fcstDate!;
-      String fcstTime = itemFctList.first.fcstTime!;
-      CurrentWeatherData _currentWeatherData = CurrentWeatherData();
-      itemFctList.forEach((item) {
-        if (item.fcstDate.toString() == fcstDate && item.fcstTime.toString() == fcstTime) {
-          if (item?.category == 'T1H') {
-            _currentWeatherData.temp = item.fcstValue!;
-          } else if (item.category == 'PTY') {
-            _currentWeatherData.rain = item.fcstValue!;
-          } else if (item.category == 'SKY') {
-            _currentWeatherData.sky = item.fcstValue!;
-          } else if (item.category == 'REH') {
-            _currentWeatherData.humidity = item.fcstValue!;
-          } else if (item.category == 'WSD') {
-            _currentWeatherData.speed = item.fcstValue!;
+      // 기본 날씨
+      CurrentWeatherData currentWeatherData = Get.find<WeatherGogoCntr>().currentWeather.value;
+      lo.g("currentWeatherData : ${currentWeatherData.toString()}");
+      isWeathering.value = false;
+      String fcstDate = currentWeatherData.fcstDate ?? intl.DateFormat('yyyyMMdd').format(DateTime.now());
+      String fcstTime = currentWeatherData.fcsTime!;
+
+      currentWeather.value = currentWeatherData;
+
+      // location = const LatLng(0.0, 0.0);
+      // List<ItemSuperFct> itemFctList = [];
+      List<ItemSuperFct> itemFctList = [];
+      try {
+        itemFctList = await repo.getSuperFctListJson(location);
+      } catch (e) {
+        lo.g("getDate() error : $e");
+        isWeathering.value = false;
+        currentWeather.value = currentWeatherData;
+      }
+
+      if (itemFctList.isNotEmpty) {
+        fcstDate = itemFctList.first.fcstDate!;
+        fcstTime = itemFctList.first.fcstTime!;
+        // 날씨 데이터 처리...
+        itemFctList.forEach((item) {
+          if (item.fcstDate.toString() == fcstDate && item.fcstTime.toString() == fcstTime) {
+            if (item?.category == 'T1H') {
+              currentWeatherData.temp = item.fcstValue!;
+            } else if (item.category == 'PTY') {
+              currentWeatherData.rain = item.fcstValue!;
+            } else if (item.category == 'SKY') {
+              currentWeatherData.sky = item.fcstValue!;
+            } else if (item.category == 'REH') {
+              currentWeatherData.humidity = item.fcstValue!;
+            } else if (item.category == 'WSD') {
+              currentWeatherData.speed = item.fcstValue!;
+            }
           }
-        }
-      });
-      _currentWeatherData.description =
-          WeatherDataProcessor.instance.combineWeatherCondition(_currentWeatherData.sky.toString(), _currentWeatherData.rain.toString());
+        });
+      }
 
-      currentWeather.value = _currentWeatherData;
+      // 필수 날씨 데이터가 없는 경우 체크
+      // if (currentWeatherData.temp == null || currentWeatherData.sky == null || currentWeatherData.rain == null) {
+      //   return await getDate();
+      // }
+
+      currentWeatherData.description =
+          WeatherDataProcessor.instance.combineWeatherCondition(currentWeatherData.sky.toString(), currentWeatherData.rain.toString());
+
+      currentWeather.value = currentWeatherData;
       lo.g('currentWeather : ${currentWeather.value}');
+
+      isWeathering.value = false;
+      return;
     } catch (e) {
       lo.g("getDate() error : $e");
 
-      isWeathering.value = false;
-    } finally {
-      isWeathering.value = false;
+      if (retry > 0) {
+        retry--;
+        lo.g("에러로 인한 재시도 (남은 시도: $retry)");
+        await Future.delayed(const Duration(seconds: 1));
+        return await getDate();
+      } else {
+        // 모든 재시도 실패 시
+        // Utils.alert("날씨 정보를 가져오는데 실패했습니다. 잠시 후 다시 시도해주세요.");
+        isWeathering.value = false; // 버튼 비활성화 유지
+      }
     }
   }
 
-  // 파일 업로드
+  // ��일 업로드
   Future<void> upload() async {
     if (isWeathering.value) {
       Utils.alert("현지 위치정보 수신중입니다. 잠시 후 다시 시도해주세요.");
+      getDate();
       return;
     }
 
     isUploading.value = true;
-
     try {
-      BoardSaveMainData boardSaveMainData = BoardSaveMainData();
-      boardSaveMainData.contents = hashTagController.text;
-      boardSaveMainData.depthNo = '0';
-      boardSaveMainData.notiEdAt = '';
-      boardSaveMainData.notiStAt = '';
-      boardSaveMainData.subject = '';
-      boardSaveMainData.typeCd = 'V';
-      boardSaveMainData.typeDtCd = 'V';
-      boardSaveMainData.hideYn = hideYn;
+      final mainData = _createBoardSaveMainData();
 
-      BoardSaveWeatherData boardSaveWeatherData = BoardSaveWeatherData();
-      boardSaveWeatherData.boardId = 0;
+      final weatherData = _createBoardSaveWeatherData();
 
-      boardSaveWeatherData.city = '';
-      boardSaveWeatherData.country = '';
+      boardSaveData.boardMastInVo = mainData;
+      boardSaveData.boardWeatherVo = weatherData;
 
-      boardSaveWeatherData.currentTemp = currentWeather.value!.temp ?? '0';
-      // boardSaveWeatherData.feelsTemp = currentWeather!.feels_like?.toStringAsFixed(1);
-      boardSaveWeatherData.humidity = currentWeather.value?.humidity.toString() ?? '1';
-      // boardSaveWeatherData.icon = currentWeather.weather![0].icon;
-      boardSaveWeatherData.lat = geocodeData.value?.latLng.latitude.toString() ?? '1';
-      boardSaveWeatherData.lon = geocodeData.value?.latLng.longitude.toString() ?? '1';
-      boardSaveWeatherData.speed = currentWeather.value?.speed.toString() ?? '1';
-      boardSaveWeatherData.sky = currentWeather.value?.sky.toString() ?? '1';
-      boardSaveWeatherData.rain = currentWeather.value?.rain.toString() ?? '0';
-
-      boardSaveWeatherData.tempMax = ''; // currentWeather.main!.temp_max?.toStringAsFixed(1);
-      boardSaveWeatherData.tempMin = ''; // currentWeather.main!.temp_min?.toStringAsFixed(1);
-
-      boardSaveWeatherData.location = Get.find<WeatherGogoCntr>().currentLocation.value.name ?? '대한민국';
-      // boardSaveWeatherData.thumbnailPath = res2.secureUrl;
-      // boardSaveWeatherData.videoPath = res.secureUrl;
-      boardSaveWeatherData.weatherInfo = currentWeather.value?.description ?? '맑음';
-      boardSaveData.boardMastInVo = boardSaveMainData;
-      boardSaveData.boardWeatherVo = boardSaveWeatherData;
-      boardSaveWeatherData.mist10 = Get.find<WeatherGogoCntr>().mistData.value.mist10Grade.toString();
-      boardSaveWeatherData.mist25 = Get.find<WeatherGogoCntr>().mistData.value.mist25Grade.toString();
-      Lo.g("Root upload() videoFilePath : ${widget.videoFile.path}");
-      if (hideYn == "Y") {
-        Utils.alert('숨기기 상태로 등록중 입니다!');
-      } else {
-        Utils.alert('업로드중 입니다! 잠시후 정상 게시됩니다!');
-      }
+      _showUploadAlert();
 
       Future.delayed(const Duration(milliseconds: 500), () {
         Get.back();
@@ -282,6 +326,52 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
     } catch (e) {
       debugPrint(e.toString());
       isUploading.value = false;
+    }
+  }
+
+  BoardSaveMainData _createBoardSaveMainData() {
+    return BoardSaveMainData()
+      ..contents = hashTagController.text
+      ..depthNo = '0'
+      ..notiEdAt = ''
+      ..notiStAt = ''
+      ..subject = ''
+      ..typeCd = 'V'
+      ..typeDtCd = 'V'
+      ..anonyYn = anonyYn
+      ..hideYn = hideYn;
+  }
+
+  BoardSaveWeatherData _createBoardSaveWeatherData() {
+    final weather = currentWeather.value ?? CurrentWeatherData();
+    final location = Get.find<WeatherGogoCntr>();
+
+    return BoardSaveWeatherData()
+      ..boardId = 0
+      ..city = ''
+      ..country = ''
+      ..currentTemp = weather.temp ?? '0'
+      ..humidity = weather.humidity?.toString() ?? '1'
+      ..lat = geocodeData.value?.latLng.latitude.toString() ?? '1'
+      ..lon = geocodeData.value?.latLng.longitude.toString() ?? '1'
+      ..speed = weather.speed?.toString() ?? '1'
+      ..sky = weather.sky?.toString() ?? '1'
+      ..rain = weather.rain?.toString() ?? '0'
+      ..tempMax = ''
+      ..tempMin = ''
+      ..location = location.currentLocation.value.name ?? '대한민국'
+      ..weatherInfo = weather.description ?? '맑음'
+      ..mist10 = location.mistData.value.mist10Grade.toString()
+      ..mist25 = location.mistData.value.mist25Grade.toString();
+  }
+
+  void _showUploadAlert() {
+    if (hideYn == "Y") {
+      Utils.alert('숨기기 상태로 등록중 입니다!');
+    } else if (anonyYn == "Y") {
+      Utils.alert('익명으로 등록중 입니다!');
+    } else {
+      Utils.alert('업로드중 입니다! 잠시후 정상 게시됩니다!');
     }
   }
 
@@ -305,7 +395,8 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
     _videoController.removeListener(() {});
     _videoController.setVolume(0);
     _videoController.dispose();
-    _controller.dispose();
+    _hideController.dispose();
+    _anonyController.dispose();
     hashTagController.dispose();
     isUploading.dispose();
 
@@ -319,214 +410,160 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      // backgroundColor: Colors.grey[500],
       resizeToAvoidBottomInset: false,
-      body: PopScope(
-        canPop: false,
-        onPopInvoked: (didPop) {
-          //didPop == true , 뒤로가기 제스쳐가 감지되면 호출 된다.
-          lo.g("isCancle : $isCancle , didPop : $didPop");
-          if (!didPop && isCancle == false) {
-            cancle();
-            return;
-          }
-        },
+      body: _buildBody(),
+      bottomNavigationBar: _buildBottomBar(),
+    );
+  }
+
+  Widget _buildBody() {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) => _handlePopInvoked(didPop),
+      // onPopInvoked: _handlePopInvoked,
+      child: GestureDetector(
+        onTap: () => hashTagFocusNode.unfocus(),
         child: SafeArea(
           child: Stack(
             children: [
-              SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Gap(50),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          !initVideo
-                              ? Container(
-                                  height: 300,
-                                  width: MediaQuery.of(context).size.width * 0.5 - 50,
-                                  alignment: Alignment.center,
-                                  child: const CircularProgressIndicator())
-                              : Container(
-                                  height: 300,
-                                  alignment: Alignment.center,
-                                  child: Stack(
-                                    children: [
-                                      AspectRatio(
-                                        aspectRatio: 9 / 16,
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(15),
-                                          child: GestureDetector(
-                                              onTap: () {
-                                                Navigator.push<_PlayerVideoAndPopPage>(
-                                                  context,
-                                                  MaterialPageRoute<_PlayerVideoAndPopPage>(
-                                                    builder: (BuildContext context) =>
-                                                        _PlayerVideoAndPopPage(videoPlayerController: _videoController),
-                                                  ),
-                                                );
-                                              },
-                                              //  child: Container(color: Colors.red)),
-                                              child: VideoPlayer(_videoController)),
-                                        ),
-                                      ),
-                                      Positioned(
-                                          left: 5,
-                                          bottom: 5,
-                                          child: IconButton(
-                                              onPressed: () {
-                                                Navigator.push<_PlayerVideoAndPopPage>(
-                                                  context,
-                                                  MaterialPageRoute<_PlayerVideoAndPopPage>(
-                                                    builder: (BuildContext context) =>
-                                                        _PlayerVideoAndPopPage(videoPlayerController: _videoController),
-                                                  ),
-                                                );
-                                              },
-                                              icon: const Icon(Icons.zoom_in, size: 30, color: Colors.white))),
-                                      Positioned(
-                                        right: 5,
-                                        bottom: 5,
-                                        // ignore: unnecessary_string_interpolations
-                                        child: Text('${formatMilliseconds(durationOfVideo.inMilliseconds)}',
-                                            style: const TextStyle(fontSize: 12, color: Colors.white)),
-                                      ),
-                                      Positioned(
-                                        top: 5,
-                                        right: 0,
-                                        child: ValueListenableBuilder<bool>(
-                                            valueListenable: soundOff,
-                                            builder: (context, value, snapshot) {
-                                              return IconButton(
-                                                onPressed: () {
-                                                  if (value) {
-                                                    _videoController.setVolume(1); // 소리 켜기
-                                                  } else {
-                                                    _videoController.setVolume(0); // 소리 끄기
-                                                  }
-                                                  soundOff.value = !value;
-                                                },
-                                                icon: value
-                                                    ? const Icon(Icons.volume_off_outlined, color: Colors.white)
-                                                    : const Icon(Icons.volume_up_outlined, color: Colors.white),
-                                              );
-                                            }),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                          const Gap(5),
-                          buildWeatherInfo(),
-                        ],
-                      ),
-                      // const Gap(20),
-                      const Row(
+              _buildMainContent(),
+              _buildLoadingIndicator(),
+              _buildCloseButton(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMainContent() {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Gap(50),
+            _buildVideoAndWeatherSection(),
+            const Gap(10),
+
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text('# 태그 사용가능', style: TextStyle(fontSize: 14, color: Colors.black87)),
+              ],
+            ),
+            // 해시태그 입력란 추가
+            HashTagTextField(
+              controller: hashTagController,
+              basicStyle: const TextStyle(fontSize: 15, color: Colors.black, decorationThickness: 0),
+              decoratedStyle: const TextStyle(fontSize: 15, color: Colors.blue),
+              keyboardType: TextInputType.multiline,
+              focusNode: hashTagFocusNode,
+              maxLines: 4,
+              //  onTapOutside: (_) =>  ,
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
+                hintText: "내용을 입력해주세요! \n#태그1 #태그2 #태그3",
+                hintStyle: const TextStyle(fontSize: 15, color: Colors.grey),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(5),
+                    borderSide: const BorderSide(color: Color.fromARGB(255, 59, 104, 81), width: 1.0)),
+              ),
+              onDetectionTyped: (text) {
+                print(text);
+              },
+              onDetectionFinished: () {
+                print("detection finished");
+              },
+            ),
+            const Gap(10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                _buildHideCheckbox(),
+                const Gap(15),
+                _buildAnonyCheckbox(),
+              ],
+            ),
+            _hideChecked
+                ? Tooltip(
+                    margin: const EdgeInsets.symmetric(horizontal: 10),
+                    padding: const EdgeInsets.all(6),
+                    message: "숨기기로 등록 시, 다른 사용자에게 노출되지 않습니다.1",
+                    textStyle: const TextStyle(color: Colors.white, fontSize: 12.0),
+                    triggerMode: TooltipTriggerMode.tap,
+                    showDuration: const Duration(seconds: 10),
+                    child: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 5, top: 10),
+                      child: const Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          Text('# 태그 사용가능', style: TextStyle(fontSize: 14, color: Colors.black87)),
+                          Icon(Icons.remove_red_eye_outlined, color: Colors.grey, size: 14),
+                          Text(
+                            '다른 사용자에게 노출되지 않습니다.',
+                            style: TextStyle(color: Colors.grey, fontSize: 11.0),
+                            textAlign: TextAlign.center,
+                          ),
                         ],
                       ),
-                      HashTagTextField(
-                        controller: hashTagController,
-                        basicStyle: const TextStyle(fontSize: 15, color: Colors.black, decorationThickness: 0),
-                        decoratedStyle: const TextStyle(fontSize: 15, color: Colors.blue),
-                        keyboardType: TextInputType.multiline,
-                        focusNode: hashTagFocusNode,
-                        maxLines: 4,
-                        decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
-                          hintText: "내용을 입력해주세요! \n#태그1 #태그2 #태그3",
-                          hintStyle: const TextStyle(fontSize: 15, color: Colors.grey),
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(5),
-                              borderSide: const BorderSide(color: Color.fromARGB(255, 59, 104, 81), width: 1.0)),
-                        ),
-                        onDetectionTyped: (text) {
-                          print(text);
-                        },
-                        onDetectionFinished: () {
-                          print("detection finished");
-                        },
+                    ),
+                  )
+                : const SizedBox.shrink(),
+            _anonyChecked
+                ? Tooltip(
+                    margin: const EdgeInsets.symmetric(horizontal: 10),
+                    padding: const EdgeInsets.all(6),
+                    message: "익명으로 등록 시, 닉네임이 랜덤으로 생성되어 노출됩니다.",
+                    textStyle: const TextStyle(color: Colors.white, fontSize: 12.0),
+                    triggerMode: TooltipTriggerMode.tap,
+                    showDuration: const Duration(seconds: 10),
+                    child: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 5, top: 10),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Icon(Icons.person_off, color: Colors.grey, size: 15),
+                          Text(
+                            '자신의 닉네임이 노출되지 않습니다.',
+                            style: TextStyle(color: Colors.grey, fontSize: 11.0),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
-                      const Gap(10),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            // CheckBoxRounded(
-                            //   onTap: (bool? value) {
-                            //     log("message 1: $value");
-                            //     hideYn = value! ? 'Y' : 'N';
-                            //     log("message 2: $hideYn");
-                            //   },
-                            //   size: 20,
-                            //   uncheckedWidget: const Icon(Icons.panorama_fish_eye, size: 18),
-                            //   animationDuration: const Duration(milliseconds: 150),
-                            // ),
-                            GestureDetector(
-                              onTap: _toggleCheckbox,
-                              child: ScaleTransition(
-                                scale: _scaleAnimation,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.rectangle,
-                                    color: _checked ? Colors.green : Colors.black,
-                                  ),
-                                  width: 20.0,
-                                  height: 20.0,
-                                  child: _checked
-                                      ? const Icon(Icons.check, color: Colors.white)
-                                      : const Icon(Icons.check_box_outline_blank, size: 19.5, color: Colors.white),
-                                ),
-                              ),
-                            ),
-                            const Gap(3),
-                            const Text(
-                              "숨기기로 등록하기",
-                              style: TextStyle(fontSize: 13, color: Colors.black87, fontWeight: FontWeight.w500),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Gap(30),
-                      const Tooltip(
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 25,
-                        ),
-                        padding: EdgeInsets.all(15),
-                        message:
-                            "음악 저작권자의 허락 없이 동영상에 음악을 사용하면 법적 책임을 지실 수 있습니다.\n\n1.동영상에 사용된 음악이 저작권자의 허락을 받은 음원인지 확인해야 합니다.\n2.무료 이용이 가능한 저작권 free 음원을 사용하시는 것을 권장드립니다.\n3.만약 저작권자의 허락 없이 음악을 사용하셨다면 동영상 게시가 제한될 수 있습니다.",
-                        triggerMode: TooltipTriggerMode.tap,
-                        showDuration: Duration(seconds: 10),
-                        child: Row(
-                          children: [
-                            Icon(Icons.info, color: Colors.black, size: 20),
-                            Text(
-                              '영상에 음악이 포함될 경우 저작권 과금.',
-                              style: TextStyle(
-                                color: Colors.red,
-                                fontSize: 12.0,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Gap(10),
-                      const Tooltip(
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 25,
-                        ),
-                        padding: EdgeInsets.all(15),
-                        message: """
+                    ),
+                  )
+                : const SizedBox.shrink(),
+            const Gap(20),
+            // 저작권 주의사항 1
+            const Tooltip(
+              margin: EdgeInsets.symmetric(horizontal: 25),
+              padding: EdgeInsets.all(15),
+              message:
+                  "음악 저작권자의 허락 없이 동영상에 음악을 사용하면 법적 책임을 지실 수 있습니다.\n\n1.동영상에 사용된 음악이 저작권자의 허락을 받은 음원인지 확인해야 합니다.\n2.무료 이용이 가능한 저작권 free 음원을 사용하시는 것을 권장드립니다.\n3.만약 저작권자의 허락 없이 음악을 사용하셨다면 동영상 게시가 제한될 수 있습니다.",
+              triggerMode: TooltipTriggerMode.tap,
+              showDuration: Duration(seconds: 10),
+              child: Row(
+                children: [
+                  Icon(Icons.info, color: Colors.red, size: 20),
+                  Text(
+                    '영상에 음악이 포함될 경우 저작권 과금.',
+                    style: TextStyle(color: Colors.red, fontSize: 12.0),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            const Gap(10),
+            // 저작권 주의사항 2
+            const Tooltip(
+              margin: EdgeInsets.symmetric(horizontal: 25),
+              padding: EdgeInsets.all(15),
+              message: """
 안전하고 적절한 환경 제공을 위해 다음 콘텐츠를 엄격히 금지합니다:
 
 • 불법 콘텐츠 (저작권 침해, 사기 등)
@@ -541,267 +578,353 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
 4. 민형사상 법적 조치 가능
 
 부적절한 콘텐츠 발견 시 즉시 신고 바랍니다.
-                            """,
-                        triggerMode: TooltipTriggerMode.tap,
-                        showDuration: Duration(seconds: 10),
-                        child: Row(
-                          children: [
-                            Icon(Icons.info, color: Colors.black, size: 20),
-                            Text(
-                              '불법/성적/학대 영상 업로드 시 법적 조치',
-                              style: TextStyle(
-                                color: Colors.red,
-                                fontSize: 12.0,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Gap(50),
-                    ],
+              """,
+              triggerMode: TooltipTriggerMode.tap,
+              showDuration: Duration(seconds: 10),
+              child: Row(
+                children: [
+                  Icon(Icons.info, color: Colors.red, size: 20),
+                  Text(
+                    '불법/성적/학대 영상 업로드 시 법적 조치',
+                    style: TextStyle(color: Colors.red, fontSize: 12.0),
+                    textAlign: TextAlign.center,
                   ),
-                ),
+                ],
               ),
-              ValueListenableBuilder<bool>(
-                  valueListenable: isUploading,
-                  builder: (context, value, child) {
-                    return CustomIndicatorOffstage(isLoading: !value, color: const Color(0xFFEA3799), opacity: 0.5);
-                  }),
-              Positioned(
-                  top: 5,
-                  right: 5,
-                  child: IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => cancle(),
-                  )),
-            ],
-          ),
+            ),
+            const Gap(50),
+          ],
         ),
       ),
-      bottomNavigationBar: Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: Container(
-          padding: const EdgeInsets.only(left: 16, right: 16, top: 5, bottom: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  // 포커스
-                  FocusScope.of(context).requestFocus(hashTagFocusNode);
-                  // 키보드 보이기
+    );
+  }
 
-                  hashTagController.text = '${hashTagController.text} #';
+  Widget _buildVideoAndWeatherSection() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildVideoPlayer(),
+        const Gap(5),
+        buildWeatherInfo(),
+      ],
+    );
+  }
+
+  Widget _buildVideoPlayer() {
+    if (!initVideo) {
+      return Container(
+        height: 260,
+        color: Colors.white,
+        width: MediaQuery.of(context).size.width * 0.5 - 50,
+        alignment: Alignment.center,
+        child: const CircularProgressIndicator(),
+      );
+    }
+
+    return Container(
+      height: 260,
+      alignment: Alignment.center,
+      child: Stack(
+        children: [
+          AspectRatio(
+            aspectRatio: 9 / 16,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(15),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push<_PlayerVideoAndPopPage>(
+                    context,
+                    MaterialPageRoute<_PlayerVideoAndPopPage>(
+                      builder: (BuildContext context) => _PlayerVideoAndPopPage(videoPlayerController: _videoController),
+                    ),
+                  );
                 },
-                clipBehavior: Clip.none,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  elevation: 1.5,
-                  minimumSize: const Size(0, 0),
-                  backgroundColor: Colors.grey[200],
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                ),
-                child: const Text(
-                  '# 태그추가',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 14,
-                  ),
-                ),
+                child: VideoPlayer(_videoController),
               ),
-              const Spacer(),
-              ValueListenableBuilder<bool>(
-                  valueListenable: isWeathering,
-                  builder: (context, isWeatherValue, child) {
-                    return ValueListenableBuilder<bool>(
-                      valueListenable: isUploading,
-                      builder: (context, value, child) {
-                        return CustomButton(
-                            text: !value ? '등록하기' : '처리중..',
-                            type: 'L',
-                            isEnable: !isWeatherValue,
-                            widthValue: 120,
-                            heightValue: 50,
-                            onPressed: () => !value ? upload() : Utils.alert('처리중입니다..'));
-                      },
-                    );
-                  }),
-            ],
+            ),
           ),
-        ),
+          Positioned(
+            left: 5,
+            bottom: 5,
+            child: IconButton(
+              onPressed: () {
+                Navigator.push<_PlayerVideoAndPopPage>(
+                  context,
+                  MaterialPageRoute<_PlayerVideoAndPopPage>(
+                    builder: (BuildContext context) => _PlayerVideoAndPopPage(videoPlayerController: _videoController),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.zoom_in, size: 30, color: Colors.white),
+            ),
+          ),
+          Positioned(
+            right: 5,
+            bottom: 5,
+            child: Text(
+              formatMilliseconds(durationOfVideo.inMilliseconds),
+              style: const TextStyle(fontSize: 12, color: Colors.white),
+            ),
+          ),
+          Positioned(
+            top: 5,
+            right: 0,
+            child: ValueListenableBuilder<bool>(
+              valueListenable: soundOff,
+              builder: (context, value, snapshot) {
+                return IconButton(
+                  onPressed: () {
+                    if (value) {
+                      _videoController.setVolume(1);
+                    } else {
+                      _videoController.setVolume(0);
+                    }
+                    soundOff.value = !value;
+                  },
+                  icon: value
+                      ? const Icon(Icons.volume_off_outlined, color: Colors.white)
+                      : const Icon(Icons.volume_up_outlined, color: Colors.white),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget buildWeatherInfo() {
     return Expanded(
-        child: Container(
-      alignment: Alignment.topLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              SizedBox(
-                width: 34,
-                child: CircleAvatar(
-                  radius: 16,
-                  backgroundColor: Colors.grey[100],
-                  child: ClipOval(
-                    child: Get.find<AuthCntr>().resLoginData.value.profilePath == ''
-                        ? const Icon(Icons.person, size: 35, color: Colors.black87)
-                        : CachedNetworkImage(
-                            cacheKey: Get.find<AuthCntr>().resLoginData.value.custId.toString(),
-                            imageUrl: Get.find<AuthCntr>().resLoginData.value.profilePath.toString(), //  'https://picsum.photos/200/300',
-                            width: 35,
-                            height: 35,
-                            fit: BoxFit.cover,
-                          ),
+      child: Container(
+        height: 260,
+        alignment: Alignment.topLeft,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Row(
+            //   children: [
+            //     SizedBox(
+            //       width: 34,
+            //       child: CircleAvatar(
+            //         radius: 16,
+            //         backgroundColor: Colors.grey[100],
+            //         child: ClipOval(
+            //           child: Get.find<AuthCntr>().resLoginData.value.profilePath == ''
+            //               ? const Icon(Icons.person, size: 35, color: Colors.black87)
+            //               : CachedNetworkImage(
+            //                   cacheKey: Get.find<AuthCntr>().resLoginData.value.custId.toString(),
+            //                   imageUrl: Get.find<AuthCntr>().resLoginData.value.profilePath.toString(), //  'https://picsum.photos/200/300',
+            //                   width: 35,
+            //                   height: 35,
+            //                   fit: BoxFit.cover,
+            //                 ),
+            //         ),
+            //       ),
+            //     ),
+            //     const Gap(3),
+            //     Flexible(
+            //       child: Text(Get.find<AuthCntr>().resLoginData.value.nickNm.toString(),
+            //           overflow: TextOverflow.clip,
+            //           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)),
+            //     ),
+            //   ],
+            // ),
+            Divider(
+              height: 3,
+              thickness: 3,
+              color: Colors.purple.withOpacity(0.5),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                // color: Colors.grey.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(5),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  // Container(
+                  //     padding: const EdgeInsets.all(4),
+                  //     decoration: BoxDecoration(
+                  //       color: Colors.green.withOpacity(0.9),
+                  //       borderRadius: BorderRadius.circular(5),
+                  //     ),
+                  //     child: const Icon(Icons.location_on, color: Colors.white, size: 13)),
+                  // const SizedBox(width: 5),
+                  Flexible(
+                    child: ValueListenableBuilder<GeocodeData?>(
+                        valueListenable: geocodeData,
+                        builder: (context, value, child) {
+                          if (value == null) {
+                            return const SizedBox.shrink();
+                          }
+                          return Text(value.name,
+                              overflow: TextOverflow.clip,
+                              style: const TextStyle(fontSize: 13, color: Colors.black, fontWeight: FontWeight.bold));
+                        }),
                   ),
-                ),
+                ],
               ),
-              const Gap(3),
-              Flexible(
-                child: Text(Get.find<AuthCntr>().resLoginData.value.nickNm.toString(),
-                    overflow: TextOverflow.clip, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)),
-              ),
-            ],
-          ),
-          const Divider(),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(5),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    child: const Icon(Icons.location_on, color: Colors.white, size: 13)),
-                const SizedBox(width: 5),
-                Flexible(
-                  child: ValueListenableBuilder<GeocodeData?>(
-                      valueListenable: geocodeData,
-                      builder: (context, value, child) {
-                        if (value == null) {
-                          return const SizedBox.shrink();
-                        }
-                        return Text(value.name,
-                            overflow: TextOverflow.clip,
-                            style: const TextStyle(fontSize: 13, color: Colors.black, fontWeight: FontWeight.bold));
-                      }),
-                ),
-              ],
-            ),
-          ),
-          const Gap(15),
-          ValueListenableBuilder<CurrentWeatherData?>(
-              valueListenable: currentWeather,
-              builder: (context, value, child) {
-                if (value == null) {
-                  return const SizedBox.shrink();
-                }
-                return Row(
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${value.temp}',
-                              style: const TextStyle(
-                                fontSize: 23,
-                                height: 1,
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
+            const Gap(5),
+            ValueListenableBuilder<CurrentWeatherData?>(
+                valueListenable: currentWeather,
+                builder: (context, value, child) {
+                  if (value == null) {
+                    return const OffsetText(
+                      text: '기상정보를 가져오는 중입니다...',
+                      duration: Duration(milliseconds: 1200),
+                      type: AnimationType.word,
+                      slideType: SlideAnimationType.leftRight,
+                      textStyle: TextStyle(fontSize: 10, color: Colors.black, fontWeight: FontWeight.bold),
+                    );
+                    // return const Text("기상정보를 가져오는 중입니다.", style: TextStyle(fontSize: 10, color: Colors.black, fontWeight: FontWeight.bold));
+                  }
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${value.temp}',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  height: 1,
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            const Text(
-                              '°C',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
+                              const Text(
+                                '°C',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            )
-                          ],
-                        ),
-                        Text(
-                          value.description ?? '-',
-                          style: const TextStyle(fontSize: 14, color: Colors.black),
-                          overflow: TextOverflow.clip,
-                        )
-                      ],
-                    ),
-                    const Gap(10),
-                    SizedBox(
-                      height: 60,
-                      width: 60,
-                      child: WeatherDataProcessor.instance.getWeatherGogoImage(value.sky.toString(), value.rain.toString()),
-                      // child: Lottie.asset(
-                      //   WeatherDataProcessor.instance.getWeatherGogoImage(value.sky.toString(), value.rain.toString()),
-                      //   height: 138.0,
-                      //   width: 138.0,
+                              const Gap(5),
+                              Text(
+                                value.description ?? '-',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.black,
+                                  height: 1,
+                                ),
+                                overflow: TextOverflow.clip,
+                              )
+                            ],
+                          ),
+                        ],
+                      ),
+                      const Gap(10),
+                      // SizedBox(
+                      //   height: 60,
+                      //   width: 60,
+                      //   child: WeatherDataProcessor.instance.getWeatherGogoImage(value.sky.toString(), value.rain.toString()),
+                      //   // child: Lottie.asset(
+                      //   //   WeatherDataProcessor.instance.getWeatherGogoImage(value.sky.toString(), value.rain.toString()),
+                      //   //   height: 138.0,
+                      //   //   width: 138.0,
+                      //   // ),
                       // ),
-                    ),
 
-                    // Text(
-                    //   '습도:${value.humidity}%',
-                    //   style: const TextStyle(
-                    //     fontSize: 15,
-                    //     color: Colors.black,
-                    //   ),
-                    // ),
-                  ],
-                );
-              }),
-          const Gap(15),
-          ValueListenableBuilder<MistViewData?>(
+                      // Text(
+                      //   '습도:${value.humidity}%',
+                      //   style: const TextStyle(
+                      //     fontSize: 15,
+                      //     color: Colors.black,
+                      //   ),
+                      // ),
+                    ],
+                  );
+                }),
+            const Gap(5),
+            ValueListenableBuilder<MistViewData?>(
               valueListenable: mistData,
               builder: (context, value, child) {
                 if (value == null) {
                   return const SizedBox.shrink();
                 }
-                return RichText(
-                  text: TextSpan(
-                    text: '미세',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.black,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    children: <TextSpan>[
-                      buildTextMist(value.mist10Grade.toString()),
-                      const TextSpan(
-                        text: ' 초미세',
-                        style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: Colors.black),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    RichText(
+                      text: TextSpan(
+                        text: ' 미세',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.black,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        children: <TextSpan>[
+                          buildTextMist(value.mist10Grade.toString()),
+                          const TextSpan(
+                            text: ' 초미세',
+                            style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: Colors.black),
+                          ),
+                          buildTextMist(value.mist25Grade.toString()),
+                        ],
                       ),
-                      buildTextMist(value!.mist25Grade.toString()),
-                    ],
-                  ),
+                    ),
+                  ],
                 );
-              }),
-        ],
+              },
+            ),
+
+            // 날씨 정보 다시 조회 버튼
+            const Spacer(),
+            Align(
+              alignment: Alignment.centerRight,
+              child: SizedBox(
+                height: 25,
+                width: 80,
+                child: ElevatedButton(
+                    // padding: const EdgeInsets.all(0),
+                    // constraints: const BoxConstraints(),
+                    style: ButtonStyle(
+                        shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
+                        padding: WidgetStateProperty.all(EdgeInsets.zero),
+                        backgroundColor: WidgetStateProperty.all(
+                          // const Color.fromARGB(255, 95, 96, 103),
+                          const Color.fromARGB(255, 50, 125, 237),
+                        ),
+                        shadowColor: const WidgetStatePropertyAll(Color.fromARGB(255, 50, 125, 237))),
+                    onPressed: () async => getDate(),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Text(
+                          '날씨 다시조회',
+                          style: TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.w500),
+                        ),
+                        Icon(
+                          Icons.refresh_rounded,
+                          size: 13,
+                          color: Colors.white,
+                        ),
+                      ],
+                    )),
+              ),
+            ),
+          ],
+        ),
       ),
-    ));
+    );
   }
 
   String formatMilliseconds(int milliseconds) {
@@ -853,6 +976,212 @@ class _VideoRegPageState extends State<VideoRegPage> with SingleTickerProviderSt
       text: mist,
       style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: color),
     );
+  }
+
+  Widget _buildHideCheckbox() {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: GestureDetector(
+        onTap: _toggleHideCheckbox,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            ScaleTransition(
+              scale: _hideScaleAnimation,
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.rectangle,
+                  color: _hideChecked ? Colors.green : Colors.white,
+                ),
+                width: 20.5,
+                height: 20.5,
+                child: _hideChecked
+                    ? const Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: 19.5,
+                      )
+                    : const Icon(Icons.check_box_outline_blank, size: 23.5, color: Colors.black87),
+              ),
+            ),
+            const Gap(6),
+            const Text(
+              "숨기기로 등록",
+              style: TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 익명
+
+  Widget _buildAnonyCheckbox() {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: GestureDetector(
+        onTap: _toggleAnonyCheckbox,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            ScaleTransition(
+              scale: _anonyScaleAnimation,
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.rectangle,
+                  color: _anonyChecked ? Colors.purple : Colors.white,
+                ),
+                width: 20.5,
+                height: 20.5,
+                child: _anonyChecked
+                    ? const Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: 19.5,
+                      )
+                    : const Icon(Icons.check_box_outline_blank, size: 23.5, color: Colors.black87),
+              ),
+            ),
+            const Gap(6),
+            const Text(
+              "익명으로 등록",
+              style: TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingIndicator() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: isUploading,
+      builder: (context, value, child) {
+        return CustomIndicatorOffstage(isLoading: !value, color: const Color(0xFFEA3799), opacity: 0.5);
+      },
+    );
+  }
+
+  Widget _buildCloseButton() {
+    return Positioned(
+      top: 5,
+      right: 5,
+      child: IconButton(
+        icon: const Icon(Icons.close),
+        onPressed: () => cancle(),
+      ),
+    );
+  }
+
+  Widget _buildBottomBar() {
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        padding: const EdgeInsets.only(left: 16, right: 16, top: 5, bottom: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            _buildHashtagButton(),
+            const Spacer(),
+            // _buildReWeatherButton(),
+            _buildUploadButton(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReWeatherButton() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: isWeathering,
+      builder: (context, isWeatherValue, child) {
+        if (!isWeatherValue) return const SizedBox.shrink();
+        return CustomButton(
+          text: '날씨정보',
+          type: 'L',
+          isEnable: true,
+          widthValue: 120,
+          heightValue: 50,
+          onPressed: () {
+            retry = 3;
+            getDate();
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildHashtagButton() {
+    return ElevatedButton(
+      onPressed: () {
+        // 포커스
+        FocusScope.of(context).requestFocus(hashTagFocusNode);
+        // 키보드 보이기
+
+        hashTagController.text = '${hashTagController.text} #';
+      },
+      clipBehavior: Clip.none,
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        elevation: 1.5,
+        minimumSize: const Size(0, 0),
+        backgroundColor: Colors.grey[200],
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10.0),
+        ),
+      ),
+      child: const Text(
+        '# 태그추가',
+        style: TextStyle(
+          color: Colors.black,
+          fontSize: 14,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUploadButton() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: isWeathering,
+      builder: (context, isWeatherValue, child) {
+        if (isWeatherValue) return const Text("날씨정보 수신중..", style: TextStyle(fontSize: 13, color: Colors.grey));
+        return ValueListenableBuilder<bool>(
+          valueListenable: isUploading,
+          builder: (context, value, child) {
+            return CustomButton(
+                text: !value ? '등록하기' : '처리중..',
+                type: 'L',
+                isEnable: !isWeatherValue,
+                widthValue: 120,
+                heightValue: 50,
+                onPressed: () async {
+                  //  !value ? upload() : Utils.alert('처리중입니다..'),
+
+                  lo.g("등록하기 : $value");
+                  if (!value) {
+                    await upload();
+                    return;
+                  } else {
+                    Utils.alert('처리중입니다..');
+                  }
+                });
+          },
+        );
+      },
+    );
+  }
+
+  void _handlePopInvoked(bool didPop) {
+    //didPop == true , 뒤로가기 제스쳐가 감지되면 호출 된다.
+    lo.g("isCancle : $isCancle , didPop : $didPop");
+    if (!didPop && isCancle == false) {
+      cancle();
+      return;
+    }
   }
 }
 

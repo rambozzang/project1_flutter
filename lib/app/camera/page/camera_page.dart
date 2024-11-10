@@ -195,14 +195,14 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
               ),
             ),
           ),
-          Positioned(
-            bottom: 0,
-            left: 2,
-            child: Text(
-              "Camera Screen Auto Resized.",
-              style: TextStyle(color: Colors.yellow[200], fontSize: 8),
-            ),
-          )
+          // Positioned(
+          //   bottom: 0,
+          //   left: 2,
+          //   child: Text(
+          //     "Camera Screen Auto Resized.",
+          //     style: TextStyle(color: Colors.yellow[200], fontSize: 8),
+          //   ),
+          // )
         ]),
       ),
     );
@@ -235,116 +235,155 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                         return const SizedBox.shrink();
                       }
 
-                      final mediaSize = MediaQuery.of(context).size;
+                      // final mediaSize = MediaQuery.of(context).size;
                       final isBackCamera = controller.description.lensDirection == CameraLensDirection.back;
-                      final previewSize = controller.value.previewSize!;
-                      final previewRatio = previewSize.height / previewSize.width;
-                      final screenRatio = mediaSize.height / mediaSize.width;
+                      // final previewSize = controller.value.previewSize!;
+                      // final previewRatio = previewSize.height / previewSize.width;
+                      // final screenRatio = mediaSize.height / mediaSize.width;
 
-                      var scale = 1.0;
-                      if (screenRatio > previewRatio) {
-                        scale = mediaSize.height / (previewSize.width * previewRatio);
-                      } else {
-                        scale = mediaSize.width / previewSize.width;
-                      }
+                      // var scale = 1.0;
+                      // if (screenRatio > previewRatio) {
+                      //   scale = mediaSize.height / (previewSize.width * previewRatio);
+                      // } else {
+                      //   scale = mediaSize.width / previewSize.width;
+                      // }
+
+                      Size mediaSize = MediaQuery.of(context).size;
+                      // mediaSize.height -= MediaQuery.of(context).padding.top;
+                      // mediaSize. -= MediaQuery.of(context).padding.top;
+                      final deviceRatio = mediaSize.aspectRatio;
+
+                      final scale = 1 / (controller.value.aspectRatio * deviceRatio);
 
                       // 프론트 카메라일 경우 줌 레벨 조정
                       if (!isBackCamera) {
                         controller.setZoomLevel(1.0); // 줌 레벨을 1.0으로 설정 (기본값)
                       }
 
-                      return ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Transform.scale(
-                          scale: scale,
-                          child: Stack(
-                            children: [
-                              AspectRatio(
-                                aspectRatio: previewRatio,
-                                child: ZoomableWidget(
-                                  child: ClipRRect(borderRadius: BorderRadius.circular(20), child: CameraPreview(controller)),
-                                  onTapUp: (scaledPoint) {
-                                    controller.setFocusPoint(scaledPoint);
-                                  },
-                                  onZoom: (zoom) {
-                                    if (zoom < 11) {
-                                      controller.setZoomLevel(zoom);
-                                    }
-                                  },
-                                ),
+                      lo.g("scale ==> $scale");
+
+                      return Stack(
+                        children: [
+                          ZoomableWidget(
+                            onTapUp: (scaledPoint) {
+                              controller.setFocusPoint(scaledPoint);
+                            },
+                            onZoom: (zoom) {
+                              if (zoom < 11) {
+                                controller.setZoomLevel(zoom);
+                              }
+                            },
+                            child: ClipRect(
+                              clipper: _MediaSizeClipper(mediaSize),
+                              child: Transform.scale(
+                                scale: scale,
+                                alignment: Alignment.topCenter,
+                                child: CameraPreview(controller),
                               ),
-                              Positioned(
-                                bottom: Platform.isIOS ? 60 : 40,
-                                left: 0,
-                                right: 0,
-                                child: Center(
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    children: [
-                                      Visibility(
-                                        visible: !disableButtons,
-                                        child: StatefulBuilder(builder: (context, localSetState) {
-                                          return GestureDetector(
-                                            onTap: () {
-                                              final List<int> time = [15, 30, 60, 90];
-                                              int currentIndex = time.indexOf(cameraBloc.recordDurationLimit);
-                                              localSetState(() {
-                                                cameraBloc.setRecordDurationLimit = time[(currentIndex + 1) % time.length];
-                                              });
-                                            },
-                                            child: CircleAvatar(
-                                              backgroundColor: Colors.white.withOpacity(0.5),
-                                              radius: 25,
-                                              child: FittedBox(
-                                                  child: Text(
-                                                "${cameraBloc.recordDurationLimit}",
-                                                style: const TextStyle(
-                                                  color: Colors.black,
-                                                ),
-                                              )),
-                                            ),
-                                          );
-                                        }),
-                                      ),
-                                      const SizedBox(width: 20),
-                                      IgnorePointer(
-                                        ignoring: state is! CameraReady || state.decativateRecordButton,
-                                        child: Opacity(
-                                          opacity: state is! CameraReady || state.decativateRecordButton ? 0.4 : 1,
-                                          child: animatedProgressButton(state),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 20),
-                                      Visibility(
-                                        visible: !disableButtons,
+                            ),
+                          ),
+                          // AspectRatio(
+                          //   aspectRatio: deviceRatio,
+                          //   child: Transform(
+                          //     alignment: Alignment.center,
+                          //     transform: Matrix4.diagonal3Values(xScale, yScale, 1),
+                          //     child: ZoomableWidget(
+                          // onTapUp: (scaledPoint) {
+                          //   controller.setFocusPoint(scaledPoint);
+                          // },
+                          // onZoom: (zoom) {
+                          //   if (zoom < 11) {
+                          //     controller.setZoomLevel(zoom);
+                          //   }
+                          // },
+                          //         child: CameraPreview(controller)),
+                          //   ),
+                          // ),
+
+                          // AspectRatio(`
+                          //   aspectRatio: previewRatio,
+                          //   child: ZoomableWidget(
+                          //     child: ClipRRect(borderRadius: BorderRadius.circular(20), child: CameraPreview(controller)),
+                          // onTapUp: (scaledPoint) {
+                          //   controller.setFocusPoint(scaledPoint);
+                          // },
+                          // onZoom: (zoom) {
+                          //   if (zoom < 11) {
+                          //     controller.setZoomLevel(zoom);
+                          //   }
+                          // },
+                          //   ),
+                          // ),
+                          Positioned(
+                            bottom: Platform.isIOS ? 40 : 40,
+                            left: 0,
+                            right: 0,
+                            child: Center(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Visibility(
+                                    visible: !disableButtons,
+                                    child: StatefulBuilder(builder: (context, localSetState) {
+                                      return GestureDetector(
+                                        onTap: () {
+                                          final List<int> time = [15, 30, 60, 90];
+                                          int currentIndex = time.indexOf(cameraBloc.recordDurationLimit);
+                                          localSetState(() {
+                                            cameraBloc.setRecordDurationLimit = time[(currentIndex + 1) % time.length];
+                                          });
+                                        },
                                         child: CircleAvatar(
                                           backgroundColor: Colors.white.withOpacity(0.5),
                                           radius: 25,
-                                          child: IconButton(
-                                            onPressed: () async {
-                                              try {
-                                                // screenshotBytes = await takeCameraScreenshot(key: screenshotKey);
-                                                if (context.mounted) cameraBloc.add(CameraSwitch());
-                                              } catch (e) {
-                                                //screenshot error
-                                              }
-                                            },
-                                            icon: const Icon(
-                                              Icons.cameraswitch,
+                                          child: FittedBox(
+                                              child: Text(
+                                            "${cameraBloc.recordDurationLimit}",
+                                            style: const TextStyle(
                                               color: Colors.black,
-                                              size: 28,
                                             ),
-                                          ),
+                                          )),
+                                        ),
+                                      );
+                                    }),
+                                  ),
+                                  const SizedBox(width: 20),
+                                  IgnorePointer(
+                                    ignoring: state is! CameraReady || state.decativateRecordButton,
+                                    child: Opacity(
+                                      opacity: state is! CameraReady || state.decativateRecordButton ? 0.4 : 1,
+                                      child: animatedProgressButton(state),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 20),
+                                  Visibility(
+                                    visible: !disableButtons,
+                                    child: CircleAvatar(
+                                      backgroundColor: Colors.white.withOpacity(0.5),
+                                      radius: 25,
+                                      child: IconButton(
+                                        onPressed: () async {
+                                          try {
+                                            // screenshotBytes = await takeCameraScreenshot(key: screenshotKey);
+                                            if (context.mounted) cameraBloc.add(CameraSwitch());
+                                          } catch (e) {
+                                            //screenshot error
+                                          }
+                                        },
+                                        icon: const Icon(
+                                          Icons.cameraswitch,
+                                          color: Colors.black,
+                                          size: 28,
                                         ),
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
-                        ),
+                        ],
                       );
                     }),
                   ),
@@ -486,5 +525,19 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
         ),
       ),
     );
+  }
+}
+
+class _MediaSizeClipper extends CustomClipper<Rect> {
+  final Size mediaSize;
+  const _MediaSizeClipper(this.mediaSize);
+  @override
+  Rect getClip(Size size) {
+    return Rect.fromLTWH(0, 0, mediaSize.width, mediaSize.height);
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Rect> oldClipper) {
+    return true;
   }
 }

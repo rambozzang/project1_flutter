@@ -13,7 +13,7 @@ import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_button.dart';
 
 class VideoManagePageSheet {
-  Future<dynamic> open(BuildContext context, String boardId, String hideYn, String contents) async {
+  Future<dynamic> open(BuildContext context, String boardId, String hideYn, String anonyYn, String contents) async {
     Map<String, dynamic>? returnMap = await showModalBottomSheet(
       isScrollControlled: true,
       context: context,
@@ -32,6 +32,7 @@ class VideoManagePageSheet {
                 contextParent: context,
                 boardId: boardId,
                 hideYn: hideYn,
+                anonyYn: anonyYn,
                 contents: contents,
               )),
         );
@@ -47,11 +48,13 @@ class VideoManagePage extends StatefulWidget {
     required this.contextParent,
     required this.boardId,
     required this.hideYn,
+    required this.anonyYn,
     required this.contents,
   });
   final BuildContext contextParent;
   final String boardId;
   final String hideYn;
+  final String anonyYn;
   final String contents;
 
   @override
@@ -61,6 +64,7 @@ class VideoManagePage extends StatefulWidget {
 class _VideoManagePageState extends State<VideoManagePage> {
   // 게시물 숨김 여부
   ValueNotifier<bool> isHide = ValueNotifier<bool>(false);
+  ValueNotifier<bool> isAnony = ValueNotifier<bool>(false);
   ValueNotifier<bool> isDelete = ValueNotifier<bool>(false);
   ValueNotifier<bool> isModify = ValueNotifier<bool>(false);
 
@@ -70,6 +74,7 @@ class _VideoManagePageState extends State<VideoManagePage> {
   void initState() {
     super.initState();
     isHide.value = widget.hideYn == 'Y';
+    isAnony.value = widget.anonyYn == 'Y';
     textController.text = widget.contents;
 
     // 텍스트 변경 리스너 추가
@@ -77,6 +82,7 @@ class _VideoManagePageState extends State<VideoManagePage> {
 
     // 스위치 상태 변경 리스너 추가
     isHide.addListener(_onSwitchChanged);
+    isAnony.addListener(_onSwitchChanged);
     isDelete.addListener(_onSwitchChanged);
   }
 
@@ -102,7 +108,10 @@ class _VideoManagePageState extends State<VideoManagePage> {
   }
 
   void _checkModification() {
-    isModify.value = textController.text != widget.contents || isHide.value != (widget.hideYn == 'Y') || isDelete.value;
+    isModify.value = textController.text != widget.contents ||
+        isHide.value != (widget.hideYn == 'Y') ||
+        isDelete.value ||
+        isAnony.value != (widget.anonyYn == 'Y');
   }
 
   Future<void> save() async {
@@ -140,6 +149,7 @@ class _VideoManagePageState extends State<VideoManagePage> {
 
       // 2 수정 Api 호출
       boardUpdateData.hideYn = isHide.value ? 'Y' : 'N';
+      boardUpdateData.anonyYn = isAnony.value ? 'Y' : 'N';
       boardUpdateData.contents = textController.text;
       ResData res = await repo.updateBoard(boardUpdateData);
       if (res.code == '00') {
@@ -245,12 +255,12 @@ class _VideoManagePageState extends State<VideoManagePage> {
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             Text(
                               '게시물 숨기기',
                               style: TextStyle(color: value ? Colors.grey : Colors.white, fontSize: 14),
                             ),
-                            const Spacer(),
                             ValueListenableBuilder<bool>(
                               valueListenable: isHide,
                               builder: (context, value, child) {
@@ -263,6 +273,7 @@ class _VideoManagePageState extends State<VideoManagePage> {
                                     trackColor: Colors.white.withOpacity(0.5),
                                     onChanged: (bool value) {
                                       isHide.value = value;
+
                                       _checkModification();
                                     },
                                   ),
@@ -274,15 +285,50 @@ class _VideoManagePageState extends State<VideoManagePage> {
                       );
                     },
                   ),
+                  ValueListenableBuilder<bool>(
+                      valueListenable: isDelete,
+                      builder: (context, value, child) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Text(
+                                '게시물 익명처리',
+                                style: TextStyle(color: value ? Colors.grey : Colors.white, fontSize: 14),
+                              ),
+                              ValueListenableBuilder<bool>(
+                                valueListenable: isAnony,
+                                builder: (context, value1, child) {
+                                  bool thisValue = value1;
+                                  return Transform.scale(
+                                    scale: 0.8,
+                                    child: CupertinoSwitch(
+                                      value: thisValue,
+                                      activeColor: CupertinoColors.activeOrange,
+                                      trackColor: Colors.white.withOpacity(0.5),
+                                      onChanged: (bool value) {
+                                        isAnony.value = value;
+
+                                        _checkModification();
+                                      },
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         const Text(
                           '게시물 삭제',
                           style: TextStyle(color: Colors.white, fontSize: 15),
                         ),
-                        const Spacer(),
                         ValueListenableBuilder<bool>(
                           valueListenable: isDelete,
                           builder: (context, value, child) {
@@ -296,6 +342,7 @@ class _VideoManagePageState extends State<VideoManagePage> {
                                   isDelete.value = value;
                                   if (value) {
                                     isHide.value = false;
+                                    isAnony.value = false;
                                   }
                                   _checkModification();
                                 },
