@@ -148,25 +148,27 @@ class _BbsModifyPageState extends State<BbsModifyPage> {
   }
 
   Widget _buildImageList() {
-    return SizedBox(
-      height: 80,
-      width: double.infinity,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Obx(() => Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: cntr.imageList
-                  .map((image) => ImageItem(
-                        key: ValueKey(image.fileName),
-                        image: image.obs,
-                        onRemove: () => cntr.removeImage(image),
-                      ))
-                  .toList(),
-            )),
-      ),
-    );
+    return Obx(() => cntr.imageList.isEmpty
+        ? const SizedBox.shrink()
+        : SizedBox(
+            height: 80,
+            width: double.infinity,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: cntr.imageList
+                    .map((image) => ImageItem(
+                          key: ValueKey(image.fileName),
+                          image: image.obs,
+                          onRemove: () => cntr.removeImage(image),
+                        ))
+                    .toList(),
+              ),
+            ),
+          ));
   }
 
   Widget _buildBottomBar(BuildContext context) {
@@ -188,7 +190,11 @@ class _BbsModifyPageState extends State<BbsModifyPage> {
             const SizedBox(width: 10),
             _buildBottomBarButton(Icons.image_outlined, '이미지', () => cntr.pickImage()),
             const SizedBox(width: 10),
-            _buildBottomBarButton(Icons.image_not_supported_outlined, '전체삭제', () => cntr.removeAllImages()),
+            Obx(
+              () => cntr.imageList.isEmpty
+                  ? const SizedBox.shrink()
+                  : _buildBottomBarButton(Icons.image_not_supported_outlined, '전체삭제', () => cntr.removeAllImages()),
+            ),
           ],
         ),
       ),
@@ -283,10 +289,10 @@ class _BbsModifyPageState extends State<BbsModifyPage> {
   }
 
   void _handleContentChange(String value) {
-    if (value.length > 500) {
-      Utils.alert('500자 이하로 입력해주세요.');
-      cntr.contentController.text = value.substring(0, 500);
-    }
+    // if (value.length > 500) {
+    //   Utils.alert('500자 이하로 입력해주세요.');
+    //   cntr.contentController.text = value.substring(0, 500);
+    // }
   }
 
   Future<bool> _onWillPop() async {

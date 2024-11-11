@@ -154,7 +154,6 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
   void initializeVideo() async {
     try {
       lo.g("initializeVideo() widget.videoFile : ${widget.videoFile.path}");
-
       // 초기화 전 딜레이 추가
       await Future.delayed(const Duration(milliseconds: 300));
 

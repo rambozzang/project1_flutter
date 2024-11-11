@@ -159,8 +159,8 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
             ),
           ),
           Positioned(
-            top: 5,
-            right: 5,
+            top: 10,
+            right: 10,
             child: IconButton(
               style: IconButton.styleFrom(
                 backgroundColor: Colors.white.withOpacity(0.3),
@@ -179,7 +179,7 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
             ),
           ),
           Positioned(
-            top: 5,
+            top: 10,
             left: 10,
             child: TextButton(
               style: TextButton.styleFrom(
@@ -315,7 +315,7 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                           //   ),
                           // ),
                           Positioned(
-                            bottom: Platform.isIOS ? 40 : 40,
+                            bottom: Platform.isIOS ? 35 : 40,
                             left: 0,
                             right: 0,
                             child: Center(

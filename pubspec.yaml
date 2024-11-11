@@ -3,7 +3,7 @@ description: "SkySnap Flutter project."
 
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.10+38 # Ios 초기 버전
+version: 1.0.10+39 # Ios 초기 버전
 # version: 1.0.0+25  # Android 초기 버전
 
 
