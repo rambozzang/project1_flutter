@@ -1448,38 +1448,52 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
       title: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          InkWell(
-            onTap: () {
-              showModalBottomSheet(
-                  showDragHandle: true,
-                  shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.only(topLeft: Radius.circular(10.0), topRight: Radius.circular(10.0))),
-                  context: context,
-                  builder: (context) => Container(
-                        height: 400,
-                      ));
-            },
-            child: Obx(() => Text(
-                  Get.find<AuthCntr>().resLoginData.value.nickNm.toString(),
-                  style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
-                )),
+          Flexible(
+            child: InkWell(
+              onTap: () {
+                showModalBottomSheet(
+                    showDragHandle: true,
+                    shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.only(topLeft: Radius.circular(10.0), topRight: Radius.circular(10.0))),
+                    context: context,
+                    builder: (context) => Container(
+                          height: 400,
+                        ));
+              },
+              child: Obx(() => Text(
+                    Get.find<AuthCntr>().resLoginData.value.nickNm.toString(),
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                  )),
+            ),
           ),
           IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
             onPressed: () => Get.toNamed('/ChallengeMainPage'),
             icon: const Icon(Icons.emoji_events),
             tooltip: '챌린지',
           ),
+          const SizedBox(width: 8),
           IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
             onPressed: () => Get.toNamed('/AchievementPage'),
             icon: const Icon(Icons.military_tech),
             tooltip: '업적',
           ),
+          const SizedBox(width: 8),
           IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
             onPressed: () => Get.toNamed('/FeelRankingPage'),
             icon: const Icon(Icons.leaderboard),
             tooltip: '체감 랭킹',
           ),
+          const SizedBox(width: 8),
           IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
             onPressed: () => Get.toNamed('/SettingPage'),
             icon: const Icon(Icons.settings),
           )
