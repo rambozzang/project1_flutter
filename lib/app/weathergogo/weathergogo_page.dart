@@ -186,6 +186,8 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
                   );
                 }),
               ),
+              // 대기 깊이감: 천체 글로우(낮=햇무리/밤=달빛) + 비네팅
+              _buildAtmosphere(),
               buildStarts(),
               // NightSun(isVisibleNotifier: Get.find<WeatherGogoCntr>().isNightSun, top: 0, right: 0),
               // DaySun(isVisibleNotifier: Get.find<WeatherGogoCntr>().isDaySun, top: 56, right: 20),
@@ -203,6 +205,48 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
             ],
           ),
         ));
+  }
+
+  // 대기 깊이감 레이어: 천체 광원 글로우 + 비네팅
+  Widget _buildAtmosphere() {
+    final double nf = SkyGradient.nightFactor(DateTime.now()); // 0=낮 … 1=밤
+    // 천체 글로우 색: 낮=따뜻한 햇무리, 밤=차가운 달빛
+    final Color glow = Color.lerp(const Color(0xFFFFE6A8), const Color(0xFFBFD2FF), nf)!;
+    final double glowOpacity = 0.16 + 0.12 * (1 - nf); // 낮에 조금 더 또렷하게
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          // 천체 광원(해/달) — 상단에서 은은하게 퍼지는 빛
+          Positioned(
+            top: -70,
+            right: -30,
+            child: Container(
+              width: 340,
+              height: 340,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [glow.withOpacity(glowOpacity), glow.withOpacity(0.0)],
+                ),
+              ),
+            ),
+          ),
+          // 비네팅 — 가장자리를 살짝 어둡게 하여 중심에 시선 집중 + 깊이감
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0, -0.25),
+                  radius: 1.15,
+                  colors: [Colors.transparent, Colors.black.withOpacity(0.26)],
+                  stops: const [0.62, 1.0],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget buildStarts() {
