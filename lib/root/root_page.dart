@@ -275,17 +275,22 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   }
 
   void goRecord() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => BlocProvider(
-          create: (context) {
-            return CameraBloc(cameraUtils: CameraUtils(), permissionUtils: PermissionUtils())
-              ..add(const CameraInitialize(recordingLimit: 15));
-          },
-          child: const CameraPage(),
-        ),
-      ),
-    );
+    // 탭하는 "즉시"(라우트 전환 시작 전) 카메라 블록을 만들고 초기화를 시작한다.
+    // → 화면 전환 애니메이션(~300ms) 동안 카메라 HW 오픈이 병렬로 진행되어
+    //   촬영 화면이 뜰 때쯤 이미 프리뷰가 준비된다(틱톡식 사전 초기화).
+    final camBloc = CameraBloc(cameraUtils: CameraUtils(), permissionUtils: PermissionUtils())
+      ..add(const CameraInitialize(recordingLimit: 15));
+
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (context) => BlocProvider<CameraBloc>.value(
+              value: camBloc,
+              child: const CameraPage(),
+            ),
+          ),
+        )
+        .then((_) => camBloc.close()); // 라우트가 닫히면 블록 정리(메모리 누수 방지)
   }
 
   BottomNavigationBarItem bottomItem(IconData icondata, String label) {
