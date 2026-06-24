@@ -4,12 +4,9 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloudflare/cloudflare.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
@@ -100,7 +97,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance!.addObserver(this);
+    WidgetsBinding.instance.addObserver(this);
     fetchAllData();
 
     textFocus.addListener(() {
@@ -298,23 +295,23 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
           toolbarWidgetColor: Colors.white,
           initAspectRatio: CropAspectRatioPreset.original,
           lockAspectRatio: false,
-          aspectRatioPresets: [
-            CropAspectRatioPreset.square,
-            CropAspectRatioPreset.ratio3x2,
-            CropAspectRatioPreset.original,
-            CropAspectRatioPreset.ratio4x3,
-            CropAspectRatioPreset.ratio16x9
-          ],
+          // aspectRatioPresets: [
+          //   CropAspectRatioPreset.square,
+          //   CropAspectRatioPreset.ratio3x2,
+          //   CropAspectRatioPreset.original,
+          //   CropAspectRatioPreset.ratio4x3,
+          //   CropAspectRatioPreset.ratio16x9
+          // ],
         ),
         IOSUiSettings(
           title: '사진 편집기',
-          aspectRatioPresets: [
-            CropAspectRatioPreset.square,
-            CropAspectRatioPreset.ratio3x2,
-            CropAspectRatioPreset.original,
-            CropAspectRatioPreset.ratio4x3,
-            CropAspectRatioPreset.ratio16x9
-          ],
+          // aspectRatioPresets: [
+          //   CropAspectRatioPreset.square,
+          //   CropAspectRatioPreset.ratio3x2,
+          //   CropAspectRatioPreset.original,
+          //   CropAspectRatioPreset.ratio4x3,
+          //   CropAspectRatioPreset.ratio16x9
+          // ],
         ),
         WebUiSettings(
           context: context,
@@ -329,7 +326,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
       return;
     }
 
-    File aa = File(croppedFile!.path);
+    File aa = File(croppedFile.path);
 
     // 1. 파일 업로드
     final String resthumbnail = await uploadImage(aa);
@@ -1468,12 +1465,27 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                 )),
           ),
           IconButton(
+            onPressed: () => Get.toNamed('/ChallengeMainPage'),
+            icon: const Icon(Icons.emoji_events),
+            tooltip: '챌린지',
+          ),
+          IconButton(
+            onPressed: () => Get.toNamed('/AchievementPage'),
+            icon: const Icon(Icons.military_tech),
+            tooltip: '업적',
+          ),
+          IconButton(
+            onPressed: () => Get.toNamed('/FeelRankingPage'),
+            icon: const Icon(Icons.leaderboard),
+            tooltip: '체감 랭킹',
+          ),
+          IconButton(
             onPressed: () => Get.toNamed('/SettingPage'),
             icon: const Icon(Icons.settings),
           )
         ],
       ),
-      actions: [
+      actions: const [
         // Padding(
         //   padding: EdgeInsets.all(14.0),
         //   child: IconButton(icon: Icon(Icons.menu), onPressed: () => Get.toNamed('SettingPage')),
@@ -1512,8 +1524,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                       const Spacer(),
                       IconButton(
                         style: ButtonStyle(
-                          padding: MaterialStateProperty.all(EdgeInsets.zero),
-                          minimumSize: MaterialStateProperty.all(Size.zero),
+                          padding: WidgetStateProperty.all(EdgeInsets.zero),
+                          minimumSize: WidgetStateProperty.all(Size.zero),
                         ),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),

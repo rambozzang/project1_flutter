@@ -8,7 +8,6 @@ import 'package:project1/app/bbs/bbs_view_page.dart';
 import 'package:project1/app/bbs/bbs_write_page.dart';
 import 'package:project1/app/bbs/cntr/bbs_my_list_cntr.dart';
 import 'package:project1/app/bbs/cntr/bbs_search_list_cntr.dart';
-import 'package:project1/app/bbs/cntr/bbs_view_cntr.dart';
 import 'package:project1/app/bbs/cntr/bbs_write_cntr.dart';
 
 import 'package:project1/app/bbs/cntr/bbs_modify_cntr.dart';
@@ -50,6 +49,10 @@ import 'package:project1/app/weather/page/weather_page.dart';
 import 'package:project1/app/weatherCom/cntr/weather_com_controller.dart';
 import 'package:project1/app/weatherCom/weather_com_page.dart';
 import 'package:project1/app/weathergogo/weathergogo_page.dart';
+import 'package:project1/app/challenge/challenge_main_page.dart';
+import 'package:project1/app/attendance/attendance_calendar_page.dart';
+import 'package:project1/app/achievement/achievement_page.dart';
+import 'package:project1/app/feel/feel_ranking_page.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/root/main_view1.dart';
 import 'package:project1/root/root_page.dart';
@@ -254,14 +257,14 @@ abstract class AppPages {
     ),
     GetPage(
       name: '/WeatherComPage',
-      page: () => WeatherComPage(),
+      page: () => const WeatherComPage(),
       binding: WeatherComControllerBinding(),
       // transition: Transition.downToUp,
     ),
 
     GetPage(
       name: '/BlockListPage',
-      page: () => BlockListPage(),
+      page: () => const BlockListPage(),
       // transition: Transition.downToUp,
     ),
     GetPage(
@@ -329,6 +332,26 @@ abstract class AppPages {
       page: () => const BbsSearchListPage(),
       binding: BbsSearchListinding(),
       // transition: Transition.downToUp,
+    ),
+    GetPage(
+      name: '/ChallengeMainPage',
+      page: () => const ChallengeMainPage(),
+      transition: Transition.rightToLeftWithFade,
+    ),
+    GetPage(
+      name: '/AttendanceCalendarPage',
+      page: () => const AttendanceCalendarPage(),
+      transition: Transition.rightToLeftWithFade,
+    ),
+    GetPage(
+      name: '/AchievementPage',
+      page: () => const AchievementPage(),
+      transition: Transition.rightToLeftWithFade,
+    ),
+    GetPage(
+      name: '/FeelRankingPage',
+      page: () => const FeelRankingPage(),
+      transition: Transition.rightToLeftWithFade,
     ),
   ];
 }
