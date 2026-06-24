@@ -596,6 +596,11 @@ final class VideoPlayer {
       this.isActive = active;
     }
 
+    // media3 1.4.1 필수 메서드 (파라미터 없는 버전)
+    @Override public void onPrepared() {}
+    @Override public void onStopped() {}
+    @Override public void onReleased() {}
+
     @Override public Allocator getAllocator() { return allocator; }
 
     @Override public long getBackBufferDurationUs() { return 0; }
