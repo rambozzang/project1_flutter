@@ -324,6 +324,8 @@ class RootCntr extends GetxController {
       weatherVo.thumbnailId = video.thumbnail;
       weatherVo.videoPath = video.playback!.hls.toString();
       weatherVo.videoId = video.id;
+      // 사용자가 선택한 체감 날씨 태그는 백그라운드 자동수집엔 없으므로 보존
+      weatherVo.feelCd = boardSaveData.boardWeatherVo?.feelCd;
       boardSaveData.boardWeatherVo = weatherVo;
 
       ResData resData = await boardRepo.save(boardSaveData);

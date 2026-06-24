@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:hashtagable_v3/widgets/hashtag_text_field.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:pretty_animated_text/pretty_animated_text.dart';
+import 'package:project1/app/feel/widgets/feel_selector_widget.dart';
 import 'package:project1/app/weather/models/geocode.dart';
 import 'package:project1/app/weathergogo/services/location_service.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
@@ -60,6 +61,9 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
 
   late String? thumbnailFile;
   BoardSaveData boardSaveData = BoardSaveData();
+
+  // 사용자가 선택한 체감 날씨 태그 (HELL/HOT/.../WINDY)
+  String? selectedFeelCd;
 
   bool isCancle = false;
   Duration durationOfVideo = Duration.zero;
@@ -308,7 +312,9 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
       // 날씨(boardWeatherVo)는 게시 후 백그라운드 업로드와 병렬로 수집되어
       // 저장 직전에 합쳐진다. (RootCntr.uploadCloudflare + WeatherForBoard)
       boardSaveData.boardMastInVo = _createBoardSaveMainData();
-      boardSaveData.boardWeatherVo = null;
+      // 날씨 본체는 백그라운드에서 수집하지만, 사용자가 고른 체감 태그는 여기서 실어 보낸다.
+      // (RootCntr.uploadCloudflare 가 저장 직전 weatherVo.feelCd 로 보존한다.)
+      boardSaveData.boardWeatherVo = BoardSaveWeatherData()..feelCd = selectedFeelCd;
 
       _showUploadAlert();
 
@@ -515,6 +521,20 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
           ),
           _igDivider(),
           _autoWeatherRow(),
+          _igDivider(),
+          // 체감 날씨 태그 선택 (사용자 주관 입력 — 자동 수집되는 날씨와 별개)
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: FeelSelectorWidget(
+              selectedFeelCd: selectedFeelCd,
+              onSelected: (code) => setState(() => selectedFeelCd = code),
+            ),
+          ),
           _igDivider(),
           _policyRow(),
           const Gap(8),

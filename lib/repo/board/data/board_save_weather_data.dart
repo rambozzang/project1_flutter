@@ -1,7 +1,6 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
-import 'package:project1/utils/log_utils.dart';
 
 class BoardSaveWeatherData {
   int? boardId;
@@ -26,6 +25,7 @@ class BoardSaveWeatherData {
   String? city;
   String? mist10;
   String? mist25;
+  String? feelCd;
   BoardSaveWeatherData({
     this.boardId,
     this.lat,
@@ -49,6 +49,7 @@ class BoardSaveWeatherData {
     this.city,
     this.mist10,
     this.mist25,
+    this.feelCd,
   });
 
   BoardSaveWeatherData copyWith({
@@ -74,6 +75,7 @@ class BoardSaveWeatherData {
     String? city,
     String? mist10,
     String? mist25,
+    String? feelCd,
   }) {
     return BoardSaveWeatherData(
       boardId: boardId ?? this.boardId,
@@ -98,6 +100,7 @@ class BoardSaveWeatherData {
       city: city ?? this.city,
       mist10: mist10 ?? this.mist10,
       mist25: mist25 ?? this.mist25,
+      feelCd: feelCd ?? this.feelCd,
     );
   }
 
@@ -125,6 +128,7 @@ class BoardSaveWeatherData {
       'city': city,
       'mist10': mist10,
       'mist25': mist25,
+      'feelCd': feelCd,
     };
   }
 
@@ -152,6 +156,7 @@ class BoardSaveWeatherData {
       city: map['city'] != null ? map['city'] as String : null,
       mist10: map['mist10'] != null ? map['mist10'] as String : null,
       mist25: map['mist25'] != null ? map['mist25'] as String : null,
+      feelCd: map['feelCd'] != null ? map['feelCd'] as String : null,
     );
   }
 
@@ -161,7 +166,7 @@ class BoardSaveWeatherData {
 
   @override
   String toString() {
-    return 'BoardSaveWeatherData(boardId: $boardId, lat: $lat, lon: $lon, location: $location, weatherInfo: $weatherInfo, videoPath: $videoPath, videoId: $videoId, thumbnailPath: $thumbnailPath, thumbnailId: $thumbnailId, icon: $icon, sky: $sky, rain: $rain, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, country: $country, city: $city, mist10: $mist10, mist25: $mist25)';
+    return 'BoardSaveWeatherData(boardId: $boardId, lat: $lat, lon: $lon, location: $location, weatherInfo: $weatherInfo, videoPath: $videoPath, videoId: $videoId, thumbnailPath: $thumbnailPath, thumbnailId: $thumbnailId, icon: $icon, sky: $sky, rain: $rain, currentTemp: $currentTemp, feelsTemp: $feelsTemp, tempMin: $tempMin, tempMax: $tempMax, humidity: $humidity, speed: $speed, country: $country, city: $city, mist10: $mist10, mist25: $mist25, feelCd: $feelCd)';
   }
 
   @override
