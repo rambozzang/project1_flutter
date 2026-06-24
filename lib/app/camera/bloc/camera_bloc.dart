@@ -234,25 +234,17 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       _cameraController = await cameraUtils.getCameraController(lensDirection: currentLensDirection);
       await _cameraController!.initialize();
 
-      await Future.delayed(const Duration(milliseconds: 150));
-
-      // 녹화 시작 지연 제거의 핵심:
-      // MediaRecorder(Android)/캡처세션(iOS)을 "미리" 준비해 두면
-      // startVideoRecording() 호출 시 즉시 녹화가 시작된다.
-      // (기존엔 iOS에서만 호출돼 Android는 녹화 버튼을 누른 뒤에야
-      //  레코더를 구성하느라 렉이 발생 → 중요한 순간을 놓침)
-      try {
-        await _cameraController?.prepareForVideoRecording();
-      } catch (e) {
-        lo.g('prepareForVideoRecording skip: $e');
-      }
-      if (Platform.isIOS) {
-        // 화면 깜빡임을 속이기 위해 딜레이를 주고 Ready로 상태변경
-        await Future.delayed(const Duration(milliseconds: 150));
-      }
-
+      // 1) 프리뷰를 "즉시" 표시 → 화면 로드 체감 속도 향상.
+      //    (기존엔 prepare/딜레이가 Ready 방출을 막아 로드가 느렸음)
       emit(CameraReady(isRecordingVideo: false, decativateRecordButton: false));
       _cameraController?.lockCaptureOrientation(DeviceOrientation.portraitUp);
+
+      // 2) 레코더(MediaRecorder/캡처세션)는 "백그라운드"로 미리 준비.
+      //    await 하지 않아 화면 표시를 막지 않으면서, 사용자가 녹화 버튼을
+      //    누를 때쯤이면 준비가 끝나 startVideoRecording()이 즉시 실행된다.
+      _cameraController?.prepareForVideoRecording().catchError((e) {
+        lo.g('prepareForVideoRecording skip: $e');
+      });
 
       _cameraController!.addListener(() {
         if (_cameraController!.value.isRecordingVideo) {

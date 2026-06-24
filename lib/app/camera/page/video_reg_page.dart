@@ -489,29 +489,232 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
   Widget _buildMainContent() {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 히어로: 영상 미리보기 (화면의 주인공)
-          Center(child: _buildVideoPlayer()),
-          const Gap(14),
-          _buildAutoWeatherHint(),
-          const Gap(20),
-          _buildSectionLabel('이 순간의 이야기'),
-          const Gap(8),
-          _buildCaptionField(),
-          const Gap(20),
-          _buildSectionLabel('공개 설정'),
-          const Gap(8),
-          _buildOptionPills(),
-          const Gap(18),
-          _buildPolicySection(),
+          // 인스타그램식 컴포저: 썸네일(좌) + 캡션(우)
+          _buildComposerRow(),
+          const Gap(10),
+          _igDivider(),
+          // 설정 행들 (좌: 아이콘+설명, 우: 스위치)
+          _settingRow(
+            icon: _hideChecked ? Icons.lock_outline_rounded : Icons.public_rounded,
+            title: '비공개로 게시',
+            subtitle: _hideChecked ? '나만 볼 수 있어요' : '모두에게 공개돼요',
+            value: _hideChecked,
+            onChanged: (_) => _toggleHideCheckbox(),
+          ),
+          _igDivider(),
+          _settingRow(
+            icon: _anonyChecked ? Icons.person_off_outlined : Icons.person_outline_rounded,
+            title: '익명으로 게시',
+            subtitle: _anonyChecked ? '닉네임을 숨겨요' : '내 닉네임이 표시돼요',
+            value: _anonyChecked,
+            onChanged: (_) => _toggleAnonyCheckbox(),
+          ),
+          _igDivider(),
+          _autoWeatherRow(),
+          _igDivider(),
+          _policyRow(),
           const Gap(8),
         ],
       ),
     );
   }
+
+  // ── 인스타그램식 상단 컴포저 (썸네일 + 캡션) ──
+  Widget _buildComposerRow() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildVideoThumb(),
+        const Gap(12),
+        Expanded(child: _buildCaptionField()),
+      ],
+    );
+  }
+
+  // 컴팩트 영상 썸네일 (탭 → 전체화면)
+  Widget _buildVideoThumb() {
+    const double w = 104, h = 164;
+    void openFull() {
+      Navigator.push<_PlayerVideoAndPopPage>(
+        context,
+        MaterialPageRoute<_PlayerVideoAndPopPage>(
+          builder: (BuildContext context) => _PlayerVideoAndPopPage(videoPlayerController: _videoController),
+        ),
+      );
+    }
+
+    if (!initVideo) {
+      return Container(
+        width: w,
+        height: h,
+        decoration: BoxDecoration(
+          color: _surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _surfaceBorder),
+        ),
+        alignment: Alignment.center,
+        child: const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: _accent)),
+      );
+    }
+
+    return GestureDetector(
+      onTap: openFull,
+      child: SizedBox(
+        width: w,
+        height: h,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              FittedBox(
+                fit: BoxFit.cover,
+                clipBehavior: Clip.hardEdge,
+                child: SizedBox(
+                  width: _videoController.value.size.width,
+                  height: _videoController.value.size.height,
+                  child: VideoPlayer(_videoController),
+                ),
+              ),
+              // 재생시간 + 전체화면 힌트
+              Positioned(
+                left: 6,
+                bottom: 6,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(color: Colors.black.withOpacity(0.5), borderRadius: BorderRadius.circular(7)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.play_arrow_rounded, size: 12, color: Colors.white),
+                      const Gap(2),
+                      Text(formatMilliseconds(durationOfVideo.inMilliseconds),
+                          style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
+              ),
+              const Positioned(top: 6, right: 6, child: Icon(Icons.fullscreen_rounded, size: 18, color: Colors.white)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── 설정 행 (인스타식: 아이콘 + 제목/부제 + 스위치) ──
+  Widget _settingRow({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 22, color: value ? _accent : _textLo),
+          const Gap(14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontSize: 15, color: _textHi, fontWeight: FontWeight.w600)),
+                Text(subtitle, style: const TextStyle(fontSize: 12, color: _textLo)),
+              ],
+            ),
+          ),
+          Switch.adaptive(
+            value: value,
+            onChanged: onChanged,
+            activeColor: Colors.white,
+            activeTrackColor: _accent,
+            inactiveThumbColor: Colors.white,
+            inactiveTrackColor: const Color(0x33FFFFFF),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 위치·날씨 자동 첨부 안내 행
+  Widget _autoWeatherRow() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          const Icon(Icons.auto_awesome_rounded, size: 22, color: _accent),
+          const Gap(14),
+          const Expanded(
+            child: Text('촬영한 곳의 날씨·위치가 자동으로 함께 기록돼요.',
+                style: TextStyle(fontSize: 14, color: _textHi, height: 1.3)),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(color: _accent.withOpacity(0.16), borderRadius: BorderRadius.circular(8)),
+            child: const Text('자동', style: TextStyle(fontSize: 11, color: _accent, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 게시 정책 행 (탭 → 펼치기)
+  Widget _policyRow() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _policyOpen,
+      builder: (context, open, _) {
+        return Column(
+          children: [
+            InkWell(
+              onTap: () => _policyOpen.value = !open,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                child: Row(
+                  children: [
+                    const Icon(Icons.shield_outlined, size: 22, color: _textLo),
+                    const Gap(14),
+                    const Expanded(
+                      child: Text('게시 정책 · 저작권 안내',
+                          style: TextStyle(fontSize: 15, color: _textHi, fontWeight: FontWeight.w600)),
+                    ),
+                    AnimatedRotation(
+                      turns: open ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 220),
+                      child: const Icon(Icons.keyboard_arrow_down_rounded, color: _textLo, size: 22),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            AnimatedCrossFade(
+              duration: const Duration(milliseconds: 220),
+              crossFadeState: open ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+              firstChild: const SizedBox(width: double.infinity, height: 0),
+              secondChild: const Padding(
+                padding: EdgeInsets.only(left: 36, bottom: 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _PolicyLine(icon: Icons.music_note_rounded, text: '음악 저작권: 허락 없는 음원 사용 시 게시가 제한되거나 법적 책임이 따를 수 있어요. 저작권 free 음원을 권장합니다.'),
+                    Gap(10),
+                    _PolicyLine(icon: Icons.gavel_rounded, text: '금지 콘텐츠: 불법·성적·폭력·혐오 영상은 즉시 삭제되며 계정 정지 및 법적 조치 대상이 됩니다.'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _igDivider() => Container(height: 1, color: const Color(0x14FFFFFF));
 
   // 섹션 라벨 (좌측 정렬, 절제된 톤)
   Widget _buildSectionLabel(String text) {
@@ -548,29 +751,25 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
     );
   }
 
-  // ── 캡션 입력 (테두리 없는 다크 표면) ──
+  // ── 캡션 입력 (인스타식: 썸네일 옆 무테두리 멀티라인) ──
   Widget _buildCaptionField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _surfaceBorder),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+    return SizedBox(
+      height: 164, // 썸네일 높이에 맞춰 정렬
       child: HashTagTextField(
         controller: hashTagController,
-        basicStyle: const TextStyle(fontSize: 15, height: 1.4, color: _textHi, decorationThickness: 0),
-        decoratedStyle: const TextStyle(fontSize: 15, height: 1.4, color: _accent, fontWeight: FontWeight.w600),
+        basicStyle: const TextStyle(fontSize: 15, height: 1.45, color: _textHi, decorationThickness: 0),
+        decoratedStyle: const TextStyle(fontSize: 15, height: 1.45, color: _accent, fontWeight: FontWeight.w600),
         keyboardType: TextInputType.multiline,
         focusNode: hashTagFocusNode,
         cursorColor: _accent,
-        maxLines: 5,
-        minLines: 3,
+        maxLines: null,
+        expands: true,
+        textAlignVertical: TextAlignVertical.top,
         decoration: const InputDecoration(
           isCollapsed: true,
-          contentPadding: EdgeInsets.symmetric(vertical: 14),
-          hintText: "이 순간의 하늘을 들려주세요.\n#오늘날씨  #노을  #첫눈",
-          hintStyle: TextStyle(fontSize: 15, height: 1.4, color: _textLo),
+          contentPadding: EdgeInsets.symmetric(vertical: 4),
+          hintText: "문구를 입력하거나 해시태그를 추가하세요…\n#오늘날씨  #노을  #첫눈",
+          hintStyle: TextStyle(fontSize: 15, height: 1.45, color: _textLo),
           border: InputBorder.none,
           focusedBorder: InputBorder.none,
           enabledBorder: InputBorder.none,
