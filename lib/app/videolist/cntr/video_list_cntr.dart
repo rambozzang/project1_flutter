@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:get/get.dart';
-import 'package:project1/app/auth/cntr/auth_cntr.dart';
-import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -33,7 +31,9 @@ class VideoListCntr extends GetxController {
   int playAtFirst = 0;
 
   var isLoadingMore = true.obs;
-  int preLoadingCount = 5;
+  // TikTok-style: 현재 페이지 기준 ±3개를 미리 빌드 → 위쪽 3개 영상이 각각 5초씩 사전 버퍼링됨.
+  // 빠르게 스와이프해도 다음 영상들이 이미 준비되어 즉시 재생.
+  int preLoadingCount = 3;
 
   //현재 영상의 index값 저장
   var currentIndex = 0.obs;
@@ -101,8 +101,8 @@ class VideoListCntr extends GetxController {
       }
 
       var currentLocation = Get.find<WeatherGogoCntr>().currentLocation.value.latLng;
-      String lat = currentLocation?.latitude.toString() ?? '';
-      String lon = currentLocation?.longitude.toString() ?? '';
+      String lat = currentLocation.latitude.toString();
+      String lon = currentLocation.longitude.toString();
 
       BoardRepo boardRepo = BoardRepo();
       final apiCallMap = {
@@ -121,9 +121,9 @@ class VideoListCntr extends GetxController {
         return;
       }
 
-      List<BoardWeatherListData> _list = ((resListData.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
+      List<BoardWeatherListData> newList = ((resListData.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
 
-      if (_list.isEmpty) {
+      if (newList.isEmpty) {
         if (isInitialLoad) {
           videoListCntr.sink.add(ResStream.completed([]));
         }
@@ -133,19 +133,22 @@ class VideoListCntr extends GetxController {
       }
 
       if (isInitialLoad) {
-        list = _list;
+        // 클래스 필드(this.list) 갱신: 지역변수 섀도잉으로 비어 있던 버그 수정
+        list
+          ..clear()
+          ..addAll(newList);
         mountedList.clear();
       } else {
-        list.addAll(_list);
+        list.addAll(newList);
       }
 
-      if (_list.length < pagesize) {
+      if (newList.length < pagesize) {
         isLoadingMore.value = false;
       }
 
       lo.g('list : ${list.length}');
 
-      videoListCntr.sink.add(ResStream.completed(list));
+      videoListCntr.sink.add(ResStream.completed(list.toList()));
 
       if (isInitialLoad && Get.find<WeatherGogoCntr>().currentWeather.value.temp == '0.0') {
         Future.delayed(const Duration(milliseconds: 3000), () {
@@ -176,11 +179,11 @@ class VideoListCntr extends GetxController {
       // 현재 리스트에 팔로우여부 변경
       // list[currentIndex.value].followYn = 'Y';
 
-      list.forEach((element) {
+      for (var element in list) {
         if (element.custId == custId) {
           element.followYn = 'Y';
         }
-      });
+      }
       update();
       return true;
     } catch (e) {
@@ -202,11 +205,11 @@ class VideoListCntr extends GetxController {
       Utils.alert('팔로우	취소되었습니다!');
       // 현재 리스트에 팔로우여부 변경
       //  list[currentIndex.value].followYn = 'N';
-      list.forEach((element) {
+      for (var element in list) {
         if (element.custId == custId) {
           element.followYn = 'N';
         }
-      });
+      }
       update();
       return true;
     } catch (e) {

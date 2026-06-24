@@ -616,12 +616,10 @@ final class VideoPlayer {
 
     @Override
     public boolean shouldContinueLoading(LoadControl.Parameters p) {
-      long minUs = isActive ? ACTIVE_MIN_US  : PRELOAD_MIN_US;
-      long maxUs = isActive ? ACTIVE_MAX_US  : PRELOAD_MAX_US;
-      long buf   = p.bufferedDurationUs;
-      if (buf >= maxUs) return false;  // 최대 버퍼 도달 → 중단
-      if (buf < minUs)  return true;   // 최소 미달 → 계속 로드
-      return p.playWhenReady;          // 그 사이: 재생 중이면 계속, 정지면 중단
+      // 프리로드(정지)든 활성(재생)이든 상한까지는 무조건 채운다.
+      // → 화면 밖 영상도 미리 5초를 확보해 두어 스와이프 즉시 재생 가능.
+      long maxUs = isActive ? ACTIVE_MAX_US : PRELOAD_MAX_US;
+      return p.bufferedDurationUs < maxUs;
     }
 
     @Override
