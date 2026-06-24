@@ -284,12 +284,16 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                               }
                             },
                             key: ValueKey('${widget.data.boardId.toString()}videoScreen'),
-                            child: InteractiveViewer(
-                              transformationController: _transformationController,
-                              minScale: 1.0,
-                              maxScale: 4.0,
-                              child: SizedBox.expand(
-                                child: VideoPlayer(_controller),
+                            child: SizedBox.expand(
+                              // 왜곡 없이 화면 채우고 상·하 균등 크롭 (하단 짤림 방지)
+                              child: FittedBox(
+                                fit: BoxFit.cover,
+                                clipBehavior: Clip.hardEdge,
+                                child: SizedBox(
+                                  width: _controller.value.size.width,
+                                  height: _controller.value.size.height,
+                                  child: VideoPlayer(_controller),
+                                ),
                               ),
                             ),
                             // child: SizedBox.expand(

@@ -17,9 +17,9 @@ import 'package:project1/utils/utils.dart';
 import 'package:text_scroll/text_scroll.dart';
 
 /// 틱톡식 빠른 스와이프 물리.
-/// 기본 PageScrollPhysics보다 스프링을 단단하게(stiffness↑) 만들어
-/// 페이지가 더 빠르게 스냅되어 휙휙 넘어가는 느낌을 준다.
-class FastPageScrollPhysics extends PageScrollPhysics {
+/// 아주 작은 플링(살짝만 휙)에도 드래그 방향으로 "무조건 한 페이지" 넘어가고,
+/// 단단한 스프링으로 즉시 스냅된다.
+class FastPageScrollPhysics extends ScrollPhysics {
   const FastPageScrollPhysics({super.parent});
 
   @override
@@ -27,16 +27,54 @@ class FastPageScrollPhysics extends PageScrollPhysics {
     return FastPageScrollPhysics(parent: buildParent(ancestor));
   }
 
+  // 이 속도(px/s)만 넘으면 한 페이지 넘어간다. 낮을수록 더 민감.
+  static const double _flingThreshold = 30.0;
+
+  double _page(ScrollMetrics p) => p.pixels / p.viewportDimension;
+  double _pixels(ScrollMetrics p, double page) => page * p.viewportDimension;
+
+  double _target(ScrollMetrics p, double velocity) {
+    double page = _page(p);
+    if (velocity > _flingThreshold) {
+      // 다음 페이지로 (현재 위치가 정확히 페이지에 있어도 무조건 +1)
+      page = page.floorToDouble() + 1;
+    } else if (velocity < -_flingThreshold) {
+      page = page.ceilToDouble() - 1;
+    } else {
+      page = page.roundToDouble();
+    }
+    final double maxPage = p.maxScrollExtent / p.viewportDimension;
+    return _pixels(p, page.clamp(0.0, maxPage));
+  }
+
+  @override
+  Simulation? createBallisticSimulation(ScrollMetrics position, double velocity) {
+    // 끝단에서는 부모(오버스크롤) 처리에 위임
+    if ((velocity <= 0.0 && position.pixels <= position.minScrollExtent) ||
+        (velocity >= 0.0 && position.pixels >= position.maxScrollExtent)) {
+      return super.createBallisticSimulation(position, velocity);
+    }
+    final Tolerance tol = toleranceFor(position);
+    final double target = _target(position, velocity);
+    if ((target - position.pixels).abs() < tol.distance) return null;
+    return ScrollSpringSimulation(spring, position.pixels, target, velocity, tolerance: tol);
+  }
+
   @override
   SpringDescription get spring => SpringDescription.withDampingRatio(
-        mass: 0.4, // 가볍게 → 빠른 반응
-        stiffness: 220, // 단단하게 → 빠른 스냅
-        ratio: 1.1, // 살짝 과감쇠 → 출렁임 없이 정착
+        mass: 0.3, // 가볍게 → 즉각 반응
+        stiffness: 280, // 매우 단단하게 → 확 스냅
+        ratio: 1.1, // 과감쇠 → 출렁임 없음
       );
 
-  // 작은 플링에도 페이지가 넘어가도록
   @override
-  double get minFlingVelocity => 50.0;
+  double get minFlingVelocity => 20.0;
+
+  @override
+  double get minFlingDistance => 0.0;
+
+  @override
+  bool get allowImplicitScrolling => false;
 }
 
 class VideoListPage extends StatefulWidget {

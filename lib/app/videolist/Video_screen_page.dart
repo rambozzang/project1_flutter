@@ -396,14 +396,16 @@ class VideoScreenPageState extends State<VideoScreenPage> {
         },
         child: Center(
           child: SizedBox.expand(
-            child: InteractiveViewer(
-                transformationController: transformationController,
-                boundaryMargin: const EdgeInsets.all(0.0),
-                minScale: 1.0,
-                maxScale: 4.0,
-                scaleEnabled: true,
-                panEnabled: true,
-                child: VideoPlayer(_controller)),
+            // 왜곡 없이 화면을 채우고 상·하 균등 크롭 (영상 하단 짤림 방지)
+            child: FittedBox(
+              fit: BoxFit.cover,
+              clipBehavior: Clip.hardEdge,
+              child: SizedBox(
+                width: _controller.value.size.width,
+                height: _controller.value.size.height,
+                child: VideoPlayer(_controller),
+              ),
+            ),
           ),
         ),
       ),

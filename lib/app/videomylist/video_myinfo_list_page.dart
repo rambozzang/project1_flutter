@@ -1,15 +1,13 @@
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:lottie/lottie.dart';
 
 import 'package:preload_page_view/preload_page_view.dart';
+import 'package:project1/app/videolist/video_list_page.dart' show FastPageScrollPhysics;
 import 'package:project1/app/videomylist/Video_myScreen_page.dart';
 import 'package:project1/app/videomylist/cntr/video_myinfo_list_cntr.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/utils/WeatherLottie.dart';
-import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 
 class VideoMyinfoListPage extends StatefulWidget {
@@ -39,7 +37,7 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
     boardId = Get.arguments['boardId'];
     searchWord = Get.arguments['searchWord'] ?? "";
 
-    if (datatype == 'ONE' && (boardId == '' || boardId == 'null' || boardId == null)) {
+    if (datatype == 'ONE' && (boardId == '' || boardId == 'null')) {
       Get.back();
     }
     Get.put(VideoMyinfoListCntr(datatype, custId, boardId, searchWord));
@@ -60,7 +58,7 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
       key: Scaffoldkey,
       extendBodyBehindAppBar: true,
       resizeToAvoidBottomInset: false,
-      backgroundColor: Colors.black54, // const Color(0xFF262B49),
+      backgroundColor: Colors.black,
       extendBody: true,
       // body: RefreshIndicator(
       //   onRefresh: () async {
@@ -83,15 +81,10 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
     );
   }
 
-  // 전체 하면을 차지하면서 이미지를 보여주는 위젯
+  // 전체 화면 배경 (달/낮 애니메이션 제거 → 검은색)
   Widget buildLoading() {
-    return Center(
-      child: WeatherLottie.dayBg(),
-      // child: Lottie.asset(
-      //   'assets/lottie/day_bg.json',
-      //   fit: BoxFit.fill,
-      // ),
-    );
+    return Container(color: Colors.black);
+    // ignore: dead_code
     // return SizedBox.expand(
     //   child: Container(
     //     decoration: const BoxDecoration(
@@ -131,7 +124,7 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
         preloadPagesCount: Get.find<VideoMyinfoListCntr>().preLoadingCount,
         scrollDirection: Axis.vertical,
         itemCount: data.length,
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics: const FastPageScrollPhysics(),
         onPageChanged: (int? inx) {
           if (inx == null) return;
           if (inx >= data.length - (Get.find<VideoMyinfoListCntr>().preLoadingCount + 1)) {
