@@ -59,8 +59,8 @@ dependencies:
   flutter_naver_login: ^2.1.1
   flutter_local_notifications: ^17.2.1+2
   permission_handler: ^11.3.0  
-  camera: ^0.10.5+9  # 임시 주석 처리
-  camera_android_camerax: ^0.6.0  # Android 녹화 시작 렉 개선: Camera2 → CameraX 백엔드
+  camera: ^0.11.3  # 0.11.3+: enablePersistentRecording(지속 녹화)로 녹화 시작 지연 개선
+  camera_android_camerax: ^0.6.14  # CameraX 백엔드(camera 0.11.x 호환)
   flutter_bloc: ^8.1.4
   equatable: ^2.0.5
   video_player: ^2.10.0
@@ -152,14 +152,25 @@ dependencies:
     
 dev_dependencies:
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.3
   flutter_test:
     sdk: flutter
+
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/icon/app_icon_v9_square.png"
+  adaptive_icon_background: "#4A90E2"
+  adaptive_icon_foreground: "assets/icon/app_icon_v9_foreground.png"
+  remove_alpha_ios: true
+  min_sdk_android: 21
 
 flutter:
   uses-material-design: true
   # To add assets to your application, add an assets section, like this:
   assets:
      - assets/
+     - assets/icon/
      - assets/login/
      - assets/images/
      - assets/images/map/
