@@ -300,7 +300,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
         top: false,
         left: false,
         right: false,
-        bottom: true, // 하단만 SafeArea 적용
+        bottom: false, // 하단 여백 제거 → 영상이 화면 끝까지 채움 (영상 사이 빈 공간 방지)
         child: Stack(
           children: [
             Positioned.fill(
