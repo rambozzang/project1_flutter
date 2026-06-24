@@ -6,10 +6,8 @@ import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:giffy_dialog/giffy_dialog.dart';
 import 'package:hashtagable_v3/hashtagable.dart';
 import 'package:like_button/like_button.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
@@ -21,7 +19,6 @@ import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
-import 'package:project1/utils/anony_profile.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:share_plus/share_plus.dart';
@@ -60,7 +57,20 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   // double progress = 0;
   Duration position = Duration.zero;
 
-  double bottomHeight = Platform.isIOS ? 92.0 : 80.0;
+  double get bottomHeight {
+    final mediaQuery = MediaQuery.of(context);
+    final bottomPadding = mediaQuery.padding.bottom;
+    final viewInsets = mediaQuery.viewInsets.bottom;
+
+    // iOS의 경우 기본 높이 + 하단 안전 영역
+    if (Platform.isIOS) {
+      return bottomPadding + 25;
+    }
+
+    // 안드로이드의 경우 기본 높이 + 시스템 네비게이션 바 높이
+    // SafeArea를 사용하므로 기본 높이만 사용하되, 추가 여백 제공
+    return 80.0 + 10.0; // SafeArea가 시스템 UI를 처리하므로 기본 높이 + 여백만 사용
+  }
 
   // 운영계에서 false 로 변경
   bool isUpdateCount = false;
@@ -75,67 +85,139 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   }
 
   Future<void> initiliazeVideo() async {
-    String finalUrl = widget.data.videoPath.toString();
-    VideoFormat format = VideoFormat.hls;
-
-    // 안드로이드인 경우 daah 사용
-    if (Platform.isAndroid) {
-      finalUrl = widget.data.videoPath.toString().replaceAll('.m3u8', '.mpd');
-      format = VideoFormat.dash;
-    }
-
-    final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
-    final lastModified = _formatHttpDate(sevenDaysAgo);
-
     try {
       Stopwatch stopwatch = Stopwatch()..start();
-      _controller = VideoPlayerController.networkUrl(Uri.parse(finalUrl),
-          httpHeaders: {
-            'Connection': 'keep-alive',
-            'Cache-Control': 'max-age=3600, stale-while-revalidate=86400',
-            'Etg': widget.data.boardId.toString(),
-            'Last-Modified': lastModified,
-            'If-None-Match': widget.data.boardId.toString(),
-            'If-Modified-Since': lastModified,
-            'Vary': 'Accept-Encoding, User-Agent',
-          },
-          videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true, allowBackgroundPlayback: false),
-          formatHint: format)
-        ..initialize().then((_) {
-          if (mounted) {
-            timeDesc.value = '${stopwatch.elapsedMilliseconds}ms';
-            setState(() {
-              _controller.setLooping(true);
-              _controller.pause();
-            });
-            initialized.value = true;
-            //   Get.find<VideoListCntr>().onPageMounted(widget.data.boardId!);
-          }
-        });
+      lo.g("=== Video Player Initialization Started ===");
+      lo.g("Video URL: ${widget.data.videoPath}");
 
-      _controller.addListener(() {
-        isPlay.value = _controller.value.isPlaying;
-        int max = _controller.value.duration.inSeconds;
-        position = _controller.value.position;
-        progress.value = (position.inSeconds / max * 100).isNaN ? 0 : position.inSeconds / max * 100;
-        if (isPlay.value) {
-          updateCount();
+      String finalUrl = widget.data.videoPath.toString();
+      VideoFormat format = VideoFormat.hls;
+
+      if (Platform.isAndroid) {
+        finalUrl = widget.data.videoPath.toString().replaceAll('.m3u8', '.mpd');
+        format = VideoFormat.dash;
+        lo.g("Android: Using DASH format - $finalUrl");
+      } else {
+        lo.g("iOS: Using HLS format - $finalUrl");
+      }
+
+      final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
+      final lastModified = _formatHttpDate(sevenDaysAgo);
+
+      // VideoMyScreen과 동일한 캐싱 헤더 적용 + VideoPlayerOptions
+      _controller = VideoPlayerController.networkUrl(
+        Uri.parse(finalUrl),
+        httpHeaders: {
+          'Connection': 'keep-alive',
+          'Cache-Control': 'max-age=3600, stale-while-revalidate=86400',
+          'Etg': widget.data.boardId.toString(),
+          'Last-Modified': lastModified,
+          'If-None-Match': widget.data.boardId.toString(),
+          'If-Modified-Since': lastModified,
+          'Vary': 'Accept-Encoding, User-Agent',
+        },
+        videoPlayerOptions: VideoPlayerOptions(
+          mixWithOthers: true,
+          allowBackgroundPlayback: false,
+        ),
+        formatHint: format,
+      )..initialize().then((_) {
+        if (mounted) {
+          lo.g('VideoScreenPage init time: ${stopwatch.elapsedMilliseconds}ms');
+          timeDesc.value = '${stopwatch.elapsedMilliseconds}ms';
+          _controller.setLooping(true);
+          _controller.pause();
+          initialized.value = true;
+          _setupVideoListener();
         }
       });
     } catch (e) {
-      lo.g('@@@  VideoScreenPage init() ${widget.index} : ${widget.data.boardId} : error : $e');
-    } finally {}
+      lo.e("=== Video Player Initialization Failed ===");
+      lo.e("Error: $e");
+      if (mounted) {
+        await _handleInitializationError(e);
+      }
+    }
   }
 
   String _formatHttpDate(DateTime date) {
-    final weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     final weekDay = weekDays[date.weekday - 1];
     final month = months[date.month - 1];
     return '$weekDay, ${date.day.toString().padLeft(2, '0')} $month ${date.year} '
         '${date.hour.toString().padLeft(2, '0')}:'
         '${date.minute.toString().padLeft(2, '0')}:'
         '${date.second.toString().padLeft(2, '0')} GMT';
+  }
+
+  /// 단순화된 비디오 리스너 설정
+  void _setupVideoListener() {
+    _controller.addListener(() {
+      if (!mounted) return;
+
+      final isCurrentlyPlaying = _controller.value.isPlaying;
+      final duration = _controller.value.duration;
+      final position = _controller.value.position;
+
+      // 에러 체크
+      if (_controller.value.hasError) {
+        lo.e("Video player error: ${_controller.value.errorDescription}");
+        return;
+      }
+
+      // 상태 업데이트
+      if (isPlay.value != isCurrentlyPlaying) {
+        isPlay.value = isCurrentlyPlaying;
+        lo.g("Video playing state changed: $isCurrentlyPlaying");
+      }
+
+      // 진행률 계산
+      if (duration.inSeconds > 0) {
+        final newProgress = (position.inSeconds / duration.inSeconds * 100);
+        if ((newProgress - progress.value).abs() > 0.5) {
+          progress.value = newProgress.clamp(0.0, 100.0);
+        }
+      }
+
+      // 조회수 업데이트
+      if (isCurrentlyPlaying && !isUpdateCount) {
+        updateCount();
+      }
+    });
+  }
+
+  /// 단순화된 에러 처리
+  Future<void> _handleInitializationError(dynamic error) async {
+    lo.e("Handling initialization error: $error");
+
+    // 네트워크 에러인 경우 한 번만 재시도
+    if (error.toString().contains('network') || error.toString().contains('timeout') || error.toString().contains('connection')) {
+      lo.g("Network error detected, retrying in 3 seconds...");
+      await Future.delayed(const Duration(seconds: 3));
+
+      if (mounted) {
+        try {
+          // 간단한 재시도
+          String retryUrl = widget.data.videoPath.toString();
+          lo.g("Retry with basic URL: $retryUrl");
+
+          _controller = VideoPlayerController.networkUrl(Uri.parse(retryUrl));
+          await _controller.initialize();
+
+          if (mounted) {
+            initialized.value = true;
+            _setupVideoListener();
+            lo.g("Video initialization successful on retry");
+          }
+        } catch (retryError) {
+          lo.e("Retry also failed: $retryError");
+          // 여기서 사용자에게 에러 표시 가능
+        }
+      }
+    } else {
+      lo.e("Non-network error, not retrying: $error");
+    }
   }
 
   // 조회수 증가
@@ -214,64 +296,76 @@ class VideoScreenPageState extends State<VideoScreenPage> {
       resizeToAvoidBottomInset: false,
       extendBodyBehindAppBar: true,
       extendBody: true,
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: () {
-                initPlay = true;
-                if (_controller.value.isPlaying) {
-                  _controller.pause();
-                } else {
-                  _controller.play();
-                }
-              },
-              onHorizontalDragEnd: (DragEndDetails details) {
-                if (details.primaryVelocity! < 0) {
-                  Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}');
-                } else if (details.primaryVelocity! > 0) {
-                  // Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}');
-                }
-              },
-              child: ValueListenableBuilder<bool>(
-                valueListenable: initialized,
-                builder: (builder, value, child) {
-                  return AnimatedSwitcher(
-                      key: ValueKey('${widget.data.boardId.toString()}AnimatedSwitcher'),
-                      duration: const Duration(milliseconds: 250),
-                      switchInCurve: Curves.easeInOut,
-                      switchOutCurve: Curves.easeInOut,
-                      transitionBuilder: (Widget child, Animation<double> animation) {
-                        return FadeTransition(
-                          key: ValueKey('${widget.data.boardId.toString()}FadeTransition'),
-                          opacity: animation,
-                          child: child,
-                        );
-                      },
-                      child: value == false
-                          ? const SizedBox.shrink() // buildLoading(ValueKey('${widget.data.boardId.toString()}loading'))
-                          : buildVideoScreen(ValueKey('${widget.data.boardId.toString()}videoScreen'), value));
+      body: SafeArea(
+        top: false,
+        left: false,
+        right: false,
+        bottom: true, // 하단만 SafeArea 적용
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () {
+                  lo.g("Video tapped - current playing state: ${_controller.value.isPlaying}");
+                  initPlay = true;
+                  if (_controller.value.isPlaying) {
+                    lo.g("Pausing video via tap");
+                    _controller.pause();
+                  } else {
+                    lo.g("Playing video via tap");
+                    _controller.play();
+                  }
                 },
+                onHorizontalDragEnd: (DragEndDetails details) {
+                  if (details.primaryVelocity! < 0) {
+                    if (widget.data.anonyYn != 'Y') {
+                      Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}');
+                    }
+                  } else if (details.primaryVelocity! > 0) {
+                    // Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}');
+                  }
+                },
+                child: ValueListenableBuilder<bool>(
+                  valueListenable: initialized,
+                  builder: (builder, value, child) {
+                    return AnimatedSwitcher(
+                        key: ValueKey('${widget.data.boardId.toString()}AnimatedSwitcher'),
+                        duration: const Duration(milliseconds: 250),
+                        switchInCurve: Curves.easeInOut,
+                        switchOutCurve: Curves.easeInOut,
+                        transitionBuilder: (Widget child, Animation<double> animation) {
+                          return FadeTransition(
+                            key: ValueKey('${widget.data.boardId.toString()}FadeTransition'),
+                            opacity: animation,
+                            child: child,
+                          );
+                        },
+                        child: value == false
+                            // 영상 버퍼링 동안 썸네일을 즉시 표시 → 스와이프 시 즉각 보이는 체감 속도 확보
+                            ? buildLoading(ValueKey('${widget.data.boardId.toString()}loading'))
+                            : buildVideoScreen(ValueKey('${widget.data.boardId.toString()}videoScreen'), value));
+                  },
+                ),
               ),
             ),
-          ),
-          // 중앙 play 버튼
-          buildCenterPlayButton(),
-          // 사운드 on/off 버튼
-          buildSoundButton(),
-          // 하단 컨텐츠
-          buildBottomContent(),
-          // 오른쪽 메뉴바
-          buildRightMenuBar(),
-          // 재생 progressbar
-          buildPlayProgress(),
-          //
-          buildSingo()
-          // Center(
-          //   child: Text(widget.data.boardId.toString(),
-          //       style: const TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.bold)),
-          // )
-        ],
+            // 중앙 play 버튼
+            buildCenterPlayButton(),
+            // 사운드 on/off 버튼
+            buildSoundButton(),
+            // 하단 컨텐츠
+            buildBottomContent(),
+            // 오른쪽 메뉴바
+            buildRightMenuBar(),
+            // 재생 progressbar
+            buildPlayProgress(),
+            //
+            buildSingo()
+            // Center(
+            //   child: Text(widget.data.boardId.toString(),
+            //       style: const TextStyle(fontSize: 30, color: Colors.white, fontWeight: FontWeight.bold)),
+            // )
+          ],
+        ),
       ),
     );
   }
@@ -282,15 +376,18 @@ class VideoScreenPageState extends State<VideoScreenPage> {
       child: VisibilityDetector(
         key: key,
         onVisibilityChanged: (info) {
+          lo.g("Video visibility changed: ${info.visibleFraction}");
           initPlay = false;
           if (info.visibleFraction > 0.1) {
             if (init) {
+              lo.g("Starting video playback");
               _controller.play();
               Get.find<VideoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
             }
           } else if (info.visibleFraction < 0.3) {
             // } else {
             if (init) {
+              lo.g("Pausing video playback");
               _controller.pause();
               _controller.seekTo(Duration.zero);
               Get.find<VideoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
@@ -326,7 +423,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(Icons.warning, color: Colors.white),
-            const Gap(5),
+            Gap(5),
             Text(
               '신고',
               style: TextStyle(color: Colors.white, fontSize: 9),
@@ -437,7 +534,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
               SizedBox(
                 height: 30,
                 width: 30,
-                child: WeatherDataProcessor.instance.getWeatherGogoImage(widget.data!.sky.toString(), widget.data!.rain.toString()),
+                child: WeatherDataProcessor.instance.getWeatherGogoImage(widget.data.sky.toString(), widget.data.rain.toString()),
               ),
               const SizedBox(width: 2),
               SizedBox(
@@ -588,7 +685,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
               ? ValueListenableBuilder<String>(
                   valueListenable: timeDesc,
                   builder: (context, value, child) {
-                    return Text('1: $value', style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600));
+                    return Text(value, style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600));
                   },
                 )
               : const SizedBox.shrink(),
@@ -668,7 +765,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
             child: IconButton(
               padding: const EdgeInsets.all(0),
               icon: const Icon(Icons.play_arrow, color: Colors.white),
-              onPressed: () => null,
+              onPressed: () {},
             ),
           ),
           Text(
@@ -733,8 +830,11 @@ class VideoScreenPageState extends State<VideoScreenPage> {
 
   // 재생 progressbar
   Widget buildPlayProgress() {
+    final mediaQuery = MediaQuery.of(context);
+    final bottomPadding = mediaQuery.padding.bottom;
+
     return Positioned(
-      bottom: 0,
+      bottom: Platform.isAndroid ? bottomPadding : 0,
       left: 1,
       right: 1,
       // child: VideoProgressIndicator(

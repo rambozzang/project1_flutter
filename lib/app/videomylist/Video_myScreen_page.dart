@@ -7,10 +7,8 @@ import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:giffy_dialog/giffy_dialog.dart';
 import 'package:hashtagable_v3/hashtagable.dart';
 import 'package:like_button/like_button.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
@@ -28,8 +26,9 @@ import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_button.dart';
 import 'package:text_scroll/text_scroll.dart';
-
 import 'package:video_player/video_player.dart';
+
+// import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 class VideoMySreenPage extends StatefulWidget {
@@ -55,7 +54,20 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
   // double progress = 0;
   Duration position = Duration.zero;
 
-  double bottomHeight = Platform.isIOS ? 22.0 : 10.0;
+  double get bottomHeight {
+    final mediaQuery = MediaQuery.of(context);
+    final bottomPadding = mediaQuery.padding.bottom;
+    final viewInsets = mediaQuery.viewInsets.bottom;
+
+    // iOS의 경우 기본 높이 + 하단 안전 영역
+    if (Platform.isIOS) {
+      return bottomPadding;
+    }
+
+    // 안드로이드의 경우 기본 높이 + 시스템 네비게이션 바 높이
+    // SafeArea를 사용하므로 기본 높이만 사용하되, 추가 여백 제공
+    return 80.0; // SafeArea가 시스템 UI를 처리하므로 기본 높이 + 여백만 사용
+  }
 
   bool isUpdateCount = true;
   final ValueNotifier<String> timeDesc = ValueNotifier<String>('0ms');
@@ -197,6 +209,20 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
     }
   }
 
+  // 로딩 중 썸네일 표시 (VideoScreenPage와 동일한 방식)
+  Widget _buildThumbnail(Key key) {
+    String imgPath = widget.data.videoPath!.replaceAll('/manifest/video.m3u8', '/thumbnails/thumbnail.jpg');
+    return Container(
+      key: key,
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: CachedNetworkImageProvider(imgPath, cacheKey: imgPath),
+          fit: BoxFit.fill,
+        ),
+      ),
+    );
+  }
+
   final TransformationController _transformationController = TransformationController();
   @override
   void dispose() {
@@ -240,7 +266,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                       );
                     },
                     child: initialized == false
-                        ? const SizedBox.shrink() //buildLoading(ValueKey('${widget.data.boardId.toString()}loading'))
+                        ? _buildThumbnail(ValueKey('${widget.data.boardId.toString()}loading'))
                         : VisibilityDetector(
                             onVisibilityChanged: (info) {
                               initPlay = false;
@@ -307,7 +333,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                           style: TextStyle(color: Colors.white, fontSize: 9),
                         ),
                         Text(
-                          '${initialized}',
+                          '$initialized',
                           style: const TextStyle(color: Colors.transparent, fontSize: 1),
                         )
                       ],
@@ -450,7 +476,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
               SizedBox(
                   height: 30,
                   width: 30,
-                  child: WeatherDataProcessor.instance.getWeatherGogoImage(widget.data!.sky.toString(), widget.data!.rain.toString())
+                  child: WeatherDataProcessor.instance.getWeatherGogoImage(widget.data.sky.toString(), widget.data.rain.toString())
                   // child: Lottie.asset(
                   //   WeatherDataProcessor.instance.getWeatherGogoImage(widget.data!.sky.toString(), widget.data!.rain.toString()),
                   //   height: 138.0,
@@ -687,7 +713,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
           const Gap(10),
           IconButton(
             icon: const Icon(Icons.play_arrow_outlined, color: Colors.white),
-            onPressed: () => null,
+            onPressed: () {},
           ),
           Text(
             widget.data.viewCnt.toString(),
