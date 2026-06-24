@@ -28,7 +28,7 @@ class FastPageScrollPhysics extends ScrollPhysics {
   }
 
   // 이 속도(px/s)만 넘으면 한 페이지 넘어간다. 낮을수록 더 민감.
-  static const double _flingThreshold = 30.0;
+  static const double _flingThreshold = 8.0;
 
   double _page(ScrollMetrics p) => p.pixels / p.viewportDimension;
   double _pixels(ScrollMetrics p, double page) => page * p.viewportDimension;
@@ -68,7 +68,7 @@ class FastPageScrollPhysics extends ScrollPhysics {
       );
 
   @override
-  double get minFlingVelocity => 20.0;
+  double get minFlingVelocity => 5.0;
 
   @override
   double get minFlingDistance => 0.0;
