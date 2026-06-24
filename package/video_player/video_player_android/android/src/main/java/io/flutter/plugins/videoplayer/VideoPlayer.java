@@ -546,26 +546,29 @@ final class VideoPlayer {
    * 메모리 최적화를 위한 정리
    */
   void dispose() {
-    if (isInitialized) {
-      exoPlayer.stop();
-    }
-    eventChannel.setStreamHandler(null);
-    if (surface != null) {
-      surface.release();
-    }
-    if (exoPlayer != null) {
-      exoPlayer.release();
-    }
-
-    // textureEntry.release()는 반드시 메인 스레드에서 실행해야 함
-    if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) {
+    // ExoPlayer/Surface/TextureEntry 접근은 반드시 메인 스레드에서 실행해야 함
+    // (백그라운드 스레드에서 호출 시 "Player is accessed on the wrong thread" 크래시)
+    Runnable teardown = () -> {
+      try {
+        if (isInitialized && exoPlayer != null) {
+          exoPlayer.stop();
+        }
+      } catch (Exception ignored) {
+      }
+      eventChannel.setStreamHandler(null);
+      if (surface != null) {
+        surface.release();
+      }
+      if (exoPlayer != null) {
+        exoPlayer.release();
+      }
       textureEntry.release();
-      mainHandler.removeCallbacksAndMessages(null);
+    };
+
+    if (Looper.myLooper() == Looper.getMainLooper()) {
+      teardown.run();
     } else {
-      mainHandler.post(() -> {
-        textureEntry.release();
-        mainHandler.removeCallbacksAndMessages(null);
-      });
+      mainHandler.post(teardown);
     }
   }
 
@@ -573,8 +576,12 @@ final class VideoPlayer {
    * TikTok-style dynamic load control
    * - 프리로드(화면 밖): 5초만 버퍼링
    * - 활성화(화면에 보일 때): 20초까지 버퍼링
+   *
+   * DefaultLoadControl을 상속하여 lifecycle 메서드(onPrepared/onStopped/onReleased/
+   * onTracksSelected/getAllocator)는 부모 구현을 그대로 사용하고,
+   * 버퍼링 판단 로직만 동적으로 오버라이드한다. (media3 1.4.1 호환)
    */
-  private static final class VideoLoadControl implements LoadControl {
+  private static final class VideoLoadControl extends DefaultLoadControl {
     private volatile boolean isActive = false;
 
     // 프리로드: 최소 2초, 최대 5초
@@ -589,23 +596,23 @@ final class VideoPlayer {
     private static final long PLAYBACK_START_US   = 300_000L;
     private static final long REBUFFER_START_US   = 1_500_000L;
 
-    private final DefaultAllocator allocator =
-        new DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE);
+    VideoLoadControl() {
+      // allocator 메모리 풀이 활성화 모드(20초)를 감당하도록 buffer 상한 설정
+      super(
+          new DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE),
+          /* minBufferMs= */ 2000,
+          /* maxBufferMs= */ 20000,
+          /* bufferForPlaybackMs= */ 300,
+          /* bufferForPlaybackAfterRebufferMs= */ 1500,
+          /* targetBufferBytes= */ C.LENGTH_UNSET,
+          /* prioritizeTimeOverSizeThresholds= */ true,
+          /* backBufferDurationMs= */ 0,
+          /* retainBackBufferFromKeyframe= */ false);
+    }
 
     void setActive(boolean active) {
       this.isActive = active;
     }
-
-    // media3 1.4.1 필수 메서드 (파라미터 없는 버전)
-    @Override public void onPrepared() {}
-    @Override public void onStopped() {}
-    @Override public void onReleased() {}
-
-    @Override public Allocator getAllocator() { return allocator; }
-
-    @Override public long getBackBufferDurationUs() { return 0; }
-
-    @Override public boolean retainBackBufferFromKeyframe() { return false; }
 
     @Override
     public boolean shouldContinueLoading(LoadControl.Parameters p) {
