@@ -5,10 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/auth/privacy_policy_dialog.dart';
-import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
+// import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
 import 'package:project1/repo/api/google_api.dart';
 import 'package:project1/repo/api/kakao_api.dart';
 import 'package:project1/repo/api/naver_api.dart';
+import 'package:project1/repo/attendance/attendance_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/app/auth/cntr/login_data.dart';
@@ -16,9 +17,9 @@ import 'package:project1/repo/secure_storge.dart';
 import 'package:project1/utils/StringUtils.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:gotrue/gotrue.dart' as supa;
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+// import 'package:supabase_flutter/supabase_flutter.dart';
+// import 'package:gotrue/gotrue.dart' as supa;
+// import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 class AuthBinding implements Bindings {
   @override
@@ -74,11 +75,11 @@ class AuthCntr extends GetxController with SecureStorage {
     try {
       isLogged.value = false;
       update();
-      String _fcmId = await _getFcmToken();
-      fcmId = _fcmId;
-      lo.g("fcmId: $_fcmId");
+      String fcmId = await _getFcmToken();
+      fcmId = fcmId;
+      lo.g("fcmId: $fcmId");
       deviceId = await getDeviceId() ?? '';
-      ResData res = await _custRepo.login(custId.value, _fcmId);
+      ResData res = await _custRepo.login(custId.value, fcmId);
       if (res.code != "00") {
         if ('회원 정보가 없습니다!' == res.msg) {
           Utils.alert("회원 정보가 없습니다!");
@@ -98,7 +99,12 @@ class AuthCntr extends GetxController with SecureStorage {
       resLoginData.value = LoginRes.fromMap(res.data);
       isLogged.value = true;
       update();
-      await _initializeSupabaseIfNeeded();
+
+      // 앱 실행 시 출석 체크 (비동기, 로그인 흐름 차단 안 함)
+      _checkAttendanceAfterLogin();
+
+      // SUPABASE 중단됨 - Supabase 초기화 주석처리
+      // await _initializeSupabaseIfNeeded();
     } catch (e) {
       Lo.g("로그인 에러: $e");
       isLogged.value = false;
@@ -113,31 +119,34 @@ class AuthCntr extends GetxController with SecureStorage {
   }
 
   Future<String> _getFcmToken() async {
-    String _fcmId = "";
+    String fcmId = "";
     try {
-      _fcmId = await FirebaseMessaging.instance.getToken() ?? "0000000000";
+      fcmId = await FirebaseMessaging.instance.getToken() ?? "0000000000";
     } catch (e) {
       Lo.g("fcmId 발급 에러: $e");
-      _fcmId = "0000000000";
+      fcmId = "0000000000";
     }
-    return _fcmId;
+    return fcmId;
   }
 
+  // SUPABASE 중단됨 - 전체 함수 주석처리
+  /*
   Future<void> _initializeSupabaseIfNeeded() async {
     if (resLoginData.value.chatId == '' || resLoginData.value.chatId == null) {
       await initSupaBaseSession();
     }
   }
+  */
 
   Future<bool> showPrivacyPolicyDialog() async {
     bool? result = await Get.dialog<bool>(
-      PrivacyPolicyDialog(),
+      const PrivacyPolicyDialog(),
       barrierDismissible: false,
     );
     return result ?? false;
   }
 
-  Future<bool> testAgree(String _custId) async {
+  Future<bool> testAgree(String custId) async {
     bool agreed = await Get.toNamed('/AgreePage');
     if (!agreed) {
       Utils.alert('필수 약관에 동의해야 회원가입을 진행할 수 있습니다.');
@@ -146,7 +155,7 @@ class AuthCntr extends GetxController with SecureStorage {
     return true;
   }
 
-  Future<ResData> signUpProc(String _custId) async {
+  Future<ResData> signUpProc(String custId) async {
     ResData resData = ResData();
     resData.code = "00";
 
@@ -157,13 +166,13 @@ class AuthCntr extends GetxController with SecureStorage {
     //   return resData;
     // }
 
-    custId.value = _custId;
-    await saveCustId(_custId);
-    String _fcmId = await _getFcmToken();
+    this.custId.value = custId;
+    await saveCustId(custId);
+    String fcmId = await _getFcmToken();
 
     try {
       deviceId = await getDeviceId() ?? '';
-      ResData res = await _custRepo.login(custId.value, _fcmId);
+      ResData res = await _custRepo.login(this.custId.value, fcmId);
       if (res.code != "00") {
         resData.code = "99";
         resData.msg = res.msg;
@@ -190,6 +199,8 @@ class AuthCntr extends GetxController with SecureStorage {
     });
   }
 
+  // SUPABASE 중단됨 - 전체 함수 주석처리
+  /*
   Future<void> initSupaBaseSession() async {
     try {
       supa.User? supaUser = Supabase.instance.client.auth.currentUser;
@@ -209,7 +220,10 @@ class AuthCntr extends GetxController with SecureStorage {
       await signUp();
     }
   }
+  */
 
+  // SUPABASE 중단됨 - 전체 함수 주석처리
+  /*
   Future<supa.User?> _trySupabaseLogin() async {
     try {
       AuthResponse authRes = await Supabase.instance.client.auth.signInWithPassword(
@@ -222,7 +236,10 @@ class AuthCntr extends GetxController with SecureStorage {
       return null;
     }
   }
+  */
 
+  // SUPABASE 중단됨 - 전체 함수 주석처리
+  /*
   Future<supa.User> signUp() async {
     Lo.g("Supabase 회원 가입 시도");
     try {
@@ -236,7 +253,10 @@ class AuthCntr extends GetxController with SecureStorage {
       return (await _trySupabaseLogin())!;
     }
   }
+  */
 
+  // SUPABASE 중단됨 - 전체 함수 주석처리
+  /*
   Future<void> updateUserInfo(String chatUid) async {
     try {
       String name = resLoginData.value.nickNm ?? resLoginData.value.custNm ?? '';
@@ -256,6 +276,7 @@ class AuthCntr extends GetxController with SecureStorage {
       Lo.g('updateUserInfo() error: $e');
     }
   }
+  */
 
   Future<void> leave() async {
     try {
@@ -269,7 +290,8 @@ class AuthCntr extends GetxController with SecureStorage {
         lo.g('Failed to delete customer data');
       }
 
-      // 2. Supabase 사용자 삭제
+      // 2. Supabase 사용자 삭제 - 중단됨 주석처리
+      /*
       final user = SupabaseChatCore.instance.client.auth.currentUser;
 
       if (user != null) {
@@ -288,6 +310,7 @@ class AuthCntr extends GetxController with SecureStorage {
           await SupabaseChatCore.instance.client.auth.signOut();
         }
       }
+      */
 
       // 3. 소셜 로그인 연결 해제 (병렬 처리)
 
@@ -344,7 +367,7 @@ class AuthCntr extends GetxController with SecureStorage {
       Get.back();
       // 에러 발생 시 사용자에게 알림
       Utils.alert('회원탈퇴 실패: $e');
-      lo.g('Leave process failed: ${e}');
+      lo.g('Leave process failed: $e');
       lo.g('Leave process failed: ${e.toString()}');
     }
   }
@@ -354,8 +377,8 @@ class AuthCntr extends GetxController with SecureStorage {
       // 진행 상황을 사용자에게 알림
       Get.dialog(const Center(child: CircularProgressIndicator()), barrierDismissible: false);
 
-      // 1. Supabase 로그아웃
-      await SupabaseChatCore.instance.client.auth.signOut();
+      // 1. Supabase 로그아웃 - 중단됨 주석처리
+      // await SupabaseChatCore.instance.client.auth.signOut();
 
       // 2. 소셜 로그인 연결 해제
       switch (resLoginData.value.provider) {
@@ -405,6 +428,21 @@ class AuthCntr extends GetxController with SecureStorage {
       // 에러 발생 시 사용자에게 알림
       Utils.alert('로그아웃 실패: $e');
       lo.g('Logout process failed: $e');
+    }
+  }
+
+  /// 로그인 성공 후 출석 체크
+  Future<void> _checkAttendanceAfterLogin() async {
+    try {
+      if (custId.value.isEmpty) return;
+      final res = await AttendanceRepo().checkAttendance(custId.value, attendanceType: 'OPEN');
+      if (res.code == '00') {
+        lo.g('출석 체크 완료: ${res.data}');
+      } else {
+        lo.g('출석 체크 실패: ${res.msg}');
+      }
+    } catch (e) {
+      lo.g('_checkAttendanceAfterLogin error: $e');
     }
   }
 }

@@ -10,15 +10,13 @@ import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 // import 'package:media_kit/media_kit.dart';
 import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
-import 'package:project1/app/chatting/supabase_options.dart';
-import 'package:project1/common/life_cycle_getx.dart';
+// import 'package:project1/app/chatting/supabase_options.dart';
 import 'package:project1/config/app_theme.dart';
-// import 'package:project1/config/app_theme.dart';
 import 'package:project1/firebase/firebase_service.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/route/app_route.dart';
-import 'package:project1/theme/theme_controller.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+// import 'package:project1/theme/app_theme.dart';
+// import 'package:supabase_flutter/supabase_flutter.dart';
 
 // import com.kakao.sdk.common.util.Utility
 
@@ -35,11 +33,11 @@ void main() async {
   KakaoSdk.init(nativeAppKey: 'd0023f080e59afd633bc19e469ed4a73');
   // KakaoSdk.init(nativeAppKey: 'e94966b7ae7e09c06d47e9d9fa580f4c');
 
-  // 광고 init
+  // // 광고 init
   await AdManager.initialize(targetPlatform: Platform.isIOS ? TargetPlatform.iOS : TargetPlatform.android);
 
-  // supabase
-  await Supabase.initialize(url: supabaseOptions.url, anonKey: supabaseOptions.anonKey);
+  // supabase - 현재 중단 상태이므로 주석처리
+  // await Supabase.initialize(url: supabaseOptions.url, anonKey: supabaseOptions.anonKey);
 
   /// flutter run --dart-define=apiKey='Your Api Key'
 //  Gemini.init(  apiKey: const String.fromEnvironment('apiKey'), enableDebugging: true);
@@ -50,7 +48,7 @@ void main() async {
   // 안드로이드  : Network : CERTIFICATE_VERIFY_FAILED 오류 수정
   HttpOverrides.global = MyHttpOverrides();
 
-  Get.put(ThemeController());
+  // Get.put(ThemeController());
 
   runApp(const TigerBk());
 }
@@ -75,7 +73,7 @@ class TigerBk extends StatelessWidget {
       theme: AppTheme.theme,
       // theme: AppTheme.light,
       // darkTheme: AppTheme.dark,
-      // themeMode: controller.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      // themeMode: _.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       initialRoute: AppPages.INITIAL,
       initialBinding: BindingsBuilder(() {
         Get.put(AuthCntr());

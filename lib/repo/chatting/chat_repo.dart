@@ -1,14 +1,14 @@
 import 'package:get/get.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
-import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
+// import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
 import 'package:project1/repo/chatting/data/signup_data.dart';
 import 'package:project1/repo/chatting/data/update_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+// import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+// import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 class ChatRepo {
   // 최초가입시 간단하게
@@ -27,6 +27,9 @@ class ChatRepo {
         resData.msg = '채팅서버 가입  : email or uid or firstName 필수값 입니다.';
         return resData;
       }
+
+      // SUPABASE 중단됨 - 주석 처리
+      /*
       // supabase 회원가입
       AuthResponse response = await Supabase.instance.client.auth.signUp(
         email: data.email,
@@ -41,10 +44,20 @@ class ChatRepo {
       resData.code = '00';
       resData.data = response.user!.id;
       return resData;
+      */
+
+      // Supabase 비활성화 - 임시 성공 응답
+      resData.code = '00';
+      resData.data = data.uid;
+      return resData;
+
     } catch (e) {
       log('supabase signUp Result : $e');
       // Utils.alert(e.toString());
       resData.msg = e.toString();
+
+      // SUPABASE 중단됨 - 주석 처리
+      /*
       AuthException exception = e as AuthException;
       // 이미 가입자 고객인 경우
       //if (exception.statusCode == '422') {
@@ -60,6 +73,12 @@ class ChatRepo {
       //    }
 
       // return resData;
+      */
+
+      // Supabase 비활성화 - 임시 성공 응답
+      resData.code = '00';
+      resData.data = data.uid;
+      return resData;
     }
   }
 
@@ -88,10 +107,14 @@ class ChatRepo {
         'selfId': resLoginData.custData?.selfId ?? '',
       };
 
+      // SUPABASE 중단됨 - 주석 처리
+      /*
       await SupabaseChatCore.instance.updateUser(
         types.User(
             firstName: data.firstName ?? resLoginData.nickNm, id: data.uid!, lastName: '', imageUrl: data.imageUrl, metadata: metadata),
       );
+      */
+
       resData.code = '00';
       resData.msg = '업데이트 성공';
       return resData;
