@@ -88,7 +88,8 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       initializeVideo();
-      getDate();
+      // 날씨는 화면에서 미리 받지 않는다.
+      // 게시 시 백그라운드 업로드와 병렬로 수집되어 저장된다. (WeatherForBoard)
     });
     _initAnimationController();
   }
@@ -300,20 +301,13 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
 
   // ��일 업로드
   Future<void> upload() async {
-    if (isWeathering.value) {
-      Utils.alert("현지 위치정보 수신중입니다. 잠시 후 다시 시도해주세요.");
-      getDate();
-      return;
-    }
-
     isUploading.value = true;
     try {
-      final mainData = _createBoardSaveMainData();
-
-      final weatherData = _createBoardSaveWeatherData();
-
-      boardSaveData.boardMastInVo = mainData;
-      boardSaveData.boardWeatherVo = weatherData;
+      // 본문(캡션/공개여부)만 담는다.
+      // 날씨(boardWeatherVo)는 게시 후 백그라운드 업로드와 병렬로 수집되어
+      // 저장 직전에 합쳐진다. (RootCntr.uploadCloudflare + WeatherForBoard)
+      boardSaveData.boardMastInVo = _createBoardSaveMainData();
+      boardSaveData.boardWeatherVo = null;
 
       _showUploadAlert();
 
@@ -487,9 +481,6 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
         children: [
           // 히어로: 영상 미리보기 (화면의 주인공)
           Center(child: _buildVideoPlayer()),
-          const Gap(14),
-          // 자동 첨부된 날씨 정보 스트립
-          buildWeatherInfo(),
           const Gap(18),
           _buildCaptionField(),
           const Gap(16),
@@ -1380,74 +1371,64 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
 
   Widget _buildUploadButton() {
     return ValueListenableBuilder<bool>(
-      valueListenable: isWeathering,
-      builder: (context, isWeatherValue, child) {
-        return ValueListenableBuilder<bool>(
-          valueListenable: isUploading,
-          builder: (context, uploading, child) {
-            final bool busy = isWeatherValue || uploading;
-            final String label = isWeatherValue ? '날씨 정보 받는 중…' : (uploading ? '게시 중…' : '게시하기');
-            return GestureDetector(
-              onTap: () async {
-                if (isWeatherValue) {
-                  Utils.alert('현지 날씨 정보를 받고 있어요. 잠시만요!');
-                  return;
-                }
-                if (uploading) {
-                  Utils.alert('처리중입니다..');
-                  return;
-                }
-                lo.g("등록하기");
-                await upload();
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                height: 52,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  gradient: busy
-                      ? null
-                      : const LinearGradient(
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                          colors: [Color(0xFF4C8DFF), Color(0xFF6B73FF)],
-                        ),
-                  color: busy ? _surface : null,
-                  borderRadius: BorderRadius.circular(16),
-                  border: busy ? Border.all(color: _surfaceBorder) : null,
-                  boxShadow: busy
-                      ? null
-                      : [BoxShadow(color: _accent.withOpacity(0.35), blurRadius: 18, offset: const Offset(0, 6))],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (busy) ...[
-                      SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: isWeatherValue ? _textLo : _accent),
-                      ),
-                      const Gap(10),
-                    ] else ...[
-                      const Icon(Icons.cloud_upload_rounded, size: 20, color: Colors.white),
-                      const Gap(8),
-                    ],
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: busy ? _textLo : Colors.white,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
+      valueListenable: isUploading,
+      builder: (context, uploading, child) {
+        final bool busy = uploading;
+        final String label = uploading ? '게시 중…' : '게시하기';
+        return GestureDetector(
+          onTap: () async {
+            if (uploading) {
+              Utils.alert('처리중입니다..');
+              return;
+            }
+            lo.g("등록하기");
+            await upload();
           },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            height: 52,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              gradient: busy
+                  ? null
+                  : const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [Color(0xFF4C8DFF), Color(0xFF6B73FF)],
+                    ),
+              color: busy ? _surface : null,
+              borderRadius: BorderRadius.circular(16),
+              border: busy ? Border.all(color: _surfaceBorder) : null,
+              boxShadow: busy
+                  ? null
+                  : [BoxShadow(color: _accent.withOpacity(0.35), blurRadius: 18, offset: const Offset(0, 6))],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (busy) ...[
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: _accent),
+                  ),
+                  const Gap(10),
+                ] else ...[
+                  const Icon(Icons.cloud_upload_rounded, size: 20, color: Colors.white),
+                  const Gap(8),
+                ],
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: busy ? _textLo : Colors.white,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );

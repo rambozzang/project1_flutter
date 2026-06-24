@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloudflare/cloudflare.dart';
@@ -8,8 +7,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_save_data.dart';
+import 'package:project1/repo/board/data/board_save_weather_data.dart';
+import 'package:project1/repo/board/weather_for_board.dart';
+import 'package:project1/repo/challenge/challenge_repo.dart';
+import 'package:project1/repo/challenge/data/challenge_complete_data.dart';
 import 'package:project1/repo/cloudflare/R2_repo.dart';
 import 'package:project1/repo/cloudflare/cloudflare_repo.dart';
 import 'package:project1/repo/cloudflare/data/cloudflare_req_save_data.dart';
@@ -17,7 +21,6 @@ import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:video_compress/video_compress.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 
 class RootCntrBinding extends Bindings {
@@ -151,8 +154,8 @@ class RootCntr extends GetxController {
   void compressClose() async {
     Utils.alert('비디오 압축에 실패했습니다.');
     isFileUploading.value = UploadingType.FAIL;
-    VideoCompress.deleteAllCache();
-    VideoCompress.cancelCompression();
+    // VideoCompress.deleteAllCache();
+    // VideoCompress.cancelCompression();
   }
 
   void uploadR2Storage2(File videoFile, BoardSaveData boardSaveData) async {
@@ -168,7 +171,7 @@ class RootCntr extends GetxController {
       );
       // 썸네일 생성
       File? thumbnailFile = await VideoCompress.getFileThumbnail(videoFile.path, quality: 50);
-      if (pickedFile == null || thumbnailFile == null) {
+      if (pickedFile == null) {
         compressClose();
         return;
       }
@@ -202,24 +205,28 @@ class RootCntr extends GetxController {
       if (resData.code != '00') {
         Utils.alert(resData.msg.toString());
         isFileUploading.value = UploadingType.FAIL;
-        File(pickedFile!.path.toString()).delete();
-        File(thumbnailFile!.toString()).delete();
-        File(videoFile.path!.toString()).delete();
+        File(pickedFile.path.toString()).delete();
+        File(thumbnailFile.toString()).delete();
+        File(videoFile.path.toString()).delete();
 
-        VideoCompress.deleteAllCache();
-        VideoCompress.cancelCompression();
+        // VideoCompress.deleteAllCache();
+        // VideoCompress.cancelCompression();
         return;
       }
       isFileUploading.value = UploadingType.SUCCESS;
+
+      // 챌린지 완료 처리 (비동기, 업로드 흐름 차단 안 함)
+      _completeTodayChallengeAfterUpload();
+
       // Utils.alert('정상 등록되었습니다!');
       Future.delayed(const Duration(milliseconds: 1000), () {
         isFileUploading.value = UploadingType.NONE;
-        File(pickedFile!.path.toString()).delete();
-        File(thumbnailFile!.toString()).delete();
-        File(videoFile.path!.toString()).delete();
+        File(pickedFile.path.toString()).delete();
+        File(thumbnailFile.toString()).delete();
+        File(videoFile.path.toString()).delete();
 
-        VideoCompress.deleteAllCache();
-        VideoCompress.cancelCompression();
+        // VideoCompress.deleteAllCache();
+        // VideoCompress.cancelCompression();
       });
     } catch (e) {
       lo.g("ERRRRRRR=> $e");
@@ -230,6 +237,12 @@ class RootCntr extends GetxController {
   // Cloudflare  STREAM 파일 업로드
   void uploadCloudflare(File videoFile, BoardSaveData boardSaveData) async {
     isFileUploading.value = UploadingType.UPLOADING;
+
+    // 날씨는 영상 업로드와 "병렬"로 가져온다.
+    // 사용자는 게시 버튼을 누른 즉시 백그라운드 업로드로 넘어가고,
+    // 느린 파일 업로드가 진행되는 동안 현위치 날씨를 받아 저장 직전에 합친다.
+    final Future<BoardSaveWeatherData> weatherFuture = WeatherForBoard.fetch();
+
     CloudflareRepo cloudflare = CloudflareRepo();
     await cloudflare.init();
 
@@ -255,33 +268,24 @@ class RootCntr extends GetxController {
       } catch (e) {
         lo.g('비디오 압축 에러 : $e');
         if (needsCompression) {
-          VideoCompress.cancelCompression();
+          // VideoCompress.cancelCompression();
         }
         pickedFile = await VideoCompress.getMediaInfo(videoFile.path);
       }
 
       Lo.g('비디오 압축 결과 : ${pickedFile!.toJson()}');
-      if (pickedFile == null) {
-        Utils.alert('비디오 압축에 실패했습니다.');
-        isFileUploading.value = UploadingType.FAIL;
-        if (needsCompression) {
-          VideoCompress.deleteAllCache();
-          VideoCompress.cancelCompression();
-        }
-        return;
-      }
 
       File uploadVideoFile = File(pickedFile.path.toString());
       CloudflareHTTPResponse<CloudflareStreamVideo?>? videoRes = await cloudflare.videoStreamUpload(uploadVideoFile);
       CloudflareStreamVideo? video = videoRes?.body;
 
-      if (videoRes?.isSuccessful == false || videoRes!.body!.id == null) {
+      if (videoRes?.isSuccessful == false) {
         // if (videoRes?.isSuccessful == false || thumbnailres?.isSuccessful == false) {
         Utils.alert('파일 업로드에 실패했습니다.');
         isFileUploading.value = UploadingType.FAIL;
         if (needsCompression) {
-          VideoCompress.deleteAllCache();
-          VideoCompress.cancelCompression();
+          // VideoCompress.deleteAllCache();
+          // VideoCompress.cancelCompression();
         }
         return;
       }
@@ -302,38 +306,37 @@ class RootCntr extends GetxController {
       if (resCloudData.code != '00') {
         Utils.alert(resCloudData.msg.toString());
         isFileUploading.value = UploadingType.FAIL;
-        File(pickedFile!.path.toString()).delete();
+        File(pickedFile.path.toString()).delete();
         File(thumbnailFile!.toString()).delete();
-        File(videoFile.path!.toString()).delete();
+        File(videoFile.path.toString()).delete();
         if (needsCompression) {
-          VideoCompress.deleteAllCache();
-          VideoCompress.cancelCompression();
+          // VideoCompress.deleteAllCache();
+          // VideoCompress.cancelCompression();
         }
         return;
       }
 
-      // 저장
+      // 저장 — 병렬로 받아온 날씨를 합쳐 게시한다.
       BoardRepo boardRepo = BoardRepo();
-      // boardSaveData.boardWeatherVo?.thumbnailPath = video.thumbnail;
-      boardSaveData.boardWeatherVo?.thumbnailPath = video.animatedThumbnail;
-      boardSaveData.boardWeatherVo?.thumbnailId = video.thumbnail;
-      boardSaveData.boardWeatherVo?.videoPath = video.playback!.hls.toString();
-      boardSaveData.boardWeatherVo?.videoId = video.id;
-      // m3u8 파일 다운 받아 내용 저장 - m3u8 파일은 cloudflare에서 동영상 파일이 업로드 이후에 생성이 되어 배치로 받는 수 뿐이 없다.
-      // String m3u8 = await downloadAndSaveM3U8File(video.playback!.hls.toString(), video.id!);
-      // boardSaveData.boardWeatherVo?.thumbnailId = m3u8;
+      // 업로드가 진행되는 동안 이미 날씨를 받아두었으므로 거의 즉시 반환된다.
+      final BoardSaveWeatherData weatherVo = await weatherFuture;
+      weatherVo.thumbnailPath = video.animatedThumbnail;
+      weatherVo.thumbnailId = video.thumbnail;
+      weatherVo.videoPath = video.playback!.hls.toString();
+      weatherVo.videoId = video.id;
+      boardSaveData.boardWeatherVo = weatherVo;
 
       ResData resData = await boardRepo.save(boardSaveData);
 
       if (resData.code != '00') {
         Utils.alert(resData.msg.toString());
         isFileUploading.value = UploadingType.FAIL;
-        File(pickedFile!.path.toString()).delete();
+        File(pickedFile.path.toString()).delete();
         File(thumbnailFile!.toString()).delete();
-        File(videoFile.path!.toString()).delete();
+        File(videoFile.path.toString()).delete();
         if (needsCompression) {
-          VideoCompress.deleteAllCache();
-          VideoCompress.cancelCompression();
+          // VideoCompress.deleteAllCache();
+          // VideoCompress.cancelCompression();
         }
         return;
       }
@@ -343,17 +346,17 @@ class RootCntr extends GetxController {
         isFileUploading.value = UploadingType.NONE;
         File(pickedFile!.path.toString()).delete();
         // File(thumbnailFile!.toString()).delete();
-        File(videoFile.path!.toString()).delete();
+        File(videoFile.path.toString()).delete();
         if (needsCompression) {
-          VideoCompress.deleteAllCache();
-          VideoCompress.cancelCompression();
+          // VideoCompress.deleteAllCache();
+          // VideoCompress.cancelCompression();
         }
       });
     } catch (e) {
       isFileUploading.value = UploadingType.FAIL;
-      lo.g("ERRRRRRR=> " + e.toString());
-      VideoCompress.deleteAllCache();
-      VideoCompress.cancelCompression();
+      lo.g("ERRRRRRR=> $e");
+      // VideoCompress.deleteAllCache();
+      // VideoCompress.cancelCompression();
     }
   }
 
@@ -412,10 +415,6 @@ class RootCntr extends GetxController {
 
     MediaInfo? mediaInfo = await VideoCompress.getMediaInfo(filePath);
 
-    if (mediaInfo == null) {
-      throw Exception('Failed to get video metadata');
-    }
-
     int width = mediaInfo.width ?? 0;
     int height = mediaInfo.height ?? 0;
 
@@ -433,18 +432,18 @@ class RootCntr extends GetxController {
     }
 
     // width, height 체크 더 큰게 height 으로 재설정
-    int width_t = 0;
-    int height_t = 0;
+    int widthT = 0;
+    int heightT = 0;
 
     if (width > height) {
-      height_t = width;
-      width_t = height;
+      heightT = width;
+      widthT = height;
     } else {
-      height_t = height;
-      width_t = width;
+      heightT = height;
+      widthT = width;
     }
-    width = width_t;
-    height = height_t;
+    width = widthT;
+    height = heightT;
 
     if (width > widthThreshold || height > heightThreshold) {
       return true;
@@ -454,5 +453,31 @@ class RootCntr extends GetxController {
     }
 
     return false;
+  }
+
+  /// 영상 업로드 성공 후 오늘 챌린지 완료 처리
+  Future<void> _completeTodayChallengeAfterUpload() async {
+    try {
+      final custId = AuthCntr.to.custId.value;
+      if (custId.isEmpty) return;
+
+      final todayRes = await ChallengeRepo().getTodayChallenge(custId);
+      if (todayRes.code != '00') return;
+
+      final todayChallenge = ChallengeRepo.parseTodayData(todayRes.data);
+      if (todayChallenge?.challengeId == null || todayChallenge?.completeYn == 'Y') return;
+
+      final completeRes = await ChallengeRepo().completeChallenge(todayChallenge!.challengeId!, custId);
+      if (completeRes.code == '00') {
+        final ChallengeCompleteData? result = ChallengeRepo.parseCompleteData(completeRes.data);
+        if (result?.message != null && result!.message!.isNotEmpty) {
+          Utils.alertIcon(result.message!, icontype: 'S', duration: const Duration(seconds: 3));
+        } else {
+          Utils.alertIcon('챌린지 완료! 오늘도 출석 체크 되었어요.', icontype: 'S', duration: const Duration(seconds: 2));
+        }
+      }
+    } catch (e) {
+      lo.g('_completeTodayChallengeAfterUpload error: $e');
+    }
   }
 }
