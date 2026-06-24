@@ -101,7 +101,7 @@ final class VideoPlayer {
   private boolean isPreloadingEnabled = true;
   private boolean isFastStartEnabled = true;
   private long lastBufferUpdateTime = 0;
-  private static final long BUFFER_UPDATE_INTERVAL = 100; // 100ms
+  private static final long BUFFER_UPDATE_INTERVAL = 250; // 250ms - 메인 스레드 부하 완화
 
   VideoPlayer(
       Context context,
@@ -162,8 +162,13 @@ final class VideoPlayer {
         .setInitialBitrateEstimate(1000000) // 1Mbps 초기 추정값
         .build();
 
-    // 적응형 트랙 선택 팩토리
-    AdaptiveTrackSelection.Factory trackSelectionFactory = new AdaptiveTrackSelection.Factory();
+    // 적응형 트랙 선택 - 빠른 시작 + 부드러운 화질 전환 튜닝
+    // 낮은 화질로 즉시 시작하고, 화질 상승은 신중하게(잦은 전환 hitch 방지)
+    AdaptiveTrackSelection.Factory trackSelectionFactory = new AdaptiveTrackSelection.Factory(
+        /* minDurationForQualityIncreaseMs= */ 6000,
+        /* maxDurationForQualityDecreaseMs= */ 4000,
+        /* minDurationToRetainAfterDiscardMs= */ 5000,
+        /* bandwidthFraction= */ 0.7f);
     trackSelector = new DefaultTrackSelector(context, trackSelectionFactory);
 
     // 동적 버퍼 컨트롤 - 프리로드 5초 / 활성화 20초
@@ -180,6 +185,10 @@ final class VideoPlayer {
         .setTrackSelector(trackSelector)
         .setLoadControl(videoLoadControl)
         .setBandwidthMeter(bandwidthMeter)
+        // 스크롤 중 디스플레이 프레임레이트 전환으로 인한 끊김 방지
+        .setVideoChangeFrameRateStrategy(C.VIDEO_CHANGE_FRAME_RATE_STRATEGY_OFF)
+        // 이어폰 분리 등 오디오 출력 변경 시 자동 일시정지
+        .setHandleAudioBecomingNoisy(true)
         .build();
 
     // 트랙 선택 최적화
@@ -207,22 +216,13 @@ final class VideoPlayer {
    */
   private MediaSource getOrCreateMediaSource(Uri uri, Map<String, String> httpHeaders, String formatHint,
       Context context) {
-    String cacheKey = uri.toString();
-
-    // 프리로드된 소스가 있는지 확인
-    MediaSource cachedSource = preloadedSources.get(cacheKey);
-    if (cachedSource != null) {
-      return cachedSource;
-    }
-
-    // 새로운 미디어 소스 생성
+    // MediaSource 객체는 절대 재사용하지 않는다.
+    // media3에서 하나의 MediaSource는 동시에 한 ExoPlayer에만 바인딩 가능하며,
+    // 재사용 시 "Source error: IllegalStateException" 발생.
+    // 실제 캐싱은 CacheDataSource(바이트 단위 SimpleCache)가 담당하므로,
+    // 매번 새 MediaSource를 만들어도 다운로드한 바이트는 캐시에서 재사용된다.
     DataSource.Factory dataSourceFactory = createDataSourceFactory(context, httpHeaders);
-    MediaSource mediaSource = buildMediaSource(uri, dataSourceFactory, formatHint, context);
-
-    // 캐시에 저장
-    preloadedSources.put(cacheKey, mediaSource);
-
-    return mediaSource;
+    return buildMediaSource(uri, dataSourceFactory, formatHint, context);
   }
 
   /**
@@ -381,10 +381,6 @@ final class VideoPlayer {
               event.put("event", "completed");
               eventSink.success(event);
             }
-
-            if (playbackState != Player.STATE_BUFFERING) {
-              setBuffering(false);
-            }
           }
 
           @Override
@@ -421,15 +417,17 @@ final class VideoPlayer {
   }
 
   void play() {
-    // 활성화 모드: 20초까지 버퍼링 허용
+    // 활성화 모드: 20초까지 버퍼링 허용 + 디코더 리소스 유지(재버퍼링 감소)
     if (videoLoadControl != null) videoLoadControl.setActive(true);
+    exoPlayer.setForegroundMode(true);
     exoPlayer.setPlayWhenReady(true);
   }
 
   void pause() {
     exoPlayer.setPlayWhenReady(false);
-    // 프리로드 모드로 복귀: 5초만 버퍼링
+    // 프리로드 모드로 복귀: 5초만 버퍼링 + 디코더 리소스 해제(메모리 절약)
     if (videoLoadControl != null) videoLoadControl.setActive(false);
+    exoPlayer.setForegroundMode(false);
   }
 
   void setLooping(boolean value) {
