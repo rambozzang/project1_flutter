@@ -59,17 +59,16 @@ class VideoScreenPageState extends State<VideoScreenPage> {
 
   double get bottomHeight {
     final mediaQuery = MediaQuery.of(context);
-    final bottomPadding = mediaQuery.padding.bottom;
-    final viewInsets = mediaQuery.viewInsets.bottom;
+    // 시스템 내비/제스처 바 높이 (Android 버전·내비 방식에 따라 자동 산출 → 버전별 호환)
+    final safeBottom = mediaQuery.viewPadding.bottom;
 
-    // iOS의 경우 기본 높이 + 하단 안전 영역
     if (Platform.isIOS) {
-      return bottomPadding + 25;
+      return safeBottom + 25;
     }
 
-    // 안드로이드의 경우 기본 높이 + 시스템 네비게이션 바 높이
-    // SafeArea를 사용하므로 기본 높이만 사용하되, 추가 여백 제공
-    return 80.0 + 10.0; // SafeArea가 시스템 UI를 처리하므로 기본 높이 + 여백만 사용
+    // SafeArea(bottom)를 제거했으므로, 사라진 시스템 하단 영역을 직접 보정한다.
+    // (기본 여백 90 + 내비바 높이) → 하단 플로팅 메뉴와 겹치지 않게 위로 올림
+    return 90.0 + safeBottom;
   }
 
   // 운영계에서 false 로 변경
@@ -832,8 +831,10 @@ class VideoScreenPageState extends State<VideoScreenPage> {
 
   // 재생 progressbar
   Widget buildPlayProgress() {
+    // SafeArea를 제거했으므로 시스템 내비/제스처 바 높이만큼 띄워야 가려지지 않는다.
+    final safeBottom = MediaQuery.of(context).viewPadding.bottom;
     return Positioned(
-      bottom: 0, // SafeArea(bottom:true) 내부이므로 0이 실제 화면 하단(네비게이션 바 바로 위)
+      bottom: safeBottom,
       left: 1,
       right: 1,
       // child: VideoProgressIndicator(
