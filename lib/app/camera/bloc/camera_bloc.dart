@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+// import 'package:camera/camera.dart'; // 임시 주석 처리
 import 'package:camera/camera.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
@@ -86,11 +87,11 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     emit(CameraInitial());
     try {
       await _switchCamera(emit);
-      if (_cameraController != null && _cameraController!.value.isInitialized) {
-        // emit(CameraReady(isRecordingVideo: false));
-      } else {
-        emit(CameraError(error: CameraErrorType.other));
-      }
+      // if (_cameraController != null && _cameraController!.value.isInitialized) {
+      //   // emit(CameraReady(isRecordingVideo: false));
+      // } else {
+      //   emit(CameraError(error: CameraErrorType.other));
+      // }
     } catch (e) {
       emit(CameraError(error: CameraErrorType.other));
     }
@@ -123,6 +124,10 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
         if (hasRecordingLimitError) {
           await Future.delayed(const Duration(milliseconds: 1500),
               () {}); // To prevent rapid consecutive clicks, we introduce a debounce delay of 2 seconds,
+          // 다음 촬영도 즉시 시작되도록 레코더를 재준비
+          try {
+            await _cameraController?.prepareForVideoRecording();
+          } catch (_) {}
           emit(CameraReady(isRecordingVideo: false, hasRecordingError: false, decativateRecordButton: false));
         } else {
           emit(CameraRecordingSuccess(file: videoFile));
@@ -136,10 +141,9 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
   // Handle CameraEnable event on app resume
   void _onCameraEnable(CameraEnable event, Emitter<CameraState> emit) async {
-    if (!isInitialized() && _cameraController != null) {
+    if (!isInitialized()) {
       if (await permissionUtils.getCameraAndMicrophonePermissionStatus()) {
         await _initializeCamera(emit);
-        // emit(CameraReady(isRecordingVideo: false));
       } else {
         emit(CameraError(error: CameraErrorType.permission));
       }
@@ -162,7 +166,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   // Reset the camera BLoC to its initial state
   void _resetCameraBloc() {
     _cameraController = null;
-    currentLensDirection = CameraLensDirection.front;
+    currentLensDirection = CameraLensDirection.back;
     _stopTimerAndResetDuration();
   }
 
@@ -204,7 +208,6 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       videoFile = await ensureMP4Extension(videoFile);
 
       return File(videoFile.path);
-      // return File(video.path);
     } catch (e) {
       return Future.error(e);
     }
@@ -228,29 +231,32 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   // Initialize the camera controller
   Future<void> _initializeCamera(Emitter<CameraState> emit) async {
     try {
-      _cameraController = null;
       _cameraController = await cameraUtils.getCameraController(lensDirection: currentLensDirection);
+      await _cameraController!.initialize();
 
-      await _cameraController?.initialize().then((_) async {
-        // isInitialized 가 바로 true 를 반환하지 않아 딜레이를 줍니다.
-        Platform.isIOS ? await Future.delayed(const Duration(milliseconds: 150)) : null;
-        if (_cameraController!.value.isInitialized) {
-          if (Platform.isIOS) {
-            //ios 에서만 필요한 코드
-            await _cameraController?.prepareForVideoRecording();
+      await Future.delayed(const Duration(milliseconds: 150));
 
-            // 화면 깜빡임을 속이기 위해 딜레이를 주고 Ready로 상태변경
-            await Future.delayed(const Duration(milliseconds: 150));
-          }
+      // 녹화 시작 지연 제거의 핵심:
+      // MediaRecorder(Android)/캡처세션(iOS)을 "미리" 준비해 두면
+      // startVideoRecording() 호출 시 즉시 녹화가 시작된다.
+      // (기존엔 iOS에서만 호출돼 Android는 녹화 버튼을 누른 뒤에야
+      //  레코더를 구성하느라 렉이 발생 → 중요한 순간을 놓침)
+      try {
+        await _cameraController?.prepareForVideoRecording();
+      } catch (e) {
+        lo.g('prepareForVideoRecording skip: $e');
+      }
+      if (Platform.isIOS) {
+        // 화면 깜빡임을 속이기 위해 딜레이를 주고 Ready로 상태변경
+        await Future.delayed(const Duration(milliseconds: 150));
+      }
 
-          emit(CameraReady(isRecordingVideo: false, decativateRecordButton: false));
-          _cameraController?.lockCaptureOrientation(DeviceOrientation.portraitUp);
+      emit(CameraReady(isRecordingVideo: false, decativateRecordButton: false));
+      _cameraController?.lockCaptureOrientation(DeviceOrientation.portraitUp);
 
-          _cameraController!.addListener(() {
-            if (_cameraController!.value.isRecordingVideo) {
-              _startTimer();
-            }
-          });
+      _cameraController!.addListener(() {
+        if (_cameraController!.value.isRecordingVideo) {
+          _startTimer();
         }
       });
     } on CameraException catch (error) {
@@ -276,10 +282,8 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   Future<void> _disposeCamera() async {
     _cameraController?.removeListener(() {});
     await _cameraController?.dispose();
+    _cameraController = null;
     _stopTimerAndResetDuration();
-    // _cameraController = await cameraUtils.getCameraController(
-    //     lensDirection:
-    //         currentLensDirection); // it's important to remove old camera controller instances otherwise _cameraController!.value will remain unchanged hence _cameraController!.value.isInitialized will always true
   }
 
   Future<File> ensureMP4Extension(File videoFile) async {
@@ -303,14 +307,14 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
         return renamedFile;
       } on FileSystemException catch (e) {
-        print('Error renaming file: ${e.message}');
+        lo.g('Error renaming file: ${e.message}');
         // 이름 변경에 실패한 경우, 파일을 복사하는 방법을 시도
         try {
           final File copiedFile = await videoFile.copy(newPath);
           await videoFile.delete(); // 원본 파일 삭제
           return copiedFile;
         } catch (e) {
-          print('Error copying file: $e');
+          lo.g('Error copying file: $e');
           // 모든 시도가 실패하면 원본 파일 반환
           return videoFile;
         }

@@ -1,15 +1,13 @@
 import 'dart:io';
-import 'dart:typed_data';
-import 'dart:ui';
+
+// import 'package:camera/camera.dart'; // 임시 주석 처리
 
 import 'package:camera/camera.dart';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/camera/bloc/camera_state.dart';
@@ -350,9 +348,9 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                                   ),
                                   const SizedBox(width: 20),
                                   IgnorePointer(
-                                    ignoring: state is! CameraReady || state.decativateRecordButton,
+                                    ignoring: state.decativateRecordButton,
                                     child: Opacity(
-                                      opacity: state is! CameraReady || state.decativateRecordButton ? 0.4 : 1,
+                                      opacity: state.decativateRecordButton ? 0.4 : 1,
                                       child: animatedProgressButton(state),
                                     ),
                                   ),
@@ -401,13 +399,17 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
     bool isRecording = state is CameraReady && state.isRecordingVideo;
     return GestureDetector(
       onTap: () async {
+        HapticFeedback.mediumImpact(); // 탭 즉시 촉각 피드백 → 체감 반응성
         if (isRecording) {
           stopRecording();
         } else {
           startRecording();
         }
       },
-      onLongPress: () => startRecording(),
+      onLongPress: () {
+        HapticFeedback.mediumImpact();
+        startRecording();
+      },
       onLongPressEnd: (_) => stopRecording(),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),

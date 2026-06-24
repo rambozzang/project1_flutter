@@ -17,6 +17,7 @@ import 'package:project1/repo/board/data/board_save_weather_data.dart';
 import 'package:project1/repo/weather/data/current_weather.dart';
 import 'package:project1/app/weathergogo/cntr/data/current_weather_data.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
+import 'package:project1/app/weathergogo/theme/sky_gradient.dart';
 import 'package:project1/repo/weather/data/weather_view_data.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_fct/super_fct_model.dart';
 import 'package:project1/repo/weather_gogo/repository/weather_gogo_caching.dart';
@@ -433,21 +434,34 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
         ],
       ),
       resizeToAvoidBottomInset: true,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [_bgTop, _bgMid, _bgBot],
-            stops: [0.0, 0.5, 1.0],
+      body: Stack(
+        children: [
+          // 앱의 '시간대별 하늘'과 동일한 배경 → 화면 통일감
+          Positioned.fill(child: Container(decoration: SkyGradient.decoration(DateTime.now()))),
+          // 가독성을 위한 은은한 다크 스크림 (상·하단을 조금 더 어둡게)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.45),
+                    Colors.black.withOpacity(0.20),
+                    Colors.black.withOpacity(0.55),
+                  ],
+                  stops: const [0.0, 0.45, 1.0],
+                ),
+              ),
+            ),
           ),
-        ),
-        child: Column(
-          children: [
-            Expanded(child: _buildBody()),
-            _buildBottomBar(),
-          ],
-        ),
+          Column(
+            children: [
+              Expanded(child: _buildBody()),
+              _buildBottomBar(),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -481,13 +495,54 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
         children: [
           // 히어로: 영상 미리보기 (화면의 주인공)
           Center(child: _buildVideoPlayer()),
-          const Gap(18),
+          const Gap(14),
+          _buildAutoWeatherHint(),
+          const Gap(20),
+          _buildSectionLabel('이 순간의 이야기'),
+          const Gap(8),
           _buildCaptionField(),
-          const Gap(16),
+          const Gap(20),
+          _buildSectionLabel('공개 설정'),
+          const Gap(8),
           _buildOptionPills(),
           const Gap(18),
           _buildPolicySection(),
           const Gap(8),
+        ],
+      ),
+    );
+  }
+
+  // 섹션 라벨 (좌측 정렬, 절제된 톤)
+  Widget _buildSectionLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 2),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 13, color: _textLo, fontWeight: FontWeight.w700, letterSpacing: 0.2),
+      ),
+    );
+  }
+
+  // 촬영 위치·날씨가 자동으로 함께 기록된다는 안내 (날씨 UI를 없앤 대신)
+  Widget _buildAutoWeatherHint() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: _accent.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _accent.withOpacity(0.28)),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.auto_awesome_rounded, size: 16, color: _accent),
+          Gap(8),
+          Expanded(
+            child: Text(
+              '촬영한 곳의 날씨와 위치가 게시할 때 자동으로 함께 기록돼요.',
+              style: TextStyle(fontSize: 12.5, height: 1.35, color: _textHi),
+            ),
+          ),
         ],
       ),
     );
@@ -537,7 +592,7 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
             icon: _hideChecked ? Icons.lock_rounded : Icons.public_rounded,
             label: _hideChecked ? '비공개' : '전체공개',
             sub: _hideChecked ? '나만 볼 수 있어요' : '모두에게 보여요',
-            activeColor: const Color(0xFFF2A33C),
+            activeColor: _accent,
           ),
         ),
         const Gap(12),
@@ -548,7 +603,7 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
             icon: _anonyChecked ? Icons.person_off_rounded : Icons.person_rounded,
             label: _anonyChecked ? '익명' : '내 이름',
             sub: _anonyChecked ? '닉네임 숨김' : '닉네임 표시',
-            activeColor: const Color(0xFF9B6BFF),
+            activeColor: _accent,
           ),
         ),
       ],
@@ -1389,19 +1444,12 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
             height: 52,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              gradient: busy
-                  ? null
-                  : const LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [Color(0xFF4C8DFF), Color(0xFF6B73FF)],
-                    ),
-              color: busy ? _surface : null,
+              color: busy ? _surface : _accent,
               borderRadius: BorderRadius.circular(16),
               border: busy ? Border.all(color: _surfaceBorder) : null,
               boxShadow: busy
                   ? null
-                  : [BoxShadow(color: _accent.withOpacity(0.35), blurRadius: 18, offset: const Offset(0, 6))],
+                  : [BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 12, offset: const Offset(0, 4))],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
