@@ -8,27 +8,25 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
-import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
+import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/app/alram/alram_page.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/camera/page/camera_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/camera/utils/permission_utils.dart';
 import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
+import 'package:project1/app/chatting/supabase_options.dart';
 import 'package:project1/app/myinfo/myinfo_page.dart';
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/app/videolist/video_list_page.dart';
 import 'package:project1/app/weathergogo/weathergogo_page.dart';
 import 'package:project1/config/app_config.dart';
-import 'package:project1/main.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
-import 'package:project1/theme/theme_controller.dart';
-import 'package:project1/utils/WeatherLottie.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/fade_stack.dart';
 import 'package:project1/widget/hide_bottombar.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // ignore: must_be_immutable
 class RootPage extends StatefulWidget {
@@ -53,7 +51,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   // bottom item list
   late List<BottomNavigationBarItem> bottomItemList = [
     bottomItem(Icons.home, '홈'),
-    bottomItem(Icons.cloudy_snowing, '날씨'),
+    bottomItem(Icons.cloudy_snowing, 'Feed'),
     // bottomItem(Icons.cloud_queue, '날씨'),
     bottomItem(Icons.add, '추가'),
     bottomItem(Icons.favorite, '라운지'),
@@ -61,8 +59,8 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   ];
   // body Widget List
   late List<Widget> mainlist = [
-    const VideoListPage(),
     const WeathgergogoPage(),
+    const VideoListPage(),
     const SizedBox.shrink(),
     const SizedBox.shrink(),
     const SizedBox.shrink()
@@ -74,6 +72,18 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
 
     Get.put(VideoListCntr());
     checkAppVersion();
+
+    initSetting();
+  }
+
+  void initSetting() {
+    Future.delayed(const Duration(milliseconds: 3500), () {
+      // 광고 init
+      AdManager.initialize(targetPlatform: Platform.isIOS ? TargetPlatform.iOS : TargetPlatform.android);
+
+      // supabase
+      Supabase.initialize(url: supabaseOptions.url, anonKey: supabaseOptions.anonKey);
+    });
   }
 
   Future<void> checkAppVersion() async {
@@ -89,7 +99,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
         }
       });
     } catch (e) {
-      lo.g('checkAppVersion : ${e}');
+      lo.g('checkAppVersion : $e');
     }
   }
 
@@ -115,13 +125,13 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
 
   //뒤로가기 로직(핸드폰 뒤로가기 버튼 클릭시)
   Future<void> onGoBack(didPop) async {
-    lo.g('didPop : ${didPop} ');
+    lo.g('didPop : $didPop ');
     if (didPop) return;
 
     DateTime now = DateTime.now();
     if (currentBackPressTime == null || now.difference(currentBackPressTime!).inMilliseconds > 2000) {
       currentBackPressTime = now;
-      Utils.alertIcon('더 뒤로 버튼을 누르면 앱이 종료됩니다.', // Page No : ${RootCntr.to.rootPageIndex.value}',
+      Utils.alertIcon('뒤로가기 버튼을 누르면 앱이 종료됩니다.', // Page No : ${RootCntr.to.rootPageIndex.value}',
           icontype: 'W',
           duration: const Duration(milliseconds: 2000));
       return Future.value(false);

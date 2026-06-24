@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:giffy_dialog/giffy_dialog.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/utils/WeatherLottie.dart';
 import 'package:project1/utils/log_utils.dart';
-import 'package:project1/utils/utils.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -33,6 +31,12 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver {
   Future<void> initS() async {
     try {
       Get.find<WeatherGogoCntr>().requestLocation().then((value) {
+        // 위치 확보 즉시 날씨를 비동기로 선로딩한다(await 안 함).
+        // 로그인/네비게이션과 병렬로 받아두어, 날씨 화면 진입 시 렉이 없게 한다.
+        // (날씨 컨트롤러는 main.dart 영구 바인딩이라 라우트 전환에도 안전)
+        // 비디오는 rootPage에서 생성·로드되므로 여기서 건드리지 않는다.
+        Get.find<WeatherGogoCntr>().getInitWeatherData(true);
+
         if (isGoRoot == false) {
           Get.offAllNamed('/rootPage');
           isGoRoot = true;
