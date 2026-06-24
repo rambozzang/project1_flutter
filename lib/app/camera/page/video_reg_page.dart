@@ -753,29 +753,57 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
 
   // ── 캡션 입력 (인스타식: 썸네일 옆 무테두리 멀티라인) ──
   Widget _buildCaptionField() {
-    return SizedBox(
-      height: 164, // 썸네일 높이에 맞춰 정렬
-      child: HashTagTextField(
-        controller: hashTagController,
-        basicStyle: const TextStyle(fontSize: 15, height: 1.45, color: _textHi, decorationThickness: 0),
-        decoratedStyle: const TextStyle(fontSize: 15, height: 1.45, color: _accent, fontWeight: FontWeight.w600),
-        keyboardType: TextInputType.multiline,
-        focusNode: hashTagFocusNode,
-        cursorColor: _accent,
-        maxLines: null,
-        expands: true,
-        textAlignVertical: TextAlignVertical.top,
-        decoration: const InputDecoration(
-          isCollapsed: true,
-          contentPadding: EdgeInsets.symmetric(vertical: 4),
-          hintText: "문구를 입력하거나 해시태그를 추가하세요…\n#오늘날씨  #노을  #첫눈",
-          hintStyle: TextStyle(fontSize: 15, height: 1.45, color: _textLo),
-          border: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          enabledBorder: InputBorder.none,
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).requestFocus(hashTagFocusNode),
+      child: Container(
+        height: 164, // 썸네일 높이에 맞춰 정렬
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+        decoration: BoxDecoration(
+          color: _surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _surfaceBorder),
         ),
-        onDetectionTyped: (text) {},
-        onDetectionFinished: () {},
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 입력칸임을 분명히 알리는 라벨
+            Row(
+              children: [
+                const Icon(Icons.edit_note_rounded, size: 17, color: _accent),
+                const Gap(5),
+                const Text('문구 입력', style: TextStyle(fontSize: 12.5, color: _accent, fontWeight: FontWeight.w700)),
+                const Spacer(),
+                Text('# 태그',
+                    style: TextStyle(fontSize: 11, color: _textLo.withOpacity(0.9), fontWeight: FontWeight.w600)),
+              ],
+            ),
+            const Gap(6),
+            Expanded(
+              child: HashTagTextField(
+                controller: hashTagController,
+                basicStyle: const TextStyle(fontSize: 15, height: 1.4, color: _textHi, decorationThickness: 0),
+                decoratedStyle: const TextStyle(fontSize: 15, height: 1.4, color: _accent, fontWeight: FontWeight.w600),
+                keyboardType: TextInputType.multiline,
+                focusNode: hashTagFocusNode,
+                cursorColor: _accent,
+                maxLines: null,
+                expands: true,
+                textAlignVertical: TextAlignVertical.top,
+                decoration: const InputDecoration(
+                  isCollapsed: true,
+                  contentPadding: EdgeInsets.zero,
+                  hintText: "이 순간을 설명해 주세요…\n예) 노을이 예술 #오늘하늘",
+                  hintStyle: TextStyle(fontSize: 14, height: 1.4, color: _textLo),
+                  border: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                ),
+                onDetectionTyped: (text) {},
+                onDetectionFinished: () {},
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

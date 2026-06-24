@@ -83,15 +83,9 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
     super.dispose();
   }
 
-  // 전체 하면을 차지하면서 이미지를 보여주는 위젯
+  // 전체 화면을 차지하는 배경 (달 애니메이션 제거 → 검은색)
   Widget buildLoading() {
-    return Hero(
-      tag: 'bg1',
-      child: SizedBox(
-        width: double.infinity,
-        child: WeatherLottie.background(),
-      ),
-    );
+    return Container(color: Colors.black);
   }
 
   @override
@@ -105,10 +99,9 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
       extendBody: true,
       body: Stack(
         children: [
-          SizedBox(
-            width: double.infinity,
-            height: MediaQuery.of(context).size.height,
-            child: WeatherLottie.background(),
+          // 루트 피드 배경: 달 애니메이션 제거 → 검은색
+          Positioned.fill(
+            child: Container(color: Colors.black),
           ),
           Positioned.fill(
             child: Utils.commonStreamList<BoardWeatherListData>(
