@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:animate_icons/animate_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lottie/lottie.dart';
 import 'package:project1/admob/ad_manager.dart';
@@ -29,9 +27,9 @@ import 'package:project1/app/weathergogo/twenty4_page.dart';
 import 'package:project1/app/weathergogo/weather_webview.dart';
 import 'package:project1/app/weathergogo/weathergogo_kakao_searchbar.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
+import 'package:project1/app/weathergogo/theme/sky_gradient.dart';
 import 'package:project1/repo/cust/data/cust_tag_res_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
-import 'package:project1/utils/ShimmeringText.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
 import 'package:project1/widget/custom_tabbarview.dart';
 import 'package:text_scroll/text_scroll.dart';
@@ -166,15 +164,28 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
           title: const AppbarPage(),
         ),
         body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomRight,
-              colors: Get.find<WeatherGogoCntr>().currentColors,
-            ),
-          ),
+          color: Colors.transparent,
           child: Stack(
             children: <Widget>[
+              // 시간대별 "살아 있는 하늘" 배경 — 10분마다 부드럽게 전환된다.
+              Positioned.fill(
+                child: Obx(() {
+                  final colors = Get.find<WeatherGogoCntr>().currentColors.toList();
+                  if (colors.isEmpty) return const SizedBox.shrink();
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 2000),
+                    curve: Curves.easeInOut,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: SkyGradient.begin,
+                        end: SkyGradient.end,
+                        colors: colors,
+                        stops: colors.length == SkyGradient.stops.length ? SkyGradient.stops : null,
+                      ),
+                    ),
+                  );
+                }),
+              ),
               buildStarts(),
               // NightSun(isVisibleNotifier: Get.find<WeatherGogoCntr>().isNightSun, top: 0, right: 0),
               // DaySun(isVisibleNotifier: Get.find<WeatherGogoCntr>().isDaySun, top: 56, right: 20),
@@ -543,7 +554,7 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
                 onTap: () async => await Get.toNamed('/FavoriteAreaPage')!.then((value) => Get.find<WeatherGogoCntr>().getLocalTag()),
                 child: const Icon(Icons.arrow_circle_right_outlined, color: Colors.white, size: 16)),
             const Gap(5),
-            ...Get.find<WeatherGogoCntr>().areaList.map((e) => buildLocalChip(e)).toList(),
+            ...Get.find<WeatherGogoCntr>().areaList.map((e) => buildLocalChip(e)),
           ]),
         );
       }),

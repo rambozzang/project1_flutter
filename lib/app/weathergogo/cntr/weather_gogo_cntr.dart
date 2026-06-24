@@ -4,6 +4,7 @@ import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
+import 'package:project1/app/weathergogo/theme/sky_gradient.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
@@ -26,7 +27,6 @@ import 'package:project1/repo/weather_gogo/models/response/midta_fct/midta_fct_r
 import 'package:project1/repo/weather_gogo/models/response/special_alert/special_alert_res.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_fct/super_fct_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_nct/super_nct_model.dart';
-import 'package:project1/repo/weather_gogo/repository/weather_alert_repo.dart';
 import 'package:project1/repo/weather_gogo/repository/weather_gogo_caching.dart';
 import 'package:project1/utils/StringUtils.dart';
 import 'package:project1/utils/log_utils.dart';
@@ -96,17 +96,29 @@ class WeatherGogoCntr extends GetxController {
 
   late Color appbarColor;
 
+  // 시간 흐름에 따라 하늘색을 서서히 갱신하는 타이머
+  Timer? _skyTimer;
+
+  /// 현재 시각에 맞는 하늘 그라데이션으로 갱신.
+  void _updateSky() {
+    final now = DateTime.now();
+    currentColors.value = SkyGradient.colorsFor(now);
+    appbarColor = currentColors.first;
+    isNightSun.value = SkyGradient.nightFactor(now) > 0.5;
+  }
+
   @override
   void onInit() {
     super.onInit();
-    final now = DateTime.now();
-    if ((now.hour >= 19 || now.hour < 7)) {
-      currentColors.value = nightColors;
-      appbarColor = nightColors.first;
-    } else {
-      currentColors.value = dayColors;
-      appbarColor = dayColors.first;
-    }
+    _updateSky();
+    // 10분마다 하늘색을 다시 계산 → 새벽·노을이 실시간으로 흐르듯 변한다.
+    _skyTimer = Timer.periodic(const Duration(minutes: 10), (_) => _updateSky());
+  }
+
+  @override
+  void onClose() {
+    _skyTimer?.cancel();
+    super.onClose();
   }
 
   // 최초 호출 , 영상 등록시 호출
@@ -274,9 +286,6 @@ class WeatherGogoCntr extends GetxController {
       // ==========================================================
       WeatherAlertRes res = await weatherService.getWeatherData<WeatherAlertRes>(location, ForecastType.weatherAlert);
       lo.g('bbb=> ${res.toString()}');
-      if (res == null) {
-        return;
-      }
       if (!StringUtils.isEmpty(res.title)) {
         String title = res.title!;
         if (title.split('/')[1].contains('특보')) {
@@ -521,15 +530,15 @@ class WeatherGogoCntr extends GetxController {
   }
 
   void logHourlyWeather() {
-    hourlyWeather.forEach((element) {
+    for (var element in hourlyWeather) {
       lo.g('processingYesterDay  hourlyWeather  : ${element.toString()}');
-    });
+    }
   }
 
   void logyestdayHourlyWeather() {
-    yesterdayHourlyWeather.forEach((element) {
+    for (var element in yesterdayHourlyWeather) {
       lo.g('processingYesterDay yesterdayHourlyWeather  : ${element.toString()}');
-    });
+    }
   }
 
   int fetchFctreCallCnt = 0;
@@ -686,7 +695,7 @@ class WeatherGogoCntr extends GetxController {
   double getMinTemp(RxList<SevenDayWeather> list) {
     return list.fold<double?>(null, (minTemp, weather) {
           if (weather.morning.minTemp == null) return minTemp;
-          double? currentTemp = double.tryParse(weather.morning!.minTemp!);
+          double? currentTemp = double.tryParse(weather.morning.minTemp!);
           if (currentTemp == null) return minTemp;
           return minTemp == null || currentTemp < minTemp ? currentTemp : minTemp;
         }) ??
