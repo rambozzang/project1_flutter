@@ -45,6 +45,8 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource;
 import androidx.media3.exoplayer.trackselection.AdaptiveTrackSelection;
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
 import androidx.media3.exoplayer.trackselection.TrackSelector;
+import androidx.media3.exoplayer.upstream.Allocator;
+import androidx.media3.exoplayer.upstream.DefaultAllocator;
 import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter;
 import java.io.File;
 import io.flutter.plugin.common.EventChannel;
@@ -70,19 +72,13 @@ final class VideoPlayer {
   private static final String FORMAT_HLS = "hls";
   private static final String FORMAT_OTHER = "other";
 
-  // Performance optimization constants
-  // TikTok-style two-stage buffering: preload only ~5s, expand to 30s on play
-  private static final int MIN_BUFFER_MS = 3000; // 3초 최소 버퍼 (preload 시 3초 확보)
-  private static final int MAX_BUFFER_MS = 5000; // 5초 최대 버퍼 – 화면 도달 전까진 5초까지만 미리 로드
-  private static final int BUFFER_FOR_PLAYBACK_MS = 1500; // 재생 시작을 위한 최소 버퍼 (빠른 스타트)
-  private static final int BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS = 2000; // 리버퍼링 후 재생을 위한 버퍼
+  // TikTok-style two-stage buffering
   private static final long MAX_CACHE_SIZE = 500 * 1024 * 1024; // 500MB 캐시
-  private static final int PRELOAD_BUFFER_SIZE = 2 * 1024 * 1024; // 2MB 프리로드 버퍼
 
   private ExoPlayer exoPlayer;
   private DefaultTrackSelector trackSelector;
   private DefaultBandwidthMeter bandwidthMeter;
-  private LoadControl loadControl;
+  private VideoLoadControl videoLoadControl;
 
   private Surface surface;
   private final TextureRegistry.SurfaceTextureEntry textureEntry;
@@ -170,16 +166,8 @@ final class VideoPlayer {
     AdaptiveTrackSelection.Factory trackSelectionFactory = new AdaptiveTrackSelection.Factory();
     trackSelector = new DefaultTrackSelector(context, trackSelectionFactory);
 
-    // 로드 컨트롤 최적화 - 틱톡 수준의 버퍼링
-    loadControl = new DefaultLoadControl.Builder()
-        .setBufferDurationsMs(
-            MIN_BUFFER_MS,
-            MAX_BUFFER_MS,
-            BUFFER_FOR_PLAYBACK_MS,
-            BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS)
-        .setTargetBufferBytes(PRELOAD_BUFFER_SIZE)
-        .setPrioritizeTimeOverSizeThresholds(true)
-        .build();
+    // 동적 버퍼 컨트롤 - 프리로드 5초 / 활성화 20초
+    videoLoadControl = new VideoLoadControl();
 
     // 렌더러 팩토리 최적화
     DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(context)
@@ -190,7 +178,7 @@ final class VideoPlayer {
     exoPlayer = new ExoPlayer.Builder(context)
         .setRenderersFactory(renderersFactory)
         .setTrackSelector(trackSelector)
-        .setLoadControl(loadControl)
+        .setLoadControl(videoLoadControl)
         .setBandwidthMeter(bandwidthMeter)
         .build();
 
@@ -433,11 +421,15 @@ final class VideoPlayer {
   }
 
   void play() {
+    // 활성화 모드: 20초까지 버퍼링 허용
+    if (videoLoadControl != null) videoLoadControl.setActive(true);
     exoPlayer.setPlayWhenReady(true);
   }
 
   void pause() {
     exoPlayer.setPlayWhenReady(false);
+    // 프리로드 모드로 복귀: 5초만 버퍼링
+    if (videoLoadControl != null) videoLoadControl.setActive(false);
   }
 
   void setLooping(boolean value) {
@@ -574,6 +566,56 @@ final class VideoPlayer {
         textureEntry.release();
         mainHandler.removeCallbacksAndMessages(null);
       });
+    }
+  }
+
+  /**
+   * TikTok-style dynamic load control
+   * - 프리로드(화면 밖): 5초만 버퍼링
+   * - 활성화(화면에 보일 때): 20초까지 버퍼링
+   */
+  private static final class VideoLoadControl implements LoadControl {
+    private volatile boolean isActive = false;
+
+    // 프리로드: 최소 2초, 최대 5초
+    private static final long PRELOAD_MIN_US = 2_000_000L;
+    private static final long PRELOAD_MAX_US = 5_000_000L;
+
+    // 활성화: 최소 3초, 최대 20초
+    private static final long ACTIVE_MIN_US  = 3_000_000L;
+    private static final long ACTIVE_MAX_US  = 20_000_000L;
+
+    // 재생 시작 버퍼: 300ms (빠른 스타트)
+    private static final long PLAYBACK_START_US   = 300_000L;
+    private static final long REBUFFER_START_US   = 1_500_000L;
+
+    private final DefaultAllocator allocator =
+        new DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE);
+
+    void setActive(boolean active) {
+      this.isActive = active;
+    }
+
+    @Override public Allocator getAllocator() { return allocator; }
+
+    @Override public long getBackBufferDurationUs() { return 0; }
+
+    @Override public boolean retainBackBufferFromKeyframe() { return false; }
+
+    @Override
+    public boolean shouldContinueLoading(LoadControl.Parameters p) {
+      long minUs = isActive ? ACTIVE_MIN_US  : PRELOAD_MIN_US;
+      long maxUs = isActive ? ACTIVE_MAX_US  : PRELOAD_MAX_US;
+      long buf   = p.bufferedDurationUs;
+      if (buf >= maxUs) return false;  // 최대 버퍼 도달 → 중단
+      if (buf < minUs)  return true;   // 최소 미달 → 계속 로드
+      return p.playWhenReady;          // 그 사이: 재생 중이면 계속, 정지면 중단
+    }
+
+    @Override
+    public boolean shouldStartPlayback(LoadControl.Parameters p) {
+      long target = p.rebuffering ? REBUFFER_START_US : PLAYBACK_START_US;
+      return p.bufferedDurationUs >= target;
     }
   }
 
