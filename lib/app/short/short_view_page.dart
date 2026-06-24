@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:bot_toast/bot_toast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -9,7 +8,6 @@ import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:project1/admob/ad_manager.dart';
-import 'package:project1/admob/banner_ad_widget.dart';
 
 import 'package:project1/app/short/cntr/short_view_cntr.dart';
 import 'package:project1/app/short/comment/cntr/short_comments_cntr.dart';
@@ -19,7 +17,6 @@ import 'package:project1/app/short/short_weather_card_page.dart';
 import 'package:project1/app/weather/models/geocode.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/bbs/data/bbs_list_data.dart';
-import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/repo/cust/data/cust_tag_res_data.dart';
 import 'package:project1/utils/StringUtils.dart';
@@ -235,7 +232,7 @@ class _ShortViewPageState extends State<ShortViewPage> {
       //         : const SizedBox();
       //   },
       // ),
-      actions: [
+      actions: const [
         // SizedBox(
         //   height: 35,
         //   width: 80,
@@ -340,6 +337,29 @@ class _ShortViewPageState extends State<ShortViewPage> {
       // ),
       // const Gap(10),
       // buildFavLocal(),
+      // 인기 영상(좋아요 20+)은 방송 라이선스 후보로 자동 선정됨을 안내
+      if ((data.likeCnt ?? 0) >= 20)
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(colors: [Color(0xFF1565C0), Color(0xFF0288D1)]),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.tv_rounded, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '📺 방송 후보로 선정된 인기 영상이에요!',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+        ),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
         decoration: BoxDecoration(
@@ -347,7 +367,7 @@ class _ShortViewPageState extends State<ShortViewPage> {
           borderRadius: BorderRadius.circular(15),
           // color: Colors.grey[300],
           // border: Border.all(color: Colors.red[200]!, width: 1.5),
-          border: Border.all(color: const Color.fromARGB(255, 152, 194, 94)!, width: 1.5),
+          border: Border.all(color: const Color.fromARGB(255, 152, 194, 94), width: 1.5),
         ),
         child: Column(
           children: [
@@ -597,7 +617,7 @@ class _ShortViewPageState extends State<ShortViewPage> {
                 onTap: () async => await Get.toNamed('/FavoriteAreaPage')!.then((value) => Get.find<WeatherGogoCntr>().getLocalTag()),
                 child: const Icon(Icons.arrow_circle_right_outlined, color: Colors.white, size: 16)),
             const Gap(5),
-            ...Get.find<WeatherGogoCntr>().areaList.map((e) => buildLocalChip(e)).toList(),
+            ...Get.find<WeatherGogoCntr>().areaList.map((e) => buildLocalChip(e)),
           ]),
         );
       }),
