@@ -100,13 +100,15 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   // Handle CameraRecordingStart event
   void _onCameraRecordingStart(CameraRecordingStart event, Emitter<CameraState> emit) async {
     if (!isRecording()) {
+      // 낙관적 UI: 실제 startVideoRecording 완료를 기다리지 않고
+      // 즉시 녹화 상태로 전환 → 버튼이 누르는 즉시 반응(빨간 링/사각형).
+      // 실제 녹화 시작은 prepare로 미리 준비돼 있어 거의 동시에 일어나며,
+      // 타이머는 컨트롤러 리스너(isRecordingVideo=true)에서 정확히 시작된다.
+      emit(CameraReady(isRecordingVideo: true));
       try {
-        await _startRecording().then((onValue) {
-          emit(CameraReady(isRecordingVideo: true));
-        });
+        await _startRecording();
       } catch (e) {
-        await _reInitialize(emit);
-        // emit(CameraReady(isRecordingVideo: false));
+        await _reInitialize(emit); // 실패 시 카메라 재초기화로 복구
       }
     }
   }

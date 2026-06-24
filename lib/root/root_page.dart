@@ -73,6 +73,9 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     Get.put(VideoListCntr());
     checkAppVersion();
 
+    // 카메라 목록을 미리 열거해 두어 첫 촬영 화면 진입을 빠르게 한다(비동기).
+    CameraUtils.warmUp();
+
     initSetting();
   }
 
