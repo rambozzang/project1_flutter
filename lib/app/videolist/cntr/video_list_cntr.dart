@@ -31,9 +31,9 @@ class VideoListCntr extends GetxController {
   int playAtFirst = 0;
 
   var isLoadingMore = true.obs;
-  // TikTok-style: 현재 페이지 기준 ±3개를 미리 빌드 → 위쪽 3개 영상이 각각 5초씩 사전 버퍼링됨.
+  // TikTok-style: 현재 페이지 기준 ±5개를 미리 빌드 → 위쪽 5개 영상이 각각 5초씩 사전 버퍼링됨.
   // 빠르게 스와이프해도 다음 영상들이 이미 준비되어 즉시 재생.
-  int preLoadingCount = 3;
+  int preLoadingCount = 5;
 
   //현재 영상의 index값 저장
   var currentIndex = 0.obs;

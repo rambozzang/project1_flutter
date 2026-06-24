@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
@@ -46,7 +45,7 @@ class VideoMyinfoListCntr extends GetxController {
 
   var isloading = true.obs;
 
-  int preLoadingCount = 3;
+  int preLoadingCount = 5; // 현재 페이지 기준 ±5개 미리 빌드/버퍼링
   @override
   void onInit() {
     super.onInit();
@@ -61,7 +60,7 @@ class VideoMyinfoListCntr extends GetxController {
     try {
       if (isInitialLoad) {
         videoMyListCntr.sink.add(ResStream.loading());
-        list.clear();
+        this.list.clear();
         pageNum = 0;
       } else {
         if (!isLoadingMore.value || isLastPage) {
@@ -80,8 +79,8 @@ class VideoMyinfoListCntr extends GetxController {
           return;
         }
         BoardWeatherListData boarIdData = BoardWeatherListData.fromMap(resListData.data);
-        list = [boarIdData];
-        videoMyListCntr.sink.add(ResStream.completed(list));
+        this.list = [boarIdData];
+        videoMyListCntr.sink.add(ResStream.completed(this.list));
         return;
       }
 
@@ -118,17 +117,17 @@ class VideoMyinfoListCntr extends GetxController {
         return;
       }
 
-      List<BoardWeatherListData> _list = ((resListData.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
+      List<BoardWeatherListData> list = ((resListData.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
 
-      if (_list.isEmpty || _list.length < pagesize) {
+      if (list.isEmpty || list.length < pagesize) {
         isLastPage = true;
         isLoadingMore.value = false;
       }
 
       if (isInitialLoad) {
-        list = _list;
+        this.list = list;
       } else {
-        list.addAll(_list);
+        list.addAll(list);
       }
 
       // boardId 관련 로직 (기존 getData 메서드에서 가져옴)
@@ -185,11 +184,11 @@ class VideoMyinfoListCntr extends GetxController {
       // 현재 리스트에 팔로우여부 변경
       // list[currentIndex.value].followYn = 'Y';
 
-      list.forEach((element) {
+      for (var element in list) {
         if (element.custId == custId) {
           element.followYn = 'Y';
         }
-      });
+      }
       update();
     } catch (e) {
       Utils.alert('실패! 다시 시도해주세요');
@@ -209,11 +208,11 @@ class VideoMyinfoListCntr extends GetxController {
       Utils.alert('팔로우	취소되었습니다!');
       // 현재 리스트에 팔로우여부 변경
       //  list[currentIndex.value].followYn = 'N';
-      list.forEach((element) {
+      for (var element in list) {
         if (element.custId == custId) {
           element.followYn = 'N';
         }
-      });
+      }
       update();
     } catch (e) {
       Utils.alert('실패! 다시 시도해주세요');
@@ -223,10 +222,6 @@ class VideoMyinfoListCntr extends GetxController {
   Future<(LatLng, LatLng)> getbounds() async {
     // 현재 위치 가져오기 (예: WeatherGogoCntr에서)
     final currentLocation = Get.find<WeatherGogoCntr>().currentLocation.value;
-
-    if (currentLocation == null) {
-      throw Exception('Current location is not available');
-    }
 
     // 현재 위치의 위도와 경도
     double lat = currentLocation.latLng.latitude;
