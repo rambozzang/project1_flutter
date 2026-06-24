@@ -1,8 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 
-import 'package:preload_page_view/preload_page_view.dart';
+import 'package:preload_page_view/preload_page_view.dart' hide PageScrollPhysics;
 import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/app/videolist/Video_screen_page.dart';
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
@@ -13,6 +15,29 @@ import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/WeatherLottie.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:text_scroll/text_scroll.dart';
+
+/// 틱톡식 빠른 스와이프 물리.
+/// 기본 PageScrollPhysics보다 스프링을 단단하게(stiffness↑) 만들어
+/// 페이지가 더 빠르게 스냅되어 휙휙 넘어가는 느낌을 준다.
+class FastPageScrollPhysics extends PageScrollPhysics {
+  const FastPageScrollPhysics({super.parent});
+
+  @override
+  FastPageScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return FastPageScrollPhysics(parent: buildParent(ancestor));
+  }
+
+  @override
+  SpringDescription get spring => SpringDescription.withDampingRatio(
+        mass: 0.4, // 가볍게 → 빠른 반응
+        stiffness: 220, // 단단하게 → 빠른 스냅
+        ratio: 1.1, // 살짝 과감쇠 → 출렁임 없이 정착
+      );
+
+  // 작은 플링에도 페이지가 넘어가도록
+  @override
+  double get minFlingVelocity => 50.0;
+}
 
 class VideoListPage extends StatefulWidget {
   const VideoListPage({super.key});
@@ -32,7 +57,7 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
   AdManager adManager = AdManager();
   // static const String AD_UNIT_NAME = 'VideoPage';
 
-  ValueNotifier<bool> _showInterstitial = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> _showInterstitial = ValueNotifier<bool>(false);
 
   @override
   void initState() {
@@ -217,8 +242,10 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
           preloadPagesCount: cntr.preLoadingCount,
           scrollDirection: Axis.vertical,
           itemCount: data.length,
-          physics: const CustomPhysics(),
+          physics: const FastPageScrollPhysics(),
           onPageChanged: (int inx) {
+            // 현재 페이지 인덱스 갱신: 좋아요/팔로우가 현재 영상을 정확히 가리키도록
+            cntr.currentIndex.value = inx;
             if (inx >= cntr.list.length - (cntr.preLoadingCount + 1)) {
               cntr.getDataWithPagination();
             }
@@ -280,7 +307,7 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
           return AnimatedPositioned(
             duration: const Duration(milliseconds: 1200),
             curve: Curves.fastOutSlowIn,
-            top: MediaQuery.of(context).padding.top + 10,
+            top: MediaQuery.of(context).padding.top + (Platform.isAndroid ? 10 : 0),
             left: value ? 6 : -400,
             child: Obx(() => Row(
                   children: [
@@ -303,7 +330,7 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
   Widget buildLocalName() {
     final controller = Get.find<WeatherGogoCntr>();
     return Positioned(
-        top: MediaQuery.of(context).padding.top + 40,
+        top: MediaQuery.of(context).padding.top + (Platform.isAndroid ? 40 : 30),
         left: 6,
         child: Obx(
           () {
@@ -336,7 +363,7 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
                       SizedBox(
                         width: 130,
                         child: TextScroll(
-                          '현재날씨 ${controller.currentWeather.value.temp ?? 0}° ${(weathDesc.isEmpty || weathDesc == 'null' || weathDesc == null) ? '' : weathDesc}    ',
+                          '현재날씨 ${controller.currentWeather.value.temp ?? 0}° ${(weathDesc.isEmpty || weathDesc == 'null') ? '' : weathDesc}    ',
                           // '${controller.currentLocation.value!.name} ${controller.currentWeather.value.temp ?? 0}° ${(weathDesc.isEmpty || weathDesc == 'null' || weathDesc == null) ? '' : weathDesc}',
                           mode: TextScrollMode.endless,
                           numberOfReps: 20000,
@@ -401,7 +428,7 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
           return AnimatedPositioned(
             duration: const Duration(milliseconds: 1200),
             curve: Curves.fastOutSlowIn,
-            top: MediaQuery.of(context).padding.top,
+            top: MediaQuery.of(context).padding.top + (Platform.isAndroid ? 10 : 0),
             right: value ? 0 : -300,
             child: Column(
               children: [
@@ -532,22 +559,4 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
       ),
     );
   }
-}
-
-// 화면 넘어 가는 스크롤 속도 조절
-class CustomPhysics extends ScrollPhysics {
-  const CustomPhysics({super.parent});
-  // const CustomPhysics({ScrollPhysics? parent}) : super(parent: parent);
-
-  @override
-  CustomPhysics applyTo(ScrollPhysics? ancestor) {
-    return CustomPhysics(parent: buildParent(ancestor));
-  }
-
-  @override
-  SpringDescription get spring => const SpringDescription(
-        mass: 20,
-        stiffness: 13,
-        damping: 3,
-      );
 }

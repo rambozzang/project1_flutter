@@ -830,11 +830,8 @@ class VideoScreenPageState extends State<VideoScreenPage> {
 
   // 재생 progressbar
   Widget buildPlayProgress() {
-    final mediaQuery = MediaQuery.of(context);
-    final bottomPadding = mediaQuery.padding.bottom;
-
     return Positioned(
-      bottom: Platform.isAndroid ? bottomPadding : 0,
+      bottom: 0, // SafeArea(bottom:true) 내부이므로 0이 실제 화면 하단(네비게이션 바 바로 위)
       left: 1,
       right: 1,
       // child: VideoProgressIndicator(
