@@ -60,10 +60,7 @@ dependencies:
   flutter_local_notifications: ^17.2.1+2
   permission_handler: ^11.3.0  
   camera: ^0.11.3  # 0.11.3+: enablePersistentRecording(지속 녹화)로 녹화 시작 지연 개선
-  # CameraX(camera_android_camerax)는 녹화 시작 시 ~1초 프리즈(VideoCapture 바인딩) 이슈.
-  # → Camera2(camera_android)로 전환. main.dart에서 AndroidCamera()로 런타임 강제 선택.
-  camera_android: ^0.10.10  # Camera2 백엔드(녹화 시작 지연 완화)
-  camera_platform_interface: ^2.9.0  # CameraPlatform.instance 런타임 백엔드 선택용
+  camera_android_camerax: ^0.6.14  # CameraX 백엔드(camera 0.11.x 호환)
   flutter_bloc: ^8.1.4
   equatable: ^2.0.5
   video_player: ^2.10.0

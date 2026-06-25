@@ -1,8 +1,6 @@
 import 'dart:io';
 
 import 'package:bot_toast/bot_toast.dart';
-import 'package:camera_android/camera_android.dart';
-import 'package:camera_platform_interface/camera_platform_interface.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 // import 'package:flutter_gemini/flutter_gemini.dart';
@@ -24,12 +22,6 @@ import 'package:project1/route/app_route.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Android 카메라 백엔드를 Camera2(camera_android)로 강제 선택.
-  // CameraX(camera_android_camerax)는 녹화 시작 시 ~1초 프리즈가 있어 Camera2로 전환.
-  if (Platform.isAndroid) {
-    CameraPlatform.instance = AndroidCamera();
-  }
 
   // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   final firebaseService = FirebaseService();
