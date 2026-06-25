@@ -306,9 +306,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
 
   Widget makeBottomItem() {
     return Container(
-      // 하단 메뉴를 시스템 내비/제스처 바 위로 올린다(물리 버튼과 겹침 방지).
-      // 영상 피드는 그 뒤로 몰입형으로 꽉 채워 보인다.
-      margin: EdgeInsets.only(left: 10, right: 10, bottom: MediaQuery.of(context).viewPadding.bottom),
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
       decoration: BoxDecoration(
         // color: Colors.grey.withOpacity(0.63),
@@ -316,30 +314,24 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey.withOpacity(0.63), width: 0.25),
       ),
-      // BottomNavigationBar가 자체적으로 시스템 바 하단 패딩을 추가하므로 제거한다.
-      // (제거 안 하면 컨테이너 margin과 이중 적용 → 아이콘이 위로 밀리고 배경이 내비바로 늘어남)
-      child: MediaQuery.removePadding(
-        context: context,
-        removeBottom: true,
-        child: BottomNavigationBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          currentIndex: RootCntr.to.rootPageIndex.value,
-          showUnselectedLabels: true,
-          type: BottomNavigationBarType.fixed,
-          showSelectedLabels: true,
-          iconSize: 22,
-          onTap: (index) {
-            onClick(index);
-          },
-          selectedIconTheme: const IconThemeData(size: 24),
-          selectedFontSize: 13,
-          selectedItemColor: Colors.black,
-          unselectedFontSize: 11,
-          unselectedItemColor: RootCntr.to.rootPageIndex.value == 0 ? Colors.white : Colors.black,
-          unselectedIconTheme: const IconThemeData(size: 22),
-          items: bottomItemList,
-        ),
+      child: BottomNavigationBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        currentIndex: RootCntr.to.rootPageIndex.value,
+        showUnselectedLabels: true,
+        type: BottomNavigationBarType.fixed,
+        showSelectedLabels: true,
+        iconSize: 22,
+        onTap: (index) {
+          onClick(index);
+        },
+        selectedIconTheme: const IconThemeData(size: 24),
+        selectedFontSize: 13,
+        selectedItemColor: Colors.black,
+        unselectedFontSize: 11,
+        unselectedItemColor: RootCntr.to.rootPageIndex.value == 0 ? Colors.white : Colors.black,
+        unselectedIconTheme: const IconThemeData(size: 22),
+        items: bottomItemList,
       ),
     );
   }
