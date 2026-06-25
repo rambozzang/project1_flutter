@@ -540,6 +540,7 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                               [
                                 Column(children: [
                                   _info(),
+                                  _buildActivityMenu(),
                                   _buildFavoriteArea(),
                                   _buildFavoriteTag(),
                                 ]),
@@ -682,6 +683,48 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
           ),
         )
       ],
+    );
+  }
+
+  Widget _buildActivityMenu() {
+    final items = [
+      {'icon': Icons.emoji_events, 'label': '챌린지', 'color': const Color(0xFFFF8F00), 'route': '/ChallengeMainPage'},
+      {'icon': Icons.military_tech, 'label': '업적', 'color': const Color(0xFF7B1FA2), 'route': '/AchievementPage'},
+      {'icon': Icons.leaderboard, 'label': '체감 랭킹', 'color': const Color(0xFF1565C0), 'route': '/FeelRankingPage'},
+    ];
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      child: Row(
+        children: items.map((item) {
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => Get.toNamed(item['route'] as String),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  color: (item['color'] as Color).withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: (item['color'] as Color).withOpacity(0.2)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(item['icon'] as IconData, color: item['color'] as Color, size: 26),
+                    const SizedBox(height: 6),
+                    Text(item['label'] as String,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: item['color'] as Color,
+                        )),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -1448,52 +1491,23 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
       title: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Flexible(
-            child: InkWell(
-              onTap: () {
-                showModalBottomSheet(
-                    showDragHandle: true,
-                    shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.only(topLeft: Radius.circular(10.0), topRight: Radius.circular(10.0))),
-                    context: context,
-                    builder: (context) => Container(
-                          height: 400,
-                        ));
-              },
-              child: Obx(() => Text(
-                    Get.find<AuthCntr>().resLoginData.value.nickNm.toString(),
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
-                  )),
-            ),
+          InkWell(
+            onTap: () {
+              showModalBottomSheet(
+                  showDragHandle: true,
+                  shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.only(topLeft: Radius.circular(10.0), topRight: Radius.circular(10.0))),
+                  context: context,
+                  builder: (context) => Container(
+                        height: 400,
+                      ));
+            },
+            child: Obx(() => Text(
+                  Get.find<AuthCntr>().resLoginData.value.nickNm.toString(),
+                  style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                )),
           ),
           IconButton(
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            onPressed: () => Get.toNamed('/ChallengeMainPage'),
-            icon: const Icon(Icons.emoji_events),
-            tooltip: '챌린지',
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            onPressed: () => Get.toNamed('/AchievementPage'),
-            icon: const Icon(Icons.military_tech),
-            tooltip: '업적',
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            onPressed: () => Get.toNamed('/FeelRankingPage'),
-            icon: const Icon(Icons.leaderboard),
-            tooltip: '체감 랭킹',
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
             onPressed: () => Get.toNamed('/SettingPage'),
             icon: const Icon(Icons.settings),
           )
