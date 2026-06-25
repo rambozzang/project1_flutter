@@ -16,7 +16,10 @@ class BackendWeatherApi {
         queryParameters: {'nx': nx, 'ny': ny},
       );
       final resData = AuthDio.instance.dioResponse(res);
-      if (resData.code != '00' || resData.data == null) return [];
+      if (resData.code != '00' || resData.data == null) {
+        lo.g('BackendWeatherApi 빈응답(폴백) code=${resData.code} msg=${resData.msg}');
+        return [];
+      }
       final list = resData.data as List<dynamic>;
       return list.map((e) => ItemSuperNct.fromJson(Map<String, Object?>.from(e as Map))).toList();
     } catch (e) {
@@ -33,7 +36,10 @@ class BackendWeatherApi {
         queryParameters: {'nx': nx, 'ny': ny},
       );
       final resData = AuthDio.instance.dioResponse(res);
-      if (resData.code != '00' || resData.data == null) return [];
+      if (resData.code != '00' || resData.data == null) {
+        lo.g('BackendWeatherApi 빈응답(폴백) code=${resData.code} msg=${resData.msg}');
+        return [];
+      }
       final list = resData.data as List<dynamic>;
       return list.map((e) => ItemSuperNct.fromJson(Map<String, Object?>.from(e as Map))).toList();
     } catch (e) {

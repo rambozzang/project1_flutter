@@ -5,6 +5,15 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:project1/utils/log_utils.dart';
 
+/// 429(Rate limit) 전용 예외. 재시도 catch에 잡히지 않고 즉시 전파되어
+/// 무의미한 반복 호출/로그 폭탄을 막는다.
+class RateLimitException implements Exception {
+  final String message;
+  RateLimitException(this.message);
+  @override
+  String toString() => message;
+}
+
 class HttpService {
   final Duration timeout;
   final int maxRetries;
@@ -30,13 +39,15 @@ class HttpService {
         if (response.statusCode == 200) {
           return json.decode(response.body);
         } else if (response.statusCode == 429) {
-          // Rate limit — 재시도해도 429만 더 쌓이므로 즉시 포기.
-          lo.e('getWithRetry() HTTP error (Attempt ${retryCount + 1}/$maxRetries): '
-              'HTTP error ${response.statusCode}: ${response.reasonPhrase}');
-          throw HttpException('HTTP error ${response.statusCode}: API rate limit exceeded');
+          // Rate limit — 재시도해도 더 막히기만 하므로 즉시 중단(재시도 안 함).
+          throw RateLimitException('HTTP error 429: API rate limit exceeded');
         } else {
           throw HttpException('HTTP error ${response.statusCode}: ${response.body}');
         }
+      } on RateLimitException catch (e) {
+        // 재시도 catch보다 먼저 위치 → 즉시 전파(반복 호출/로그 폭탄 방지).
+        lo.e('getWithRetry() 429 rate limit — 재시도 중단: ${uri.toString()}');
+        throw e;
       } on TimeoutException catch (e) {
         retryCount++;
         lo.e('getWithRetry() Request timed out (Attempt $retryCount/$maxRetries): ${uri.toString()} ${e.toString()}');
