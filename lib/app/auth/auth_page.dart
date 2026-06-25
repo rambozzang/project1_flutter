@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
@@ -94,39 +93,46 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver {
           initS();
         }
       }
+      // 달 애니메이션 스플래시 제거 → 로고 + 로딩바(빠른 실행감).
+      // 네이티브 스플래시(#262B49)와 동일 무드로 끊김 없이 이어진다.
       return Scaffold(
         backgroundColor: const Color(0xFF262B49),
         body: Stack(
           children: [
-            SizedBox.expand(
-              child: WeatherLottie.background(),
-            ),
-            const Center(
-              child: Stack(
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Gap(1),
-                        Text(
-                          "SkySnap",
-                          style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w500),
-                        ),
-                      ],
-                    ),
+                  Image.asset('assets/skysnap1.png', width: 110, height: 110),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "SkySnap",
+                    style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.w700, letterSpacing: 1),
                   ),
-                  Positioned(
-                    bottom: 30,
-                    left: 20,
-                    child: Center(
-                      child: Text(
-                        "CodeLabTiger",
-                        style: TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.w500),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: 140,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: const LinearProgressIndicator(
+                        minHeight: 3,
+                        backgroundColor: Colors.white24,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4A90E2)),
                       ),
                     ),
                   ),
                 ],
+              ),
+            ),
+            const Positioned(
+              bottom: 30,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Text(
+                  "CodeLabTiger",
+                  style: TextStyle(fontSize: 9, color: Colors.white54, fontWeight: FontWeight.w500),
+                ),
               ),
             ),
           ],
