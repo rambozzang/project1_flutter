@@ -480,6 +480,9 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
       child: GestureDetector(
         onTap: () => hashTagFocusNode.unfocus(),
         child: SafeArea(
+          // 하단 인셋은 _buildBottomBar(SafeArea top:false)가 처리한다.
+          // 본문에도 bottom SafeArea를 적용하면 게시하기 버튼 바로 위에 ~50px 빈공간이 생긴다.
+          bottom: false,
           child: Stack(
             children: [
               _buildMainContent(),
