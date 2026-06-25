@@ -27,6 +27,16 @@ void main() async {
   // 앱 전체 세로 화면 고정(가로 회전 비활성화)
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
+  // edge-to-edge + 투명 시스템바 → 구형/신형 안드로이드·아이폰에서 인셋을 일관되게 처리.
+  // (화면 짤림은 GetMaterialApp builder의 라우트별 SafeArea가 막고, 영상 피드는 몰입형 유지)
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarDividerColor: Colors.transparent,
+    systemNavigationBarContrastEnforced: false,
+  ));
+
   // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   final firebaseService = FirebaseService();
   await firebaseService.initialize();
@@ -64,6 +74,21 @@ class MyHttpOverrides extends HttpOverrides {
   }
 }
 
+/// 전체화면(몰입형) 라우트 — SafeArea를 적용하지 않고 edge-to-edge로 둔다(틱톡식 영상 피드).
+const Set<String> _fullScreenRoutes = {
+  '/rootPage',
+  '/VideoMyinfoListPage',
+  '/ShortViewPage',
+};
+
+/// 현재 라우트가 전체화면(몰입형)인지. builder의 SafeArea on/off를 결정.
+final ValueNotifier<bool> _isFullScreenRoute = ValueNotifier<bool>(true);
+
+bool _routeIsFullScreen(String? route) {
+  if (route == null) return false;
+  return _fullScreenRoutes.any((r) => route == r || route.startsWith('$r/') || route.startsWith('$r?'));
+}
+
 class TigerBk extends StatelessWidget {
   const TigerBk({super.key});
 
@@ -73,7 +98,27 @@ class TigerBk extends StatelessWidget {
       title: "SkySnap",
       useInheritedMediaQuery: true,
       debugShowCheckedModeBanner: false,
-      builder: BotToastInit(),
+      // 라우트 전환마다 전체화면(몰입형) 여부 갱신 → builder의 SafeArea on/off
+      routingCallback: (routing) {
+        _isFullScreenRoute.value = _routeIsFullScreen(routing?.current);
+      },
+      builder: (context, child) {
+        // 영상 피드 등 몰입형 라우트는 edge-to-edge 유지, 나머지는 SafeArea로 시스템바 짤림 방지.
+        final Widget safe = ValueListenableBuilder<bool>(
+          valueListenable: _isFullScreenRoute,
+          builder: (context, fullScreen, _) {
+            return SafeArea(
+              top: !fullScreen,
+              bottom: !fullScreen,
+              left: !fullScreen,
+              right: !fullScreen,
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
+        );
+        // BotToast 오버레이는 SafeArea 바깥(전체화면)에 둔다.
+        return BotToastInit()(context, safe);
+      },
       theme: AppTheme.theme,
       // theme: AppTheme.light,
       // darkTheme: AppTheme.dark,

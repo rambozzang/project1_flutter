@@ -14,8 +14,8 @@ class SkyGradient {
   /// (기준 시각, [상공, 상단중간, 하단중간, 지평선]) 키프레임.
   /// 색은 모두 채도를 절제한 자연광 톤 — 네온/형광 배제.
   static const List<_SkyStop> _keyframes = [
-    // 심야 — 거의 검정에 가까운 인디고
-    _SkyStop(0.0, [Color(0xFF070A1A), Color(0xFF0C1230), Color(0xFF141C42), Color(0xFF22305C)]),
+    // 심야 — 검정
+    _SkyStop(0.0, [Color(0xFF000000), Color(0xFF030305), Color(0xFF060609), Color(0xFF0A0A0D)]),
     // 여명(미명) — 인디고에서 보랏빛, 지평선에 흐릿한 장밋빛 예고
     _SkyStop(5.0, [Color(0xFF0E1733), Color(0xFF293056), Color(0xFF5A3F6B), Color(0xFF9C5E5E)]),
     // 일출 — 차가운 푸름 위로 복숭아빛·황금빛 지평선
@@ -28,10 +28,10 @@ class SkyGradient {
     _SkyStop(16.5, [Color(0xFF225FA8), Color(0xFF4A84C2), Color(0xFF9FBAD8), Color(0xFFE6DCB4)]),
     // 노을 — 깊은 블루 위로 보라·자홍·주황의 불타는 지평선
     _SkyStop(18.5, [Color(0xFF15224D), Color(0xFF5A3A78), Color(0xFFB14A7C), Color(0xFFF0823F)]),
-    // 땅거미(블루아워) — 인디고에 잔열의 장밋빛
-    _SkyStop(20.0, [Color(0xFF0B1338), Color(0xFF1E2A55), Color(0xFF46406F), Color(0xFF7A5070)]),
-    // 밤 — 짙은 네이비, 지평선에 옅은 빛바램
-    _SkyStop(22.0, [Color(0xFF070B22), Color(0xFF0E1738), Color(0xFF182452), Color(0xFF243264)]),
+    // 땅거미(블루아워) — 검정
+    _SkyStop(20.0, [Color(0xFF000000), Color(0xFF030305), Color(0xFF060609), Color(0xFF0A0A0D)]),
+    // 밤 — 검정
+    _SkyStop(22.0, [Color(0xFF000000), Color(0xFF030305), Color(0xFF060609), Color(0xFF0A0A0D)]),
   ];
 
   /// 그라데이션 색 멈춤점. 지평선의 따뜻한 빛이 화면 하단 ~22%에 모이도록 압축.
