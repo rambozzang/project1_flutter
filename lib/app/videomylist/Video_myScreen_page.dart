@@ -850,8 +850,11 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
 
   // 재생 progressbar
   Widget buildPlayProgress() {
+    // edge-to-edge(extendBody)라 bottom:0이면 바가 물리 내비바 뒤로 숨는다.
+    // 시스템 내비/제스처 바 높이만큼 + 8px 띄워 물리 버튼 바로 위에 보이게 한다.
+    final safeBottom = MediaQuery.of(context).viewPadding.bottom;
     return Positioned(
-      bottom: 0,
+      bottom: safeBottom + 8,
       left: 1,
       right: 1,
       child: ValueListenableBuilder<double>(

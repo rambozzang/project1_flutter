@@ -938,9 +938,11 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   // 재생 progressbar
   Widget buildPlayProgress() {
     // SafeArea를 제거했으므로 시스템 내비/제스처 바 높이만큼 띄워야 가려지지 않는다.
+    // viewPadding.bottom(내비바 높이)에 딱 붙이면 바가 내비바 경계선에 묻혀 안 보이므로,
+    // 물리 버튼 '바로 위'에 명확히 보이도록 8px 띄운다.
     final safeBottom = MediaQuery.of(context).viewPadding.bottom;
     return Positioned(
-      bottom: safeBottom,
+      bottom: safeBottom + 8,
       left: 1,
       right: 1,
       // child: VideoProgressIndicator(
