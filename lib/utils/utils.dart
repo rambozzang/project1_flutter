@@ -775,11 +775,12 @@ class _CustomOffsetAnimationState extends State<CustomOffsetAnimation> {
 
   @override
   void initState() {
+    // 아래에서 올라오는 슬라이드 없이, 화면 가운데에서 스케일/페이드로 등장(공통).
     tweenOffset = Tween<Offset>(
-      begin: const Offset(0.0, 0.8),
+      begin: Offset.zero,
       end: Offset.zero,
     );
-    tweenScale = Tween<double>(begin: 0.3, end: 1.0);
+    tweenScale = Tween<double>(begin: 0.85, end: 1.0);
     animation = CurvedAnimation(parent: widget.controller, curve: Curves.decelerate);
     super.initState();
   }
