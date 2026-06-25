@@ -448,7 +448,8 @@ class VideoScreenPageState extends State<VideoScreenPage> {
         // 상단 점 인디케이터(여러 장일 때)
         if (imgs.length > 1)
           Positioned(
-            top: MediaQuery.of(context).viewPadding.top + 14,
+            // 상단 탭(전체/관심태그/…)·동네이름과 겹치지 않게 그 아래로 내림
+            top: MediaQuery.of(context).viewPadding.top + 72,
             child: ValueListenableBuilder<int>(
               valueListenable: _photoIndex,
               builder: (context, cur, _) {
