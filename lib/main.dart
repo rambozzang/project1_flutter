@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 // import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
@@ -22,6 +23,9 @@ import 'package:project1/route/app_route.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 앱 전체 세로 화면 고정(가로 회전 비활성화)
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   final firebaseService = FirebaseService();

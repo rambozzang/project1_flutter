@@ -149,11 +149,9 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    // 카메라 종료 후에도 세로 고정 유지(가로 회전 허용 금지).
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
     ]);
     cameraBloc.add(CameraReset());
     WidgetsBinding.instance.removeObserver(this);
