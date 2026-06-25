@@ -44,6 +44,8 @@ class VideoRegPage extends StatefulWidget {
 
 class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMixin {
   late VideoPlayerController _videoController;
+  // 배경 하늘 그라데이션은 1회만 계산(매 빌드마다 DateTime.now()+그라데이션 재계산 방지)
+  final Decoration _skyBg = SkyGradient.decoration(DateTime.now());
   final TextEditingController hashTagController = TextEditingController();
   final FocusNode hashTagFocusNode = FocusNode();
   // late Subscription _subscription;
@@ -443,7 +445,7 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
       body: Stack(
         children: [
           // 앱의 '시간대별 하늘'과 동일한 배경 → 화면 통일감
-          Positioned.fill(child: Container(decoration: SkyGradient.decoration(DateTime.now()))),
+          Positioned.fill(child: Container(decoration: _skyBg)),
           // 가독성을 위한 은은한 다크 스크림 (상·하단을 조금 더 어둡게)
           Positioned.fill(
             child: Container(
@@ -594,13 +596,15 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
           child: Stack(
             fit: StackFit.expand,
             children: [
-              FittedBox(
-                fit: BoxFit.cover,
-                clipBehavior: Clip.hardEdge,
-                child: SizedBox(
-                  width: _videoController.value.size.width,
-                  height: _videoController.value.size.height,
-                  child: VideoPlayer(_videoController),
+              RepaintBoundary(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  clipBehavior: Clip.hardEdge,
+                  child: SizedBox(
+                    width: _videoController.value.size.width,
+                    height: _videoController.value.size.height,
+                    child: VideoPlayer(_videoController),
+                  ),
                 ),
               ),
               // 재생시간 + 전체화면 힌트
@@ -1820,14 +1824,21 @@ class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage> {
         future: started(),
         builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
           if (snapshot.data ?? false) {
-            return Container(
+            // 고정 높이(전체 화면 높이) 제거 → body 영역에 비율 맞춰 중앙 정렬(하단 짤림 방지)
+            return Padding(
               padding: const EdgeInsets.only(left: 8, right: 8, bottom: 3),
-              width: MediaQuery.of(context).size.width,
-              height: MediaQuery.of(context).size.height,
-              child: ClipRRect(borderRadius: BorderRadius.circular(15), child: VideoPlayer(widget.videoPlayerController)),
+              child: Center(
+                child: AspectRatio(
+                  aspectRatio: widget.videoPlayerController.value.aspectRatio,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(15),
+                    child: VideoPlayer(widget.videoPlayerController),
+                  ),
+                ),
+              ),
             );
           } else {
-            return const Text('');
+            return const Center(child: CircularProgressIndicator());
           }
         },
       ),
