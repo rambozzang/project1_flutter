@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/camera/bloc/camera_state.dart';
+import 'package:project1/app/camera/page/photo_reg_page.dart';
 import 'package:project1/app/camera/page/video_reg_page.dart';
 import 'package:project1/app/camera/page/widgets/animated_bar.dart';
 import 'package:project1/app/camera/page/widgets/camera_preview_widget.dart';
@@ -35,6 +36,8 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
   final GlobalKey screenshotKey = GlobalKey();
   Uint8List? screenshotBytes;
   bool isThisPageVisibe = true;
+  bool _photoMode = false; // 사진 모드 토글(false=영상 녹화)
+  final List<File> _photos = []; // 사진 모드에서 촬영/선택한 사진들(순서 = 게시 순서)
 
   @override
   void initState() {
@@ -97,7 +100,16 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
 
   Future getImage(BuildContext context, ImageSource imageSource) async {
     try {
-      //pickedFile에 ImagePicker로 가져온 이미지가 담긴다.
+      // 사진 모드: 갤러리에서 여러 장 선택 → 바로 컴포저로 이동
+      if (_photoMode) {
+        final List<XFile> picked = await ImagePicker().pickMultiImage();
+        if (picked.isNotEmpty) {
+          setState(() => _photos.addAll(picked.map((e) => File(e.path))));
+          _openPhotoComposer();
+        }
+        return;
+      }
+      // 영상 모드: 기존대로 영상 1개 선택
       final XFile? pickedFile = await ImagePicker().pickVideo(source: imageSource);
       if (pickedFile != null) {
         Navigator.of(
@@ -111,6 +123,28 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
     } catch (e) {
       Utils.alert(e.toString());
     }
+  }
+
+  // 사진 1장 촬영 → 목록에 누적(셔터 연속 촬영 가능)
+  Future<void> _capturePhoto() async {
+    HapticFeedback.mediumImpact();
+    final XFile? shot = await cameraBloc.takePhoto();
+    if (shot != null && mounted) {
+      setState(() => _photos.add(File(shot.path)));
+    }
+  }
+
+  // 촬영/선택한 사진들을 들고 사진 등록 화면으로 이동
+  void _openPhotoComposer() {
+    if (_photos.isEmpty) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PhotoRegPage(photoFiles: List<File>.from(_photos)),
+      ),
+    ).then((_) {
+      // 컴포저에서 돌아오면(게시 완료/취소) 목록 초기화
+      if (mounted) setState(() => _photos.clear());
+    });
   }
 
   @override
@@ -283,7 +317,9 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                                 children: [
                                   Visibility(
                                     visible: !disableButtons,
-                                    child: StatefulBuilder(builder: (context, localSetState) {
+                                    child: _photoMode
+                                        ? _buildNextButton()
+                                        : StatefulBuilder(builder: (context, localSetState) {
                                       return GestureDetector(
                                         onTap: () {
                                           final List<int> time = [15, 30, 60, 90];
@@ -341,6 +377,10 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                               ),
                             ),
                           ),
+                          // 사진/영상 모드 토글 (녹화 중이 아닐 때만)
+                          if (!disableButtons) _buildModeTogglePositioned(),
+                          // 사진 모드에서 촬영한 사진 썸네일 스트립
+                          if (_photoMode && _photos.isNotEmpty) _buildPhotoStripPositioned(),
                         ],
                       );
                     }),
@@ -356,6 +396,7 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
   }
 
   Widget animatedProgressButton(CameraState state) {
+    if (_photoMode) return _buildShutterButton();
     bool isRecording = state is CameraReady && state.isRecordingVideo;
     return GestureDetector(
       onTap: () async {
@@ -429,6 +470,158 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
       ),
     );
   } // 기존 코드에서
+
+  // ───────────── 사진 모드 위젯들 ─────────────
+
+  // 사진/영상 모드 토글 pill (녹화 버튼 위)
+  Widget _buildModeTogglePositioned() {
+    return Positioned(
+      bottom: Platform.isIOS ? 130 : 138,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.35),
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _modeChip('사진', _photoMode),
+              _modeChip('영상', !_photoMode),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _modeChip(String label, bool selected) {
+    return GestureDetector(
+      onTap: () {
+        final bool toPhoto = label == '사진';
+        if (toPhoto == _photoMode) return; // 같은 모드면 무시
+        setState(() => _photoMode = toPhoto);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.black : Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 셔터 버튼(사진 모드) — 탭하면 1장 촬영
+  Widget _buildShutterButton() {
+    return GestureDetector(
+      onTap: _capturePhoto,
+      child: Container(
+        height: 80,
+        width: 80,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: const Color(0xFF978B8B).withOpacity(0.8),
+        ),
+        child: Center(
+          child: Container(
+            height: 64,
+            width: 64,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // "다음(N)" 버튼 — 촬영한 사진이 있을 때만 활성
+  Widget _buildNextButton() {
+    final int n = _photos.length;
+    final bool enabled = n > 0;
+    return GestureDetector(
+      onTap: enabled ? _openPhotoComposer : null,
+      child: Opacity(
+        opacity: enabled ? 1 : 0.4,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF4A90E2),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('다음', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
+              if (n > 0) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.25), borderRadius: BorderRadius.circular(20)),
+                  child: Text('$n', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12)),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 촬영한 사진 썸네일 스트립 (삭제 가능)
+  Widget _buildPhotoStripPositioned() {
+    return Positioned(
+      bottom: Platform.isIOS ? 185 : 193,
+      left: 0,
+      right: 0,
+      child: SizedBox(
+        height: 62,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: _photos.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          itemBuilder: (context, i) {
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.file(_photos[i], height: 62, width: 48, fit: BoxFit.cover),
+                ),
+                Positioned(
+                  top: -4,
+                  right: -4,
+                  child: GestureDetector(
+                    onTap: () => setState(() => _photos.removeAt(i)),
+                    child: Container(
+                      decoration: BoxDecoration(color: Colors.black.withOpacity(0.65), shape: BoxShape.circle),
+                      padding: const EdgeInsets.all(2),
+                      child: const Icon(Icons.close, color: Colors.white, size: 14),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
 
   Widget errorWidget(CameraState state) {
     bool isPermissionError = state is CameraError && state.error == CameraErrorType.permission;

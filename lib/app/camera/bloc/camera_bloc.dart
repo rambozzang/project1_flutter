@@ -218,6 +218,18 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     }
   }
 
+  // 사진 촬영(사진 모드 전용). 녹화 중이 아닐 때만 동작하며, 촬영한 파일(XFile)을 반환.
+  Future<XFile?> takePhoto() async {
+    final c = _cameraController;
+    if (c == null || !c.value.isInitialized || c.value.isRecordingVideo) return null;
+    try {
+      return await c.takePicture();
+    } catch (e) {
+      lo.g('takePhoto error: $e');
+      return null;
+    }
+  }
+
   // Stop video recording and return the recorded video file
   Future<File> _stopRecording() async {
     try {

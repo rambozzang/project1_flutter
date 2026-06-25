@@ -384,6 +384,66 @@ class RootCntr extends GetxController {
     });
   }
 
+  // photo_reg_page.dart 에서 호출 — 사진(다중) 업로드 후 등록 처리.
+  void goTimerPhotos(List<File> photoFiles, BoardSaveData boardSaveData) {
+    Future.delayed(const Duration(microseconds: 350), () {
+      uploadPhotos(photoFiles, boardSaveData);
+    });
+  }
+
+  // 사진(다중)을 Cloudflare Images에 업로드하고 typeDtCd='I'로 게시한다.
+  // 영상 업로드(uploadCloudflare)와 동일하게 날씨는 병렬로 수집해 저장 직전에 합친다.
+  void uploadPhotos(List<File> photoFiles, BoardSaveData boardSaveData) async {
+    isFileUploading.value = UploadingType.UPLOADING;
+
+    final Future<BoardSaveWeatherData> weatherFuture = WeatherForBoard.fetch();
+
+    CloudflareRepo cloudflare = CloudflareRepo();
+    await cloudflare.init();
+
+    try {
+      final List<String> imageUrls = [];
+      final List<String> imageIds = [];
+
+      // 각 사진을 순차 업로드(안정성 우선). variants[0]=delivery URL, id=이미지 ID.
+      for (final File f in photoFiles) {
+        final res = await cloudflare.imageFileUpload(f);
+        if (res?.body == null) {
+          Utils.alert('사진 업로드에 실패했습니다.');
+          isFileUploading.value = UploadingType.FAIL;
+          return;
+        }
+        imageUrls.add(res!.body!.variants[0].toString());
+        imageIds.add(res.body!.id.toString());
+      }
+
+      // 병렬 수집한 날씨를 합쳐 게시.
+      final BoardSaveWeatherData weatherVo = await weatherFuture;
+      weatherVo.imageUrls = imageUrls;
+      weatherVo.imageIds = imageIds;
+      weatherVo.thumbnailPath = imageUrls.isNotEmpty ? imageUrls.first : null; // 대표 썸네일=첫 사진
+      // 사용자가 고른 체감 날씨 태그 보존
+      weatherVo.feelCd = boardSaveData.boardWeatherVo?.feelCd;
+      boardSaveData.boardWeatherVo = weatherVo;
+
+      BoardRepo boardRepo = BoardRepo();
+      ResData resData = await boardRepo.save(boardSaveData);
+      if (resData.code != '00') {
+        Utils.alert(resData.msg.toString());
+        isFileUploading.value = UploadingType.FAIL;
+        return;
+      }
+
+      isFileUploading.value = UploadingType.SUCCESS;
+      Future.delayed(const Duration(milliseconds: 2000), () {
+        isFileUploading.value = UploadingType.NONE;
+      });
+    } catch (e) {
+      isFileUploading.value = UploadingType.FAIL;
+      lo.g("uploadPhotos ERR => $e");
+    }
+  }
+
   @override
   void dispose() {
     hideButtonController1.dispose();
