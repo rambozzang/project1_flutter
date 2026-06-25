@@ -54,6 +54,12 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   ValueNotifier<String> isFollowed = ValueNotifier<String>('N');
   ValueNotifier<bool> initialized = ValueNotifier<bool>(false);
 
+  // 사진 게시물 여부(typeDtCd='I' 또는 imageUrls 보유). 사진이면 VideoPlayer를 만들지 않는다.
+  bool get isPhotoPost => widget.data.typeDtCd == 'I' || (widget.data.imageUrls?.isNotEmpty ?? false);
+  List<String> get _photoUrls => widget.data.imageUrls ?? const [];
+  final PageController _photoController = PageController();
+  final ValueNotifier<int> _photoIndex = ValueNotifier<int>(0);
+
   // double progress = 0;
   Duration position = Duration.zero;
 
@@ -77,7 +83,10 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   @override
   void initState() {
     super.initState();
-    initiliazeVideo();
+    // 사진 게시물은 VideoPlayer를 초기화하지 않는다(videoPath가 null이라 크래시 방지).
+    if (!isPhotoPost) {
+      initiliazeVideo();
+    }
     // initialized.value = false;
 
     isFollowed.value = widget.data.followYn.toString();
@@ -281,14 +290,21 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   void dispose() {
     initialized.value = false;
     initialized.dispose();
-    _controller.removeListener(() {});
-    _controller.pause();
-    _controller.dispose();
+    _photoController.dispose();
+    _photoIndex.dispose();
+    // 사진 게시물은 _controller(late)를 초기화하지 않았으므로 접근하면 안 된다.
+    if (!isPhotoPost) {
+      _controller.removeListener(() {});
+      _controller.pause();
+      _controller.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // 사진 게시물은 VideoPlayer 대신 가로 캐러셀로 렌더링한다.
+    if (isPhotoPost) return _buildPhotoScaffold();
     return Scaffold(
       backgroundColor: Colors.transparent,
       // backgroundColor: const Color(0xFF262B49),
@@ -366,6 +382,87 @@ class VideoScreenPageState extends State<VideoScreenPage> {
           ],
         ),
       ),
+    );
+  }
+
+  // ───────── 사진 게시물(typeDtCd='I') 렌더링 ─────────
+  Widget _buildPhotoScaffold() {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      resizeToAvoidBottomInset: false,
+      extendBodyBehindAppBar: true,
+      extendBody: true,
+      body: SafeArea(
+        top: false,
+        left: false,
+        right: false,
+        bottom: false,
+        child: Stack(
+          children: [
+            Positioned.fill(child: _buildPhotoCarousel()),
+            // 영상과 동일한 하단/우측 오버레이 재사용(위치·날씨·캡션·프로필·좋아요·댓글·신고)
+            buildBottomContent(),
+            buildRightMenuBar(),
+            buildSingo(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhotoCarousel() {
+    final List<String> imgs = _photoUrls;
+    if (imgs.isEmpty) return Container(color: Colors.black);
+    return Stack(
+      alignment: Alignment.topCenter,
+      children: [
+        // 가로 스와이프 캐러셀 — 세로 피드(PreloadPageView)와 직교라 제스처 충돌 없음
+        PageView.builder(
+          controller: _photoController,
+          itemCount: imgs.length,
+          onPageChanged: (i) => _photoIndex.value = i,
+          itemBuilder: (context, i) {
+            return CachedNetworkImage(
+              imageUrl: imgs[i],
+              cacheKey: imgs[i],
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              placeholder: (_, __) => Container(color: Colors.black),
+              errorWidget: (_, __, ___) => Container(
+                color: Colors.black,
+                child: const Center(child: Icon(Icons.broken_image, color: Colors.white24, size: 48)),
+              ),
+            );
+          },
+        ),
+        // 상단 점 인디케이터(여러 장일 때)
+        if (imgs.length > 1)
+          Positioned(
+            top: MediaQuery.of(context).viewPadding.top + 12,
+            child: ValueListenableBuilder<int>(
+              valueListenable: _photoIndex,
+              builder: (context, cur, _) {
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(imgs.length, (i) {
+                    final bool active = i == cur;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      width: active ? 8 : 6,
+                      height: active ? 8 : 6,
+                      decoration: BoxDecoration(
+                        color: active ? Colors.white : Colors.white.withOpacity(0.45),
+                        shape: BoxShape.circle,
+                      ),
+                    );
+                  }),
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 
