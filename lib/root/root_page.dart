@@ -316,25 +316,30 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey.withOpacity(0.63), width: 0.25),
       ),
-      child: BottomNavigationBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        currentIndex: RootCntr.to.rootPageIndex.value,
-        showUnselectedLabels: true,
-        type: BottomNavigationBarType.fixed,
-        //    backgroundColor: Colors.grey[100],
-        showSelectedLabels: true,
-        iconSize: 22,
-        onTap: (index) {
-          onClick(index);
-        },
-        selectedIconTheme: const IconThemeData(size: 24),
-        selectedFontSize: 13,
-        selectedItemColor: Colors.black,
-        unselectedFontSize: 11,
-        unselectedItemColor: RootCntr.to.rootPageIndex.value == 0 ? Colors.white : Colors.black,
-        unselectedIconTheme: const IconThemeData(size: 22),
-        items: bottomItemList,
+      // BottomNavigationBar가 자체적으로 시스템 바 하단 패딩을 추가하므로 제거한다.
+      // (제거 안 하면 컨테이너 margin과 이중 적용 → 아이콘이 위로 밀리고 배경이 내비바로 늘어남)
+      child: MediaQuery.removePadding(
+        context: context,
+        removeBottom: true,
+        child: BottomNavigationBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          currentIndex: RootCntr.to.rootPageIndex.value,
+          showUnselectedLabels: true,
+          type: BottomNavigationBarType.fixed,
+          showSelectedLabels: true,
+          iconSize: 22,
+          onTap: (index) {
+            onClick(index);
+          },
+          selectedIconTheme: const IconThemeData(size: 24),
+          selectedFontSize: 13,
+          selectedItemColor: Colors.black,
+          unselectedFontSize: 11,
+          unselectedItemColor: RootCntr.to.rootPageIndex.value == 0 ? Colors.white : Colors.black,
+          unselectedIconTheme: const IconThemeData(size: 22),
+          items: bottomItemList,
+        ),
       ),
     );
   }
