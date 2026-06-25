@@ -26,6 +26,8 @@ class BoardSaveWeatherData {
   String? mist10;
   String? mist25;
   String? feelCd;
+  List<String>? imageUrls; // 사진(다중) delivery URL (typeDtCd='I'일 때)
+  List<String>? imageIds; // 사진(다중) Cloudflare Image ID
   BoardSaveWeatherData({
     this.boardId,
     this.lat,
@@ -50,6 +52,8 @@ class BoardSaveWeatherData {
     this.mist10,
     this.mist25,
     this.feelCd,
+    this.imageUrls,
+    this.imageIds,
   });
 
   BoardSaveWeatherData copyWith({
@@ -76,6 +80,8 @@ class BoardSaveWeatherData {
     String? mist10,
     String? mist25,
     String? feelCd,
+    List<String>? imageUrls,
+    List<String>? imageIds,
   }) {
     return BoardSaveWeatherData(
       boardId: boardId ?? this.boardId,
@@ -101,6 +107,8 @@ class BoardSaveWeatherData {
       mist10: mist10 ?? this.mist10,
       mist25: mist25 ?? this.mist25,
       feelCd: feelCd ?? this.feelCd,
+      imageUrls: imageUrls ?? this.imageUrls,
+      imageIds: imageIds ?? this.imageIds,
     );
   }
 
@@ -129,6 +137,8 @@ class BoardSaveWeatherData {
       'mist10': mist10,
       'mist25': mist25,
       'feelCd': feelCd,
+      'imageUrls': imageUrls,
+      'imageIds': imageIds,
     };
   }
 
@@ -157,6 +167,8 @@ class BoardSaveWeatherData {
       mist10: map['mist10'] != null ? map['mist10'] as String : null,
       mist25: map['mist25'] != null ? map['mist25'] as String : null,
       feelCd: map['feelCd'] != null ? map['feelCd'] as String : null,
+      imageUrls: map['imageUrls'] != null ? List<String>.from((map['imageUrls'] as List).map((e) => e.toString())) : null,
+      imageIds: map['imageIds'] != null ? List<String>.from((map['imageIds'] as List).map((e) => e.toString())) : null,
     );
   }
 

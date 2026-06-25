@@ -35,6 +35,7 @@ class BoardWeatherListData {
   String? city;
   String? typeCd;
   String? typeDtCd;
+  List<String>? imageUrls; // 사진(다중) URL — typeDtCd='I'일 때 가로 캐러셀로 표시
   int? depthNo;
   String? crtDtm;
   int? replyCnt;
@@ -81,6 +82,7 @@ class BoardWeatherListData {
     this.city,
     this.typeCd,
     this.typeDtCd,
+    this.imageUrls,
     this.depthNo,
     this.crtDtm,
     this.replyCnt,
@@ -129,6 +131,7 @@ class BoardWeatherListData {
     String? city,
     String? typeCd,
     String? typeDtCd,
+    List<String>? imageUrls,
     int? depthNo,
     String? crtDtm,
     int? replyCnt,
@@ -176,6 +179,7 @@ class BoardWeatherListData {
       city: city ?? this.city,
       typeCd: typeCd ?? this.typeCd,
       typeDtCd: typeDtCd ?? this.typeDtCd,
+      imageUrls: imageUrls ?? this.imageUrls,
       depthNo: depthNo ?? this.depthNo,
       crtDtm: crtDtm ?? this.crtDtm,
       replyCnt: replyCnt ?? this.replyCnt,
@@ -226,6 +230,7 @@ class BoardWeatherListData {
       'city': city,
       'typeCd': typeCd,
       'typeDtCd': typeDtCd,
+      'imageUrls': imageUrls,
       'depthNo': depthNo,
       'crtDtm': crtDtm,
       'replyCnt': replyCnt,
@@ -276,6 +281,7 @@ class BoardWeatherListData {
       city: map['city'] != null ? map['city'] as String : null,
       typeCd: map['typeCd'] != null ? map['typeCd'] as String : null,
       typeDtCd: map['typeDtCd'] != null ? map['typeDtCd'] as String : null,
+      imageUrls: map['imageUrls'] != null ? List<String>.from((map['imageUrls'] as List).map((e) => e.toString())) : null,
       depthNo: map['depthNo'] != null ? map['depthNo'] as int : null,
       crtDtm: map['crtDtm'] != null ? map['crtDtm'] as String : null,
       replyCnt: map['replyCnt'] != null ? map['replyCnt'] as int : null,
