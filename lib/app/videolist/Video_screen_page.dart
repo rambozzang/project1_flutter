@@ -421,65 +421,63 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   Widget _buildPhotoCarousel() {
     final List<String> imgs = _photoUrls;
     if (imgs.isEmpty) return Container(color: Colors.black);
-    return Stack(
-      alignment: Alignment.topCenter,
-      children: [
-        // 가로 스와이프 캐러셀 — 세로 피드(PreloadPageView)와 직교라 제스처 충돌 없음
-        PageView.builder(
-          controller: _photoController,
-          physics: const FastPageScrollPhysics(), // 더 민감·빠른 좌우 스와이프(세로 피드와 동일)
-          itemCount: imgs.length,
-          onPageChanged: (i) => _photoIndex.value = i,
-          itemBuilder: (context, i) {
-            return CachedNetworkImage(
-              imageUrl: imgs[i],
-              cacheKey: imgs[i],
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              placeholder: (_, __) => Container(color: Colors.black),
-              errorWidget: (_, __, ___) => Container(
-                color: Colors.black,
-                child: const Center(child: Icon(Icons.broken_image, color: Colors.white24, size: 48)),
-              ),
-            );
-          },
-        ),
-        // 상단 점 인디케이터(여러 장일 때)
-        if (imgs.length > 1)
-          Positioned(
-            // 상단 탭(전체/관심태그/…)·동네이름과 겹치지 않게 그 아래로 내림
-            top: MediaQuery.of(context).viewPadding.top + 72,
-            child: ValueListenableBuilder<int>(
-              valueListenable: _photoIndex,
-              builder: (context, cur, _) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    // 가로 스와이프 캐러셀 — 세로 피드(PreloadPageView)와 직교라 제스처 충돌 없음
+    return PageView.builder(
+      controller: _photoController,
+      physics: const FastPageScrollPhysics(), // 더 민감·빠른 좌우 스와이프(세로 피드와 동일)
+      itemCount: imgs.length,
+      onPageChanged: (i) => _photoIndex.value = i,
+      itemBuilder: (context, i) {
+        return CachedNetworkImage(
+          imageUrl: imgs[i],
+          cacheKey: imgs[i],
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          placeholder: (_, __) => Container(color: Colors.black),
+          errorWidget: (_, __, ___) => Container(
+            color: Colors.black,
+            child: const Center(child: Icon(Icons.broken_image, color: Colors.white24, size: 48)),
+          ),
+        );
+      },
+    );
+  }
+
+  // 사진 점 인디케이터 — 하단 컨텐츠(위치정보) 바로 위에 표시(여러 장일 때만)
+  Widget _buildPhotoDots() {
+    final List<String> imgs = _photoUrls;
+    if (!isPhotoPost || imgs.length <= 1) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8, top: 2),
+      child: ValueListenableBuilder<int>(
+        valueListenable: _photoIndex,
+        builder: (context, cur, _) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.38),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(imgs.length, (i) {
+                final bool active = i == cur;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: active ? 7 : 6,
+                  height: active ? 7 : 6,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.38),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: List.generate(imgs.length, (i) {
-                      final bool active = i == cur;
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        width: active ? 7 : 6,
-                        height: active ? 7 : 6,
-                        decoration: BoxDecoration(
-                          color: active ? Colors.white : Colors.white.withOpacity(0.5),
-                          shape: BoxShape.circle,
-                        ),
-                      );
-                    }),
+                    color: active ? Colors.white : Colors.white.withOpacity(0.5),
+                    shape: BoxShape.circle,
                   ),
                 );
-              },
+              }),
             ),
-          ),
-      ],
+          );
+        },
+      ),
     );
   }
 
@@ -601,6 +599,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildPhotoDots(), // 사진 점 인디케이터(위치정보 바로 위)
           const Gap(5),
           GestureDetector(
             onTap: () => Get.toNamed('/MapPage', arguments: {'lat': double.parse(widget.data.lat!), 'lon': double.parse(widget.data.lon!)}),
@@ -796,14 +795,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
       right: 0,
       child: Column(
         children: [
-          kDebugMode
-              ? ValueListenableBuilder<String>(
-                  valueListenable: timeDesc,
-                  builder: (context, value, child) {
-                    return Text(value, style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600));
-                  },
-                )
-              : const SizedBox.shrink(),
+          const SizedBox.shrink(),
           const Gap(10),
           IgnorePointer(
             ignoring: widget.data.custId.toString() == AuthCntr.to.custId.value.toString() ? true : false,
