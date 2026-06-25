@@ -10,12 +10,12 @@ class FollowPage extends StatefulWidget {
 class _FollowPageState extends State<FollowPage> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       body: SingleChildScrollView(
         child: Column(
           children: [
-            const SizedBox(height: 20),
-            const Text("Follow Page"),
+            SizedBox(height: 20),
+            Text("Follow Page"),
           ],
         ),
       ),

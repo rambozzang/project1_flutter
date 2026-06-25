@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:get/get.dart';
 
 class ThemeController extends GetxController {
   final storage = const FlutterSecureStorage();
@@ -27,7 +27,10 @@ class ThemeController extends GetxController {
     var updateMode = !_isDarkMode.value;
     await storage.write(key: _key, value: updateMode.toString());
     _isDarkMode.value = !_isDarkMode.value;
-    Get.changeTheme(updateMode ? ThemeData.dark() : ThemeData.light());
+    // Get.changeTheme(updateMode ? ThemeData.dark() : ThemeData.light());
+    Get.changeThemeMode(updateMode ? ThemeMode.dark : ThemeMode.light);
+
+    // await Get.forceAppUpdate();
 
     // Get.changeThemeMode((_isDarkMode.value ? ThemeData.dark : ThemeData.light) as ThemeMode);
   }

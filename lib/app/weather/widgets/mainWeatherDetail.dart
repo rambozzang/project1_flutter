@@ -57,7 +57,7 @@ class MainWeatherDetail extends StatelessWidget {
                     ),
                     title: '강수량',
                     subtitle: '',
-                    data: '${weatherProv.additionalWeatherData.value!.precipitation}mm',
+                    data: '${weatherProv.additionalWeatherData.value.precipitation}mm',
                   ),
                   const VerticalDivider(
                     thickness: 1.0,
@@ -130,7 +130,7 @@ class MainWeatherDetail extends StatelessWidget {
                     ),
                     title: '흐 림',
                     subtitle: '',
-                    data: '${weatherProv.additionalWeatherData.value!.clouds ?? 0}%',
+                    data: '${weatherProv.additionalWeatherData.value.clouds ?? 0}%',
                   ),
                 ],
               ),
@@ -148,12 +148,12 @@ class DetailInfoTile extends StatelessWidget {
   final String data;
   final Widget icon;
   const DetailInfoTile({
-    Key? key,
+    super.key,
     required this.title,
     required this.subtitle,
     required this.data,
     required this.icon,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

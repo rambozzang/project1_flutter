@@ -141,32 +141,32 @@ class WeatherChannelService {
       case 1: // Sunny
       case 2: // Mostly Sunny
       case 3: // Partly Sunny
-        return assetPath + 'sun.json';
+        return '${assetPath}sun.json';
       case 4: // Intermittent Clouds
       case 5: // Hazy Sunshine
       case 6: // Mostly Cloudy
       case 7: // Cloudy
       case 8: // Dreary (Overcast)
-        return assetPath + 'day_cloudy.json';
+        return '${assetPath}day_cloudy.json';
       case 11: // Light Rain
       case 12: // Rain
       case 13: // Flurries
       case 14: // Light Snow
       case 18: // Rain and Snow
-        return assetPath + 'day_rain.json';
+        return '${assetPath}day_rain.json';
       case 15: // Snow
       case 16: // Heavy Snow
       case 17: // Sleet
-        return assetPath + 'day_snow.json';
+        return '${assetPath}day_snow.json';
       case 19: // Hot
       case 20: // Cold
       case 21: // Windy
-        return assetPath + 'wind.json';
+        return '${assetPath}wind.json';
       case 22: // T-Storms
       case 23: // Thunderstorms
-        return assetPath + 'storm.json';
+        return '${assetPath}storm.json';
       default:
-        return assetPath + 'day_cloudy.json';
+        return '${assetPath}day_cloudy.json';
     }
   }
 

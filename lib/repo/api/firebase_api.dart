@@ -16,7 +16,7 @@ class FirebaseApi {
       String callurl = "${UrlConfig.baseURL}$userInfoUri";
 
       // rest Api 호출 한다.
-      log("$callurl");
+      log(callurl);
       final dio = await AuthDio.instance.getDio();
       Response response = await dio.post(callurl);
       return AuthDio.instance.dioResponse(response);

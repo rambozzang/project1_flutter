@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:get/get.dart';
-import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_comment_res_data.dart';
 import 'package:project1/repo/common/code_data.dart';
@@ -103,7 +101,7 @@ class _SigoPageState extends State<SigoPage> {
         Utils.alert(res.msg.toString());
         return;
       }
-      List<CodeRes> list = (res.data as List)!.map<CodeRes>((e) => CodeRes.fromMap(e)).toList();
+      List<CodeRes> list = (res.data as List).map<CodeRes>((e) => CodeRes.fromMap(e)).toList();
 
       // alramlist.value = list.map((e) => e.codeNm!).toList();
       streamController.sink.add(ResStream.completed(list));
@@ -272,7 +270,7 @@ class _SigoPageState extends State<SigoPage> {
                                   color: Colors.yellow,
                                   size: 19,
                                 ),
-                                const Gap(3),
+                                Gap(3),
                                 Text(
                                   '신고 사유',
                                   style: TextStyle(color: Colors.white, fontSize: 14),

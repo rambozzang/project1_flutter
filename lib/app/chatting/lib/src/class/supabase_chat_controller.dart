@@ -42,7 +42,7 @@ class SupabaseChatController {
     for (var val in data) {
       final author = _room.users.firstWhere(
         (u) => u.id == val['authorId'],
-        orElse: () => types.User(id: val['authorId'] ?? '' as String),
+        orElse: () => types.User(id: val['authorId'] ?? ''),
       );
       val['author'] = author.toJson();
       val['id'] = val['id'].toString();

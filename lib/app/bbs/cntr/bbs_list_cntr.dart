@@ -55,8 +55,8 @@ class BbsListController extends GetxController {
     getBbsType();
   }
 
-  void onInitScrollCtrl(ScrollController _scrollCtrl) {
-    scrollCtrl = _scrollCtrl;
+  void onInitScrollCtrl(ScrollController scrollCtrl1) {
+    scrollCtrl = scrollCtrl1;
     scrollCtrl.addListener(() {
       RootCntr.to.changeScrollListner(scrollCtrl);
 
@@ -75,10 +75,10 @@ class BbsListController extends GetxController {
 
   Future<void> getDataInit() async => getData(1);
 
-  Future<void> getData(int _page, {String? searchType = 'ALL'}) async {
-    currentPage = _page;
+  Future<void> getData(int page, {String? searchType = 'ALL'}) async {
+    currentPage = page;
 
-    if (_page != 1) {
+    if (page != 1) {
       isMoreLoading.value = true;
     } else {
       listCtrl.sink.add(ResStream.loading());
@@ -88,7 +88,7 @@ class BbsListController extends GetxController {
       BbsRepo repo = BbsRepo();
 
       BbsSearchData bbsSearchData = BbsSearchData(
-          pageNum: _page,
+          pageNum: page,
           pageSize: pageSize,
           typeCd: typeCd,
           typeDtCd: searchType ?? typeDtCd.value,
@@ -105,9 +105,9 @@ class BbsListController extends GetxController {
       }
       // List<BbsListResData> _list = ((resData.data['list']) as List).map((data) => BbsListResData.fromMap(data)).toList();
       BbsListResData result = BbsListResData.fromMap(resData.data);
-      List<BbsListData> _list = result.bbsList;
+      List<BbsListData> list = result.bbsList;
 
-      if (_page == 1) {
+      if (page == 1) {
         boardList.clear();
       }
       PagingData pageData = PagingData.fromMap(resData.data['pageData']);
@@ -115,7 +115,7 @@ class BbsListController extends GetxController {
       isLastPage = result.pageData.last;
       toalCount.value = result.pageData.totalElements;
 
-      boardList.addAll(_list);
+      boardList.addAll(list);
       isMoreLoading.value = false;
 
       listCtrl.sink.add(ResStream.completed(boardList, message: '조회가 완료되었습니다.'));
@@ -151,10 +151,5 @@ class BbsListController extends GetxController {
     } catch (e) {
       lo.g('error searchRecomWord : $e');
     }
-  }
-
-  @override
-  void onClose() {
-    super.onClose();
   }
 }

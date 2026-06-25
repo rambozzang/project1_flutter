@@ -2,13 +2,10 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:project1/repo/api/auth_dio.dart';
-import 'package:project1/repo/weather_gogo/repository/weather_gogo_caching.dart';
 import 'package:project1/repo/weather_gogo/sources/http_client.dart';
 import 'package:project1/utils/log_utils.dart';
-import 'dart:convert' as con;
 import '../adapter/adapter.dart';
 import '../models/models.dart';
 import 'package:http/http.dart' as http;

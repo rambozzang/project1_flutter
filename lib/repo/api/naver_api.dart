@@ -1,7 +1,7 @@
 import 'package:flutter_naver_login/flutter_naver_login.dart';
+import 'package:flutter_naver_login/interface/types/naver_login_result.dart';
+import 'package:flutter_naver_login/interface/types/naver_login_status.dart';
 import 'package:project1/repo/api/chat_api.dart';
-import 'package:project1/repo/chatting/chat_repo.dart';
-import 'package:project1/repo/chatting/data/signup_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/naver_join_data.dart';
@@ -19,29 +19,29 @@ class NaverApi with SecureStorage {
 
     try {
       final NaverLoginResult result = await FlutterNaverLogin.logIn();
-      if (result.status == NaverLoginStatus.error || result.status == NaverLoginStatus.cancelledByUser) {
+      if (result.status == NaverLoginStatus.error || result.status == NaverLoginStatus.loggedOut) {
         resData.code = '99';
         resData.msg = '사용자 취소';
         return resData;
       }
 
-      if (result.account.nickname == null || result.account.nickname == '') {
+      if (result.account?.nickname == null || result.account?.nickname == '') {
         resData.code = '99';
         resData.msg = '네이버에서 정보를 가져오지 못했습니다.\n다른 SNS를 이용해주세요.';
         return resData;
       }
-      if (result.account.id == null || result.account.id == '') {
+      if (result.account?.id == null || result.account?.id == '') {
         resData.code = '99';
         resData.msg = '네이버에서 정보를 가져오지 못했습니다.\n다른 SNS를 이용해주세요.';
         return resData;
       }
 
       NaverAccount naverAccount = NaverAccount();
-      naverAccount.nickname = result.account.nickname;
-      naverAccount.id = result.account.id.toString();
-      naverAccount.name = result.account.name;
-      naverAccount.email = result.account.email;
-      naverAccount.profileImage = result.account.profileImage;
+      naverAccount.nickname = result.account?.nickname;
+      naverAccount.id = result.account?.id.toString();
+      naverAccount.name = result.account?.name;
+      naverAccount.email = result.account?.email;
+      naverAccount.profileImage = result.account?.profileImage;
       naverAccount.gender = '';
       naverAccount.age = '';
       naverAccount.birthday = '';
@@ -88,7 +88,7 @@ class NaverApi with SecureStorage {
     try {
       // await FlutterNaverLogin.logOut();
       NaverLoginResult result = await FlutterNaverLogin.logOutAndDeleteToken();
-      lo.g("logout:" + result.toString());
+      lo.g("logout:$result");
 
       print('로그아웃 성공, SDK에서 토큰 삭제');
     } catch (error) {

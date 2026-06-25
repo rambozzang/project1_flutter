@@ -44,12 +44,6 @@ class R2Repo {
     // await reader.onLoadEnd.first;
     // final fileBytes = reader.result as Uint8List?;
     Uint8List fileBytes = file.readAsBytesSync();
-    if (fileBytes == null) {
-      //throw Exception('Cannot read bytes from Blob.');
-      resData.code = '99';
-      resData.msg = 'Cannot read bytes from Blob.';
-      return resData;
-    }
 
     // Upload the file
     final uploadRequest = AWSHttpRequest.put(

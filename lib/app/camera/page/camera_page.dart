@@ -2,7 +2,6 @@ import 'dart:io';
 
 // import 'package:camera/camera.dart'; // 임시 주석 처리
 
-import 'package:camera/camera.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,7 +12,7 @@ import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/camera/bloc/camera_state.dart';
 import 'package:project1/app/camera/page/video_reg_page.dart';
 import 'package:project1/app/camera/page/widgets/animated_bar.dart';
-import 'package:project1/app/camera/utils/zoom_widget.dart';
+import 'package:project1/app/camera/page/widgets/camera_preview_widget.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -41,6 +40,8 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     cameraBloc = BlocProvider.of<CameraBloc>(context);
+    // 페이지 진입 즉시 칩떄 초기화 시작 (VisibilityDetector 의존 최소화)
+    cameraBloc.add(CameraInitialize(recordingLimit: cameraBloc.recordDurationLimit));
     WidgetsBinding.instance.addObserver(this);
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
@@ -223,62 +224,21 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                 RepaintBoundary(
                   key: screenshotKey,
                   child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 150),
+                    duration: const Duration(milliseconds: 0),
                     switchInCurve: Curves.easeInOut,
                     child: Builder(builder: (context) {
-                      var controller = cameraBloc.getController();
+                      final controller = cameraBloc.getController();
                       lo.g("################################ controller in builder ==> ${controller?.value.isInitialized}");
 
                       if (controller == null || !controller.value.isInitialized) {
-                        return const SizedBox.shrink();
+                        return const Center(child: CircularProgressIndicator(color: Colors.white));
                       }
-
-                      // final mediaSize = MediaQuery.of(context).size;
-                      final isBackCamera = controller.description.lensDirection == CameraLensDirection.back;
-                      // final previewSize = controller.value.previewSize!;
-                      // final previewRatio = previewSize.height / previewSize.width;
-                      // final screenRatio = mediaSize.height / mediaSize.width;
-
-                      // var scale = 1.0;
-                      // if (screenRatio > previewRatio) {
-                      //   scale = mediaSize.height / (previewSize.width * previewRatio);
-                      // } else {
-                      //   scale = mediaSize.width / previewSize.width;
-                      // }
-
-                      Size mediaSize = MediaQuery.of(context).size;
-                      // mediaSize.height -= MediaQuery.of(context).padding.top;
-                      // mediaSize. -= MediaQuery.of(context).padding.top;
-                      final deviceRatio = mediaSize.aspectRatio;
-
-                      final scale = 1 / (controller.value.aspectRatio * deviceRatio);
-
-                      // 프론트 카메라일 경우 줌 레벨 조정
-                      if (!isBackCamera) {
-                        controller.setZoomLevel(1.0); // 줌 레벨을 1.0으로 설정 (기본값)
-                      }
-
-                      lo.g("scale ==> $scale");
 
                       return Stack(
                         children: [
-                          ZoomableWidget(
-                            onTapUp: (scaledPoint) {
-                              controller.setFocusPoint(scaledPoint);
-                            },
-                            onZoom: (zoom) {
-                              if (zoom < 11) {
-                                controller.setZoomLevel(zoom);
-                              }
-                            },
-                            child: ClipRect(
-                              clipper: _MediaSizeClipper(mediaSize),
-                              child: Transform.scale(
-                                scale: scale,
-                                alignment: Alignment.topCenter,
-                                child: CameraPreview(controller),
-                              ),
-                            ),
+                          CameraPreviewWidget(
+                            key: ValueKey(controller.description.lensDirection),
+                            controller: controller,
                           ),
                           // AspectRatio(
                           //   aspectRatio: deviceRatio,
@@ -530,16 +490,3 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
   }
 }
 
-class _MediaSizeClipper extends CustomClipper<Rect> {
-  final Size mediaSize;
-  const _MediaSizeClipper(this.mediaSize);
-  @override
-  Rect getClip(Size size) {
-    return Rect.fromLTWH(0, 0, mediaSize.width, mediaSize.height);
-  }
-
-  @override
-  bool shouldReclip(CustomClipper<Rect> oldClipper) {
-    return true;
-  }
-}

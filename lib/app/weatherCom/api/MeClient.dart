@@ -108,7 +108,7 @@ class MetNorwayWeatherService {
       final List<WeatherData> forecasts = [];
 
       DateTime currentDate = DateTime.now();
-      DateTime forecastDate = currentDate.add(Duration(days: 1));
+      DateTime forecastDate = currentDate.add(const Duration(days: 1));
       int daysAdded = 0;
 
       for (var item in data['properties']['timeseries']) {
@@ -149,12 +149,12 @@ class MetNorwayWeatherService {
       case 'clearsky_night':
       case 'fair_day':
       case 'fair_night':
-        return assetPath + 'sun.json';
+        return '${assetPath}sun.json';
 
       case 'cloudy':
       case 'partlycloudy_day':
       case 'partlycloudy_night':
-        return assetPath + 'day_cloudy.json';
+        return '${assetPath}day_cloudy.json';
 
       case 'rainshowers_day':
       case 'rainshowers_night':
@@ -162,7 +162,7 @@ class MetNorwayWeatherService {
       case 'heavyrain':
       case 'heavyrainshowers_day':
       case 'heavyrainshowers_night':
-        return assetPath + 'day_rain.json';
+        return '${assetPath}day_rain.json';
 
       case 'snow':
       case 'snowshowers_day':
@@ -170,23 +170,23 @@ class MetNorwayWeatherService {
       case 'heavysnow':
       case 'heavysnowshowers_day':
       case 'heavysnowshowers_night':
-        return assetPath + 'day_snow.json';
+        return '${assetPath}day_snow.json';
 
       case 'thunderstorm':
       case 'lightthreatening_thunder':
       case 'heavythreatening_thunder':
-        return assetPath + 'storm.json';
+        return '${assetPath}storm.json';
 
       case 'fog':
-        return assetPath + 'day_cloudy.json';
+        return '${assetPath}day_cloudy.json';
 
       case 'sleet':
       case 'sleetshowers_day':
       case 'sleetshowers_night':
-        return assetPath + 'day_rain.json'; // 우비와 눈이 섞인 날씨, 비 아이콘으로 대체
+        return '${assetPath}day_rain.json'; // 우비와 눈이 섞인 날씨, 비 아이콘으로 대체
 
       default:
-        return assetPath + 'day_cloudy.json';
+        return '${assetPath}day_cloudy.json';
     }
   }
 

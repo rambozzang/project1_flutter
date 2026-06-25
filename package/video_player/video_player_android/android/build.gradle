@@ -8,7 +8,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.5.0'
+        classpath 'com.android.tools.build:gradle:8.10.0'
     }
 }
 
@@ -23,35 +23,87 @@ apply plugin: 'com.android.library'
 
 android {
     namespace 'io.flutter.plugins.videoplayer'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         minSdkVersion 21
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        
+        // TikTok-level performance optimizations
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+        }
+        
+        // ProGuard 최적화를 위한 설정
+        consumerProguardFiles 'consumer-rules.pro'
     }
+    
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            
+            // 성능 최적화 설정
+            ndk {
+                debugSymbolLevel 'SYMBOL_TABLE'
+            }
+        }
+        debug {
+            debuggable true
+        }
+    }
+    
     lintOptions {
         checkAllWarnings true
         warningsAsErrors true
         disable 'AndroidGradlePluginVersion', 'InvalidPackage', 'GradleDependency', 'NewerVersionAvailable'
     }
+    
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+        
+        // 컴파일 최적화
+        coreLibraryDesugaringEnabled true
+    }
+
+    // 패키징 최적화
+    packagingOptions {
+        pickFirst '**/libc++_shared.so'
+        pickFirst '**/libjsc.so'
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/NOTICE.txt'
     }
 
     dependencies {
-        def exoplayer_version = "1.4.1"
-        implementation "androidx.media3:media3-exoplayer:${exoplayer_version}"
-        implementation "androidx.media3:media3-exoplayer-hls:${exoplayer_version}"
-        implementation "androidx.media3:media3-exoplayer-dash:${exoplayer_version}"
-        implementation "androidx.media3:media3-exoplayer-rtsp:${exoplayer_version}"
-        implementation "androidx.media3:media3-exoplayer-smoothstreaming:${exoplayer_version}"
+        // 최신 Media3 ExoPlayer (틱톡 수준의 성능)
+        def media3_version = "1.4.1"
+        implementation "androidx.media3:media3-exoplayer:${media3_version}"
+        implementation "androidx.media3:media3-exoplayer-hls:${media3_version}"
+        implementation "androidx.media3:media3-exoplayer-dash:${media3_version}"
+        implementation "androidx.media3:media3-exoplayer-rtsp:${media3_version}"
+        implementation "androidx.media3:media3-exoplayer-smoothstreaming:${media3_version}"
+        implementation "androidx.media3:media3-datasource:${media3_version}"
+        implementation "androidx.media3:media3-datasource-okhttp:${media3_version}"
+        implementation "androidx.media3:media3-decoder:${media3_version}"
+        
+        // 네트워크 최적화
+        implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+        
+        // 메모리 최적화 (core 버전 충돌 방지를 위해 제거, 루트 프로젝트에서 관리)
+        
+        // 코어 라이브러리 디슈가링
+        coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
+        
+        // 테스트 의존성
         testImplementation 'junit:junit:4.13.2'
-        testImplementation 'androidx.test:core:1.3.0'
-        testImplementation 'org.mockito:mockito-inline:5.0.0'
-        testImplementation 'org.robolectric:robolectric:4.10.3'
-        testImplementation "androidx.media3:media3-test-utils:${exoplayer_version}"
-        implementation 'com.google.android.exoplayer:exoplayer:2.19.1' 
+        testImplementation 'androidx.test:core:1.5.0'
+        testImplementation 'org.mockito:mockito-inline:5.2.0'
+        testImplementation 'org.robolectric:robolectric:4.11.1'
+        testImplementation "androidx.media3:media3-test-utils:${media3_version}"
     }
 
     testOptions {
@@ -62,12 +114,16 @@ android {
             // the Java heap size when running the Android unit tests. The following property here
             // sets the heap size to a size large enough to run the robolectric tests across
             // multiple SDK levels.
-            jvmArgs "-Xmx1g"
+            jvmArgs "-Xmx2g", "-XX:+UseG1GC"
             testLogging {
                events "passed", "skipped", "failed", "standardOut", "standardError"
                outputs.upToDateWhen {false}
                showStandardStreams = true
             }
+            
+            // 테스트 성능 최적화
+            maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
+            forkEvery = 100
         }
     }
 }

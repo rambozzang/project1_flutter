@@ -11,7 +11,7 @@ import 'package:project1/app/auth/cntr/auth_cntr.dart';
 class AlramListItem extends StatelessWidget {
   final AlramResData data;
 
-  const AlramListItem({Key? key, required this.data}) : super(key: key);
+  const AlramListItem({super.key, required this.data});
 
   @override
   Widget build(BuildContext context) {

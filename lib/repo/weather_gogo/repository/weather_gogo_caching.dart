@@ -1,14 +1,10 @@
 import 'dart:convert';
-import 'dart:io';
-import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/weather/data/weather_view_data.dart';
 import 'package:project1/repo/weather_gogo/models/request/weather_cache_req.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:project1/repo/weather_gogo/adapter/adapter_map.dart';
 import 'package:project1/repo/weather_gogo/models/response/fct/fct_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/fct_version/fct_version_model.dart';
@@ -71,7 +67,7 @@ class WeatherCache {
         loY: changeMap.y.toString(),
         expiresAt: expiresAt,
       );
-      late var stopwatch;
+      late Stopwatch stopwatch;
       stopwatch = Stopwatch()..start();
       ResData resData = await wrepo.saveWeatherCacheData(req);
       if (resData.code != '00') {
@@ -148,7 +144,7 @@ class WeatherCache {
 
   /// 캐시 키 생성
   String _getCacheKey(String location, ForecastType type) {
-    return '${_keyPrefix}${type.toString()}_$location';
+    return '$_keyPrefix${type.toString()}_$location';
   }
 
   /// 캐시 유효성 검사

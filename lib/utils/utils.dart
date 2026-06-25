@@ -40,7 +40,9 @@ abstract class Utils {
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: Colors.white, width: 0.5),
           ),
-          child: SvgPicture.network(profile1.avatarUrl, placeholderBuilder: (context) => const CircularProgressIndicator()),
+          child: SvgPicture.network(
+            profile1.avatarUrl,
+          ),
         ),
         const Gap(10),
         Text(
@@ -392,17 +394,17 @@ abstract class Utils {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  if (subtitle != null) ...[
-                    const Gap(10),
-                    Text(
-                      subtitle.toString(),
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
+                  ...[
+                  const Gap(10),
+                  Text(
+                    subtitle.toString(),
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
                     ),
-                  ]
+                  ),
+                ]
                 ],
               ),
               actions: <Widget>[
@@ -493,17 +495,17 @@ abstract class Utils {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  if (subtitle != null) ...[
-                    const Gap(10),
-                    Text(
-                      subtitle.toString(),
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
+                  ...[
+                  const Gap(10),
+                  Text(
+                    subtitle.toString(),
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
                     ),
-                  ]
+                  ),
+                ]
                 ],
               ),
               actions: <Widget>[

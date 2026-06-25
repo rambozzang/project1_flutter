@@ -124,7 +124,7 @@ class CurrentWeather {
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'coord': coord?.toMap(),
-      'weather': weather!.map((x) => x?.toMap()).toList(),
+      'weather': weather!.map((x) => x.toMap()).toList(),
       'base': base,
       'main': main?.toMap(),
       'visibility': visibility,

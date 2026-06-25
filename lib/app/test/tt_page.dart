@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 import 'package:project1/utils/WeatherLottie.dart';
 
 class AaaaaaPAge extends StatelessWidget {
+  const AaaaaaPAge({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -15,7 +16,7 @@ class AaaaaaPAge extends StatelessWidget {
   }
 
   Widget _buildContainer(String text, Color color,
-      {Color textColor = Colors.white, Gradient gradient = const LinearGradient(colors: [Colors.transparent, Colors.transparent])}) {
+      {Color textColor = Colors.white}) {
     return Container(
       width: 150,
       height: 150,

@@ -6,7 +6,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:giffy_dialog/giffy_dialog.dart';
 
 import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/admob/banner_ad_widget.dart';
@@ -24,7 +23,7 @@ import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_tabbarview.dart';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({Key? key}) : super(key: key);
+  const SearchPage({super.key});
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -334,7 +333,7 @@ class _SearchPageState extends State<SearchPage> with SecureStorage {
                     children: [
                       const Icon(Icons.alarm, color: Colors.white, size: 13),
                       Text(
-                        '${Get.find<WeatherGogoCntr>().lastUpdated.value?.toString().substring(11, 16)}',
+                        Get.find<WeatherGogoCntr>().lastUpdated.value.toString().substring(11, 16),
                         style: const TextStyle(fontSize: 10, color: Colors.white),
                       ),
                     ],

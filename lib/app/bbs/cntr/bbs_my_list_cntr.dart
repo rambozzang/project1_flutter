@@ -67,10 +67,10 @@ class BbsMyListController extends GetxController {
 
   Future<void> getDataInit() async => getData(1, searchCustid);
 
-  Future<void> getData(int _page, String _searchCustid) async {
-    currentPage = _page;
-    searchCustid = _searchCustid;
-    if (_page != 1) {
+  Future<void> getData(int page, String searchCustid) async {
+    currentPage = page;
+    searchCustid = searchCustid;
+    if (page != 1) {
       isMoreLoading.value = true;
     } else {
       listCtrl.sink.add(ResStream.loading());
@@ -80,13 +80,13 @@ class BbsMyListController extends GetxController {
       BbsRepo repo = BbsRepo();
 
       BbsSearchData bbsSearchData = BbsSearchData(
-          pageNum: _page,
+          pageNum: page,
           pageSize: pageSize,
           typeCd: typeCd,
           typeDtCd: typeDtCd,
           depthNo: '0',
           searchWord: '',
-          searchCustId: _searchCustid);
+          searchCustId: searchCustid);
 
       ResData resData = await repo.list(bbsSearchData);
 
@@ -97,9 +97,9 @@ class BbsMyListController extends GetxController {
       }
       // List<BbsListResData> _list = ((resData.data['list']) as List).map((data) => BbsListResData.fromMap(data)).toList();
       BbsListResData result = BbsListResData.fromMap(resData.data);
-      List<BbsListData> _list = result.bbsList;
+      List<BbsListData> list = result.bbsList;
 
-      if (_page == 1) {
+      if (page == 1) {
         boardList.clear();
       }
       PagingData pageData = PagingData.fromMap(resData.data['pageData']);
@@ -107,7 +107,7 @@ class BbsMyListController extends GetxController {
       isLastPage = result.pageData.last;
       toalCount.value = result.pageData.totalElements;
 
-      boardList.addAll(_list);
+      boardList.addAll(list);
       isMoreLoading.value = false;
 
       listCtrl.sink.add(ResStream.completed(boardList, message: '조회가 완료되었습니다.'));
@@ -119,8 +119,4 @@ class BbsMyListController extends GetxController {
     }
   }
 
-  @override
-  void onClose() {
-    super.onClose();
-  }
 }

@@ -14,7 +14,6 @@ import 'package:project1/app/test/tt_page.dart';
 
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/app/weatherCom/api/OpenWeatherMapclient.dart';
-import 'package:project1/app/weathergogo/naver_scrapping_page.dart';
 import 'package:project1/repo/weather_accu/accu_repo.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/weather_gogo/models/request/weather.dart';
@@ -33,7 +32,6 @@ import 'package:project1/repo/search/camping/camping_repo.dart';
 import 'package:project1/repo/search/camping/camping_res_data.dart';
 import 'package:project1/repo/search/school/school_repo.dart';
 import 'package:project1/repo/search/school/school_res_data.dart';
-import 'package:project1/repo/weather_gogo/repository/weather_alert_repo.dart';
 import 'package:project1/repo/weather_gogo/repository/weather_gogo_caching.dart';
 import 'package:project1/repo/weather_gogo/repository/weather_gogo_repo.dart';
 import 'package:project1/utils/log_utils.dart';
@@ -127,7 +125,7 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
       dioRes.Response? res = await mistRepo.getMistData(localName);
       MistData mistData = MistData.fromJson(jsonEncode(res!.data['response']['body']));
 
-      result.value = mistData.items![0].pm10Value.toString() + ' / ' + mistData.items![0].pm25Value.toString() + '㎍/㎥';
+      result.value = '${mistData.items![0].pm10Value} / ${mistData.items![0].pm25Value}㎍/㎥';
     } catch (e) {
       Lo.g('미세먼지 가져오기 오류 : $e');
     }
@@ -182,9 +180,9 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
           const LatLng(37.5546788388674, 126.970606917394), ForecastType.superNctYesterDay);
 
       json.map((e) => setState(() => items.add(e))).toList();
-      items?.forEach((element) {
+      for (var element in items) {
         Lo.g('초단기실황 : element : $element');
-      });
+      }
     } catch (e) {
       Lo.g('초단기실황 가져오기 오류 : $e');
     }
@@ -202,9 +200,9 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
           await weatherService.getWeatherData<List<ItemSuperFct>>(const LatLng(37.5546788388674, 126.970606917394), ForecastType.superFct);
 
       json.map((e) => setState(() => items.add(e))).toList();
-      items.forEach((element) {
+      for (var element in items) {
         Lo.g('초단기예보 : element : $element');
-      });
+      }
     } catch (e) {
       Lo.g('초단기예보 가져오기 오류 : $e');
     }
@@ -225,9 +223,9 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
 
       json.map((e) => setState(() => items.add(e))).toList();
 
-      items.forEach((element) {
+      for (var element in items) {
         Lo.g('단기예보 element : $element');
-      });
+      }
     } catch (e) {
       Lo.g('단기예보 가져오기 오류 : $e');
     }
@@ -248,9 +246,9 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
 
       json.map((e) => setState(() => items.add(e))).toList();
 
-      items.forEach((element) {
+      for (var element in items) {
         Lo.g('예보버전 element : $element');
-      });
+      }
     } catch (e) {
       Lo.g('단기예보 가져오기 오류 : $e');
     }
@@ -265,7 +263,7 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
       MidLandFcstResponse json = await weatherService.getWeatherData<MidLandFcstResponse>(
           const LatLng(37.5546788388674, 126.970606917394), ForecastType.midFctLand);
 
-      lo.g(json!.toString());
+      lo.g(json.toString());
     } catch (e) {
       Lo.g('중기육상예보 가져오기 오류 : $e');
     }
@@ -331,7 +329,7 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
 
   void findYesterDayCache() async {
     WeatherGogoRepo repo = WeatherGogoRepo();
-    late var stopwatch;
+    late Stopwatch stopwatch;
     stopwatch = Stopwatch()..start();
     ResData res = await repo.getKmaforecastApi('89', '68');
 
@@ -340,12 +338,12 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
       List<ItemSuperFct> json = (res.data as List).map((item) => ItemSuperFct.fromJson(item)).toList();
 
       List<String> days = [];
-      json.forEach((element) {
+      for (var element in json) {
         var aaa = "${element.baseDate}/${element.baseTime}";
         if (!days.contains(aaa)) {
           days.add(aaa);
         }
-      });
+      }
       Lo.g('초단기실황 : days : ${days.length}');
       Lo.g('초단기실황 : days : $days');
     } else {
@@ -376,7 +374,7 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
                 onPressed: () async {
                   Navigator.of(context).push(MaterialPageRoute(
                       // fullscreenDialog: true,
-                      builder: (context) => AaaaaaPAge()));
+                      builder: (context) => const AaaaaaPAge()));
                 },
                 child: const Text('이쁜 컨테이너 화면'),
               ),
@@ -419,21 +417,21 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
               // ),
               ElevatedButton(
                 onPressed: () {
-                  LatLng latLng = LatLng(37.5546788388674, 126.970606917394);
-                  Get.find<WeatherGogoCntr>().fetchYesterDayWeather(Get.find<WeatherGogoCntr>().currentLocation.value!.latLng);
+                  LatLng latLng = const LatLng(37.5546788388674, 126.970606917394);
+                  Get.find<WeatherGogoCntr>().fetchYesterDayWeather(Get.find<WeatherGogoCntr>().currentLocation.value.latLng);
                 },
                 child: const Text('어제날씨조회 '),
               ),
               ElevatedButton(
-                onPressed: () => Get.find<WeatherGogoCntr>().fetchSuperNct(Get.find<WeatherGogoCntr>().currentLocation.value!.latLng),
+                onPressed: () => Get.find<WeatherGogoCntr>().fetchSuperNct(Get.find<WeatherGogoCntr>().currentLocation.value.latLng),
                 child: const Text('초단기실황 '),
               ),
               ElevatedButton(
-                onPressed: () => Get.find<WeatherGogoCntr>().fetchSuperFct(Get.find<WeatherGogoCntr>().currentLocation.value!.latLng),
+                onPressed: () => Get.find<WeatherGogoCntr>().fetchSuperFct(Get.find<WeatherGogoCntr>().currentLocation.value.latLng),
                 child: const Text('초단기예보 '),
               ),
               ElevatedButton(
-                onPressed: () => Get.find<WeatherGogoCntr>().fetchFct(Get.find<WeatherGogoCntr>().currentLocation.value!.latLng),
+                onPressed: () => Get.find<WeatherGogoCntr>().fetchFct(Get.find<WeatherGogoCntr>().currentLocation.value.latLng),
                 child: const Text('단기예보 '),
               ),
               ElevatedButton(

@@ -1,4 +1,3 @@
-import 'dart:ffi';
 import 'dart:io';
 
 import 'package:bot_toast/bot_toast.dart';
@@ -13,9 +12,8 @@ import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:mime/mime.dart';
-import 'package:open_filex/open_filex.dart';
+// import 'package:open_file_plus/open_file_plus.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
 import 'package:project1/app/videolist/video_sigo_page.dart';
@@ -27,6 +25,7 @@ import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({
@@ -69,9 +68,9 @@ class _ChatPageState extends State<ChatPage> {
       if (user.id != AuthCntr.to.resLoginData.value.chatId) {
         AuthCntr.to.currentChatId = user.id;
         otherChatId = user.id;
-        otherCustId = user?.metadata?['custId'] ?? '';
+        otherCustId = user.metadata?['custId'] ?? '';
         lo.g("otherChatId.id : ${user.id}");
-        lo.g("otherCustId.id : ${otherCustId}");
+        lo.g("otherCustId.id : $otherCustId");
         checkBlock(otherCustId!);
       }
     }
@@ -82,7 +81,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> checkBlock(String otherCustId) async {
-    if (otherCustId == '' || otherCustId == null) return;
+    if (otherCustId == '') return;
     try {
       CustRepo repo = CustRepo();
       ResData res = await repo.checkBlock(otherCustId);
@@ -257,8 +256,18 @@ class _ChatPageState extends State<ChatPage> {
         name: message.uri.split('/').last,
         bytes: request.bodyBytes,
       );
-      await OpenFilex.open(result);
-    }
+      // 파일이 저장된 경로를 URL로 열기
+      final uri = Uri.file(result);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        // 파일을 열 수 없는 경우 원본 URL로 시도
+        final originalUri = Uri.parse(message.uri);
+        if (await canLaunchUrl(originalUri)) {
+          await launchUrl(originalUri);
+        }
+      }
+        }
   }
 
   Future<void> _handlePreviewDataFetched(
@@ -284,7 +293,7 @@ class _ChatPageState extends State<ChatPage> {
     if (result) {
       // 최초 여부를 관리하는 방법이 필요함.
       // if (_isFirst) {
-      room.users.forEach((element) {
+      for (var element in room.users) {
         if (element.id != SupabaseChatCore.instance.supabaseUser!.id) {
           String custId = element.metadata!['custId'] ?? '';
           if (custId != '') {
@@ -296,7 +305,7 @@ class _ChatPageState extends State<ChatPage> {
             alramRepo.pushByCustId(data);
           }
         }
-      });
+      }
     }
     _isFirst = false;
   }
@@ -491,7 +500,7 @@ class _ChatPageState extends State<ChatPage> {
                         style: TextStyle(color: Colors.white),
                       ),
                       Spacer(),
-                      const SizedBox(
+                      SizedBox(
                         height: 1,
                       )
                     ],

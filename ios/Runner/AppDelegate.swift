@@ -1,6 +1,6 @@
 import Flutter
 import UIKit
-import NaverThirdPartyLogin
+// import NaverThirdPartyLogin
 import flutter_local_notifications
 
 @main
@@ -20,15 +20,15 @@ import flutter_local_notifications
             UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
         }
 
-        NaverThirdPartyLoginConnection.getSharedInstance().isInAppOauthEnable = true
-        NaverThirdPartyLoginConnection.getSharedInstance().isNaverAppOauthEnable = true
+        // NaverThirdPartyLoginConnection.getSharedInstance().isInAppOauthEnable = true
+        // NaverThirdPartyLoginConnection.getSharedInstance().isNaverAppOauthEnable = true
 
-            // 네이버 로그인 설정
-        let instance = NaverThirdPartyLoginConnection.getSharedInstance()     
-        instance?.serviceUrlScheme =  "com.codelabtiger.skysnap" // 앱을 등록할 때 입력한 URL Scheme
-        instance?.consumerKey = "iC9RuDfC4wmdwHXS02Sa" // 애플리케이션에서 사용하는 클라이언트 아이디
-        instance?.consumerSecret = "VYG6_hVGkl" // 애플리케이션에서 사용하는 클라이언트 시크릿
-        instance?.appName = "SkySnap"// 애플리케이션 이름
+        //     // 네이버 로그인 설정
+        // let instance = NaverThirdPartyLoginConnection.getSharedInstance()     
+        // instance?.serviceUrlScheme =  "com.codelabtiger.skysnap" // 앱을 등록할 때 입력한 URL Scheme
+        // instance?.consumerKey = "iC9RuDfC4wmdwHXS02Sa" // 애플리케이션에서 사용하는 클라이언트 아이디
+        // instance?.consumerSecret = "VYG6_hVGkl" // 애플리케이션에서 사용하는 클라이언트 시크릿
+        // instance?.appName = "SkySnap"// 애플리케이션 이름
 
 
 
@@ -38,9 +38,9 @@ import flutter_local_notifications
     // URL 처리를 위한 메서드
     override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
         var applicationResult = false
-        if(!applicationResult){
-            applicationResult = NaverThirdPartyLoginConnection.getSharedInstance().application(app, open: url, options: options)
-        }
+        // if(!applicationResult){
+        //     applicationResult = NaverThirdPartyLoginConnection.getSharedInstance().application(app, open: url, options: options)
+        // }
         if(!applicationResult){
             applicationResult = super.application(app, open: url, options: options)
         }

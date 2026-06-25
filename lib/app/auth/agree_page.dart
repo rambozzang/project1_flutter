@@ -330,7 +330,7 @@ class _AgreePageState extends State<AgreePage> with WidgetsBindingObserver {
                                       ],
                                     ),
                                   ))
-                              .toList(),
+                              ,
                         ],
                       ),
                     ),

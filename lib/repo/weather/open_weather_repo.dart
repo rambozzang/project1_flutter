@@ -1,8 +1,6 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
-import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'package:project1/config/open_weather_api_config.dart';
@@ -41,7 +39,7 @@ class OpenWheatherRepo {
 
       if (response.statusCode == 304) {
         var cacheData = response.data;
-        lo.g('OpenWheatherRepo : getWeather() 3-1 ${cacheData}');
+        lo.g('OpenWheatherRepo : getWeather() 3-1 $cacheData');
         ResData res = ResData();
         res.code = '00';
         res.data = cacheData;
@@ -51,7 +49,7 @@ class OpenWheatherRepo {
 
       return ResData.fromJson(jsonEncode({'code': response.statusCode, 'message': response.statusMessage}));
     } on DioException catch (e) {
-      lo.g('OpenWheatherRepo : getWeather() 4 ${e}');
+      lo.g('OpenWheatherRepo : getWeather() 4 $e');
       return AuthDio.instance.dioException(e);
     } finally {}
   }

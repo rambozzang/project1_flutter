@@ -1,15 +1,11 @@
 import 'dart:convert';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:project1/repo/api/chat_api.dart';
 import 'package:project1/repo/cust/data/apple_join_data.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-import 'package:project1/repo/chatting/chat_repo.dart';
-import 'package:project1/repo/chatting/data/signup_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/secure_storge.dart';
-import 'package:project1/utils/log_utils.dart';
 import 'package:uuid/uuid.dart';
 
 class AppleApi with SecureStorage {
@@ -45,7 +41,7 @@ class AppleApi with SecureStorage {
         uid = credential.userIdentifier;
         displayName = '${credential.givenName ?? ''} ${credential.familyName ?? ''}'.trim();
       }
-      displayName = (displayName == null || displayName == '') ? email2!.split('@')[0] : displayName;
+      displayName = (displayName == '') ? email2!.split('@')[0] : displayName;
 
       // if (credential.userIdentifier == null) {
       //   resData.code = '99';
@@ -56,7 +52,7 @@ class AppleApi with SecureStorage {
         email2 = '$uid@privaterelay.appleid.com';
       }
       // 6. displayName이 비어있는 경우 대체 이름 사용
-      if (displayName == null || displayName == '') {
+      if (displayName == '') {
         displayName = 'Apple User';
       }
 

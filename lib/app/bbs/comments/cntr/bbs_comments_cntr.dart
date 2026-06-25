@@ -10,7 +10,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:korean_profanity_filter/korean_profanity_filter.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/bbs/cntr/bbs_write_cntr.dart';
-import 'package:project1/repo/bbs/bbs_repo.dart';
 import 'package:project1/repo/bbs/comment_repo.dart';
 import 'package:project1/repo/bbs/data/bbs_file_data_res.dart';
 import 'package:project1/repo/bbs/data/bbs_file_req_data.dart';
@@ -19,7 +18,6 @@ import 'package:project1/repo/bbs/data/bbs_list_res_data.dart';
 import 'package:project1/repo/bbs/data/bbs_search_req_data.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_comment_data.dart';
-import 'package:project1/repo/board/data/board_comment_res_data.dart';
 import 'package:project1/repo/board/data/board_comment_update_req_data.dart';
 import 'package:project1/repo/cloudflare/cloudflare_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -106,11 +104,11 @@ class BbsCommentsController extends GetxController {
     parentId = id;
   }
 
-  void setInitData(BbsListData _bbsListData) {
-    bbsListData = _bbsListData;
-    rootId = _bbsListData.boardId.toString();
-    parentId = _bbsListData.boardId.toString();
-    isRootDeleted = _bbsListData.delYn == 'Y';
+  void setInitData(BbsListData bbsListData) {
+    bbsListData = bbsListData;
+    rootId = bbsListData.boardId.toString();
+    parentId = bbsListData.boardId.toString();
+    isRootDeleted = bbsListData.delYn == 'Y';
     fetchComments();
   }
 
@@ -136,8 +134,6 @@ class BbsCommentsController extends GetxController {
 
     // 너무 잡은 호출을 방지하기 위해 디바운스 사용
     debounceTimer = Timer(const Duration(milliseconds: 350), () {
-      if (scrollData == null) return;
-
       if (scrollData.position.pixels >= scrollData.position.maxScrollExtent * 0.75) {
         if (!isLastPage && isLoading == false) {
           isLoading = true;
@@ -192,8 +188,13 @@ class BbsCommentsController extends GetxController {
         parentId = rootId;
       } else {
         replayParentData = modifyData;
-        parentId = modifyData!.boardId.toString();
-        replyTextController.text = '@${modifyData.nickNm.toString()} ';
+        parentId = modifyData.boardId.toString();
+        // 익며 댓글에 대한 답글인 경우
+        if (modifyData.anonyYn == 'Y') {
+          replyTextController.text = '@익명 ';
+        } else {
+          replyTextController.text = '@${modifyData.anonyYn.toString()} ';
+        }
       }
     } catch (e) {
       lo.g('replayCommentsClick() error : $e');
@@ -337,7 +338,6 @@ delte
 
       // DB 삭제
       await commentRepo.deleteComment(modifyData.boardId.toString());
-    } catch (e) {
     } finally {
       cancleModifySetting();
       fetchComments();
@@ -439,21 +439,19 @@ delte
     final XFile? pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
     lo.g("pickedFile : ${pickedFile!.mimeType}");
     lo.g("pickedFile : ${pickedFile.name}");
-    lo.g("pickedFile : ${pickedFile}");
+    lo.g("pickedFile : $pickedFile");
 
-    if (pickedFile != null) {
-      final fileSize = await pickedFile.length();
-      if (fileSize > 10 * 1024 * 1024) {
-        Utils.alert('이미지 크기가 10MB를 초과 할 수 없습니다.');
-        return;
-      }
-
-      // 수정모드에서 이미지를 픽업하면 수정된 이미지로 간주
-      isChangeImage.value = isModifyMode.value ? true : false;
-
-      commentImage.value = pickedFile!;
+    final fileSize = await pickedFile.length();
+    if (fileSize > 10 * 1024 * 1024) {
+      Utils.alert('이미지 크기가 10MB를 초과 할 수 없습니다.');
+      return;
     }
-  }
+
+    // 수정모드에서 이미지를 픽업하면 수정된 이미지로 간주
+    isChangeImage.value = isModifyMode.value ? true : false;
+
+    commentImage.value = pickedFile;
+    }
 
   Future<void> fetchComments() async {
     // isFirstLoad.value = true;

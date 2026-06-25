@@ -27,7 +27,6 @@ import 'package:aws_common/aws_common.dart';
 import 'package:aws_signature_v4/aws_signature_v4.dart';
 import 'package:path/path.dart' as p;
 import 'package:project1/repo/common/res_data.dart';
-import 'package:project1/utils/log_utils.dart';
 
 String region = 'auto';
 String accoutId = '1227ead63607f2c82ce09310ce378241';
@@ -65,12 +64,6 @@ class R2Repo {
     // await reader.onLoadEnd.first;
     // final fileBytes = reader.result as Uint8List?;
     Uint8List fileBytes = file.readAsBytesSync();
-    if (fileBytes == null) {
-      //throw Exception('Cannot read bytes from Blob.');
-      resData.code = '99';
-      resData.msg = 'Cannot read bytes from Blob.';
-      return resData;
-    }
 
     // Upload the file
     final uploadRequest = AWSHttpRequest.put(

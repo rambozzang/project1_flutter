@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -189,10 +188,11 @@ class _FollowingListPageState extends State<FollowingListPage> with AutomaticKee
         onRefresh: () async {
           getInitFollowList();
         },
-        child: Padding(
-          // color: Colors.white.withOpacity(.94),
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 8.0),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ValueListenableBuilder<bool>(
                   valueListenable: isPermisstion,
@@ -233,23 +233,12 @@ class _FollowingListPageState extends State<FollowingListPage> with AutomaticKee
                       ),
                     );
                   }),
-              SingleChildScrollView(
-                // controller: scrollController,
-                padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // buildSearchInputBox(),
-                    // const Divider(),
-                    Text(
-                      "내가 팔로우한 사람들",
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
-                    ),
-                    Utils.commonStreamList<FollowData>(listCntr, buildList, getInitFollowList),
-                    const Gap(200)
-                  ],
-                ),
+              Text(
+                "내가 팔로우한 사람들",
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
               ),
+              Utils.commonStreamList<FollowData>(listCntr, buildList, getInitFollowList),
+              const Gap(200)
             ],
           ),
         ),

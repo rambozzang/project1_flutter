@@ -269,8 +269,8 @@ class _VideoManagePageState extends State<VideoManagePage> {
                                   scale: 0.8,
                                   child: CupertinoSwitch(
                                     value: thisValue,
-                                    activeColor: CupertinoColors.activeOrange,
-                                    trackColor: Colors.white.withOpacity(0.5),
+                                    activeTrackColor: CupertinoColors.activeOrange,
+                                    inactiveTrackColor: Colors.white.withOpacity(0.5),
                                     onChanged: (bool value) {
                                       isHide.value = value;
 
@@ -305,8 +305,8 @@ class _VideoManagePageState extends State<VideoManagePage> {
                                     scale: 0.8,
                                     child: CupertinoSwitch(
                                       value: thisValue,
-                                      activeColor: CupertinoColors.activeOrange,
-                                      trackColor: Colors.white.withOpacity(0.5),
+                                      activeTrackColor: CupertinoColors.activeOrange,
+                                      inactiveTrackColor: Colors.white.withOpacity(0.5),
                                       onChanged: (bool value) {
                                         isAnony.value = value;
 
@@ -336,8 +336,8 @@ class _VideoManagePageState extends State<VideoManagePage> {
                               scale: 0.8,
                               child: CupertinoSwitch(
                                 value: value,
-                                activeColor: Colors.red,
-                                trackColor: Colors.white.withOpacity(0.5),
+                                activeTrackColor: Colors.red,
+                                inactiveTrackColor: Colors.white.withOpacity(0.5),
                                 onChanged: (bool value) {
                                   isDelete.value = value;
                                   if (value) {

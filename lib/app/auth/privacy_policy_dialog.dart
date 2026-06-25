@@ -5,6 +5,8 @@ import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_button.dart';
 
 class PrivacyPolicyDialog extends StatefulWidget {
+  const PrivacyPolicyDialog({super.key});
+
   @override
   _PrivacyPolicyDialogState createState() => _PrivacyPolicyDialogState();
 }

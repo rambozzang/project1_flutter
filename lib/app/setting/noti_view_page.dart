@@ -30,11 +30,6 @@ class _NotiViewPageState extends State<NotiViewPage> {
 
     boardId = Get.arguments['boardId'] ?? '0';
     Lo.g('boardId : $boardId');
-    if (boardId == null) {
-      Utils.alertIcon('비정상적인 접근입니다.', icontype: 'E');
-      Get.back();
-      return;
-    }
 
     getData(boardId);
   }
@@ -62,14 +57,14 @@ class _NotiViewPageState extends State<NotiViewPage> {
 
   @override
   Widget build(BuildContext context) {
-    var _isChecked = false;
+    var isChecked = false;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('공지사항 보기'),
+        title: const Text('공지사항 보기'),
         centerTitle: true,
         elevation: 0,
       ),
@@ -96,7 +91,7 @@ class _NotiViewPageState extends State<NotiViewPage> {
           ],
         ),
         Text(
-          "${data.crtDtm!.replaceAll('T', ' ')}",
+          data.crtDtm!.replaceAll('T', ' '),
           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w300),
         ),
         const Divider(

@@ -62,7 +62,7 @@ class HazyPainter extends CustomPainter {
 class HazyAnimation extends StatefulWidget {
   final ValueNotifier<bool> isVisibleNotifier;
 
-  const HazyAnimation({Key? key, required this.isVisibleNotifier}) : super(key: key);
+  const HazyAnimation({super.key, required this.isVisibleNotifier});
 
   @override
   _HazyAnimationState createState() => _HazyAnimationState();

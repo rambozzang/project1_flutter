@@ -11,7 +11,6 @@ import 'package:project1/admob/banner_ad_widget.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
 import 'package:project1/repo/board/board_repo.dart';
-import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -32,7 +31,7 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
   @override
   bool get wantKeepAlive => true;
 
-  StreamController<User> _userController = StreamController<User>.broadcast();
+  final StreamController<User> _userController = StreamController<User>.broadcast();
 
   User? _user;
   ValueNotifier<bool> isAdLoading = ValueNotifier<bool>(false);
@@ -435,19 +434,19 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('채팅방 옵션'),
+          title: const Text('채팅방 옵션'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                title: Text('방 나가기'),
+                title: const Text('방 나가기'),
                 onTap: () {
                   Navigator.pop(context);
                   _leaveRoom(room);
                 },
               ),
               ListTile(
-                title: Text('차단하기'),
+                title: const Text('차단하기'),
                 onTap: () {
                   Navigator.pop(context);
                   _blockUser(room);
@@ -478,7 +477,7 @@ class ChatMainAppState extends State<ChatMainApp> with AutomaticKeepAliveClientM
     for (var user in room.users) {
       lo.g("user.id : ${user.id}");
       if (user.id != AuthCntr.to.resLoginData.value.chatId) {
-        otherCustId = user?.metadata?['custId'] ?? '';
+        otherCustId = user.metadata?['custId'] ?? '';
       }
     }
     BoardRepo repo = BoardRepo();

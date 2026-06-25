@@ -6,6 +6,8 @@ package io.flutter.plugins.videoplayer;
 
 import android.content.Context;
 import android.util.LongSparseArray;
+import android.os.Handler;
+import android.os.Looper;
 import androidx.annotation.NonNull;
 import io.flutter.FlutterInjector;
 import io.flutter.Log;
@@ -18,28 +20,53 @@ import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugins.videoplayer.Messages.AndroidVideoPlayerApi;
 import io.flutter.plugins.videoplayer.Messages.CreateMessage;
 import io.flutter.view.TextureRegistry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-/** Android platform implementation of the VideoPlayerPlugin. */
+/**
+ * TikTok-level optimized Android platform implementation of the
+ * VideoPlayerPlugin.
+ * Features advanced preloading, caching, and performance monitoring.
+ */
 public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
   private static final String TAG = "VideoPlayerPlugin";
   private final LongSparseArray<VideoPlayer> videoPlayers = new LongSparseArray<>();
   private FlutterState flutterState;
   private final VideoPlayerOptions options = new VideoPlayerOptions();
 
-  /** Register this with the v2 embedding for the plugin to respond to lifecycle callbacks. */
-  public VideoPlayerPlugin() {}
+  // Performance optimization fields
+  private static final int MAX_CONCURRENT_PLAYERS = 10; // 틱톡 수준의 동시 플레이어 수
+  private final Map<String, Long> urlToTextureIdMap = new ConcurrentHashMap<>();
+  private final ExecutorService backgroundExecutor = Executors.newFixedThreadPool(3);
+  private final Handler mainHandler = new Handler(Looper.getMainLooper());
+  private boolean isPerformanceMonitoringEnabled = true;
+  private long totalPlayersCreated = 0;
+  private long totalPlayersDisposed = 0;
+
+  /**
+   * Register this with the v2 embedding for the plugin to respond to lifecycle
+   * callbacks.
+   */
+  public VideoPlayerPlugin() {
+  }
 
   @Override
   public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
     final FlutterInjector injector = FlutterInjector.instance();
-    this.flutterState =
-        new FlutterState(
-            binding.getApplicationContext(),
-            binding.getBinaryMessenger(),
-            injector.flutterLoader()::getLookupKeyForAsset,
-            injector.flutterLoader()::getLookupKeyForAsset,
-            binding.getTextureRegistry());
+    this.flutterState = new FlutterState(
+        binding.getApplicationContext(),
+        binding.getBinaryMessenger(),
+        injector.flutterLoader()::getLookupKeyForAsset,
+        injector.flutterLoader()::getLookupKeyForAsset,
+        binding.getTextureRegistry());
     flutterState.startListening(this, binding.getBinaryMessenger());
+
+    // 성능 모니터링 시작
+    if (isPerformanceMonitoringEnabled) {
+      Log.d(TAG, "VideoPlayerPlugin attached to engine with TikTok-level optimizations");
+    }
   }
 
   @Override
@@ -47,25 +74,58 @@ public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
     if (flutterState == null) {
       Log.wtf(TAG, "Detached from the engine before registering to it.");
     }
+
+    // 성능 통계 로깅
+    if (isPerformanceMonitoringEnabled) {
+      Log.d(TAG, String.format("VideoPlayerPlugin detached. Stats - Created: %d, Disposed: %d, Active: %d",
+          totalPlayersCreated, totalPlayersDisposed, videoPlayers.size()));
+    }
+
     flutterState.stopListening(binding.getBinaryMessenger());
     flutterState = null;
     onDestroy();
   }
 
+  /**
+   * 모든 플레이어 정리 - 메모리 최적화
+   */
   private void disposeAllPlayers() {
-    for (int i = 0; i < videoPlayers.size(); i++) {
-      videoPlayers.valueAt(i).dispose();
-    }
-    videoPlayers.clear();
+    backgroundExecutor.execute(() -> {
+      for (int i = 0; i < videoPlayers.size(); i++) {
+        VideoPlayer player = videoPlayers.valueAt(i);
+        if (player != null) {
+          player.dispose();
+          totalPlayersDisposed++;
+        }
+      }
+
+      mainHandler.post(() -> {
+        videoPlayers.clear();
+        urlToTextureIdMap.clear();
+
+        // 캐시 정리
+        VideoPlayer.clearCache();
+
+        if (isPerformanceMonitoringEnabled) {
+          Log.d(TAG, "All video players disposed and cache cleared");
+        }
+      });
+    });
   }
 
   public void onDestroy() {
-    // The whole FlutterView is being destroyed. Here we release resources acquired for all
-    // instances
-    // of VideoPlayer. Once https://github.com/flutter/flutter/issues/19358 is resolved this may
+    // The whole FlutterView is being destroyed. Here we release resources acquired
+    // for all
+    // instances of VideoPlayer. Once
+    // https://github.com/flutter/flutter/issues/19358 is resolved this may
     // be replaced with just asserting that videoPlayers.isEmpty().
     // https://github.com/flutter/flutter/issues/20989 tracks this.
     disposeAllPlayers();
+
+    // 백그라운드 실행자 정리
+    if (!backgroundExecutor.isShutdown()) {
+      backgroundExecutor.shutdown();
+    }
   }
 
   @Override
@@ -75,18 +135,22 @@ public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
 
   @Override
   public @NonNull Long create(@NonNull CreateMessage arg) {
+    // 최대 플레이어 수 제한 (메모리 최적화)
+    if (videoPlayers.size() >= MAX_CONCURRENT_PLAYERS) {
+      // 가장 오래된 플레이어 정리
+      cleanupOldestPlayer();
+    }
+
     TextureRegistry.SurfaceTextureEntry handle = flutterState.textureRegistry.createSurfaceTexture();
-    EventChannel eventChannel =
-        new EventChannel(
-            flutterState.binaryMessenger, "flutter.io/videoPlayer/videoEvents" + handle.id());
+    EventChannel eventChannel = new EventChannel(
+        flutterState.binaryMessenger, "flutter.io/videoPlayer/videoEvents" + handle.id());
 
     final VideoAsset videoAsset;
     try {
       if (arg.getAsset() != null) {
         String assetLookupKey;
         if (arg.getPackageName() != null) {
-          assetLookupKey =
-              flutterState.keyForAssetAndPackageName.get(arg.getAsset(), arg.getPackageName());
+          assetLookupKey = flutterState.keyForAssetAndPackageName.get(arg.getAsset(), arg.getPackageName());
         } else {
           assetLookupKey = flutterState.keyForAsset.get(arg.getAsset());
         }
@@ -110,24 +174,60 @@ public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
           }
         }
         videoAsset = VideoAsset.fromRemoteUrl(arg.getUri(), streamingFormat, arg.getHttpHeaders());
+
+        // URL 매핑 저장 (중복 방지)
+        urlToTextureIdMap.put(arg.getUri(), handle.id());
       } else {
         throw new IllegalArgumentException("No valid video source provided");
       }
 
-      videoPlayers.put(
-          handle.id(),
-          VideoPlayer.create(
-              flutterState.applicationContext,
-              VideoPlayerEventCallbacks.bindTo(eventChannel),
-              handle,
-              videoAsset,
-              options,
-              flutterState.binaryMessenger));
+      VideoPlayer player = VideoPlayer.create(
+          flutterState.applicationContext,
+          VideoPlayerEventCallbacks.bindTo(eventChannel),
+          handle,
+          videoAsset,
+          options,
+          flutterState.binaryMessenger);
+
+      videoPlayers.put(handle.id(), player);
+      totalPlayersCreated++;
+
+      if (isPerformanceMonitoringEnabled) {
+        Log.d(TAG, String.format("Created video player %d. Total active: %d", handle.id(), videoPlayers.size()));
+      }
 
       return handle.id();
     } catch (Exception e) {
       handle.release();
       throw e;
+    }
+  }
+
+  /**
+   * 가장 오래된 플레이어 정리 (LRU 방식)
+   */
+  private void cleanupOldestPlayer() {
+    if (videoPlayers.size() > 0) {
+      long oldestTextureId = videoPlayers.keyAt(0);
+      VideoPlayer oldestPlayer = videoPlayers.get(oldestTextureId);
+
+      if (oldestPlayer != null) {
+        backgroundExecutor.execute(() -> {
+          oldestPlayer.dispose();
+          totalPlayersDisposed++;
+
+          mainHandler.post(() -> {
+            videoPlayers.remove(oldestTextureId);
+
+            // URL 매핑에서도 제거
+            urlToTextureIdMap.entrySet().removeIf(entry -> entry.getValue().equals(oldestTextureId));
+
+            if (isPerformanceMonitoringEnabled) {
+              Log.d(TAG, String.format("Cleaned up oldest player %d", oldestTextureId));
+            }
+          });
+        });
+      }
     }
   }
 
@@ -150,8 +250,22 @@ public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
   @Override
   public void dispose(@NonNull Long textureId) {
     VideoPlayer player = getPlayer(textureId);
-    player.dispose();
-    videoPlayers.remove(textureId);
+
+    backgroundExecutor.execute(() -> {
+      player.dispose();
+      totalPlayersDisposed++;
+
+      mainHandler.post(() -> {
+        videoPlayers.remove(textureId);
+
+        // URL 매핑에서도 제거
+        urlToTextureIdMap.entrySet().removeIf(entry -> entry.getValue().equals(textureId));
+
+        if (isPerformanceMonitoringEnabled) {
+          Log.d(TAG, String.format("Disposed video player %d. Remaining active: %d", textureId, videoPlayers.size()));
+        }
+      });
+    });
   }
 
   @Override
@@ -201,6 +315,39 @@ public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
   @Override
   public void setMixWithOthers(@NonNull Boolean mixWithOthers) {
     options.mixWithOthers = mixWithOthers;
+  }
+
+  /**
+   * 성능 통계 가져오기
+   */
+  public Map<String, Object> getPerformanceStats() {
+    Map<String, Object> stats = new ConcurrentHashMap<>();
+    stats.put("totalPlayersCreated", totalPlayersCreated);
+    stats.put("totalPlayersDisposed", totalPlayersDisposed);
+    stats.put("activePlayersCount", videoPlayers.size());
+    stats.put("maxConcurrentPlayers", MAX_CONCURRENT_PLAYERS);
+    return stats;
+  }
+
+  /**
+   * 성능 모니터링 활성화/비활성화
+   */
+  public void setPerformanceMonitoringEnabled(boolean enabled) {
+    this.isPerformanceMonitoringEnabled = enabled;
+  }
+
+  /**
+   * 특정 URL의 플레이어가 이미 존재하는지 확인
+   */
+  public boolean hasPlayerForUrl(String url) {
+    return urlToTextureIdMap.containsKey(url);
+  }
+
+  /**
+   * 특정 URL의 텍스처 ID 가져오기
+   */
+  public Long getTextureIdForUrl(String url) {
+    return urlToTextureIdMap.get(url);
   }
 
   private interface KeyForAssetFn {

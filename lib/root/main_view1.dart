@@ -76,7 +76,7 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
       CustData custData = CustData.fromMap(res.data);
 
       lo.g('custData : ${custData.toString()}');
-      nickNm.value = custData!.nickNm.toString();
+      nickNm.value = custData.nickNm.toString();
     } catch (e) {
       Utils.alert(e.toString());
     }
@@ -88,10 +88,6 @@ class _MainView1State extends State<MainView1> with SingleTickerProviderStateMix
     super.didChangeDependencies();
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -274,7 +270,7 @@ class CategoryBreadcrumbs extends SliverPersistentHeaderDelegate {
       color: Colors.white,
       height: 48,
       width: 250,
-      padding: EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
           const Text("전체", style: TextStyle(color: Colors.black)),

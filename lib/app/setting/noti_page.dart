@@ -1,12 +1,9 @@
 import 'dart:async';
 
-import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/repo/board/board_repo.dart';
-import 'package:project1/repo/board/data/board_main_data.dart';
 import 'package:project1/repo/board/data/board_main_detail_data.dart';
 import 'package:project1/repo/common/paging_data.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -63,30 +60,30 @@ class _NotiPageState extends State<NotiPage> with AutomaticKeepAliveClientMixin 
 
   Future<void> getDataInit() async => getData(0);
 
-  Future<void> getData(int _page) async {
-    if (_page != 0) {
+  Future<void> getData(int page) async {
+    if (page != 0) {
       isMoreLoading.value = true;
     } else {
       listCtrl.sink.add(ResStream.loading());
     }
     try {
       BoardRepo repo = BoardRepo();
-      ResData resData = await repo.searchOriginList(typeCd, typeDtCd, _page, pageSzie, topYn);
+      ResData resData = await repo.searchOriginList(typeCd, typeDtCd, page, pageSzie, topYn);
 
       if (resData.code != '00') {
         Utils.alert(resData.msg.toString());
         listCtrl.sink.add(ResStream.error(resData.msg.toString()));
         return;
       }
-      List<BoardDetailData> _list = ((resData.data['list']) as List).map((data) => BoardDetailData.fromMap(data)).toList();
+      List<BoardDetailData> list = ((resData.data['list']) as List).map((data) => BoardDetailData.fromMap(data)).toList();
 
-      if (_page == 0) {
+      if (page == 0) {
         boardList.clear();
       }
       PagingData pageData = PagingData.fromMap(resData.data['pageData']);
       page = pageData.currPageNum!;
       isLastPage.value = pageData.last!;
-      boardList.addAll(_list);
+      boardList.addAll(list);
       isMoreLoading.value = false;
 
       listCtrl.sink.add(ResStream.completed(boardList, message: '조회가 완료되었습니다.'));

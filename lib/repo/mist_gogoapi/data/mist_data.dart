@@ -34,7 +34,7 @@ class MistData {
       'totalCount': totalCount,
       'pageNo': pageNo,
       'numOfRows': numOfRows,
-      'items': items!.map((x) => x?.toMap()).toList(),
+      'items': items!.map((x) => x.toMap()).toList(),
     };
   }
 

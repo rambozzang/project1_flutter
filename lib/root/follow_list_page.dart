@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
@@ -135,25 +134,21 @@ class _FollowListPageState extends State<FollowListPage> with AutomaticKeepAlive
         onRefresh: () async {
           getInitFollowList();
         },
-        child: Container(
-          // color: Colors.white.withOpacity(.94),
-          padding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 8.0),
-          child: SingleChildScrollView(
-            // controller: scrollController,
-            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // buildSearchInputBox(),
-                // const Divider(),
-                Text(
-                  "나를 팔로우한 사람들",
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
-                ),
-                Utils.commonStreamList<FollowData>(listCntr, buildList, getInitFollowList),
-                const Gap(200)
-              ],
-            ),
+        child: SingleChildScrollView(
+          // controller: scrollController,
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // buildSearchInputBox(),
+              // const Divider(),
+              Text(
+                "나를 팔로우한 사람들",
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
+              ),
+              Utils.commonStreamList<FollowData>(listCntr, buildList, getInitFollowList),
+              const Gap(200)
+            ],
           ),
         ),
       ),

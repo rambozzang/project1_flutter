@@ -45,10 +45,6 @@ abstract class Lo {
 
 void log(String message) {
   if (!kReleaseMode) {
-    if (message is String) {
-      debugPrint("${DateTime.now().toIso8601String()} [🚫♥️DEBUG🐯💥] : $message");
-    } else {
-      debugPrint("${DateTime.now().toIso8601String()} [🚫♥️DEBUG🐯💥] : ${message.toString()}");
+    debugPrint("${DateTime.now().toIso8601String()} [🚫♥️DEBUG🐯💥] : $message");
     }
-  }
 }

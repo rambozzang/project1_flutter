@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
@@ -14,7 +13,6 @@ import 'package:project1/repo/weather_gogo/interface/imp_fct_repository.dart';
 import 'package:project1/repo/weather_gogo/models/request/weather.dart';
 import 'package:project1/repo/weather_gogo/models/response/fct/fct_model.dart';
 import 'package:project1/utils/log_utils.dart';
-import 'package:project1/widget/custom_badge.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 
 class WeatherComparePage extends StatefulWidget {
@@ -66,15 +64,17 @@ class _WeatherComparePageState extends State<WeatherComparePage> {
     }).toList();
 
     allWeatherCompareList.addAll(accuWeatherCompareList);
-    accuWeatherCompareList.forEach((e) => lo.g('아큐 => ${e.hour} : ${e.temp} : ${e.desc} : ${e.icon}'));
+    for (var e in accuWeatherCompareList) {
+      lo.g('아큐 => ${e.hour} : ${e.temp} : ${e.desc} : ${e.icon}');
+    }
     // ---------------------------------------
 
     // 기상청 API 호출
-    String _key = 'CeGmiV26lUPH9guq1Lca6UA25Al/aZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur+t2iPaL/LtEQdZebg==';
+    String key = 'CeGmiV26lUPH9guq1Lca6UA25Al/aZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur+t2iPaL/LtEQdZebg==';
     // String _key = 'CeGmiV26lUPH9guq1Lca6UA25Al%2FaZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur%2Bt2iPaL%2FLtEQdZebg%3D%3D';
 
     final weather = Weather(
-      serviceKey: _key,
+      serviceKey: key,
       pageNo: 1,
       numOfRows: 12 * 24, //기준시간별 항목이 12개이므로 24시간치 데이터를 가져오기 위해 12 * 24
     );
@@ -98,10 +98,12 @@ class _WeatherComparePageState extends State<WeatherComparePage> {
       }
     }).toList();
     allWeatherCompareList.addAll(fctWeatherCompareList);
-    fctWeatherCompareList.forEach((e) => lo.g('기상청 => ${e.hour} : ${e.temp} : ${e.desc} : ${e.icon}'));
+    for (var e in fctWeatherCompareList) {
+      lo.g('기상청 => ${e.hour} : ${e.temp} : ${e.desc} : ${e.icon}');
+    }
     // 상단 그리드는 기상청을 기준으로
     // gridColumnList
-    fctWeatherCompareList.forEach((e) {
+    for (var e in fctWeatherCompareList) {
       lo.g('기상청 => ${e.hour} : ${e.temp} : ${e.desc} : ${e.icon}');
       gridColumnList.add(
         GridColumn(
@@ -115,7 +117,7 @@ class _WeatherComparePageState extends State<WeatherComparePage> {
           ),
         ),
       );
-    });
+    }
 
     // 오픈웨더 API 호출
     List<HourlyWeather> list = Get.find<WeatherCntr>().hourlyWeather;
@@ -134,7 +136,9 @@ class _WeatherComparePageState extends State<WeatherComparePage> {
     allWeatherCompareList.addAll(openWeatherCompareList);
 
     allWeatherCompareList.sort((a, b) => a.hour!.compareTo(b.hour!));
-    openWeatherCompareList.forEach((e) => lo.g('오픈웨더 =>${e.hour} : ${e.temp} : ${e.desc} : ${e.icon}'));
+    for (var e in openWeatherCompareList) {
+      lo.g('오픈웨더 =>${e.hour} : ${e.temp} : ${e.desc} : ${e.icon}');
+    }
 
     isLoading.value = false;
     employeeDataSource = EmployeeDataSource(data: fctWeatherCompareList);

@@ -60,10 +60,10 @@ class BbsWriteController extends GetxController {
     }
 
     final ImagePicker picker = ImagePicker();
-    final List<XFile>? _list = await picker.pickMultiImage();
+    final List<XFile> list = await picker.pickMultiImage();
 
-    if (_list != null && _list.isNotEmpty) {
-      for (var file in _list) {
+    if (list.isNotEmpty) {
+      for (var file in list) {
         // 파일 크기 확인 (10MB = 10 * 1024 * 1024 bytes)
         final fileSize = await file.length();
         if (fileSize > 10 * 1024 * 1024) {

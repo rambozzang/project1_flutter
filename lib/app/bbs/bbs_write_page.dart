@@ -1,13 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/bbs/cntr/bbs_list_cntr.dart';
 import 'package:project1/app/bbs/cntr/bbs_write_cntr.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
-import 'package:rich_text_view/rich_text_view.dart';
 
 class BbsWritePage extends StatefulWidget {
   const BbsWritePage({super.key});

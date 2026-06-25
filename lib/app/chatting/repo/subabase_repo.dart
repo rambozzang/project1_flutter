@@ -16,10 +16,10 @@ class SupaBaseRepo {
   // 0. 초기화
   Future<void> initializeFlutterFire() async {
     try {
-      User? _user;
+      User? user;
       supabase.auth.onAuthStateChange.listen((data) {
         lo.g('Supabase : ${data.session}');
-        _user = data.session?.user;
+        user = data.session?.user;
         isInitialized = true;
       });
     } catch (e) {

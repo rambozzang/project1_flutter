@@ -208,7 +208,7 @@ class _BbsCommentsPageState extends State<BbsCommentsPage> with AutomaticKeepAli
                   elevation: 3,
                 ),
                 onPressed: () {
-                  lo.g("widget.isDelete : ${isDelete}");
+                  lo.g("widget.isDelete : $isDelete");
                   if (isDelete == true || isDelete == 'true') {
                     Utils.alertIcon('삭제된 게시글입니다..', icontype: 'E');
                     return;

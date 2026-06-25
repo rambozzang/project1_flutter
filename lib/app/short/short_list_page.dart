@@ -4,13 +4,8 @@ import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:project1/app/short/cntr/short_list_cntr.dart';
-import 'package:project1/app/short/comment/short_comments_bottom_page.dart';
-import 'package:project1/app/short/short_view_page.dart';
-import 'package:project1/app/short/short_write_page.dart';
-import 'package:project1/app/short/widgets/image_viewer.dart';
 import 'package:project1/repo/bbs/data/bbs_list_data.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:intl/intl.dart';
 
 class ShortListPage extends StatefulWidget {
   const ShortListPage({super.key});

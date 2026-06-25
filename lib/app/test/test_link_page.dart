@@ -7,7 +7,7 @@ import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/root/main_view1.dart';
 
 class TestLinkPage extends StatefulWidget {
-  TestLinkPage({Key? key}) : super(key: key);
+  const TestLinkPage({super.key});
 
   @override
   State<TestLinkPage> createState() => _TestLinkPageState();
@@ -27,7 +27,7 @@ class _TestLinkPageState extends State<TestLinkPage> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        SizedBox(height: 46), // <------ root_page.dart 113줄에 값에 따라 추가됨.
+        const SizedBox(height: 46), // <------ root_page.dart 113줄에 값에 따라 추가됨.
         Expanded(
           child: CustomScrollView(
             controller: RootCntr.to.hideButtonController12,

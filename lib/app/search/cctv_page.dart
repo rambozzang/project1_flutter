@@ -89,7 +89,7 @@ class _CctvPageState extends State<CctvPage> {
                 Row(
                   children: [
                     const SizedBox(width: 10),
-                    Text(cctvResData.cctvname.toString(), style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                    Text(cctvResData.cctvname.toString(), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                     const Spacer(),
                     IconButton(onPressed: () => Get.back(), icon: const Icon(Icons.close, color: Colors.black)),
                     const SizedBox(width: 10),

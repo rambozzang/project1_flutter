@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+// import 'package:flutter_naver_map/flutter_naver_map.dart'; // 임시 주석 처리
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
@@ -113,7 +114,7 @@ class MapCntr extends GetxController {
       southWest.value = southWest1;
       northEast.value = northEast1;
 
-      mapController.clearOverlays();
+      // mapController.clearOverlays();
 
       BoardRepo boardRepo = BoardRepo();
       lo.g('sday $sDay');
@@ -275,7 +276,7 @@ class MapCntr extends GetxController {
 
   @override
   void onClose() {
-    mapController.dispose();
+    // mapController.dispose();
     onCameraChangeStreamController.close();
     listItemsController.close();
     super.onClose();

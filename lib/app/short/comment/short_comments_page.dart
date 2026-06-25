@@ -84,7 +84,7 @@ class ShortCommentsPage extends GetView<ShortCommentsController> {
                 scale: 0.7,
                 child: Obx(() => CupertinoSwitch(
                       value: controller.isRealTimeUpdate.value,
-                      activeColor: CupertinoColors.activeOrange,
+                      activeTrackColor: CupertinoColors.activeOrange,
                       onChanged: (bool value) {
                         print('value: $value');
                         controller.fetchRealTimeUpdate(!value, context);

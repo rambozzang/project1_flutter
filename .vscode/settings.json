@@ -14,5 +14,6 @@
     "dart.previewFlutterUiGuides": true,
     "dart.previewFlutterUiGuidesCustomTracking": true,
     "CodeGPT.apiKey": "CodeGPT Plus Beta",
+    "java.compile.nullAnalysis.mode": "automatic",
     
 }

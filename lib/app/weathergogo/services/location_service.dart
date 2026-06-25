@@ -37,14 +37,14 @@ class LocationService {
       dioRes.Response? res = await mistRepo.getMistData(localName);
       MistData mistData = MistData.fromJson(jsonEncode(res!.data['response']['body']));
       // 단위 ㎍/㎥
-      MistViewData _mistViewData = MistViewData(
+      MistViewData mistViewData = MistViewData(
         mist10: mistData.items![0].pm10Value!,
         mist25: mistData.items![0].pm25Value!,
         mist10Grade: mistRepo.getMist10Grade(mistData.items![0].pm10Value!),
         mist25Grade: mistRepo.getMist25Grade(mistData.items![0].pm25Value!),
       );
 
-      return _mistViewData;
+      return mistViewData;
     } catch (e) {
       Lo.g('미세먼지 가져오기 오류 : $e');
       return null;

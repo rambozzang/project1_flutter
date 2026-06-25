@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:project1/app/bbs/comments/cntr/bbs_comments_cntr.dart';
 import 'package:project1/repo/bbs/bbs_repo.dart';
 import 'package:project1/repo/bbs/data/bbs_list_data.dart';
 import 'package:project1/repo/board/board_repo.dart';
@@ -48,9 +47,9 @@ class BbsViewController extends GetxController {
     await cloudflare.init();
   }
 
-  Future<void> fetchDataInit(String _boardId) async {
-    fetchData(_boardId);
-    incrementViewCount(_boardId);
+  Future<void> fetchDataInit(String boardId) async {
+    fetchData(boardId);
+    incrementViewCount(boardId);
   }
 
   Future<void> fetchData(String boardId) async {
@@ -85,13 +84,13 @@ class BbsViewController extends GetxController {
   }
 
   // 조회수 증가
-  Future<void> incrementViewCount(_boardId) async {
+  Future<void> incrementViewCount(boardId) async {
     if (_isUpdateCount) return;
 
     _isUpdateCount = true;
     BoardRepo boardRepo = BoardRepo();
     try {
-      await boardRepo.updateBoardCount(_boardId.toString());
+      await boardRepo.updateBoardCount(boardId.toString());
     } catch (e) {
       lo.g('@@@ VideoScreenPage  updateCount error : $e');
     }

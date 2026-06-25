@@ -92,7 +92,7 @@ class MyLocatorRepo {
   // https://api.vworld.kr/req/address?service=address&request=getcoord&version=2.0&crs=epsg:4326&address=%ED%9A%A8%EB%A0%B9%EB%A1%9C72%EA%B8%B8%2060&refine=true&simple=false&format=xml&type=road&key=[KEY]
 
   Future<dynamic> getPlaceAddress(Position position) async {
-    String google_api_key = 'AIzaSyDgEZ4xNo5WXYthA1l8y9XLK118y6gbTpg';
+    String googleApiKey = 'AIzaSyDgEZ4xNo5WXYthA1l8y9XLK118y6gbTpg';
     final dio = Dio(BaseOptions(
         headers: {'Content-Type': 'application/json', 'accept': 'application/json'},
         connectTimeout: const Duration(seconds: 5),
@@ -108,7 +108,7 @@ class MyLocatorRepo {
     ));
 
     final url =
-        'https://maps.googleapis.com/maps/api/geocode/json?latlng=${position.latitude},${position.longitude}&key=$google_api_key&language=ko';
+        'https://maps.googleapis.com/maps/api/geocode/json?latlng=${position.latitude},${position.longitude}&key=$googleApiKey&language=ko';
     Response response = await dio.get(url);
 
     if (response.statusCode == 200) {

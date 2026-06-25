@@ -1,7 +1,5 @@
-import 'dart:convert';
 
 import 'package:project1/config/url_config.dart';
-import 'package:project1/repo/api/apple_api.dart';
 import 'package:project1/repo/api/auth_dio.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/cust/data/apple_join_data.dart';

@@ -77,16 +77,16 @@ class Policy {
     final metadataParams = _convertMetadataToPolicyParams(metadata);
 
     final payload = {
-      "expiration": "${this.expiration}",
+      "expiration": expiration,
       "conditions": [
-        {"bucket": "${this.bucket}"},
-        ["starts-with", "\$key", "${this.key}"],
+        {"bucket": bucket},
+        ["starts-with", "\$key", (key)],
         ["starts-with", "\$Content-Type", ""],
-        {"acl": "${aclToString(acl)}"},
-        ["content-length-range", 1, this.maxFileSize],
-        {"x-amz-credential": "${this.credential}"},
+        {"acl": aclToString(acl)},
+        ["content-length-range", 1, maxFileSize],
+        {"x-amz-credential": credential},
         {"x-amz-algorithm": "AWS4-HMAC-SHA256"},
-        {"x-amz-date": "${this.datetime}"},
+        {"x-amz-date": datetime},
       ],
     };
 

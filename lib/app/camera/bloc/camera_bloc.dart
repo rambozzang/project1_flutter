@@ -102,14 +102,18 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     if (!isRecording()) {
       // 낙관적 UI: 실제 startVideoRecording 완료를 기다리지 않고
       // 즉시 녹화 상태로 전환 → 버튼이 누르는 즉시 반응(빨간 링/사각형).
-      // 실제 녹화 시작은 prepare로 미리 준비돼 있어 거의 동시에 일어나며,
-      // 타이머는 컨트롤러 리스너(isRecordingVideo=true)에서 정확히 시작된다.
+      // 실제 녹화 시작은 백그라운드로 처리되어 UI block을 최소화한다.
       emit(CameraReady(isRecordingVideo: true));
-      try {
-        await _startRecording();
-      } catch (e) {
-        await _reInitialize(emit); // 실패 시 카메라 재초기화로 복구
-      }
+      // startVideoRecording은 Android Camera2에서 치메라 세션 재구성에
+      // ~1초가 걸릴 수 있고, platform channel은 메인 스레드에서 실행되므로
+      // await하면 UI가 멈춰 보인다. unawaited로 실행하고 결과는 콜백으로 처리.
+      _startRecording().then((_) {
+        lo.g('startVideoRecording success');
+      }).catchError((e) {
+        lo.g('startVideoRecording error: $e');
+        // 실패 시 치메라 재초기화를 별도 이벤트로 발행 (BLoC emit 규칙 준수)
+        add(CameraInitialize(recordingLimit: recordDurationLimit));
+      });
     }
   }
 
@@ -241,12 +245,13 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       emit(CameraReady(isRecordingVideo: false, decativateRecordButton: false));
       _cameraController?.lockCaptureOrientation(DeviceOrientation.portraitUp);
 
-      // 2) 레코더(MediaRecorder/캡처세션)는 "백그라운드"로 미리 준비.
-      //    await 하지 않아 화면 표시를 막지 않으면서, 사용자가 녹화 버튼을
-      //    누를 때쯤이면 준비가 끝나 startVideoRecording()이 즉시 실행된다.
-      _cameraController?.prepareForVideoRecording().catchError((e) {
-        lo.g('prepareForVideoRecording skip: $e');
-      });
+      // 2) prepareForVideoRecording은 iOS에서만 효과가 있다.
+      //    Android(Camera2)에서는 no-op 수준이므로 skip하여 초기화 시간을 줄인다.
+      if (Platform.isIOS) {
+        _cameraController?.prepareForVideoRecording().catchError((e) {
+          lo.g('prepareForVideoRecording skip: $e');
+        });
+      }
 
       _cameraController!.addListener(() {
         if (_cameraController!.value.isRecordingVideo) {

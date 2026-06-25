@@ -3,10 +3,9 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart'; // 임시 주석 처리
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:giffy_dialog/giffy_dialog.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/search/cctv_page.dart';
@@ -108,8 +107,8 @@ class _MapPageState extends State<MapPage> {
 
   // 카카오 검색창에서 검색후 클릭시 위치로 이동
   Future<void> locationUpdate(GeocodeData geocodeData) async {
-    NLatLng currentCoord = NLatLng(geocodeData.latLng.latitude, geocodeData.latLng.longitude);
-    await Get.find<MapCntr>().setPositionlocationUpdate(currentCoord: currentCoord);
+    // NLatLng currentCoord = NLatLng(geocodeData.latLng.latitude, geocodeData.latLng.longitude);
+    // await Get.find<MapCntr>().setPositionlocationUpdate(currentCoord: currentCoord);
     buildMarker(10);
   }
 
@@ -399,7 +398,7 @@ class _MapPageState extends State<MapPage> {
       //  return;
     }
     lo.g(res.length.toString());
-    final NOverlayImage icon = const NOverlayImage.fromAssetImage('assets/images/map/cctv2.png');
+    const NOverlayImage icon = NOverlayImage.fromAssetImage('assets/images/map/cctv2.png');
 
     int markid = 1;
     res.forEach((element) async {
@@ -651,8 +650,7 @@ class _MapPageState extends State<MapPage> {
                             ),
 
                             const Gap(15),
-                            Get.find<WeatherGogoCntr>().mistData.value.mist10Grade.toString() == 'null' ||
-                                    Get.find<WeatherGogoCntr>().mistData.value.mist25Grade.toString() == null
+                            Get.find<WeatherGogoCntr>().mistData.value.mist10Grade.toString() == 'null'
                                 ? const SizedBox()
                                 : RichText(
                                     text: TextSpan(

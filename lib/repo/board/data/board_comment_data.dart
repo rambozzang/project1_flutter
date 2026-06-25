@@ -66,7 +66,7 @@ class BoardCommentData {
       'depthNo': depthNo,
       'parentId': parentId,
       'sortNo': sortNo,
-      'fileListData': fileListData?.map((x) => x?.toMap()).toList(),
+      'fileListData': fileListData?.map((x) => x.toMap()).toList(),
     };
   }
 

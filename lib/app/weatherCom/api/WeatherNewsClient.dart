@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
-import 'package:project1/app/weatherCom/services/weather_api_client.dart';
 import 'package:project1/utils/log_utils.dart';
 import '../models/weather_data.dart';
 // import 'weather_api_client.dart';
@@ -115,7 +114,7 @@ class WeatherNewsService {
       ));
       // Afternoon forecast
       dailyData.add(WeatherData(
-        time: DateTime.parse(item['time']).add(Duration(hours: 12)),
+        time: DateTime.parse(item['time']).add(const Duration(hours: 12)),
         temperature: item['temperature_afternoon'].toDouble(),
         humidity: item['humidity_afternoon'].toDouble(),
         rainProbability: item['precipitation_probability_afternoon'].toDouble(),
@@ -132,20 +131,20 @@ class WeatherNewsService {
     switch (weatherCode) {
       case 100: // Clear
       case 200: // Fair
-        return assetPath + 'sun.json';
+        return '${assetPath}sun.json';
       case 300: // Cloudy
       case 400: // Mostly Cloudy
-        return assetPath + 'day_cloudy.json';
+        return '${assetPath}day_cloudy.json';
       case 500: // Rain
       case 600: // Heavy Rain
-        return assetPath + 'day_rain.json';
+        return '${assetPath}day_rain.json';
       case 700: // Snow
       case 800: // Heavy Snow
-        return assetPath + 'day_snow.json';
+        return '${assetPath}day_snow.json';
       case 900: // Thunder
-        return assetPath + 'storm.json';
+        return '${assetPath}storm.json';
       default:
-        return assetPath + 'day_cloudy.json';
+        return '${assetPath}day_cloudy.json';
     }
   }
 }

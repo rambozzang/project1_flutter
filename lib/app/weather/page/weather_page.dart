@@ -7,10 +7,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/admob/banner_ad_widget.dart';
-import 'package:project1/admob/full_width_banner_ad.dart';
 import 'package:project1/app/weather/page/kakao_searchbar.dart';
 import 'package:project1/app/weather/page/location_error.dart';
-import 'package:project1/app/webview/weather_webview.dart';
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
@@ -20,8 +18,6 @@ import '../theme/textStyle.dart';
 import '../widgets/WeatherInfoHeader.dart';
 import '../widgets/mainWeatherDetail.dart';
 import '../widgets/mainWeatherInfo.dart';
-import '../widgets/sevenDayForecast.dart';
-import '../widgets/twentyFourHourForecast.dart';
 
 import 'request_error.dart';
 

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:project1/app/weather/cntr/weatherProvider.dart';
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
-import 'package:provider/provider.dart';
 
 class RequestError extends StatelessWidget {
+  const RequestError({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Padding(

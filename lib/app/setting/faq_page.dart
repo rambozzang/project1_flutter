@@ -8,7 +8,6 @@ import 'package:project1/repo/board/data/board_main_detail_data.dart';
 import 'package:project1/repo/common/paging_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
-import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_sec_button.dart';
 
@@ -80,8 +79,8 @@ class _FaqPageState extends State<FaqPage> {
   }
 
   Future<void> getDataInit() async => getData(0);
-  Future<void> getData(int _page) async {
-    if (_page != 0) {
+  Future<void> getData(int page) async {
+    if (page != 0) {
       isMoreLoading.value = true;
     } else {
       listCtrl.sink.add(ResStream.loading());
@@ -97,15 +96,15 @@ class _FaqPageState extends State<FaqPage> {
         return;
       }
 
-      List<BoardDetailData> _list = ((resData.data['list']) as List).map((data) => BoardDetailData.fromMap(data)).toList();
+      List<BoardDetailData> list = ((resData.data['list']) as List).map((data) => BoardDetailData.fromMap(data)).toList();
 
-      if (_page == 0) {
+      if (page == 0) {
         boardList.clear();
       }
       PagingData pageData = PagingData.fromMap(resData.data['pageData']);
       page = pageData.currPageNum!;
       isLastPage.value = pageData.last!;
-      boardList.addAll(_list);
+      boardList.addAll(list);
       isMoreLoading.value = false;
 
       listCtrl.sink.add(ResStream.completed(boardList, message: '조회가 완료되었습니다.'));

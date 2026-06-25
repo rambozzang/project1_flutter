@@ -27,24 +27,38 @@ class FastPageScrollPhysics extends ScrollPhysics {
     return FastPageScrollPhysics(parent: buildParent(ancestor));
   }
 
-  // 이 속도(px/s)만 넘으면 한 페이지 넘어간다. 낮을수록 더 민감.
-  static const double _flingThreshold = 8.0;
+  // 이 속도(px/s)만 넘으면 한 페이지 넘어간다. 낮을수록 더 민감(살짝 튕겨도 전환).
+  static const double _flingThreshold = 3.0;
+
+  // 느린 드래그에서 페이지를 넘기는 데 필요한 이동 비율(뷰포트 대비).
+  // 0.5(50%, round)가 기본이지만, 0.25(25%)로 낮춰 화면 1/4만 끌어도 전환 → 더 민감.
+  static const double _commitFraction = 0.25;
 
   double _page(ScrollMetrics p) => p.pixels / p.viewportDimension;
   double _pixels(ScrollMetrics p, double page) => page * p.viewportDimension;
 
   double _target(ScrollMetrics p, double velocity) {
-    double page = _page(p);
+    final double page = _page(p);
+    final double base = page.floorToDouble();
+    final double frac = page - base; // 0~1, 다음 페이지를 향한 진행도
+
+    double targetPage;
     if (velocity > _flingThreshold) {
-      // 다음 페이지로 (현재 위치가 정확히 페이지에 있어도 무조건 +1)
-      page = page.floorToDouble() + 1;
+      // 빠른 위로 플릭 → 다음 페이지(이동량이 적어도 무조건 전환)
+      targetPage = base + 1;
     } else if (velocity < -_flingThreshold) {
-      page = page.ceilToDouble() - 1;
+      // 빠른 아래로 플릭 → 이전 페이지
+      targetPage = base;
+    } else if (velocity >= 0) {
+      // 느린 위로(다음) 드래그: 25%만 넘으면 전환
+      targetPage = frac >= _commitFraction ? base + 1 : base;
     } else {
-      page = page.roundToDouble();
+      // 느린 아래로(이전) 드래그: 25%만 넘으면 전환(frac <= 75%)
+      targetPage = frac <= (1 - _commitFraction) ? base : base + 1;
     }
+
     final double maxPage = p.maxScrollExtent / p.viewportDimension;
-    return _pixels(p, page.clamp(0.0, maxPage));
+    return _pixels(p, targetPage.clamp(0.0, maxPage));
   }
 
   @override
@@ -68,7 +82,7 @@ class FastPageScrollPhysics extends ScrollPhysics {
       );
 
   @override
-  double get minFlingVelocity => 5.0;
+  double get minFlingVelocity => 1.5;
 
   @override
   double get minFlingDistance => 0.0;

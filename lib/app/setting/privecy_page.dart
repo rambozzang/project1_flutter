@@ -127,7 +127,7 @@ class _PrivecyPageState extends State<PrivecyPage> {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
             // '${data.subject}',
             '개인정보 처리방침'),
         const Divider(

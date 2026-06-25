@@ -103,7 +103,7 @@ class _WeatherComPageState extends State<WeatherComPage> {
               Get.find<WeatherComController>().fetchAllForecasts();
               return true;
             },
-            duration: Duration(milliseconds: 500),
+            duration: const Duration(milliseconds: 500),
             startIconColor: Colors.amber,
             endIconColor: Colors.amber,
             clockwise: false,
@@ -301,8 +301,8 @@ class _WeatherComPageState extends State<WeatherComPage> {
     required CustomPainter chartPainter,
   }) {
     final double screenWidth = MediaQuery.of(context).size.width;
-    final double minCellWidth = 50.0;
-    final double maxCellWidth = 80.0;
+    const double minCellWidth = 50.0;
+    const double maxCellWidth = 80.0;
 
     // double cellWidth = (screenWidth - 16 - companyNameWidth) / times.length;
     // cellWidth = cellWidth.clamp(minCellWidth, maxCellWidth);
@@ -336,7 +336,7 @@ class _WeatherComPageState extends State<WeatherComPage> {
                           border: Border(
                             // top: BorderSide(color: Colors.purple[300]!, width: 3),
                             // bottom: BorderSide(color: Colors.purple[300]!, width: borderWidth),
-                            top: BorderSide(color: Colors.lightGreen!, width: borderTopWidth),
+                            top: BorderSide(color: Colors.lightGreen, width: borderTopWidth),
                             bottom: BorderSide(color: Colors.lightGreen[300]!, width: borderWidth),
 
                             right: BorderSide(color: Colors.grey[600]!, width: borderWidth),
@@ -368,7 +368,7 @@ class _WeatherComPageState extends State<WeatherComPage> {
                         Expanded(child: buildWeatherRow(entry.key, entry.value)),
                       ],
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
               // 차트
@@ -458,7 +458,7 @@ class _WeatherComPageState extends State<WeatherComPage> {
                         Expanded(child: buildWeatherRow(entry.key, entry.value)),
                       ],
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
               // 차트
@@ -499,7 +499,7 @@ class _WeatherComPageState extends State<WeatherComPage> {
           // bottom: BorderSide(color: Colors.purple[300]!, width: borderWidth),
           // top: BorderSide(color: Colors.grey!, width: borderTopWidth),
           // bottom: BorderSide(color: Colors.grey[300]!, width: borderWidth),
-          top: BorderSide(color: Colors.lightGreen!, width: borderTopWidth),
+          top: BorderSide(color: Colors.lightGreen, width: borderTopWidth),
           bottom: BorderSide(color: Colors.lightGreen[300]!, width: borderWidth),
         ),
       ),
@@ -526,7 +526,7 @@ class _WeatherComPageState extends State<WeatherComPage> {
       child: Row(
         children: controller.dailyDates.map((date) {
           rowIndex++;
-          return Container(
+          return SizedBox(
             width: cellWidth * 2,
             child: Column(
               children: [
@@ -952,8 +952,7 @@ Color getColorForSource(String source) {
     // case 'AccuWeather':
     //   return Colors.indigo;
     case 'Yesterday':
-      return const Color.fromARGB(255, 232, 232, 2);
-      ;
+      return const Color.fromARGB(255, 232, 232, 2); {}
     // return const Color.fromARGB(255, 223, 214, 42);
     case 'Today':
       return Colors.deepOrangeAccent;

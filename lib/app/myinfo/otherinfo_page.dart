@@ -29,7 +29,6 @@ import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:project1/widget/custom_button.dart';
 
 import 'package:rxdart/rxdart.dart';
-import 'package:share_plus/share_plus.dart';
 
 // 사진촬영
 // https://dariadobszai.medium.com/set-profile-photo-with-flutter-bloc-or-how-to-bloc-backward-9fb16faa56ed
@@ -332,7 +331,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
 
           if (snapshot.data!.status == Status.COMPLETED) {
             CustData data = snapshot.data!.data!.custInfo!;
-            lo.g("chatId : " + data.toString());
+            lo.g("chatId : $data");
             lo.g(data.chatId.toString());
             String followyn = data.followYn.toString();
 
@@ -372,7 +371,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                             isEnable: true,
                             onPressed: () async {
                               types.User otherUser = types.User(
-                                  id: data!.chatId.toString(), firstName: data!.nickNm.toString(), imageUrl: data!.profilePath.toString());
+                                  id: data.chatId.toString(), firstName: data.nickNm.toString(), imageUrl: data.profilePath.toString());
 
                               final room = await SupabaseChatCore.instance.createRoom(otherUser);
                               Get.to(ChatPage(room: room));

@@ -90,7 +90,7 @@ class _ServicePageState extends State<ServicePage> {
           icon: const Icon(Icons.arrow_back_ios),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('서비스 이용약관'),
+        title: const Text('서비스 이용약관'),
         centerTitle: true,
         elevation: 0,
       ),
@@ -127,7 +127,7 @@ class _ServicePageState extends State<ServicePage> {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
             //   '${data.subject}',
             '서비스 이용약관'),
         const Divider(

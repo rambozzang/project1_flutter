@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:project1/widget/custom_button.dart';
 
 class ErrorPage extends StatelessWidget {
-  const ErrorPage({Key? key, required this.errorMessage, this.onRetryPressed}) : super(key: key);
+  const ErrorPage({super.key, required this.errorMessage, this.onRetryPressed});
 
   final String errorMessage;
   final Function()? onRetryPressed;
@@ -72,9 +72,9 @@ class ErrorPage extends StatelessWidget {
 
 class ErrorNotFound extends StatelessWidget {
   const ErrorNotFound({
-    Key? key,
+    super.key,
     required this.errorMessage,
-  }) : super(key: key);
+  });
 
   final String errorMessage;
 

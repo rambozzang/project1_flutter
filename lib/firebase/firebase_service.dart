@@ -215,7 +215,7 @@ class FirebaseService {
 
     await flutterLocalNotificationsPlugin.show(
       notification.hashCode,
-      notification!.title,
+      notification.title,
       notification.body,
       NotificationDetails(android: androidNotificationDetails, iOS: iOSPlatformChannelSpecifics),
       payload: jsonEncode(message.data),

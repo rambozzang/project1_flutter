@@ -21,7 +21,7 @@ import 'dart:convert' as convert;
 // 서울시내
 // https://www.utic.go.kr/guide/newUtisDataWrite.do
 class CctvRepo {
-  var distance = Distance();
+  var distance = const Distance();
 
   Future<List<CctvResData>> fetchCctv(LatLng southWest, LatLng northEast, double lat, double lng) async {
     List<CctvResData> cctvs = [];
@@ -60,8 +60,8 @@ class CctvRepo {
         return [];
       }
 
-      List<CctvResData> _list = ((jsonCctvs) as List).map((data) => CctvResData.fromMap(data)).toList();
-      return _list;
+      List<CctvResData> list = ((jsonCctvs) as List).map((data) => CctvResData.fromMap(data)).toList();
+      return list;
 
       // 내 위치 기준으로 해당 cctv 위치까지의 거리를 ResponseCctv 에 추가.
       // _list.forEach((CctvResData cctv) {

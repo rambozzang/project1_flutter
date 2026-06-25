@@ -136,7 +136,7 @@ class _MyboardListPageState extends State<MyboardListPage> {
   Widget myFeeds(List<BoardWeatherListData> list) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
-      child: list.length > 0
+      child: list.isNotEmpty
           ? GridView.builder(
               shrinkWrap: true,
               controller: myboardScrollCtrl,

@@ -134,13 +134,13 @@ class DetailInfoTile extends StatelessWidget {
   final bool isWindDirection;
 
   const DetailInfoTile({
-    Key? key,
+    super.key,
     required this.title,
     required this.subtitle,
     required this.data,
     required this.icon,
     this.isWindDirection = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

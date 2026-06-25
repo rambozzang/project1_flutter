@@ -134,9 +134,9 @@ class _JoinPageState extends State<JoinPage> with SingleTickerProviderStateMixin
 
   void updateObjectPositions() {
     setState(() {
-      constellations.forEach((constellation) {
+      for (var constellation in constellations) {
         constellation.move();
-      });
+      }
     });
   }
 
@@ -169,9 +169,9 @@ class _JoinPageState extends State<JoinPage> with SingleTickerProviderStateMixin
 
   void updateStarPositions() {
     setState(() {
-      twinklingStars.forEach((star) {
+      for (var star in twinklingStars) {
         star.twinkle();
-      });
+      }
     });
   }
 
@@ -317,18 +317,18 @@ class _JoinPageState extends State<JoinPage> with SingleTickerProviderStateMixin
         // ),
         OffsetText(
           text: '날씨, 일상의 모든 영상 공유',
-          duration: const Duration(milliseconds: 450),
+          duration: Duration(milliseconds: 450),
           type: AnimationType.letter,
           mode: AnimationMode.repeatNoReverse,
-          textStyle: const TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+          textStyle: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
           slideType: SlideAnimationType.topBottom,
         ),
         OffsetText(
           text: 'SKYSNAP',
-          duration: const Duration(milliseconds: 5500),
+          duration: Duration(milliseconds: 5500),
           type: AnimationType.word,
           mode: AnimationMode.repeatNoReverse,
-          textStyle: const TextStyle(fontSize: 36, color: Colors.white, fontWeight: FontWeight.bold),
+          textStyle: TextStyle(fontSize: 36, color: Colors.white, fontWeight: FontWeight.bold),
           slideType: SlideAnimationType.bottomTop,
         ),
         // Text(
@@ -375,8 +375,8 @@ class _JoinPageState extends State<JoinPage> with SingleTickerProviderStateMixin
           children: [
             _buildSocialLoginButton('kakao', "assets/login/kakao_circle.png", '카카오'),
             const Gap(20),
-            _buildSocialLoginButton('naver', "assets/login/naver_circle.png", '네이버'),
-            const Gap(20),
+            // _buildSocialLoginButton('naver', "assets/login/naver_circle.png", '네이버'),
+            // const Gap(20),
             _buildSocialLoginButton('google', "assets/login/google_circle.png", '구글'),
             if (Platform.isIOS) ...[const Gap(20), _buildSocialLoginButton('apple', "assets/login/apple_login.png", '애플')]
           ],

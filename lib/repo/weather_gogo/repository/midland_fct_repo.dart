@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'package:project1/repo/weather_gogo/models/request/midland_fct_req.dart';
@@ -12,10 +11,13 @@ import 'package:project1/utils/log_utils.dart';
 class MidlanFctRepo {
   final HttpService _httpService = HttpService();
 
+  // MidFcstInfoService/getMidFcst
+
   Future<MidLandFcstResponse> getMidLandFcst(MidLandFcstRequest request) async {
     final Uri url =
         Uri.parse('http://apis.data.go.kr/1360000/MidFcstInfoService/getMidLandFcst').replace(queryParameters: request.toQueryParameters());
     try {
+      lo.g('getMidLandFcst() 1 -> ${url.toString()}');
       var response = await _httpService.getWithRetry(url);
       if (response is String) {
         response = json.decode(response);

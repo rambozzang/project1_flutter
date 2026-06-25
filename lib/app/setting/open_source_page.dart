@@ -11,7 +11,6 @@ import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class OpenSourcePage extends StatefulWidget {
   const OpenSourcePage({super.key});

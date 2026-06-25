@@ -342,9 +342,9 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
 
   [asset loadValuesAsynchronouslyForKeys:@[ @"tracks" ] completionHandler:assetCompletionHandler];
 
-  // 버퍼 관련 초기값 설정
-  _minBufferDuration = 1.0;  // 최소 1초
-  _maxBufferDuration = 2.5; // 최대 2.5초
+  // 버퍼 관련 초기값 설정 – TikTok 스타일: 미리 5초까지만 로드, 재생 시 30초 확장
+  _minBufferDuration = 3.0;  // 최소 3초
+  _maxBufferDuration = 5.0;  // 최대 5초 (preload 단계에서는 5초까지만 미리 받음)
   _currentBufferDuration = _minBufferDuration;
   _networkBufferLevel = 1.0;
 
@@ -520,11 +520,17 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
 
 - (void)play {
   _isPlaying = YES;
+  // 화면에 도달해 실제 재생이 시작되면 버퍼를 30초로 확장하여 이후 영상을 자연스럽게 받음
+  _currentBufferDuration = 30.0;
+  [self updatePlayerBufferConfiguration];
   [self updatePlayingState];
 }
 
 - (void)pause {
   _isPlaying = NO;
+  // 재생이 멈추면 preload 수준으로 버퍼 복원 (네트워크/메모리 절약)
+  _currentBufferDuration = _minBufferDuration;
+  [self updatePlayerBufferConfiguration];
   [self updatePlayingState];
 }
 

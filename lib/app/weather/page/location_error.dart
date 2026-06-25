@@ -5,13 +5,11 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/weather/theme/colors.dart';
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
-import 'package:provider/provider.dart';
 
-import '../cntr/weatherProvider.dart';
 import '../theme/textStyle.dart';
 
 class LocationPermissionErrorDisplay extends StatelessWidget {
-  const LocationPermissionErrorDisplay({Key? key}) : super(key: key);
+  const LocationPermissionErrorDisplay({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +56,15 @@ class LocationPermissionErrorDisplay extends StatelessWidget {
                       padding: const EdgeInsets.all(12.0),
                       shape: const StadiumBorder(),
                     ),
+                    onPressed: weatherProv.isLoading.value
+                        ? null
+                        : () async {
+                            if (weatherProv.locationPermission == LocationPermission.deniedForever) {
+                              await Geolocator.openAppSettings();
+                            } else {
+                              weatherProv.getWeatherData();
+                            }
+                          },
                     child: weatherProv.isLoading.value
                         ? const SizedBox(
                             width: 16.0,
@@ -70,22 +77,13 @@ class LocationPermissionErrorDisplay extends StatelessWidget {
                         : Text(
                             weatherProv.locationPermission == LocationPermission.deniedForever ? 'Open App Settings' : 'Request Permission',
                           ),
-                    onPressed: weatherProv.isLoading.value
-                        ? null
-                        : () async {
-                            if (weatherProv.locationPermission == LocationPermission.deniedForever) {
-                              await Geolocator.openAppSettings();
-                            } else {
-                              weatherProv.getWeatherData();
-                            }
-                          },
                   ),
                   const SizedBox(height: 4.0),
                   if (weatherProv.locationPermission == LocationPermission.deniedForever)
                     TextButton(
                       style: TextButton.styleFrom(foregroundColor: primaryBlue),
-                      child: const Text('Restart'),
                       onPressed: weatherProv.isLoading.value ? null : () => weatherProv.getWeatherData(),
+                      child: const Text('Restart'),
                     )
                 ],
               ),
@@ -98,7 +96,7 @@ class LocationPermissionErrorDisplay extends StatelessWidget {
 }
 
 class LocationServiceErrorDisplay extends StatefulWidget {
-  const LocationServiceErrorDisplay({Key? key}) : super(key: key);
+  const LocationServiceErrorDisplay({super.key});
 
   @override
   State<LocationServiceErrorDisplay> createState() => _LocationServiceErrorDisplayState();

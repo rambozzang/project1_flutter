@@ -7,11 +7,11 @@ class CustomShimmer extends StatelessWidget {
   final double width;
   final BorderRadius? borderRadius;
   const CustomShimmer({
-    Key? key,
+    super.key,
     this.height = 32.0,
     this.width = 32.0,
     this.borderRadius,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -19,8 +19,6 @@ import 'package:project1/repo/weather/data/weather_view_data.dart';
 import 'package:project1/repo/weather/open_weather_repo.dart';
 import 'package:project1/utils/log_utils.dart';
 
-import 'package:geolocator/geolocator.dart';
-
 // ignore: implementation_imports
 import 'package:dio/src/response.dart' as dioRes;
 import 'package:project1/utils/utils.dart';
@@ -84,13 +82,6 @@ class WeatherCntr extends GetxController {
   var yesterdayDesc = ''.obs;
   var geminiResult = ''.obs;
 
-  @override
-  void onInit() {
-    super.onInit();
-    // getWeatherData();
-    // requestLocation();
-  }
-
   // video_list_cntr.dart 에서 데이터를 가져온후 호출한다.
   Future<void> getWeatherData() async {
     isLoading.value = true;
@@ -123,7 +114,7 @@ class WeatherCntr extends GetxController {
       // 날씨 가져오기
       Position positionData = await Geolocator.getCurrentPosition();
       currentLocation.value!.latLng = LatLng(positionData.latitude, positionData.longitude);
-      await getOneCallWeather(LatLng(currentLocation.value!.latLng.latitude, currentLocation.value!.latLng.longitude!), false);
+      await getOneCallWeather(LatLng(currentLocation.value!.latLng.latitude, currentLocation.value!.latLng.longitude), false);
 
       isLoading.value = false;
       update();
@@ -209,7 +200,7 @@ class WeatherCntr extends GetxController {
       hourlyWeather.removeAt(0);
       dailyWeather = dailyList.map((item) => DailyWeather.fromDailyJson(item)).toList();
 
-      await getLocalName(LatLng(location.latitude, location.longitude!));
+      await getLocalName(LatLng(location.latitude, location.longitude));
 
       sevenDayMinTemp = dailyWeather.map((e) => e.tempMin).reduce((value, element) => value < element ? value : element);
       sevenDayMaxTemp = dailyWeather.map((e) => e.tempMax).reduce((value, element) => value > element ? value : element);
@@ -250,14 +241,14 @@ class WeatherCntr extends GetxController {
       dioRes.Response? res = await mistRepo.getMistData(localName);
       MistData mistData = MistData.fromJson(jsonEncode(res!.data['response']['body']));
       // 단위 ㎍/㎥
-      MistViewData _mistViewData = MistViewData(
+      MistViewData mistViewData = MistViewData(
         mist10: mistData.items![0].pm10Value!,
         mist25: mistData.items![0].pm25Value!,
         mist10Grade: mistRepo.getMist10Grade(mistData.items![0].pm10Value!),
         mist25Grade: mistRepo.getMist25Grade(mistData.items![0].pm25Value!),
       );
 
-      mistViewData.value = _mistViewData;
+      this.mistViewData.value = mistViewData;
       update();
     } catch (e) {
       Lo.g('미세먼지 가져오기 오류 : $e');
@@ -296,7 +287,9 @@ class WeatherCntr extends GetxController {
       lo.g('@@@  getYesterdayWeather() =>. ${stopwatch.elapsed}');
 
       // list 출력
-      yesterdayWeather.forEach((data) => data.category == 'T1H' ? lo.g('${data.baseDate!} ${data.baseTime!}=>${data.obsrValue!}') : null);
+      for (var data in yesterdayWeather) {
+        data.category == 'T1H' ? lo.g('${data.baseDate!} ${data.baseTime!}=>${data.obsrValue!}') : null;
+      }
 
       //-----------------------------------------------------------------------------------
       // 어제 날씨와 오늘 날씨 비교

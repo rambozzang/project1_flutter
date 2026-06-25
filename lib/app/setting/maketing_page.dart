@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:get/get.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_main_detail_data.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -90,7 +89,7 @@ class _PrivecyPageState extends State<MaketingPage> {
           icon: const Icon(Icons.arrow_back_ios),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('마케팅 수신 동의설정'),
+        title: const Text('마케팅 수신 동의설정'),
         centerTitle: true,
         elevation: 0,
       ),
@@ -123,7 +122,7 @@ class _PrivecyPageState extends State<MaketingPage> {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
             // '${data.subject}',
             '개인정보 처리방침'),
         const Divider(

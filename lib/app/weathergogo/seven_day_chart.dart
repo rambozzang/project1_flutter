@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart' as intl;
 
-import 'package:lottie/lottie.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:project1/app/weathergogo/cntr/data/daily_weather_data.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
-import 'package:project1/app/weathergogo/twenty4_page.dart';
 import 'package:project1/utils/utils.dart';
 
 class DailyWeatherChart extends StatefulWidget {
@@ -71,8 +69,18 @@ class _DailyWeatherChartState extends State<DailyWeatherChart> {
   }
 
   Widget _buildDailyWeatherItem(int index, SevenDayWeather dayWeather, List<SevenDayWeather> weatherData) {
-    final minTemp = double.parse(dayWeather.morning.minTemp ?? dayWeather.afternoon.minTemp ?? '0');
-    final maxTemp = double.parse(dayWeather.afternoon.maxTemp ?? dayWeather.morning.maxTemp ?? '0');
+    // 안전한 double 파싱을 위한 헬퍼 함수
+    double parseTemp(String? temp) {
+      if (temp == null || temp.isEmpty) return 0.0;
+      try {
+        return double.parse(temp);
+      } catch (e) {
+        return 0.0;
+      }
+    }
+
+    final minTemp = parseTemp(dayWeather.morning.minTemp ?? dayWeather.afternoon.minTemp);
+    final maxTemp = parseTemp(dayWeather.afternoon.maxTemp ?? dayWeather.morning.maxTemp);
 
     return Container(
       width: itemWidth,
@@ -107,10 +115,8 @@ class _DailyWeatherChartState extends State<DailyWeatherChart> {
               painter: TemperatureGraphPainter(
                 minTemp: minTemp,
                 maxTemp: maxTemp,
-                globalMinTemp:
-                    weatherData.map((e) => double.parse(e.morning.minTemp ?? e.afternoon.minTemp ?? '0')).reduce((a, b) => a < b ? a : b),
-                globalMaxTemp:
-                    weatherData.map((e) => double.parse(e.afternoon.maxTemp ?? e.morning.maxTemp ?? '0')).reduce((a, b) => a > b ? a : b),
+                globalMinTemp: weatherData.map((e) => parseTemp(e.morning.minTemp ?? e.afternoon.minTemp)).reduce((a, b) => a < b ? a : b),
+                globalMaxTemp: weatherData.map((e) => parseTemp(e.afternoon.maxTemp ?? e.morning.maxTemp)).reduce((a, b) => a > b ? a : b),
               ),
             ),
           ),

@@ -5,8 +5,6 @@ import 'package:dio/dio.dart';
 import 'package:project1/repo/api/auth_dio.dart';
 import 'package:project1/repo/search/camping/camping_req_data.dart';
 import 'package:project1/repo/search/camping/camping_res_data.dart';
-import 'package:project1/repo/search/school/school_req_data.dart';
-import 'package:project1/repo/search/school/school_res_data.dart';
 import 'package:project1/utils/log_utils.dart';
 
 class CampingRepo {

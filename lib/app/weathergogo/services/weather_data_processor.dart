@@ -10,7 +10,6 @@ import 'package:project1/repo/weather_gogo/models/response/midta_fct/midta_fct_r
 import 'package:project1/repo/weather_gogo/models/response/super_fct/super_fct_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_nct/super_nct_model.dart';
 import 'package:project1/utils/WeatherLottie.dart';
-import 'package:project1/utils/log_utils.dart';
 
 class WeatherDataProcessor {
   // 프라이빗 생성자
@@ -152,7 +151,7 @@ class WeatherDataProcessor {
     List<SevenDayWeather> dailyList = dailyMap.values.toList();
     dailyList.sort((a, b) => a.fcstDate!.compareTo(b.fcstDate!));
 
-    return dailyList.take(3).toList();
+    return dailyList.take(4).toList();
   }
 
   //1~ 6시까지 날씨 정보 파싱처리
@@ -259,11 +258,11 @@ class WeatherDataProcessor {
       {double? lat, double? lon, String? cityName}) {
     List<SevenDayWeather> midTermList = [];
 
-    int afterday = 3;
+    int afterday = 5;
     // 시작 날짜 계산 (오늘로부터 3일 후)
     DateTime startDate = DateTime.now().add(Duration(days: afterday));
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 6; i++) {
       // 중기 예보는 5일치 데이터를 제공 (3일 후부터 7일 후까지)
       String fcstDate = startDate.add(Duration(days: i)).toString().substring(0, 10).replaceAll('-', '');
 
@@ -299,7 +298,7 @@ class WeatherDataProcessor {
   // 초단기 실황조회 파싱처리
   CurrentWeatherData parsingSuperNct(List<ItemSuperNct> list) {
     CurrentWeatherData currentWeather = CurrentWeatherData();
-    list.forEach((e) {
+    for (var e in list) {
       // 현재 날씨 정보
       if (e.category == 'T1H') {
         currentWeather.temp = e.obsrValue;
@@ -328,23 +327,29 @@ class WeatherDataProcessor {
       if (e.category == 'RN1') {
         currentWeather.rain1h = e.obsrValue;
       }
-    });
+    }
     return currentWeather;
   }
 
 // 헬퍼 함수들
   String _getSkyState(MidLandFcstResponse landForecast, int day, {bool isAm = true}) {
     switch (day) {
-      case 3:
-        return isAm ? landForecast.wf3Am : landForecast.wf3Pm;
-      case 4:
-        return isAm ? landForecast.wf4Am : landForecast.wf4Pm;
+      // case 3:
+      //   return isAm ? landForecast.wf3Am : landForecast.wf3Pm;
+      // case 4:
+      //   return isAm ? landForecast.wf4Am : landForecast.wf4Pm;
       case 5:
         return isAm ? landForecast.wf5Am : landForecast.wf5Pm;
       case 6:
         return isAm ? landForecast.wf6Am : landForecast.wf6Pm;
       case 7:
         return isAm ? landForecast.wf7Am : landForecast.wf7Pm;
+      case 8:
+        return isAm ? landForecast.wf8 : landForecast.wf8;
+      case 9:
+        return isAm ? landForecast.wf9 : landForecast.wf9;
+      case 10:
+        return isAm ? landForecast.wf10 : landForecast.wf10;
       default:
         return '';
     }
@@ -352,16 +357,22 @@ class WeatherDataProcessor {
 
   int _getRainProbability(MidLandFcstResponse landForecast, int day, {bool isAm = true}) {
     switch (day) {
-      case 3:
-        return isAm ? landForecast.rnSt3Am : landForecast.rnSt3Pm;
-      case 4:
-        return isAm ? landForecast.rnSt4Am : landForecast.rnSt4Pm;
+      // case 3:
+      //   return isAm ? landForecast.rnSt3Am : landForecast.rnSt3Pm;
+      // case 4:
+      //   return isAm ? landForecast.rnSt4Am : landForecast.rnSt4Pm;
       case 5:
         return isAm ? landForecast.rnSt5Am : landForecast.rnSt5Pm;
       case 6:
         return isAm ? landForecast.rnSt6Am : landForecast.rnSt6Pm;
       case 7:
         return isAm ? landForecast.rnSt7Am : landForecast.rnSt7Pm;
+      case 8:
+        return landForecast.rnSt8;
+      case 9:
+        return landForecast.rnSt9;
+      case 10:
+        return landForecast.rnSt10;
       default:
         return 0;
     }
@@ -370,14 +381,14 @@ class WeatherDataProcessor {
   String _getTemperature(MidTaResponse taForecast, String key) {
     // MidTaResponse 클래스의 구조에 따라 이 함수를 구현해야 합니다.
     switch (key) {
-      case 'taMin3':
-        return taForecast.taMin3.toString();
-      case 'taMax3':
-        return taForecast.taMax3.toString();
-      case 'taMin4':
-        return taForecast.taMin4.toString();
-      case 'taMax4':
-        return taForecast.taMax4.toString();
+      // case 'taMin3':
+      //   return taForecast.taMin3.toString();
+      // case 'taMax3':
+      //   return taForecast.taMax3.toString();
+      // case 'taMin4':
+      //   return taForecast.taMin4.toString();
+      // case 'taMax4':
+      //   return taForecast.taMax4.toString();
       case 'taMin5':
         return taForecast.taMin5.toString();
       case 'taMax5':
@@ -390,6 +401,18 @@ class WeatherDataProcessor {
         return taForecast.taMin7.toString();
       case 'taMax7':
         return taForecast.taMax7.toString();
+      case 'taMin8':
+        return taForecast.taMin8.toString();
+      case 'taMax8':
+        return taForecast.taMax8.toString();
+      case 'taMin9':
+        return taForecast.taMin9.toString();
+      case 'taMax9':
+        return taForecast.taMax9.toString();
+      case 'taMin10':
+        return taForecast.taMin10.toString();
+      case 'taMax10':
+        return taForecast.taMax10.toString();
       // ... 나머지 케이스들
       default:
         return '';

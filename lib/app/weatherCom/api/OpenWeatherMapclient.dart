@@ -4,7 +4,6 @@ import 'package:latlong2/latlong.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/weather/open_weather_repo.dart';
 import 'package:project1/utils/log_utils.dart';
-import 'package:project1/utils/utils.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -77,7 +76,7 @@ class Openweathermapclient {
 
       // Validate the data structure
       if (!formattedData.containsKey('lat') || !formattedData.containsKey('lon')) {
-        throw FormatException('Invalid data structure: missing required fields');
+        throw const FormatException('Invalid data structure: missing required fields');
       }
 
       lo.g('[OpenWeatherMap] Formatted data: $formattedData');

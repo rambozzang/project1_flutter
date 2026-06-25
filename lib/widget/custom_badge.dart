@@ -34,7 +34,7 @@ class CustomBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     textColor = colorMap[colorNo]?['textColor'] ?? (textColor ?? Colors.white);
-    Color backgroundColor = (colorMap[colorNo]?['backgroundColor'] ?? (bgColor ?? Color(0xFFFF9900)));
+    Color backgroundColor = (colorMap[colorNo]?['backgroundColor'] ?? (bgColor ?? const Color(0xFFFF9900)));
 
     return ElevatedButton(
       clipBehavior: Clip.none,

@@ -89,7 +89,7 @@ class _LocatinServicePageState extends State<LocatinServicePage> {
           icon: const Icon(Icons.arrow_back_ios),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('위치기반 서비스 이용약관'),
+        title: const Text('위치기반 서비스 이용약관'),
         centerTitle: true,
         elevation: 0,
       ),
@@ -126,7 +126,7 @@ class _LocatinServicePageState extends State<LocatinServicePage> {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
             // '${data.subject}',
             '위치기반 서비스 이용약관'),
         const Divider(

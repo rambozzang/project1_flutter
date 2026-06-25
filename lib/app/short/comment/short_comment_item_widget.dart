@@ -9,11 +9,8 @@ import 'package:project1/app/short/comment/cntr/short_comments_cntr.dart';
 import 'package:project1/app/videolist/video_sigo_page.dart';
 import 'package:project1/repo/bbs/data/bbs_list_data.dart';
 import 'package:project1/repo/board/board_repo.dart';
-import 'package:project1/repo/board/data/board_comment_res_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:rich_text_view/rich_text_view.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 typedef OnWhatToDoCallback = Function(BbsListData value);
 
@@ -120,16 +117,19 @@ class _ShortCommentItemWidgetState extends State<ShortCommentItemWidget> {
     return Container(
       height: 25,
       width: 110,
-      margin: const EdgeInsets.only(bottom: 10, top: 5),
-      // padding: const EdgeInsets.symmetric(horizontal: 15),
+      margin: const EdgeInsets.only(
+        bottom: 10,
+        top: 5,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
-        color: Colors.indigo[200],
+        color: Colors.indigo[50],
         borderRadius: BorderRadius.circular(10),
       ),
       child: Center(
         child: Text(
           widget.displayDate.toString(),
-          style: const TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 9, color: Colors.black87, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -149,7 +149,7 @@ class _ShortCommentItemWidgetState extends State<ShortCommentItemWidget> {
 
   Widget _buildCommentContent(_CommentTheme theme) {
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         // color: const Color.fromARGB(255, 208, 200, 208).withOpacity(0.1),
 
@@ -283,18 +283,18 @@ class _ShortCommentItemWidgetState extends State<ShortCommentItemWidget> {
         ),
         Text(
           widget.bbsListData.nickNm.toString(),
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black54),
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black54),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 2.0),
           child: Text(
             '·',
-            style: TextStyle(color: theme.textColorSub, fontSize: 16),
+            style: TextStyle(color: theme.textColorSub, fontSize: 14),
           ),
         ),
         Text(
           Utils.timeage(widget.bbsListData.crtDtm!),
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.black54),
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black54),
         ),
       ],
     );
@@ -303,8 +303,8 @@ class _ShortCommentItemWidgetState extends State<ShortCommentItemWidget> {
   Widget _buildUserAvatar() {
     return widget.bbsListData.profilePath != ""
         ? Container(
-            height: 22,
-            width: 22,
+            height: 20,
+            width: 20,
             decoration: BoxDecoration(
               color: Colors.transparent,
               borderRadius: BorderRadius.circular(10),
@@ -317,8 +317,8 @@ class _ShortCommentItemWidgetState extends State<ShortCommentItemWidget> {
             ),
           )
         : Container(
-            height: 22,
-            width: 22,
+            height: 20,
+            width: 20,
             decoration: BoxDecoration(
               color: Colors.green,
               borderRadius: BorderRadius.circular(10),

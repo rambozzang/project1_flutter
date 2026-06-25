@@ -6,11 +6,11 @@ class AnimatedFloatingButton extends StatefulWidget {
   final IconData icon;
 
   const AnimatedFloatingButton({
-    Key? key,
+    super.key,
     required this.onPressed,
     required this.text,
     required this.icon,
-  }) : super(key: key);
+  });
 
   @override
   _AnimatedFloatingButtonState createState() => _AnimatedFloatingButtonState();
@@ -59,11 +59,11 @@ class _AnimatedFloatingButtonState extends State<AnimatedFloatingButton> {
                 ),
                 if (_isExpanded)
                   AnimatedOpacity(
-                    duration: Duration(milliseconds: 300),
+                    duration: const Duration(milliseconds: 300),
                     opacity: _isExpanded ? 1.0 : 0.0,
                     child: Text(
                       widget.text,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),

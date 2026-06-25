@@ -41,7 +41,7 @@ class BoardCommentUpdateReqData {
       'delYn': delYn,
       'hideYn': hideYn,
       'contents': contents,
-      'fileListData': fileListData!.map((x) => x?.toMap()).toList(),
+      'fileListData': fileListData!.map((x) => x.toMap()).toList(),
     };
   }
 

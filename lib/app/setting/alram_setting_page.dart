@@ -176,7 +176,7 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
 
   @override
   void dispose() {
-    WidgetsBinding.instance!.removeObserver(this);
+    WidgetsBinding.instance.removeObserver(this);
     streamController.close();
     super.dispose();
   }
@@ -301,7 +301,7 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
                       if (isCheckedPush.value == null) return const SizedBox.shrink();
                       return CupertinoSwitch(
                         value: isCheckedPush.value ?? false,
-                        activeColor: CupertinoColors.activeGreen,
+                        activeTrackColor: CupertinoColors.activeGreen,
                         onChanged: (bool value) {
                           Lo.g('onChanged.value : $value');
                           updateAlramSetting(value ? 'Y' : 'N');
@@ -363,7 +363,7 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
                 scale: 0.75,
                 child: CupertinoSwitch(
                   value: isChecked.value,
-                  activeColor: CupertinoColors.activeOrange,
+                  activeTrackColor: CupertinoColors.activeOrange,
                   onChanged: (bool value) {
                     if (value) {
                       deleteAlram(data['alramCd'].toString());

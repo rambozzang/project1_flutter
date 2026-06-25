@@ -415,11 +415,11 @@ class SettingsGroup extends StatelessWidget {
   // Icons size
   final double? iconItemSize;
 
-  SettingsGroup({this.settingsGroupTitle, this.settingsGroupTitleStyle, required this.items, this.iconItemSize = 25});
+  const SettingsGroup({super.key, this.settingsGroupTitle, this.settingsGroupTitleStyle, required this.items, this.iconItemSize = 25});
 
   @override
   Widget build(BuildContext context) {
-    if (this.iconItemSize != null) SettingsScreenUtils.settingsGroupIconSize = iconItemSize;
+    if (iconItemSize != null) SettingsScreenUtils.settingsGroupIconSize = iconItemSize;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -483,8 +483,8 @@ class SettingsItem extends StatelessWidget {
   final int? subtitleMaxLine;
   final TextOverflow? overflow;
 
-  SettingsItem(
-      {required this.icons,
+  const SettingsItem(
+      {super.key, required this.icons,
       this.iconStyle,
       required this.title,
       this.titleStyle,
@@ -554,8 +554,8 @@ class IconStyle {
     withBackground = true,
     backgroundColor = Colors.blue,
     borderRadius = 8,
-  })  : this.iconsColor = iconsColor,
-        this.withBackground = withBackground,
-        this.backgroundColor = backgroundColor,
-        this.borderRadius = double.parse(borderRadius!.toString());
+  })  : iconsColor = iconsColor,
+        withBackground = withBackground,
+        backgroundColor = backgroundColor,
+        borderRadius = double.parse(borderRadius!.toString());
 }

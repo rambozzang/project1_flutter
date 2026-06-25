@@ -4,7 +4,6 @@ import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/bbs/YouTubeTextExtractor.dart';
-import 'package:project1/app/bbs/bbs_view_page.dart';
 import 'package:project1/app/bbs/comments/cntr/bbs_comments_cntr.dart';
 import 'package:project1/app/bbs/image/image_list_preview.dart';
 import 'package:project1/app/videolist/video_sigo_page.dart';
@@ -315,7 +314,7 @@ class _BBsCommentItemWidgetState extends State<BBsCommentItemWidget> with Automa
                       color: Colors.red,
                       size: 18,
                     ),
-                    const SizedBox(
+                    SizedBox(
                       width: 3,
                     ),
                     Text(
@@ -335,7 +334,7 @@ class _BBsCommentItemWidgetState extends State<BBsCommentItemWidget> with Automa
                     color: Colors.black,
                     size: 21,
                   ),
-                  const SizedBox(
+                  SizedBox(
                     width: 3,
                   ),
                   Text(

@@ -166,25 +166,25 @@ class TomorrowIoWeatherService {
     switch (weatherCode) {
       case 1000: // Clear, Sunny
       case 1100: // Mostly Clear
-        return assetPath + 'sun.json';
+        return '${assetPath}sun.json';
       case 1101: // Partly Cloudy
       case 1102: // Mostly Cloudy
       case 1001: // Cloudy
-        return assetPath + 'day_cloudy.json';
+        return '${assetPath}day_cloudy.json';
       case 4000: // Drizzle
       case 4001: // Rain
       case 4200: // Light Rain
       case 4201: // Heavy Rain
-        return assetPath + 'day_rain.json';
+        return '${assetPath}day_rain.json';
       case 5000: // Snow
       case 5001: // Flurries
       case 5100: // Light Snow
       case 5101: // Heavy Snow
-        return assetPath + 'day_snow.json';
+        return '${assetPath}day_snow.json';
       case 8000: // Thunderstorm
-        return assetPath + 'storm.json';
+        return '${assetPath}storm.json';
       default:
-        return assetPath + 'day_cloudy.json';
+        return '${assetPath}day_cloudy.json';
     }
   }
 }

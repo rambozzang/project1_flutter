@@ -222,7 +222,7 @@ class _CommentsPageState extends State<CommentsPage> {
                             shrinkWrap: true,
                             // physics: const AlwaysScrollableScrollPhysics(),
                             physics: const NeverScrollableScrollPhysics(),
-                            itemCount: list.length == 0 ? 1 : list.length,
+                            itemCount: list.isEmpty ? 1 : list.length,
                             itemBuilder: (BuildContext context, int index) {
                               return list.isEmpty
                                   ? const Center(
@@ -318,7 +318,7 @@ class _CommentsPageState extends State<CommentsPage> {
                 decoration: InputDecoration(
                   hintText: '댓글 ...',
                   hintStyle: TextStyle(color: isDarkTheme ? Colors.white70 : Colors.black54),
-                  prefixIconConstraints: BoxConstraints(minWidth: 27, maxHeight: 27),
+                  prefixIconConstraints: const BoxConstraints(minWidth: 27, maxHeight: 27),
                   enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: isDarkTheme ? Colors.grey : Colors.grey.shade300, width: 0.4),
                   ),
@@ -326,7 +326,7 @@ class _CommentsPageState extends State<CommentsPage> {
                     borderSide: BorderSide(color: isDarkTheme ? Colors.white : Colors.black, width: 1.0),
                   ),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.only(left: 10, bottom: 5, top: 15),
+                  contentPadding: const EdgeInsets.only(left: 10, bottom: 5, top: 15),
                 ),
               ),
             ),

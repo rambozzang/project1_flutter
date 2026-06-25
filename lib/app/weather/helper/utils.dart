@@ -19,20 +19,20 @@ String getWeatherImage(String input) {
   // String assetPath = 'assets/images/';
   switch (weather) {
     case 'thunderstorm':
-      return assetPath + 'storm.json';
+      return '${assetPath}storm.json';
 
     case 'drizzle':
     case 'rain':
-      return assetPath + 'day_rain.json';
+      return '${assetPath}day_rain.json';
 
     case 'snow':
-      return assetPath + 'day_snow.json';
+      return '${assetPath}day_snow.json';
 
     case 'clear':
-      return assetPath + 'sun.json';
+      return '${assetPath}sun.json';
 
     case 'clouds':
-      return assetPath + 'day_cloudy.json';
+      return '${assetPath}day_cloudy.json';
 
     case 'mist':
     case 'fog':
@@ -41,14 +41,14 @@ String getWeatherImage(String input) {
     case 'dust':
     case 'sand':
     case 'ash':
-      return assetPath + 'day_cloudy.json';
+      return '${assetPath}day_cloudy.json';
 
     case 'squall':
     case 'tornado':
-      return assetPath + 'wind.json';
+      return '${assetPath}wind.json';
 
     default:
-      return assetPath + 'day_cloudy.json';
+      return '${assetPath}day_cloudy.json';
   }
 }
 

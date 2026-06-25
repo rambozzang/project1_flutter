@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/weathergogo/services/WeatherStation_utils.dart';
 import 'package:project1/config/url_config.dart';
 import 'package:project1/repo/api/auth_dio.dart';
@@ -186,7 +185,7 @@ class WeatherGogoRepo {
   // 예보버전
   Future<List<ItemFctVersion>> getFctVersionJson(LatLng latLng, {isLog = true}) async {
     final List<ItemFctVersion> items = [];
-    final ItemFctVersion item = ItemFctVersion();
+    const ItemFctVersion item = ItemFctVersion();
     final weather = WeatherVersion(
       serviceKey: _key,
       pageNo: 1,

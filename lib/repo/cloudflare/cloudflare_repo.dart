@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:cloudflare/cloudflare.dart';
 import 'package:dio/dio.dart';
 import 'package:heif_converter/heif_converter.dart';
-import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:project1/config/url_config.dart';
 import 'package:project1/repo/api/auth_dio.dart';
@@ -66,7 +65,7 @@ class CloudflareRepo {
 
   Future<void> imageFileDirectUpload(File imageFile, DataUploadDraft dataUploadDraft) async {
     final response = await cloudflare.imageAPI.directUpload(
-        dataUploadDraft: dataUploadDraft!,
+        dataUploadDraft: dataUploadDraft,
         contentFromFile: DataTransmit<File>(
             data: imageFile,
             progressCallback: (count, total) {
@@ -123,7 +122,7 @@ class CloudflareRepo {
   // 이미지 삭제
   Future<bool> imageDelete(String imageId) async {
     lo.g(
-        'imageDelete > imageId : ${imageId}'); // 3c97b84c-6985-4fbf-3a26-237cced6eb00 , https://imagedelivery.net/9YWIIqEOHWVHkJjEYps8eQ/3c97b84c-6985-4fbf-3a26-237cced6eb00/public
+        'imageDelete > imageId : $imageId'); // 3c97b84c-6985-4fbf-3a26-237cced6eb00 , https://imagedelivery.net/9YWIIqEOHWVHkJjEYps8eQ/3c97b84c-6985-4fbf-3a26-237cced6eb00/public
 
     //Delete image
     CloudflareHTTPResponse response = await cloudflare.imageAPI.delete(id: imageId);

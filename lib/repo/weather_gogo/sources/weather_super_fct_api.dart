@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -40,7 +39,7 @@ class SuperFctAPI {
         _getURL,
         queryParameters: weather.copyWith(dateTime: nowDate).toJson(),
       );
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       debugPrint(e.message);
       throw Exception(e.message);
     }
@@ -83,7 +82,7 @@ class SuperFctAPI {
         _getURL,
         queryParameters: weather.copyWith(dataType: DataType.xml, dateTime: nowDate).toJson(),
       );
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       debugPrint(e.message);
       throw Exception(e.message);
     }

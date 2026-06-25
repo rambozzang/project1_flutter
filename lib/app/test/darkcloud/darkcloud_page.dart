@@ -71,7 +71,7 @@ class DarkCloudsPainter extends CustomPainter {
 class DarkCloudsAnimation extends StatefulWidget {
   final ValueNotifier<bool> isVisibleNotifier;
 
-  const DarkCloudsAnimation({Key? key, required this.isVisibleNotifier}) : super(key: key);
+  const DarkCloudsAnimation({super.key, required this.isVisibleNotifier});
 
   @override
   _DarkCloudsAnimationState createState() => _DarkCloudsAnimationState();

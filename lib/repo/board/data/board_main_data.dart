@@ -20,14 +20,14 @@ class BoardMainData {
   }) {
     return BoardMainData(
       pageData: pageData ?? this.pageData,
-      boardDetailList: boardInfoList ?? this.boardDetailList,
+      boardDetailList: boardInfoList ?? boardDetailList,
     );
   }
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'pageData': pageData?.toMap(),
-      'boardInfoList': boardDetailList!.map((x) => x?.toMap()).toList(),
+      'boardInfoList': boardDetailList!.map((x) => x.toMap()).toList(),
     };
   }
 

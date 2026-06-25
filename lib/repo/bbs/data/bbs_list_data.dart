@@ -23,6 +23,7 @@ class BbsListData {
   String? fileKey;
   String? crtDtm;
   String? custNm;
+  String? anonyYn;
   String? likeYn;
   int? viewCnt;
   int? likeCnt;
@@ -47,6 +48,7 @@ class BbsListData {
     this.fileKey,
     this.crtDtm,
     this.custNm,
+    this.anonyYn,
     this.likeYn,
     this.viewCnt,
     this.likeCnt,
@@ -73,6 +75,7 @@ class BbsListData {
     String? fileKey,
     String? crtDtm,
     String? custNm,
+    String? anonyYn,
     String? likeYn,
     int? viewCnt,
     int? likeCnt,
@@ -98,6 +101,7 @@ class BbsListData {
       fileKey: fileKey ?? this.fileKey,
       crtDtm: crtDtm ?? this.crtDtm,
       custNm: custNm ?? this.custNm,
+      anonyYn: anonyYn ?? this.anonyYn,
       likeYn: likeYn ?? this.likeYn,
       viewCnt: viewCnt ?? this.viewCnt,
       likeCnt: likeCnt ?? this.likeCnt,
@@ -126,12 +130,13 @@ class BbsListData {
       'fileKey': fileKey,
       'crtDtm': crtDtm,
       'custNm': custNm,
+      'anonyYn': anonyYn,
       'likeYn': likeYn,
       'viewCnt': viewCnt,
       'likeCnt': likeCnt,
       'fileCnt': fileCnt,
       'delYn': delYn,
-      'fileList': fileList!.map((x) => x?.toMap()).toList(),
+      'fileList': fileList!.map((x) => x.toMap()).toList(),
     };
   }
 
@@ -156,6 +161,7 @@ class BbsListData {
       custNm: map['custNm'] != null ? map['custNm'] as String : null,
       likeYn: map['likeYn'] != null ? map['likeYn'] as String : null,
       viewCnt: map['viewCnt'] != null ? map['viewCnt'] as int : null,
+      anonyYn: map['anonyYn'] != null ? map['anonyYn'] as String : null,
       likeCnt: map['likeCnt'] != null ? map['likeCnt'] as int : null,
       fileCnt: map['fileCnt'] != null ? map['fileCnt'] as int : null,
       delYn: map['delYn'] != null ? map['delYn'] as String : null,
@@ -175,7 +181,7 @@ class BbsListData {
 
   @override
   String toString() {
-    return 'BbsListData(subject: $subject, contents: $contents, profilePath: $profilePath, replyCnt: $replyCnt, typeDtCd: $typeDtCd, typeDtNm:$typeDtNm , filePath: $filePath, crtCustId: $crtCustId, deptNo : $depthNo , sortNo : $sortNo , parentId : $parentId nickNm: $nickNm, typeCd: $typeCd, boardId: $boardId, fileKey: $fileKey, crtDtm: $crtDtm, custNm: $custNm, delYn: $delYn ,  likeYn : $likeYn,  viewCnt: $viewCnt, likeCnt: $likeCnt, fileCnt: $fileCnt, fileList: $fileList)';
+    return 'BbsListData(subject: $subject, contents: $contents, profilePath: $profilePath, replyCnt: $replyCnt, typeDtCd: $typeDtCd, typeDtNm:$typeDtNm , filePath: $filePath, crtCustId: $crtCustId, deptNo : $depthNo , sortNo : $sortNo , parentId : $parentId nickNm: $nickNm, typeCd: $typeCd, boardId: $boardId, fileKey: $fileKey, crtDtm: $crtDtm, custNm: $custNm, delYn: $delYn ,  likeYn : $likeYn,  viewCnt: $viewCnt, anonyYn : $anonyYn,  likeCnt: $likeCnt, fileCnt: $fileCnt, fileList: $fileList)';
   }
 
   bool isNullOrEmpty() {
@@ -203,6 +209,7 @@ class BbsListData {
         other.fileKey == fileKey &&
         other.crtDtm == crtDtm &&
         other.custNm == custNm &&
+        other.anonyYn == anonyYn &&
         other.likeYn == likeYn &&
         other.viewCnt == viewCnt &&
         other.likeCnt == likeCnt &&
@@ -230,6 +237,7 @@ class BbsListData {
         fileKey.hashCode ^
         crtDtm.hashCode ^
         custNm.hashCode ^
+        anonyYn.hashCode ^
         likeYn.hashCode ^
         viewCnt.hashCode ^
         likeCnt.hashCode ^

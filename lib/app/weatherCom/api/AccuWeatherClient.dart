@@ -1,8 +1,6 @@
 import 'dart:convert';
-import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
-import 'package:project1/utils/WeatherLottie.dart';
 import 'package:project1/utils/log_utils.dart';
 import '../models/weather_data.dart';
 
@@ -120,7 +118,7 @@ class AccuWeatherClient {
       final List<dynamic> dailyForecasts = data['DailyForecasts'];
       List<WeatherData> forecasts = [];
 
-      dailyForecasts.forEach((item) {
+      for (var item in dailyForecasts) {
         // 오전
         forecasts.add(WeatherData(
           time: DateTime.parse(item['Date']).toLocal(),
@@ -137,7 +135,7 @@ class AccuWeatherClient {
           rainProbability: 999.0,
           source: mapAccuWeatherIconToWeatherCategory(item['nightIcon']['Icon']),
         ));
-      });
+      }
 
       await _saveCachedDailyData(locationKey, forecasts);
       return forecasts;

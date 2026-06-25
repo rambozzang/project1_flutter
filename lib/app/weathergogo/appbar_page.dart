@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
-import 'package:project1/utils/log_utils.dart';
 
 class AppbarPage extends StatelessWidget {
   static const double boxWidth = 52.0;
@@ -30,7 +29,7 @@ class AppbarPage extends StatelessWidget {
                     Hero(
                       tag: 'appbar',
                       child: Text(
-                        Get.find<WeatherGogoCntr>().currentLocation.value!.name,
+                        Get.find<WeatherGogoCntr>().currentLocation.value.name,
                         style: semiboldText.copyWith(
                           fontSize: 18.0,
                           decoration: TextDecoration.none,

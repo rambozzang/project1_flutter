@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/admob/ad_manager.dart';
@@ -13,7 +12,6 @@ import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/bbs/bbs_list_page.dart';
 import 'package:project1/app/bbs/cntr/bbs_list_cntr.dart';
 import 'package:project1/app/chatting/chat_main_page.dart';
-import 'package:project1/main.dart';
 import 'package:project1/repo/alram/data/alram_res_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/route/app_route.dart';

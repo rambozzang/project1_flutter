@@ -109,10 +109,10 @@ class ShortCommentsController extends GetxController {
     await cloudflare.init();
   }
 
-  void setInitData(BbsListData _bbsListData) {
-    bbsListData = _bbsListData;
-    rootId = _bbsListData.boardId.toString();
-    parentId = _bbsListData.boardId.toString();
+  void setInitData(BbsListData bbsListData) {
+    bbsListData = bbsListData;
+    rootId = bbsListData.boardId.toString();
+    parentId = bbsListData.boardId.toString();
     fetchComments();
   }
 
@@ -349,7 +349,6 @@ class ShortCommentsController extends GetxController {
 
       // DB 삭제
       await repo.deleteComment(modifyData.boardId.toString());
-    } catch (e) {
     } finally {
       cancleModifySetting();
       fetchComments();
@@ -452,21 +451,19 @@ class ShortCommentsController extends GetxController {
     final XFile? pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
     lo.g("pickedFile : ${pickedFile!.mimeType}");
     lo.g("pickedFile : ${pickedFile.name}");
-    lo.g("pickedFile : ${pickedFile}");
+    lo.g("pickedFile : $pickedFile");
 
-    if (pickedFile != null) {
-      final fileSize = await pickedFile.length();
-      if (fileSize > 10 * 1024 * 1024) {
-        Utils.alert('이미지 크기가 10MB를 초과 할 수 없습니다.');
-        return;
-      }
-
-      // 수정모드에서 이미지를 픽업하면 수정된 이미지로 간주
-      isChangeImage.value = isModifyMode.value ? true : false;
-
-      commentImage.value = pickedFile!;
+    final fileSize = await pickedFile.length();
+    if (fileSize > 10 * 1024 * 1024) {
+      Utils.alert('이미지 크기가 10MB를 초과 할 수 없습니다.');
+      return;
     }
-  }
+
+    // 수정모드에서 이미지를 픽업하면 수정된 이미지로 간주
+    isChangeImage.value = isModifyMode.value ? true : false;
+
+    commentImage.value = pickedFile;
+    }
 
   Future<void> fetchComments() async {
     currentPage = 1;

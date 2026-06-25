@@ -7,7 +7,7 @@ class Custom2Button extends StatelessWidget {
   final double? heightValue;
   final double? circularValue;
 
-  Custom2Button({
+  const Custom2Button({
     super.key,
     required this.widget,
     required this.onPressed,

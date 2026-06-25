@@ -1,12 +1,9 @@
 import 'dart:collection';
 
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:project1/app/weather/models/oneCallCurrentWeather.dart';
 import 'package:project1/app/weatherCom/api/AccuWeatherClient.dart';
-import 'package:project1/app/weatherCom/api/KmaClient.dart';
 import 'package:project1/app/weatherCom/api/MeClient.dart';
 import 'package:project1/app/weatherCom/api/OpenWeatherMapclient.dart';
 import 'package:project1/app/weatherCom/api/TomorrowClient.dart';
@@ -15,7 +12,6 @@ import 'package:project1/app/weatherCom/services/openweathermap_client.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/repo/common/res_data.dart';
-import 'package:project1/repo/weather/open_weather_repo.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import '../models/weather_data.dart';
@@ -181,7 +177,7 @@ class WeatherComController extends GetxController {
   // openweathermap 데이터 가져오기
   Future<void> fetchOpenWeatherMap() async {
     try {
-      LatLng location = Get.find<WeatherGogoCntr>().currentLocation.value!.latLng;
+      LatLng location = Get.find<WeatherGogoCntr>().currentLocation.value.latLng;
 
       // OpenWheatherRepo repo = OpenWheatherRepo();
 
@@ -218,7 +214,7 @@ class WeatherComController extends GetxController {
       // 오늘 데이터 제거
       dailyList = dailyList.sublist(1);
 
-      dailyList.forEach((element) {
+      for (var element in dailyList) {
         dailyAmData.add(
           WeatherData(
             time: DateTime.fromMillisecondsSinceEpoch(element['dt'] * 1000),
@@ -237,7 +233,7 @@ class WeatherComController extends GetxController {
             source: element['weather'][0]['main'],
           ),
         );
-      });
+      }
 
       addDailyData('OpenWeather', dailyAmData);
 
@@ -257,7 +253,7 @@ class WeatherComController extends GetxController {
     try {
       lo.g('fetchMetNorwayWeatherService() 1111111');
       MetNorwayWeatherService repo = MetNorwayWeatherService();
-      LatLng location = Get.find<WeatherGogoCntr>().currentLocation.value!.latLng;
+      LatLng location = Get.find<WeatherGogoCntr>().currentLocation.value.latLng;
       lo.g('fetchMetNorwayWeatherService() 2222');
 
       // 시간별 데이터
@@ -286,7 +282,7 @@ class WeatherComController extends GetxController {
     try {
       lo.g('TomorrowIoWeatherService() 1111111');
       TomorrowIoWeatherService repo = TomorrowIoWeatherService();
-      LatLng location = Get.find<WeatherGogoCntr>().currentLocation.value!.latLng;
+      LatLng location = Get.find<WeatherGogoCntr>().currentLocation.value.latLng;
       lo.g('TomorrowIoWeatherService() 2222');
 
       // 시간별 데이터
@@ -315,7 +311,7 @@ class WeatherComController extends GetxController {
     try {
       lo.g('WeatherApiComService() 1111111');
       WeatherApiComService repo = WeatherApiComService();
-      LatLng location = Get.find<WeatherGogoCntr>().currentLocation.value!.latLng;
+      LatLng location = Get.find<WeatherGogoCntr>().currentLocation.value.latLng;
       lo.g('WeatherApiComService() 2222');
 
       // 시간별 데이터
@@ -352,7 +348,7 @@ class WeatherComController extends GetxController {
     List<String> newDailyDates = [];
     if (_dailyData.value.isNotEmpty) {
       var longestDailyData = _dailyData.value.values.reduce((a, b) => a.length > b.length ? a : b);
-      newDailyDates = longestDailyData.map((data) => '${DateFormat('dd', 'ko').format(data.time)}').toList();
+      newDailyDates = longestDailyData.map((data) => DateFormat('dd', 'ko').format(data.time)).toList();
     }
     // 중복제거
     newDailyDates = newDailyDates.toSet().toList();
@@ -363,11 +359,11 @@ class WeatherComController extends GetxController {
     Map<String, List<WeatherData>> aligned = {};
 
     Set<DateTime> allTimePoints = {};
-    _hourlyData.value.values.forEach((dataList) {
-      dataList.forEach((data) {
+    for (var dataList in _hourlyData.value.values) {
+      for (var data in dataList) {
         allTimePoints.add(DateTime(data.time.year, data.time.month, data.time.day, data.time.hour));
-      });
-    });
+      }
+    }
 
     List<DateTime> sortedTimePoints = allTimePoints.toList()..sort();
 
@@ -400,11 +396,11 @@ class WeatherComController extends GetxController {
     Map<String, List<WeatherData>> aligned = {};
 
     Set<DateTime> allDatePoints = {};
-    _dailyData.value.values.forEach((dataList) {
-      dataList.forEach((data) {
+    for (var dataList in _dailyData.value.values) {
+      for (var data in dataList) {
         allDatePoints.add(DateTime(data.time.year, data.time.month, data.time.day));
-      });
-    });
+      }
+    }
 
     List<DateTime> sortedDatePoints = allDatePoints.toList()..sort();
 
@@ -453,7 +449,7 @@ class WeatherComController extends GetxController {
   Future<void> fetchAccuWeather() async {
     try {
       AccuWeatherClient repo = AccuWeatherClient();
-      LatLng location = Get.find<WeatherGogoCntr>().currentLocation.value!.latLng;
+      LatLng location = Get.find<WeatherGogoCntr>().currentLocation.value.latLng;
 
       // 시간별 데이터
       List<WeatherData> hourlyData = await repo.getForecast(location);

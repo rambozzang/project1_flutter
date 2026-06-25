@@ -12,11 +12,11 @@ class MixedContent extends StatefulWidget {
   final String delYn;
 
   const MixedContent({
-    Key? key,
+    super.key,
     required this.content,
     this.videoHeight = 200,
     this.delYn = 'N',
-  }) : super(key: key);
+  });
 
   @override
   State<MixedContent> createState() => _MixedContentState();
@@ -130,13 +130,13 @@ class _MixedContentState extends State<MixedContent> with AutomaticKeepAliveClie
             child: WebviewtubePlayer(
               videoId: part.videoId,
               controller: controller,
-              options: const WebviewtubeOptions(
-                forceHd: true,
-                loop: false,
-                showControls: false,
-                interfaceLanguage: 'ko',
-                captionLanguage: 'ko',
-              ),
+              // options: const WebviewtubeOptions(
+              //   forceHd: true,
+              //   loop: false,
+              //   showControls: false,
+              //   interfaceLanguage: 'ko',
+              //   captionLanguage: 'ko',
+              // ),
             ),
           );
         } else if (part is ImagePart) {

@@ -51,7 +51,7 @@ class CustomSecButton extends StatelessWidget {
     final double fontValue = fontSize[type]!;
 
     return Container(
-      padding: type == 'XT' ? EdgeInsets.symmetric(horizontal: 5, vertical: 5) : null,
+      padding: type == 'XT' ? const EdgeInsets.symmetric(horizontal: 5, vertical: 5) : null,
       height: heightValue ?? heightSize[type]!, // XL 버튼 높이
       width: widthValue ?? widthSize[type]!,
       clipBehavior: Clip.antiAlias,
@@ -71,7 +71,7 @@ class CustomSecButton extends StatelessWidget {
           onTap: onPressed,
           child: Ink(
             width: double.infinity,
-            padding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+            padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.transparent),

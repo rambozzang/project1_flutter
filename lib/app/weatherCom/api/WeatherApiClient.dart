@@ -43,7 +43,7 @@ class WeatherApiComService {
 
     // Get current date and time
     String todayDate = DateFormat('yyyy-MM-dd').format(now);
-    String tomorrowDate = DateFormat('yyyy-MM-dd').format(now.add(Duration(days: 1)));
+    String tomorrowDate = DateFormat('yyyy-MM-dd').format(now.add(const Duration(days: 1)));
 
     // Prepare API request URLs for current day and next day
     String urlToday = '$baseUrl/forecast.json?key=$apiKey&q=${latLng.latitude},${latLng.longitude}&dt=$todayDate&days=1&aqi=no&alerts=no';
@@ -199,11 +199,11 @@ class WeatherApiComService {
     // WeatherAPI.com condition codes to weather categories
     switch (conditionCode) {
       case 1000: // Clear
-        return assetPath + 'sun.json';
+        return '${assetPath}sun.json';
       case 1003: // Partly cloudy
       case 1006: // Cloudy
       case 1009: // Overcast
-        return assetPath + 'day_cloudy.json';
+        return '${assetPath}day_cloudy.json';
       case 1063: // Patchy rain possible
       case 1180: // Patchy light rain
       case 1183: // Light rain
@@ -211,7 +211,7 @@ class WeatherApiComService {
       case 1189: // Moderate rain
       case 1192: // Heavy rain at times
       case 1195: // Heavy rain
-        return assetPath + 'day_rain.json';
+        return '${assetPath}day_rain.json';
       case 1066: // Patchy snow possible
       case 1210: // Light snow
       case 1213: // Light snow
@@ -219,13 +219,13 @@ class WeatherApiComService {
       case 1219: // Moderate snow
       case 1222: // Patchy heavy snow
       case 1225: // Heavy snow
-        return assetPath + 'day_snow.json';
+        return '${assetPath}day_snow.json';
       case 1087: // Thundery outbreaks possible
       case 1273: // Patchy light rain with thunder
       case 1276: // Moderate or heavy rain with thunder
-        return assetPath + 'storm.json';
+        return '${assetPath}storm.json';
       default:
-        return assetPath + 'day_cloudy.json';
+        return '${assetPath}day_cloudy.json';
     }
   }
 }

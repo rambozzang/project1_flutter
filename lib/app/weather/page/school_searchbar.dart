@@ -1,21 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
-import 'package:latlong2/latlong.dart';
 
-import 'package:material_floating_search_bar_2/material_floating_search_bar_2.dart';
+import 'package:material_floating_search_bar_plus/material_floating_search_bar_plus.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:project1/app/weather/models/geocode.dart';
-import 'package:project1/app/weather/cntr/weatherProvider.dart';
 import 'package:project1/app/weather/theme/colors.dart';
-import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:provider/provider.dart';
 
 class NiceApiService {
   //  Rest API key 로 입력
@@ -66,8 +60,8 @@ class _SchoolSearchPageState extends State<SchoolSearchPage> {
   final StreamController<List<Map<String, dynamic>>> _streamController = StreamController<List<Map<String, dynamic>>>();
 
   final NiceApiService _apiService = NiceApiService();
-  List<Map<String, dynamic>> _results = [];
-  String _errorMessage = '';
+  final List<Map<String, dynamic>> _results = [];
+  final String _errorMessage = '';
 
   @override
   void initState() {
@@ -181,12 +175,12 @@ class _SchoolSearchPageState extends State<SchoolSearchPage> {
                     padding: EdgeInsets.zero,
                     itemCount: snapshot.data!.length,
                     itemBuilder: (context, index) {
-                      final _data = snapshot.data![index];
+                      final data = snapshot.data![index];
                       return InkWell(
                         onTap: () async {
-                          fsc.query = _data['SCHUL_NM'];
+                          fsc.query = data['SCHUL_NM'];
                           fsc.close();
-                          _selectClick(_data);
+                          _selectClick(data);
                         },
                         child: Container(
                           padding: const EdgeInsets.all(12.0),
@@ -198,20 +192,20 @@ class _SchoolSearchPageState extends State<SchoolSearchPage> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(_data['SCHUL_NM'],
+                                    Text(data['SCHUL_NM'],
                                         style: GoogleFonts.openSans(
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold,
                                           color: Colors.black,
                                         )),
-                                    Text(_data['ORG_RDNMA'],
+                                    Text(data['ORG_RDNMA'],
                                         style: GoogleFonts.openSans(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w400,
                                           color: Colors.black,
                                         )),
-                                    _data['SCHUL_KND_SC_NM'] == null
-                                        ? Text(_data['SCHUL_KND_SC'],
+                                    data['SCHUL_KND_SC_NM'] == null
+                                        ? Text(data['SCHUL_KND_SC'],
                                             style: GoogleFonts.openSans(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w400,

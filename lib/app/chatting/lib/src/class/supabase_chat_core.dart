@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:rxdart/rxdart.dart';
@@ -485,14 +483,14 @@ class SupabaseChatCore {
             callback: (payload) async {
               lo.g('Received realtime update: $payload');
               if (payload.eventType == PostgresChangeEvent.delete) {
-                if (payload.oldRecord != null && payload.oldRecord!['id'] != null) {
-                  final deletedRoomId = payload.oldRecord!['id'].toString();
+                if (payload.oldRecord['id'] != null) {
+                  final deletedRoomId = payload.oldRecord['id'].toString();
                   final currentRooms = roomsSubject.value;
                   currentRooms.removeWhere((room) => room.id == deletedRoomId);
                   roomsSubject.add(currentRooms);
                 }
               } else if (payload.eventType == PostgresChangeEvent.insert || payload.eventType == PostgresChangeEvent.update) {
-                final roomId = payload.newRecord!['id'].toString();
+                final roomId = payload.newRecord['id'].toString();
                 debounceTimer?.cancel();
                 debounceTimer = Timer(const Duration(milliseconds: 300), () {
                   fetchAndProcessRooms(specificRoomId: roomId);

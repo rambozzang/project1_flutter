@@ -138,7 +138,7 @@ class AdManager {
   Future<void> loadInterstitialAd() async {
     await InterstitialAd.load(
       adUnitId: _adUnitIds['interstitial'] ?? '',
-      request: AdRequest(),
+      request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (InterstitialAd ad) {
           _interstitialAd = ad;

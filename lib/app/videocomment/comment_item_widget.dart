@@ -4,12 +4,9 @@ import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
-import 'package:project1/repo/board/data/board_Comment_data.dart';
 import 'package:project1/repo/board/data/board_comment_res_data.dart';
-import 'package:project1/repo/board/data/board_main_detail_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:timeago/timeago.dart' as timeago;
 
 class CommentItemWidget extends StatefulWidget {
   const CommentItemWidget({
@@ -115,7 +112,7 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
                   Row(
                     children: [
                       Text(
-                        '${widget.boardCommentData.nickNm.toString()}',
+                        widget.boardCommentData.nickNm.toString(),
                         style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: textColorSub),
                       ),
                       const Padding(

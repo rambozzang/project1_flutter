@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:project1/config/app_color.dart';
-import 'package:project1/repo/weather/data/Sys.dart';
 
 class AppTheme {
   static ThemeData get theme => ThemeData(
@@ -16,9 +14,8 @@ class AppTheme {
         useMaterial3: true,
         // fontFamily: "NotoSansKR",
         fontFamily: "Pretendard",
-        dialogBackgroundColor: Colors.white,
         scaffoldBackgroundColor: Colors.white,
-        dialogTheme: const DialogTheme(
+        dialogTheme: const DialogThemeData(
           backgroundColor: Colors.white,
           titleTextStyle: TextStyle(
             color: Colors.black,

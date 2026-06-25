@@ -1,367 +1,200 @@
 // import 'package:flutter/material.dart';
+// import 'package:project1/theme/color_data.dart';
+// import 'package:project1/theme/app_colors.dart';
 
 // class AppTheme {
-//   // 라이트 모드 색상
-//   static const Color primaryBlue = Colors.white;
-//   static const Color secondaryBlue = Color(0xFF42A5F5);
-//   static const Color backgroundWhite = Color(0xFFFFFFFF);
-//   static const Color textPrimary = Color(0xFF333333);
-//   static const Color textSecondary = Color(0xFF666666);
-//   static const Color dividerColor = Color(0xFFE0E0E0);
-//   static const Color cardBackground = Color(0xFFFAFAFA);
-//   static const Color iconColor = Color(0xFF757575);
-//   static const Color errorRed = Color(0xFFE53935);
-//   static const Color successGreen = Color(0xFF43A047);
-
-//   // 다크 모드 색상
-//   static const Color darkPrimaryBlue = Color.fromARGB(255, 0, 0, 0); // 더 진한 파란색
-//   static const Color darkSecondaryBlue = Color(0xFF1E88E5); // 더 진한 보조 파란색
-//   static const Color darkBackground = Color(0xFF121212); // 다크모드 기본 배경
-//   static const Color darkCardBackground = Color(0xFF1E1E1E); // 다크모드 카드 배경
-//   static const Color darkTextPrimary = Color(0xFFE0E0E0); // 다크모드 주요 텍스트
-//   static const Color darkTextSecondary = Color(0xFFAAAAAA); // 다크모드 보조 텍스트
-//   static const Color darkDividerColor = Color(0xFF2C2C2C); // 다크모드 구분선
-//   static const Color darkIconColor = Color(0xFFBDBDBD); // 다크모드 아이콘
-
-//   // light theme 정의 (기존 코드 유지)
+//   // Light Theme
 //   static final ThemeData light = ThemeData(
 //     useMaterial3: true,
 //     brightness: Brightness.light,
 
-//     colorScheme: ColorScheme.fromSeed(
-//       seedColor: Colors.white,
-//       surface: Colors.white,
-//       // primary: primaryBlue,
-//     ),
+//     // colorScheme: ColorScheme.fromSeed(
+//     //   seedColor: Colors.white,
+//     //   surface: Colors.white,
+//     //   // primary: primaryBlue,
+//     // ),
+
 //     // 기본 색상
-//     primaryColor: Colors.white,
-//     scaffoldBackgroundColor: Colors.white,
-//     // AppBar 테마
-//     // 사용: lib/app/bbs/bbs_view_page.dart, lib/app/auth/login_page.dart 등 모든 상단 앱바
+//     primaryColor: ColorsData.primary,
+//     scaffoldBackgroundColor: ColorsData.white,
+
+//     // ColorScheme
+//     colorScheme: const ColorScheme.light(
+//       primary: ColorsData.primary,
+
+//       secondary: ColorsData.secondary,
+//       surface: ColorsData.white,
+//       // background: ColorsData.white,
+//       error: ColorsData.error,
+//       onPrimary: ColorsData.white,
+//       onSecondary: ColorsData.white,
+//       onSurface: ColorsData.textPrimary,
+//       // onBackground: ColorsData.textPrimary,
+//       onError: ColorsData.white,
+//     ),
+
+//     // AppBar Theme
 //     appBarTheme: const AppBarTheme(
-//       backgroundColor: primaryBlue,
-//       foregroundColor: Colors.white,
+//       backgroundColor: ColorsData.appBarBackground,
+//       foregroundColor: ColorsData.appBarText,
 //       elevation: 0,
-//       centerTitle: false,
 //       titleSpacing: 0.0,
+//       centerTitle: false,
+//       iconTheme: IconThemeData(color: ColorsData.appBarIcon),
 //       titleTextStyle: TextStyle(
-//         fontSize: 18,
+//         color: ColorsData.textPrimary,
+//         fontSize: ColorsData.fontSizeLarge,
 //         fontWeight: FontWeight.w600,
-//         color: Colors.black,
-//       ),
-//       iconTheme: IconThemeData(color: Colors.black),
-//     ),
-
-//     // 카드 테마
-//     // 사용: lib/app/bbs/bbs_list_page.dart의 게시글 카드
-//     // lib/app/weathergogo/weather_gogo_page.dart의 날씨 카드
-//     cardTheme: CardTheme(
-//       color: cardBackground,
-//       elevation: 2,
-//       shape: RoundedRectangleBorder(
-//         borderRadius: BorderRadius.circular(8),
 //       ),
 //     ),
 
-//     // 텍스트 테마
-//     // headlineLarge: lib/app/bbs/bbs_view_page.dart의 게시글 제목
-//     // headlineMedium: lib/app/weathergogo/weather_gogo_page.dart의 섹션 제목
-//     // bodyLarge: 게시글 본문, 댓글 내용
-//     // bodyMedium: 부가 정보, 날짜, 작성자 정보
-//     // labelLarge: 버튼 텍스트, 링크 텍스트
+//     // Text Theme
 //     textTheme: const TextTheme(
-//       headlineLarge: TextStyle(
-//         fontSize: 24,
-//         fontWeight: FontWeight.bold,
-//         color: textPrimary,
-//       ),
-//       headlineMedium: TextStyle(
-//         fontSize: 20,
-//         fontWeight: FontWeight.bold,
-//         color: textPrimary,
-//       ),
-//       bodyLarge: TextStyle(
-//         fontSize: 16,
-//         color: textPrimary,
-//       ),
-//       bodyMedium: TextStyle(
-//         fontSize: 14,
-//         color: textSecondary,
-//       ),
-//       labelLarge: TextStyle(
-//         fontSize: 16,
-//         fontWeight: FontWeight.w600,
-//         color: primaryBlue,
-//       ),
+//       headlineLarge: TextStyle(color: ColorsData.textPrimary),
+//       headlineMedium: TextStyle(color: ColorsData.textPrimary),
+//       bodyLarge: TextStyle(color: ColorsData.textPrimary),
+//       bodyMedium: TextStyle(color: ColorsData.textSecondary),
+//       labelLarge: TextStyle(color: ColorsData.textPrimary),
 //     ),
 
-//     // 버튼 테마
-//     // 사용: lib/app/auth/login_page.dart의 로그인 버튼
-//     // lib/app/bbs/bbs_write_page.dart의 글쓰기 버튼
-//     // lib/app/weathergogo/weather_gogo_page.dart의 날씨 검색 버튼
-//     elevatedButtonTheme: ElevatedButtonThemeData(
-//       style: ElevatedButton.styleFrom(
-//         backgroundColor: primaryBlue,
-//         foregroundColor: Colors.white,
-//         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-//         shape: RoundedRectangleBorder(
-//           borderRadius: BorderRadius.circular(8),
-//         ),
-//       ),
-//     ),
-
-//     // 입력 필드 테마
-//     // 사용: lib/app/auth/login_page.dart의 이메일/비밀번호 입력
-//     // lib/app/bbs/bbs_write_page.dart의 글쓰기 폼
-//     // lib/widget/animation_searchbar.dart의 검색창
-//     inputDecorationTheme: InputDecorationTheme(
-//       filled: true,
-//       fillColor: Colors.grey[50],
-//       border: OutlineInputBorder(
-//         borderRadius: BorderRadius.circular(8),
-//         borderSide: const BorderSide(color: dividerColor),
-//       ),
-//       enabledBorder: OutlineInputBorder(
-//         borderRadius: BorderRadius.circular(8),
-//         borderSide: const BorderSide(color: dividerColor),
-//       ),
-//       focusedBorder: OutlineInputBorder(
-//         borderRadius: BorderRadius.circular(8),
-//         borderSide: const BorderSide(color: primaryBlue),
-//       ),
-//       errorBorder: OutlineInputBorder(
-//         borderRadius: BorderRadius.circular(8),
-//         borderSide: const BorderSide(color: errorRed),
-//       ),
-//     ),
-
-//     // 아이콘 테마
-//     // 사용: lib/app/bbs/bbs_view_page.dart의 액션 아이콘
-//     // lib/app/weathergogo/weather_gogo_page.dart의 날씨 아이콘
+//     // Icon Theme
 //     iconTheme: const IconThemeData(
-//       color: iconColor,
-//       size: 24,
+//       color: ColorsData.iconBlack,
+//       size: ColorsData.iconSizeMedium,
 //     ),
 
-//     // 리스트타일 테마
-//     // 사용: lib/app/bbs/bbs_my_list_page.dart의 게시글 목록
-//     // lib/app/alram/alram_page.dart의 알림 목록
-//     listTileTheme: const ListTileThemeData(
-//       contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//       tileColor: backgroundWhite,
-//     ),
+//     // Card Theme
+//     // cardTheme: CardTheme(
+//     //   color: ColorsData.white,
+//     //   elevation: 2,
+//     //   shape: RoundedRectangleBorder(
+//     //     borderRadius: BorderRadius.circular(ColorsData.radiusMedium),
+//     //   ),
+//     // ),
 
-//     // 구분선 테마
-//     // 사용: lib/app/bbs/bbs_list_page.dart의 게시글 구분선
-//     // lib/app/comments/bbs_comments_page.dart의 댓글 구분선
-//     dividerTheme: const DividerThemeData(
-//       color: dividerColor,
-//       thickness: 1,
-//       space: 1,
-//     ),
-
-//     // 칩 테마
-//     // 사용: lib/app/bbs/bbs_search_page.dart의 검색 필터
-//     // lib/app/weathergogo/weather_gogo_page.dart의 날씨 태그
+//     // Chip Theme
 //     chipTheme: ChipThemeData(
-//       backgroundColor: Colors.grey[100]!,
-//       labelStyle: const TextStyle(color: textPrimary),
-//       padding: const EdgeInsets.symmetric(horizontal: 8),
+//       backgroundColor: ColorsData.chipBackground,
+//       labelStyle: const TextStyle(color: ColorsData.chipText),
 //       shape: RoundedRectangleBorder(
-//         borderRadius: BorderRadius.circular(16),
+//         borderRadius: BorderRadius.circular(ColorsData.radiusMedium),
 //       ),
 //     ),
 
-//     // 탭바 테마
-//     // 사용: lib/app/bbs/bbs_view_page.dart의 탭 메뉴
-//     // lib/app/weathergogo/weather_gogo_page.dart의 날씨 탭
-//     tabBarTheme: const TabBarTheme(
-//       labelColor: primaryBlue,
-//       unselectedLabelColor: textSecondary,
-//       indicatorColor: primaryBlue,
-//     ),
-
-//     // 바텀시트 테마
-//     // 사용: lib/app/bbs/comments/bbs_comments_bottom_page.dart
-//     // lib/app/weathergogo/weather_detail_bottom_sheet.dart
-//     bottomSheetTheme: const BottomSheetThemeData(
-//       backgroundColor: backgroundWhite,
-//       shape: RoundedRectangleBorder(
-//         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+//     // Input Decoration Theme
+//     inputDecorationTheme: InputDecorationTheme(
+//       fillColor: ColorsData.inputBackground,
+//       filled: true,
+//       labelStyle: const TextStyle(color: ColorsData.inputLabel),
+//       border: OutlineInputBorder(
+//         borderSide: const BorderSide(color: ColorsData.inputBorder),
+//         borderRadius: BorderRadius.circular(ColorsData.radiusMedium),
 //       ),
 //     ),
 
-//     // FloatingActionButton 테마
-//     // 사용: lib/app/bbs/bbs_list_page.dart의 글쓰기 버튼
-//     // lib/app/weathergogo/weather_gogo_page.dart의 새로고침 버튼
-//     floatingActionButtonTheme: const FloatingActionButtonThemeData(
-//       backgroundColor: Colors.white,
-//       foregroundColor: Colors.white,
+//     // Progress Indicator Theme
+//     progressIndicatorTheme: const ProgressIndicatorThemeData(
+//       color: ColorsData.progressBarActive,
+//       linearTrackColor: ColorsData.progressBarInactive,
 //     ),
 
-//     // 분홍빛을 완전히 제거하기 위한 설정
-//     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-//     splashColor: Colors.transparent,
-//     highlightColor: Colors.transparent,
-//     hoverColor: Colors.transparent,
+//     extensions: [
+//       AppColors.light,
+//     ],
 //   );
 
-//   // dark theme 정의
+//   // Dark Theme
 //   static final ThemeData dark = ThemeData(
 //     useMaterial3: true,
 //     brightness: Brightness.dark,
 
 //     // 기본 색상
-//     primaryColor: Colors.black,
-//     scaffoldBackgroundColor: darkBackground,
+//     primaryColor: ColorsData.darkPrimary,
+//     scaffoldBackgroundColor: ColorsData.darkPrimary,
 
-//     // AppBar 테마
+//     // ColorScheme
+//     colorScheme: ColorScheme.dark(
+//       primary: ColorsData.darkPrimary,
+//       secondary: ColorsData.darkSecondary,
+//       surface: ColorsData.darkGrey100,
+//       background: ColorsData.darkPrimary,
+//       error: ColorsData.darkError,
+//       onPrimary: ColorsData.darkTextPrimary,
+//       onSecondary: ColorsData.darkTextPrimary,
+//       onSurface: ColorsData.darkTextPrimary,
+//       onBackground: ColorsData.darkTextPrimary,
+//       onError: ColorsData.darkTextPrimary,
+//     ),
+
+//     // AppBar Theme
 //     appBarTheme: const AppBarTheme(
-//       backgroundColor: darkBackground,
-//       foregroundColor: darkTextPrimary,
+//       backgroundColor: ColorsData.darkAppBarBackground,
+//       foregroundColor: ColorsData.darkAppBarText,
 //       elevation: 0,
-//       centerTitle: false,
-//       titleSpacing: 0.0,
+//       iconTheme: IconThemeData(color: ColorsData.darkAppBarIcon),
 //       titleTextStyle: TextStyle(
-//         fontSize: 18,
+//         color: ColorsData.darkTextPrimary,
+//         fontSize: ColorsData.fontSizeLarge,
 //         fontWeight: FontWeight.w600,
-//         color: darkTextPrimary,
-//       ),
-//       iconTheme: IconThemeData(color: darkTextPrimary),
-//     ),
-
-//     // 카드 테마
-//     cardTheme: CardTheme(
-//       color: darkCardBackground,
-//       elevation: 2,
-//       shape: RoundedRectangleBorder(
-//         borderRadius: BorderRadius.circular(8),
 //       ),
 //     ),
 
-//     // 텍스트 테마
+//     // Text Theme
 //     textTheme: const TextTheme(
-//       headlineLarge: TextStyle(
-//         fontSize: 24,
-//         fontWeight: FontWeight.bold,
-//         color: darkTextPrimary,
-//       ),
-//       headlineMedium: TextStyle(
-//         fontSize: 20,
-//         fontWeight: FontWeight.bold,
-//         color: darkTextPrimary,
-//       ),
-//       bodyLarge: TextStyle(
-//         fontSize: 16,
-//         color: darkTextPrimary,
-//       ),
-//       bodyMedium: TextStyle(
-//         fontSize: 14,
-//         color: darkTextSecondary,
-//       ),
-//       labelLarge: TextStyle(
-//         fontSize: 16,
-//         fontWeight: FontWeight.w600,
-//         color: darkPrimaryBlue,
-//       ),
+//       headlineLarge: TextStyle(color: ColorsData.darkTextPrimary),
+//       headlineMedium: TextStyle(color: ColorsData.darkTextPrimary),
+//       bodyLarge: TextStyle(color: ColorsData.darkTextPrimary),
+//       bodyMedium: TextStyle(color: ColorsData.darkTextSecondary),
+//       labelLarge: TextStyle(color: ColorsData.darkTextPrimary),
 //     ),
 
-//     // 버튼 테마
-//     elevatedButtonTheme: ElevatedButtonThemeData(
-//       style: ElevatedButton.styleFrom(
-//         backgroundColor: darkPrimaryBlue,
-//         foregroundColor: darkTextPrimary,
-//         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-//         shape: RoundedRectangleBorder(
-//           borderRadius: BorderRadius.circular(8),
-//         ),
-//       ),
-//     ),
-
-//     // 입력 필드 테마
-//     inputDecorationTheme: InputDecorationTheme(
-//       filled: true,
-//       fillColor: darkCardBackground,
-//       border: OutlineInputBorder(
-//         borderRadius: BorderRadius.circular(8),
-//         borderSide: const BorderSide(color: darkDividerColor),
-//       ),
-//       enabledBorder: OutlineInputBorder(
-//         borderRadius: BorderRadius.circular(8),
-//         borderSide: const BorderSide(color: darkDividerColor),
-//       ),
-//       focusedBorder: OutlineInputBorder(
-//         borderRadius: BorderRadius.circular(8),
-//         borderSide: const BorderSide(color: darkPrimaryBlue),
-//       ),
-//       errorBorder: OutlineInputBorder(
-//         borderRadius: BorderRadius.circular(8),
-//         borderSide: const BorderSide(color: errorRed),
-//       ),
-//     ),
-
-//     // 아이콘 테마
+//     // Icon Theme
 //     iconTheme: const IconThemeData(
-//       color: darkIconColor,
-//       size: 24,
+//       color: ColorsData.darkIconWhite,
+//       size: ColorsData.iconSizeMedium,
 //     ),
 
-//     // 리스트타일 테마
-//     listTileTheme: const ListTileThemeData(
-//       contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//       tileColor: darkCardBackground,
-//     ),
+//     // Card Theme
+//     // cardTheme: CardTheme(
+//     //   color: ColorsData.darkGrey100,
+//     //   elevation: 2,
+//     //   shape: RoundedRectangleBorder(
+//     //     borderRadius: BorderRadius.circular(ColorsData.radiusMedium),
+//     //   ),
+//     // ),
 
-//     // 구분선 테마
-//     dividerTheme: const DividerThemeData(
-//       color: darkDividerColor,
-//       thickness: 1,
-//       space: 1,
-//     ),
-
-//     // 칩 테마
+//     // Chip Theme
 //     chipTheme: ChipThemeData(
-//       backgroundColor: darkCardBackground,
-//       labelStyle: const TextStyle(color: darkTextPrimary),
-//       padding: const EdgeInsets.symmetric(horizontal: 8),
+//       backgroundColor: ColorsData.darkChipBackground,
+//       labelStyle: const TextStyle(color: ColorsData.darkChipText),
 //       shape: RoundedRectangleBorder(
-//         borderRadius: BorderRadius.circular(16),
+//         borderRadius: BorderRadius.circular(ColorsData.radiusMedium),
 //       ),
 //     ),
 
-//     // 탭바 테마
-//     tabBarTheme: const TabBarTheme(
-//       labelColor: darkPrimaryBlue,
-//       unselectedLabelColor: darkTextSecondary,
-//       indicatorColor: darkPrimaryBlue,
-//     ),
-
-//     // 바텀시트 테마
-//     bottomSheetTheme: const BottomSheetThemeData(
-//       backgroundColor: darkCardBackground,
-//       shape: RoundedRectangleBorder(
-//         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+//     // Input Decoration Theme
+//     inputDecorationTheme: InputDecorationTheme(
+//       fillColor: ColorsData.darkInputBackground,
+//       filled: true,
+//       labelStyle: const TextStyle(color: ColorsData.darkInputLabel),
+//       border: OutlineInputBorder(
+//         borderSide: const BorderSide(color: ColorsData.darkInputBorder),
+//         borderRadius: BorderRadius.circular(ColorsData.radiusMedium),
 //       ),
 //     ),
 
-//     // FloatingActionButton 테마
-//     floatingActionButtonTheme: const FloatingActionButtonThemeData(
-//       backgroundColor: darkPrimaryBlue,
-//       foregroundColor: darkTextPrimary,
+//     // Progress Indicator Theme
+//     progressIndicatorTheme: const ProgressIndicatorThemeData(
+//       color: ColorsData.darkProgressBarActive,
+//       linearTrackColor: ColorsData.darkProgressBarInactive,
 //     ),
 
-//     dialogTheme: const DialogTheme(
-//       backgroundColor: Colors.white,
-//       titleTextStyle: TextStyle(
-//         color: Colors.black,
-//         fontSize: 18,
-//         fontWeight: FontWeight.w700,
-//       ),
-//       contentTextStyle: TextStyle(
-//         color: Colors.black,
-//         fontSize: 14,
-//         fontWeight: FontWeight.w400,
-//       ),
-//     ),
+//     extensions: [
+//       AppColors.dark,
+//     ],
 //   );
+// }
+
+// extension AppThemeExtension on BuildContext {
+//   AppColors get colors => Theme.of(this).extension<AppColors>()!;
 // }

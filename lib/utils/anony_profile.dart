@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:flutter/material.dart';
 
 // Anonymous Profile 클래스 정의
 class AnonymousProfile {

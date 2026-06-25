@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:project1/config/url_config.dart';
-import 'package:project1/repo/alram/data/alram_devy_data.dart';
 import 'package:project1/repo/alram/data/alram_req_data.dart';
 import 'package:project1/repo/alram/data/chat_req_data.dart';
 import 'package:project1/repo/api/auth_dio.dart';

@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/short/comment/cntr/short_comments_cntr.dart';
-import 'package:project1/app/weather/models/geocode.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/app/weathergogo/services/location_service.dart';
 
@@ -47,18 +46,14 @@ class ShortViewController extends GetxController {
   late String searchLat;
   late String searchLng;
 
-  @override
-  void onInit() {
-    super.onInit();
-  }
 
-  Future<void> fetchDataInit(String _address, String _lat, String _lng) async {
+  Future<void> fetchDataInit(String address, String lat, String lng) async {
     // 전체 주소 가져오기 경기도 성남시 분당구
 
-    lo.g('@@@ ShortViewController fetchDataInit _address : $_address');
+    lo.g('@@@ ShortViewController fetchDataInit _address : $address');
 
-    if (StringUtils.isEmpty(_address)) {
-      if (StringUtils.isEmpty(_lat) || StringUtils.isEmpty(_lng)) {
+    if (StringUtils.isEmpty(address)) {
+      if (StringUtils.isEmpty(lat) || StringUtils.isEmpty(lng)) {
         Utils.alert('날씨 정보를 조회 후 다시 시도해주세요.');
         Get.back();
         return;
@@ -66,16 +61,16 @@ class ShortViewController extends GetxController {
       // kakao 로 주소 다시 가져오기
       LocationService locationService = LocationService();
       // 도, 시 , 구 주소 가져오기
-      String address = await locationService.getAdressName(LatLng(double.parse(_lat), double.parse(_lng)));
+      String address = await locationService.getAdressName(LatLng(double.parse(lat), double.parse(lng)));
       lo.g('@@@ ShortViewController fetchDataInit address : $address');
-      searchAddress = _address;
+      searchAddress = address;
     } else {
-      searchAddress = _address;
+      searchAddress = address;
     }
     lo.g('@@@ ShortViewController fetchDataInit searchAddress : $searchAddress');
-    searchLat = _lat;
-    searchLng = _lng;
-    fetchData(searchAddress, _lat, _lng);
+    searchLat = lat;
+    searchLng = lng;
+    fetchData(searchAddress, lat, lng);
 
     // 댓글 관련
     commentsController = Get.put(ShortCommentsController());
@@ -92,11 +87,11 @@ class ShortViewController extends GetxController {
     }
   }
 
-  Future<void> fetchData(String _address, String _lat, String _lng) async {
+  Future<void> fetchData(String address, String lat, String lng) async {
     try {
       dataStreamController.sink.add(ResStream.loading());
       BbsRepo repo = BbsRepo();
-      ResData resData = await repo.detailbylatlng(_address, _lat, _lng);
+      ResData resData = await repo.detailbylatlng(address, lat, lng);
       // ResData resData = await repo.detail(boardId);
 
       if (resData.code != '00') {

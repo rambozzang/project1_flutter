@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 
-import 'package:material_floating_search_bar_2/material_floating_search_bar_2.dart';
+import 'package:material_floating_search_bar_plus/material_floating_search_bar_plus.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:project1/app/weather/models/geocode.dart';
 import 'package:project1/app/weather/theme/colors.dart';
@@ -76,7 +76,7 @@ class _FavoriteAreaSearchPageState extends State<FavoriteAreaSearchPage> {
       implicitDuration: const Duration(milliseconds: 10),
       debounceDelay: const Duration(milliseconds: 250),
       //  style: const TextStyle(decorationThickness: 0), // 한글밑줄제거
-      leadingActions: [
+      leadingActions: const [
         // FloatingSearchBarAction.icon(
         //   showIfClosed: true,
         //   showIfOpened: false,
@@ -151,11 +151,11 @@ class _FavoriteAreaSearchPageState extends State<FavoriteAreaSearchPage> {
                             height: 0.0,
                           ),
                       itemBuilder: (context, index) {
-                        final _data = snapshot.data![index];
+                        final data = snapshot.data![index];
                         return InkWell(
                           onTap: () {
-                            _selectClick(_data);
-                            fsc.query = _data['place_name'];
+                            _selectClick(data);
+                            fsc.query = data['place_name'];
                             fsc.close();
                           },
                           child: Container(
@@ -168,20 +168,20 @@ class _FavoriteAreaSearchPageState extends State<FavoriteAreaSearchPage> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(_data['place_name'],
+                                      Text(data['place_name'],
                                           style: GoogleFonts.openSans(
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.black,
                                           )),
-                                      Text(_data['address_name'],
+                                      Text(data['address_name'],
                                           style: GoogleFonts.openSans(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w400,
                                             color: Colors.black,
                                           )),
-                                      _data['road_address_name'] == null
-                                          ? Text(_data['road_address_name'],
+                                      data['road_address_name'] == null
+                                          ? Text(data['road_address_name'],
                                               style: GoogleFonts.openSans(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w400,

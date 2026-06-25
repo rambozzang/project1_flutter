@@ -17,7 +17,7 @@ class KmaClient implements WeatherApiClient {
   @override
   Future<List<WeatherData>> getForecast() async {
     final baseDate = DateTime.now().toString().substring(0, 10).replaceAll('-', '');
-    final baseTime = '0500'; // Assuming 05:00 KST as the base time
+    const baseTime = '0500'; // Assuming 05:00 KST as the base time
     final url = 'http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst'
         '?serviceKey=$apiKey&numOfRows=1000&pageNo=1&base_date=$baseDate&base_time=$baseTime&nx=$nx&ny=$ny&dataType=JSON';
 

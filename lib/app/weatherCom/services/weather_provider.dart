@@ -4,7 +4,7 @@ import '../services/weather_api_client.dart';
 
 class WeatherProvider with ChangeNotifier {
   final List<WeatherApiClient> _clients;
-  Map<String, List<WeatherData>> _forecasts = {};
+  final Map<String, List<WeatherData>> _forecasts = {};
   bool _isLoading = false;
 
   WeatherProvider(this._clients);

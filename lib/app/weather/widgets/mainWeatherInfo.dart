@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:lottie/lottie.dart';
 
 import 'package:project1/app/weather/helper/extensions.dart';
-import 'package:project1/app/weather/helper/utils.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
 

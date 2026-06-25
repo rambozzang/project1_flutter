@@ -233,7 +233,7 @@ class _BbsViewPageState extends State<BbsViewPage> {
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: Colors.white, width: 0.5),
         ),
-        child: SvgPicture.network(profile1.avatarUrl, placeholderBuilder: (context) => const CircularProgressIndicator()),
+        child: SvgPicture.network(profile1.avatarUrl),
       );
     }
     return GestureDetector(
@@ -502,7 +502,7 @@ class _BbsViewPageState extends State<BbsViewPage> {
                 child: Row(
                   children: [
                     Icon(Icons.edit_square, color: Colors.blue, size: 21),
-                    const SizedBox(
+                    SizedBox(
                       width: 3,
                     ),
                     Text('수정'),
@@ -517,7 +517,7 @@ class _BbsViewPageState extends State<BbsViewPage> {
                       color: Colors.red,
                       size: 21,
                     ),
-                    const SizedBox(
+                    SizedBox(
                       width: 3,
                     ),
                     Text(
@@ -537,7 +537,7 @@ class _BbsViewPageState extends State<BbsViewPage> {
                     color: Colors.black,
                     size: 21,
                   ),
-                  const SizedBox(
+                  SizedBox(
                     width: 3,
                   ),
                   Text(

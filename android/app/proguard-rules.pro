@@ -52,6 +52,19 @@
 -dontwarn org.conscrypt.*
 -dontwarn org.openjsse.**
 
+# OkHttp 관련 규칙 (R8 빌드 오류 해결)
+-dontwarn com.squareup.okhttp.CipherSuite
+-dontwarn com.squareup.okhttp.ConnectionSpec
+-dontwarn com.squareup.okhttp.TlsVersion
+-keep class com.squareup.okhttp.** { *; }
+-dontwarn com.squareup.okhttp.**
+
+# gRPC 관련 규칙
+-keep class io.grpc.** { *; }
+-dontwarn io.grpc.**
+-keep class com.google.protobuf.** { *; }
+-dontwarn com.google.protobuf.**
+
 # 네이버 로그인
 -keep public class com.navercorp.nid.** {
     public *;

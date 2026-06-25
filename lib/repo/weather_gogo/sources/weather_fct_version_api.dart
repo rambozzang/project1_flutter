@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -38,7 +37,7 @@ class FctVersionAPI {
         _getURL,
         queryParameters: version.copyWith(dateTime: nowDate).toJson(),
       );
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       debugPrint(e.message);
       throw Exception(e.message);
     }
@@ -87,7 +86,7 @@ class FctVersionAPI {
         _getURL,
         queryParameters: version.copyWith(dataType: DataType.xml, dateTime: nowDate).toJson(),
       );
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       debugPrint(e.message);
       throw Exception(e.message);
     }

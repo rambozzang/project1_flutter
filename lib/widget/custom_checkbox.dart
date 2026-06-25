@@ -15,8 +15,8 @@ class CheckBoxRounded extends StatefulWidget {
     this.animationDuration,
     this.isChecked,
     this.disable = false,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   final bool? isChecked;
 

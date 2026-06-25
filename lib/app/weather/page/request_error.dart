@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:material_floating_search_bar_2/material_floating_search_bar_2.dart';
 import 'package:project1/app/weather/theme/colors.dart';
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
 
 import '../theme/textStyle.dart';
 
 class RequestErrorDisplay extends StatelessWidget {
-  const RequestErrorDisplay({Key? key}) : super(key: key);
+  const RequestErrorDisplay({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +47,7 @@ class RequestErrorDisplay extends StatelessWidget {
                   backgroundColor: primaryBlue,
                   textStyle: mediumText,
                   padding: const EdgeInsets.all(7.0),
-                  shape: StadiumBorder(),
+                  shape: const StadiumBorder(),
                 ),
                 onPressed: weatherProv.isLoading.value
                     ? null

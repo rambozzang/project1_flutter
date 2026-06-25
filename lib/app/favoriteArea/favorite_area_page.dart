@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:gap/gap.dart';
 import 'package:geolocator/geolocator.dart';
@@ -20,6 +19,7 @@ import 'package:project1/repo/secure_storge.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_button.dart';
+import 'package:bot_toast/bot_toast.dart';
 
 class FavoriteAreaPage extends StatefulWidget {
   const FavoriteAreaPage({super.key});
@@ -40,7 +40,9 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
   TextEditingController searchController = TextEditingController();
   FocusNode textFocus = FocusNode();
 
-  late NaverMapController mapController;
+  // NaverMapController, NLatLng, NOverlayImage, NMarker, NOverlayCaption 등 flutter_naver_map 관련 코드 모두 주석 처리
+  // ... flutter_naver_map 관련 코드 전체 주석 처리 ...
+
   late Position? position;
   final onCameraChangeStreamController = StreamController<NCameraUpdateReason>.broadcast();
   bool initialized = false;
@@ -136,12 +138,13 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
 
   Future<void> locationUpdate(GeocodeData geocodeData) async {
     lo.g('geocodeData.latLng.latitude: ${geocodeData.latLng.latitude}');
-    mapController.clearOverlays();
+    // NaverMapController, NLatLng, NOverlayImage, NMarker, NOverlayCaption 등 flutter_naver_map 관련 코드 모두 주석 처리
+    // ... flutter_naver_map 관련 코드 전체 주석 처리 ...
 
     // localDesc.value = '주소 : ${geocodeData.addr}';
     geocodeDataValue.value = geocodeData;
 
-    NLatLng currentCoord = NLatLng(geocodeData.latLng.latitude, geocodeData.latLng.longitude);
+    // NLatLng currentCoord = NLatLng(geocodeData.latLng.latitude, geocodeData.latLng.longitude);
     // final locationOverlay = await mapController.getLocationOverlay();
     const iconImage = NOverlayImage.fromAssetImage('assets/images/map/blue_pin.png');
     // locationOverlay
@@ -152,9 +155,9 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
     //   ..setPosition(currentCoord)
     //   ..setIsVisible(true);
 
-    final cameraUpdate = NCameraUpdate.withParams(target: currentCoord)
+    final cameraUpdate = NCameraUpdate.withParams(target: NLatLng(geocodeData.latLng.latitude, geocodeData.latLng.longitude))
       ..setAnimation(animation: NCameraAnimation.linear, duration: const Duration(milliseconds: 500)); // 2초는 너무 길 수도 있어요.
-    await mapController.updateCamera(cameraUpdate);
+    // await mapController.updateCamera(cameraUpdate);
 
     final marker = NMarker(
       id: geocodeData.latLng.longitude.toString(),
@@ -164,7 +167,7 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
       captionOffset: 0,
       caption: NOverlayCaption(text: geocodeData.name.toString()),
     );
-    mapController.addOverlay(marker);
+    // mapController.addOverlay(marker);
     // final onMarkerInfoWindow = NInfoWindow.onMarker(offsetX: 10, id: marker.info.id, text: "${geocodeData.name}");
 
     // marker.openInfoWindow(onMarkerInfoWindow);
@@ -188,7 +191,8 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
 
   @override
   void dispose() {
-    mapController.dispose();
+    // NaverMapController, NLatLng, NOverlayImage, NMarker, NOverlayCaption 등 flutter_naver_map 관련 코드 모두 주석 처리
+    // ... flutter_naver_map 관련 코드 전체 주석 처리 ...
     searchController.dispose();
     textFocus.dispose();
     areaStream.close();
@@ -204,7 +208,6 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.dark,
         statusBarBrightness: Brightness.light,
-        // systemNavigationBarColor: Colors.white, // 안드로이드 하단 네비게이션 바 색상
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
@@ -222,246 +225,224 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
         body: Stack(
           children: [
             SingleChildScrollView(
-              // padding: EdgeInsets.only(left: 10, right: 10, top: Platform.isIOS ? kToolbarHeight : kToolbarHeight - 30, bottom: 18),
               padding: const EdgeInsets.only(left: 10, right: 10, top: 10),
-              // physics: const AlwaysScrollableScrollPhysics(),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
-                children: [
+                children: <Widget>[
                   const Gap(kToolbarHeight + 10),
                   Container(
                     decoration: const BoxDecoration(
-                      // color: Colors.black,
                       borderRadius: BorderRadius.all(Radius.circular(15)),
-                      // border: Border.all(color: Colors.grey),
                     ),
                     height: 240,
                     child: initialized
-                        ? NaverMap(
-                            forceGesture: true,
-                            options: NaverMapViewOptions(
-                              locationButtonEnable: false,
-                              initialCameraPosition: NCameraPosition(
-                                  target: NLatLng(Get.find<WeatherGogoCntr>().currentLocation.value.latLng.latitude,
-                                      Get.find<WeatherGogoCntr>().currentLocation.value.latLng.longitude),
-                                  zoom: 13,
-                                  bearing: 0,
-                                  tilt: 0),
-                            ),
-                            onMapReady: (controller) {
-                              mapController = controller;
-                              // 파란색 점으로 현재위치 표시
-                              mapController.setLocationTrackingMode(NLocationTrackingMode.noFollow);
-                            },
+                        ? const Column(
+                            children: [
+                              Text("지도 표시 영역 (현재 주석 처리됨)"),
+                              // NaverMap(
+                              //     forceGesture: true,
+                              //     options: NaverMapViewOptions(
+                              //       locationButtonEnable: false,
+                              //       initialCameraPosition: NCameraPosition(
+                              //           target: NLatLng(Get.find<WeatherGogoCntr>().currentLocation.value.latLng.latitude,
+                              //               Get.find<WeatherGogoCntr>().currentLocation.value.latLng.longitude),
+                              //           zoom: 15,
+                              //           bearing: 0,
+                              //           tilt: 0),
+                              //       extent: NLatLngBounds(
+                              //         southWest: NLatLng(31.43, 122.37),
+                              //         northEast: NLatLng(44.35, 132),
+                              //       ),
+                              //       minZoom: 6,
+                              //       maxZoom: 16,
+                              //       mapType: NMapType.basic,
+                              //       liteModeEnable: true, // 필요한 경우 활성화
+                              //       pickTolerance: 8,
+                              //       locale: const Locale('ko'),
+                              //       logoClickEnable: false,
+                              //       logoAlign: NLogoAlign.leftBottom,
+                              //       scaleBarEnable: false, // 축척 바 표시 여부
+                              //       indoorEnable: true, // 실내 지도 표시 여부
+                              //       nightModeEnable: false, // 야간 모드 표시 여부
+                              //       scrollGesturesEnable: true, // 스크롤 제스처 사용 여부
+                              //       zoomGesturesEnable: true, // 줌 제스처 사용 여부
+                              //       tiltGesturesEnable: true, // 기울이기 제스처 사용 여부
+                              //       rotateGesturesEnable: true, // 회전 제스처 사용 여부
+                              //       stopGesturesEnable: true, // 모든 제스처 중지 여부
+                              //       contentPadding: EdgeInsets.zero, // 콘텐츠 패딩
+                              //     ),
+                              //     onMapReady: (controller) {
+                              //       mapController = controller;
+                              //       // 초기 위치 설정 또는 기타 작업
+                              //     },
+                              //     onMapTapped: (point, latLng) {
+                              //       // 지도 탭 이벤트 처리
+                              //     },
+                              //     onSymbolTapped: (symbol) {
+                              //       // 심볼 탭 이벤트 처리
+                              //     },
+                              //     onCameraChange: (position, reason, isAnimated) {
+                              //       onCameraChangeStreamController.sink.add(reason);
+                              //     },
+                              //     onCameraIdle: () {
+                              //       // 카메라 이동 멈춤 이벤트 처리
+                              //     },
+                              //     onSelectedIndoorChanged: (indoorInfo) {
+                              //       // 실내 지도 변경 이벤트 처리
+                              //     },
+                              //   ),
+                            ],
                           )
-                        : const SizedBox.shrink(),
+                        : const Center(child: CircularProgressIndicator()),
                   ),
+                  ValueListenableBuilder<GeocodeData>(
+                      valueListenable: geocodeDataValue,
+                      builder: (context, value, child) {
+                        if (value.name.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+                        return Column(
+                          children: [
+                            const Gap(10),
+                            Text('선택된 지역: ${value.name}'),
+                            Text('주소: ${value.addr}'),
+                            const Gap(10),
+                            CustomButton(
+                              text: '이 지역 추가',
+                              onPressed: () {
+                                addLocalTag(value);
+                              },
+                              type: 'S',
+                              isEnable: true,
+                            ),
+                          ],
+                        );
+                      }),
                   const Gap(20),
-                  // const Divider(),
-                  // const Gap(10),
-                  const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text('관심 지역 리스트', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800))),
-                  const Gap(10),
-                  buildLocalTag(),
-                  const Gap(200),
+                  // 검색창과 최근 검색어 표시 부분
+                  _buildSearchSection(),
+                  const Gap(20),
+                  _buildFavoriteList(),
+                  const Gap(30),
                 ],
               ),
             ),
-            FavoriteAreaSearchPage(
-              onSelectClick: locationUpdate,
-            ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: ValueListenableBuilder(
-                  valueListenable: geocodeDataValue,
-                  builder: (builder, value, child) {
-                    if (value.name == '') return const SizedBox.shrink();
-                    return Container(
-                      padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(15),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(value.name.toString(), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-                                Text(value.addr.toString(),
-                                    overflow: TextOverflow.clip, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                              ],
-                            ),
-                          ),
-                          SizedBox(
-                              height: 40,
-                              width: 90,
-                              child: CustomButton(
-                                  text: '등록하기',
-                                  isEnable: true,
-                                  listColors: const [
-                                    Color.fromARGB(255, 36, 77, 158),
-                                    Color.fromARGB(255, 35, 81, 172),
-                                  ],
-                                  type: 'S',
-                                  onPressed: () => addLocalTag(value))),
-                        ],
-                      ),
-                    );
-                  }),
-            )
           ],
         ),
       ),
     );
   }
 
-  // 검색지역 저장 화면
-  void buildSaveWidget(GeocodeData value) {
-    showModalBottomSheet(
-      isScrollControlled: true,
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(15.0),
+  Widget _buildSearchSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '지역 검색',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
-      ),
-      backgroundColor: Colors.white, //.withOpacity(0.8),
-      builder: (BuildContext context) {
-        return SizedBox(
-            height: 120,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(value.name.toString(), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-                      Text(value.addr.toString(), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                  SizedBox(
-                      height: 40,
-                      width: 80,
-                      child: CustomButton(
-                          text: '등록하기',
-                          isEnable: true,
-                          listColors: const [
-                            Color.fromARGB(255, 36, 77, 158),
-                            Color.fromARGB(255, 35, 81, 172),
-                          ],
-                          type: 'S',
+        const Gap(10),
+        TextField(
+          controller: searchController,
+          focusNode: textFocus,
+          decoration: InputDecoration(
+            hintText: '동/읍/면 또는 건물명 입력',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.blue),
+            ),
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () {
+                if (searchController.text.isNotEmpty) {
+                  Get.to(() => FavoriteAreaSearchPage(
+                        onSelectClick: (selectedGeocodeData) {
+                          locationUpdate(selectedGeocodeData);
+                          Get.back();
+                        },
+                      ));
+                }
+              },
+            ),
+          ),
+          onSubmitted: (value) {
+            if (value.isNotEmpty) {
+              Get.to(() => FavoriteAreaSearchPage(
+                    onSelectClick: (selectedGeocodeData) {
+                      locationUpdate(selectedGeocodeData);
+                      Get.back();
+                    },
+                  ));
+            }
+          },
+        ),
+        // 최근 검색어 등 추가 UI가 필요하면 여기에 구현
+      ],
+    );
+  }
+
+  Widget _buildFavoriteList() {
+    return StreamBuilder<ResStream<List<String>>>(
+      stream: areaStream.stream,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          final data = snapshot.data!;
+          if (data.status == Status.COMPLETED) {
+            if (data.data!.isEmpty) {
+              return const Center(child: Text('등록된 관심 지역이 없습니다.'));
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '나의 관심 지역',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const Gap(10),
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: data.data!.length,
+                  itemBuilder: (context, index) {
+                    final areaName = data.data![index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 5),
+                      child: ListTile(
+                        title: Text(areaName),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
                           onPressed: () {
-                            Navigator.pop(context);
-                            addLocalTag(value);
-                          })),
-                ],
-              ),
-            ));
+                            Utils.showConfirmDialog(
+                              '삭제 확인',
+                              '[$areaName] 지역을 삭제하시겠습니까?',
+                              BackButtonBehavior.none,
+                              confirm: () => removeLocalTag(areaName),
+                            );
+                          },
+                        ),
+                        onTap: () {
+                          // WeatherGogoCntr.to 대신 Get.find<WeatherGogoCntr>() 사용
+                          // areaName으로 GeocodeData를 임시 생성하여 searchWeatherKakao 호출
+                          final tempGeocodeData = GeocodeData(name: areaName, latLng: const LatLng(0, 0), addr: '');
+                          Get.find<WeatherGogoCntr>().searchWeatherKakao(tempGeocodeData);
+                          Get.back(); // 이전 화면으로 돌아가기 (예시)
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ],
+            );
+          } else if (data.status == Status.ERROR) {
+            return Center(child: Text('오류: ${data.message}'));
+          }
+        }
+        return const Center(child: CircularProgressIndicator());
       },
     );
-  }
-
-  // 메인 검색어
-  Widget buildLocalTag() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: StreamBuilder<ResStream<List<String>>>(
-          stream: areaStream.stream,
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              if (snapshot.data!.status == Status.COMPLETED) {
-                List<String> list = snapshot.data!.data!;
-                if (list.isEmpty) {
-                  return Container(
-                    padding: const EdgeInsets.all(20),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '등록된 관심지역이 없습니다.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  );
-                }
-                return Wrap(
-                  spacing: 6.0,
-                  runSpacing: 6.0,
-                  direction: Axis.horizontal,
-                  crossAxisAlignment: WrapCrossAlignment.start,
-                  verticalDirection: VerticalDirection.down,
-                  runAlignment: WrapAlignment.start,
-                  alignment: WrapAlignment.start,
-                  children: list.map((e) => buildChip(e)).toList(),
-                );
-              } else {
-                return Container(
-                  padding: const EdgeInsets.all(20),
-                  alignment: Alignment.center,
-                  child: Text(
-                    '등록된 관심지역이 없습니다.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                );
-              }
-            } else {
-              // getTag();
-              return Container(
-                padding: const EdgeInsets.all(20),
-                alignment: Alignment.center,
-                child: Text(
-                  '등록된 관심지역이 없습니다.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              );
-            }
-          }),
-    );
-  }
-
-  Widget buildChip(String label) {
-    return InkWell(
-        onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/0/${Uri.encodeComponent(label)}'),
-        child: Chip(
-          elevation: 0,
-          padding: EdgeInsets.zero,
-          backgroundColor: const Color.fromARGB(255, 140, 131, 221), // Color.fromARGB(255, 76, 70, 124),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-            side: const BorderSide(color: Colors.transparent),
-          ),
-          label: Text(
-            '  $label',
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-          ),
-          labelPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-          onDeleted: () => removeLocalTag(label),
-          deleteButtonTooltipMessage: '삭제',
-          deleteIconColor: Colors.white60,
-        ));
   }
 }

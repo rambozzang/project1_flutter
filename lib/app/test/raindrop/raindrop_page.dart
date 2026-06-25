@@ -59,7 +59,7 @@ class RainPainter extends CustomPainter {
 class RainDropAnimation extends StatefulWidget {
   final ValueNotifier<bool> isVisibleNotifier;
 
-  const RainDropAnimation({Key? key, required this.isVisibleNotifier}) : super(key: key);
+  const RainDropAnimation({super.key, required this.isVisibleNotifier});
 
   @override
   _RainDropAnimationState createState() => _RainDropAnimationState();

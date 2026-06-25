@@ -21,7 +21,7 @@ class FullWidthBannerAd extends StatelessWidget {
             width: MediaQuery.of(context).size.width,
             height: MediaQuery.of(context).size.height,
             child: AdWidget(ad: bannerAd!))
-        : Container(
+        : SizedBox(
             width: 500,
             height: 500,
             child: Center(

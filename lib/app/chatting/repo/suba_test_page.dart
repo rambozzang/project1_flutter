@@ -41,7 +41,7 @@ class _SupaTestPageState extends State<SupaTestPage> {
 }
 
 class _LoginForm extends StatefulWidget {
-  const _LoginForm({Key? key}) : super(key: key);
+  const _LoginForm();
 
   @override
   State<_LoginForm> createState() => _LoginFormState();
@@ -136,7 +136,7 @@ class _LoginFormState extends State<_LoginForm> {
 }
 
 class _ProfileForm extends StatefulWidget {
-  const _ProfileForm({Key? key}) : super(key: key);
+  const _ProfileForm();
 
   @override
   State<_ProfileForm> createState() => _ProfileFormState();

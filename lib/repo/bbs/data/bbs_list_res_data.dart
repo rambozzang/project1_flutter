@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
-import 'package:project1/repo/bbs/data/bbs_file_data_res.dart';
 import 'package:project1/repo/bbs/data/bbs_list_data.dart';
 import 'package:project1/repo/bbs/data/bbs_list_paging.dart';
 
