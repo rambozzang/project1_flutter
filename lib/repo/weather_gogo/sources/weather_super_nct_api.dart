@@ -26,16 +26,26 @@ class NctAPI {
     final startTime = now.minute <= 40 ? now.subtract(const Duration(hours: 24)) : now.subtract(const Duration(hours: 23));
     LatLng latLng = LatLng(weather.nx.toDouble(), weather.ny.toDouble());
 
-    List<Future<List<dynamic>>> futures = [];
-
     try {
       final stopwatch = Stopwatch()..start();
       lo.g('===================== getYesterDayJsonData start ');
 
-      for (int i = 0; i < 24; i++) {
-        futures.add(_fetchData(startTime.add(Duration(hours: i)), weather));
+      // 24개를 한번에 병렬 요청하면 공공데이터 API 429(Rate limit) 폭발.
+      // → 3개씩 배치로 나눠 순차 처리(속도와 안정성 균형).
+      List<List<dynamic>> results = [];
+      const batchSize = 3;
+      for (int i = 0; i < 24; i += batchSize) {
+        final end = (i + batchSize < 24) ? i + batchSize : 24;
+        final batchFutures = <Future<List<dynamic>>>[];
+        for (int j = i; j < end; j++) {
+          batchFutures.add(_fetchData(startTime.add(Duration(hours: j)), weather));
+        }
+        final batchResults = await Future.wait(batchFutures);
+        results.addAll(batchResults);
+        if (i + batchSize < 24) {
+          await Future.delayed(const Duration(milliseconds: 200)); // 배치 간격
+        }
       }
-      List<List<dynamic>> results = await Future.wait(futures);
 
       lo.g("getYesterDayJsonData() results: ${results.length}");
 

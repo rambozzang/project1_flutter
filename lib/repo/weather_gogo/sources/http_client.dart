@@ -29,6 +29,11 @@ class HttpService {
         final response = await _client.get(uri, headers: headers).timeout(timeout);
         if (response.statusCode == 200) {
           return json.decode(response.body);
+        } else if (response.statusCode == 429) {
+          // Rate limit — 재시도해도 429만 더 쌓이므로 즉시 포기.
+          lo.e('getWithRetry() HTTP error (Attempt ${retryCount + 1}/$maxRetries): '
+              'HTTP error ${response.statusCode}: ${response.reasonPhrase}');
+          throw HttpException('HTTP error ${response.statusCode}: API rate limit exceeded');
         } else {
           throw HttpException('HTTP error ${response.statusCode}: ${response.body}');
         }
@@ -36,6 +41,7 @@ class HttpService {
         retryCount++;
         lo.e('getWithRetry() Request timed out (Attempt $retryCount/$maxRetries): ${uri.toString()} ${e.toString()}');
       } on HttpException catch (e) {
+        // 429는 위에서 즉시 throw되므로 여기선 다른 HTTP 에러만 재시도.
         retryCount++;
         lo.e('getWithRetry() HTTP error (Attempt $retryCount/$maxRetries): ${e.toString()} : ${uri.toString()}');
       } on SocketException catch (e) {
