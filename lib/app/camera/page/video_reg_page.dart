@@ -1820,7 +1820,9 @@ class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage> {
           style: TextStyle(fontSize: 15),
         ),
       ),
-      body: FutureBuilder<bool>(
+      // 영상 하단이 물리 내비/제스처 바에 짤리지 않도록 SafeArea 적용 (상단은 AppBar가 처리)
+      body: SafeArea(
+        child: FutureBuilder<bool>(
         future: started(),
         builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
           if (snapshot.data ?? false) {
@@ -1841,6 +1843,7 @@ class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage> {
             return const Center(child: CircularProgressIndicator());
           }
         },
+        ),
       ),
     );
   }
