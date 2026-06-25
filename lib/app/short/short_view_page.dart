@@ -116,7 +116,12 @@ class _ShortViewPageState extends State<ShortViewPage> {
             _buildSavingIndicator()
           ],
         ),
-        bottomNavigationBar: ShortCommentsBottomPage(),
+        // 하단 입력창이 물리 내비/제스처 바에 가려지지 않도록 SafeArea 적용.
+        // (키보드는 입력창 내부 viewInsets로 처리 → padding과 별개라 충돌 없음)
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: ShortCommentsBottomPage(),
+        ),
       ),
     );
   }
