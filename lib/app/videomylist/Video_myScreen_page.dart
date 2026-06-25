@@ -269,7 +269,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
             child: Stack(
               children: [
                 isPhotoPost
-                    ? _buildPhotoCarousel()
+                    ? Positioned.fill(child: _buildPhotoCarousel())
                     : GestureDetector(
                   onTap: () {
                     initPlay = true;
