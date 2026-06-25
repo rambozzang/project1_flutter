@@ -24,6 +24,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   //....... Internal variables ........
   int recordDurationLimit = 15;
   CameraController? _cameraController;
+  bool _initializing = false; // 중복 초기화(컨트롤러 2개 생성) 방지 가드
   CameraLensDirection currentLensDirection = CameraLensDirection.back;
   Timer? recordingTimer;
   ValueNotifier<int> recordingDuration = ValueNotifier(0);
@@ -72,10 +73,25 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   // Handle CameraInitialize event
   void _onCameraInitialize(CameraInitialize event, Emitter<CameraState> emit) async {
     recordDurationLimit = event.recordingLimit;
+
+    // 중복 초기화 방지:
+    // root_page에서 미리 1번(선행 초기화) + camera_page initState에서 1번 → CameraInitialize가
+    // 같은 bloc에 2번 들어온다. 가드 없이 동시에 _initializeCamera가 돌면 컨트롤러가 2개 생성돼
+    // CameraX 세션이 충돌(Long monitor contention)하고 프리뷰가 검은화면으로 멈춘다.
+    if (_initializing) return; // 진행 중이면 무시 → 첫 초기화의 CameraReady가 UI를 갱신한다.
+    if (isInitialized()) {
+      // 이미 초기화 완료 → 프리뷰가 확실히 그려지도록 현재 상태만 다시 방출.
+      emit(CameraReady(isRecordingVideo: isRecording(), decativateRecordButton: false));
+      return;
+    }
+
+    _initializing = true;
     try {
       await _checkPermissionAndInitializeCamera(emit); // checking and asking for camera permission and initializing camera
     } catch (e) {
       emit(CameraError(error: e == CameraErrorType.permission ? CameraErrorType.permission : CameraErrorType.other));
+    } finally {
+      _initializing = false;
     }
   }
 
@@ -237,6 +253,10 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   // Initialize the camera controller
   Future<void> _initializeCamera(Emitter<CameraState> emit) async {
     try {
+      // 기존 컨트롤러가 남아있으면 먼저 정리(중복 세션/누수 방지).
+      if (_cameraController != null) {
+        await _disposeCamera();
+      }
       _cameraController = await cameraUtils.getCameraController(lensDirection: currentLensDirection);
       await _cameraController!.initialize();
 
