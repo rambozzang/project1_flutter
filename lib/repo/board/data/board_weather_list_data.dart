@@ -1,6 +1,25 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
+/// imageUrls를 백엔드가 어떤 형태로 주든 안전하게 List<String>으로 변환한다.
+/// - JSON 배열(List) → 그대로
+/// - 콤마구분 문자열("a,b,c") → split
+/// - 빈/그외 → null
+List<String>? parseImageUrls(dynamic v) {
+  if (v == null) return null;
+  if (v is List) {
+    final list = v.map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
+    return list.isEmpty ? null : list;
+  }
+  if (v is String) {
+    if (v.trim().isEmpty) return null;
+    // 백엔드 STRING_AGG 구분자('|') 또는 콤마(',')로 들어와도 처리
+    final list = v.split(RegExp(r'[|,]')).map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    return list.isEmpty ? null : list;
+  }
+  return null;
+}
+
 class BoardWeatherListData {
   String? custId;
   String? custNm;
@@ -281,7 +300,7 @@ class BoardWeatherListData {
       city: map['city'] != null ? map['city'] as String : null,
       typeCd: map['typeCd'] != null ? map['typeCd'] as String : null,
       typeDtCd: map['typeDtCd'] != null ? map['typeDtCd'] as String : null,
-      imageUrls: map['imageUrls'] != null ? List<String>.from((map['imageUrls'] as List).map((e) => e.toString())) : null,
+      imageUrls: parseImageUrls(map['imageUrls']),
       depthNo: map['depthNo'] != null ? map['depthNo'] as int : null,
       crtDtm: map['crtDtm'] != null ? map['crtDtm'] as String : null,
       replyCnt: map['replyCnt'] != null ? map['replyCnt'] as int : null,

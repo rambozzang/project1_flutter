@@ -75,11 +75,27 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
   bool initPlay = false;
   int loadingImageIndex = 0;
 
+  // 사진 게시물(typeDtCd='I' 또는 imageUrls 보유) — VideoPlayer를 만들지 않는다.
+  bool get isPhotoPost => widget.data.typeDtCd == 'I' || (widget.data.imageUrls?.isNotEmpty ?? false);
+  List<String> get _photoUrls {
+    final urls = widget.data.imageUrls;
+    if (urls != null && urls.isNotEmpty) return urls;
+    // 백엔드가 아직 imageUrls 배열을 안 주면 thumbnailPath(첫 사진)라도 표시(폴백).
+    final thumb = widget.data.thumbnailPath;
+    if (thumb != null && thumb.isNotEmpty) return [thumb];
+    return const [];
+  }
+  final PageController _photoController = PageController();
+  final ValueNotifier<int> _photoIndex = ValueNotifier<int>(0);
+
   @override
   void initState() {
     super.initState();
 
-    initiliazeVideo();
+    // 사진 게시물은 VideoPlayer를 초기화하지 않는다(null videoPath로 실패→재귀 방지).
+    if (!isPhotoPost) {
+      initiliazeVideo();
+    }
     isFollowed.value = widget.data.followYn.toString();
     loadingImageIndex = Random().nextInt(6);
   }
@@ -227,10 +243,15 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
   @override
   void dispose() {
     initialized = false;
-    _controller.removeListener(() {});
-    _controller.setVolume(0);
-    _controller.pause();
-    _controller.dispose();
+    _photoController.dispose();
+    _photoIndex.dispose();
+    // 사진 게시물은 _controller(late)를 초기화하지 않았으므로 접근 금지.
+    if (!isPhotoPost) {
+      _controller.removeListener(() {});
+      _controller.setVolume(0);
+      _controller.pause();
+      _controller.dispose();
+    }
     super.dispose();
   }
 
@@ -246,7 +267,9 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
           Expanded(
             child: Stack(
               children: [
-                GestureDetector(
+                isPhotoPost
+                    ? _buildPhotoCarousel()
+                    : GestureDetector(
                   onTap: () {
                     initPlay = true;
                     if (_controller.value.isPlaying) {
@@ -311,17 +334,17 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                 ),
                 // // 오른쪽 상단 close 버튼
                 // buildCloseButton(),
-                // 중앙 play 버튼
-                buildCenterPlayButton(),
-                // 사운드 on/off 버튼
-                buildSoundButton(),
+                // 중앙 play 버튼 (영상 전용)
+                if (!isPhotoPost) buildCenterPlayButton(),
+                // 사운드 on/off 버튼 (영상 전용)
+                if (!isPhotoPost) buildSoundButton(),
                 // 하단 컨텐츠
                 buildBottomContent(),
                 // 오른쪽 메뉴바
                 buildRightMenuBar(),
 
-                // 재생 progressbar
-                buildPlayProgress(),
+                // 재생 progressbar (영상 전용)
+                if (!isPhotoPost) buildPlayProgress(),
                 Positioned(
                   top: (MediaQuery.of(context).size.height - 60) * .5,
                   right: 14,
@@ -410,6 +433,68 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
   void changeContents(String contents) {
     widget.data.contents = contents;
     setState(() {});
+  }
+
+  // 사진 게시물 가로 캐러셀(세로 피드와 직교 → 제스처 충돌 없음)
+  Widget _buildPhotoCarousel() {
+    final List<String> imgs = _photoUrls;
+    if (imgs.isEmpty) return Container(color: Colors.black);
+    return Stack(
+      alignment: Alignment.topCenter,
+      children: [
+        PageView.builder(
+          controller: _photoController,
+          itemCount: imgs.length,
+          onPageChanged: (i) => _photoIndex.value = i,
+          itemBuilder: (context, i) {
+            return CachedNetworkImage(
+              imageUrl: imgs[i],
+              cacheKey: imgs[i],
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              placeholder: (_, __) => Container(color: Colors.black),
+              errorWidget: (_, __, ___) => Container(
+                color: Colors.black,
+                child: const Center(child: Icon(Icons.broken_image, color: Colors.white24, size: 48)),
+              ),
+            );
+          },
+        ),
+        if (imgs.length > 1)
+          Positioned(
+            top: MediaQuery.of(context).viewPadding.top + 14,
+            child: ValueListenableBuilder<int>(
+              valueListenable: _photoIndex,
+              builder: (context, cur, _) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.38),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(imgs.length, (i) {
+                      final bool active = i == cur;
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        width: active ? 7 : 6,
+                        height: active ? 7 : 6,
+                        decoration: BoxDecoration(
+                          color: active ? Colors.white : Colors.white.withOpacity(0.5),
+                          shape: BoxShape.circle,
+                        ),
+                      );
+                    }),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
+    );
   }
 
   Widget buildLoading(Key key) {

@@ -6,6 +6,23 @@
 
 ---
 
+## 🚨 현재 상태(2026-06-25 실측) — 백엔드 미구현 확인
+
+실제 업로드 후 피드 응답을 확인한 결과:
+```
+boardId=2929 typeDtCd=I imageUrls=null videoPath=null thumb=https://imagedelivery.net/.../d4098ecd.../public
+```
+- ✅ `typeDtCd='I'` 저장됨
+- ✅ `thumbnailPath`(첫 사진 URL) 저장·반환됨  ← Flutter가 `thumbnailPath=imageUrls.first`로 보낸 값
+- ❌ **`imageUrls`(전체 배열)는 저장/반환 안 됨** ← **백엔드 작업 필요**
+
+**Flutter 임시 대응:** `imageUrls`가 비면 `thumbnailPath`(첫 사진)라도 캐러셀에 1장 표시하도록 폴백 적용함.
+→ **백엔드가 아래 `imageUrls` 저장/반환을 구현하면, 여러 장이 자동으로 모두 표시됨.**
+
+**백엔드가 해야 할 일(요약):** `/board/saveAll` 요청의 `boardWeatherVo.imageUrls`/`imageIds`(JSON 배열)를 저장하고, 피드/내글/상세 응답의 `BoardWeatherListData`에 `imageUrls`(배열)로 반환.
+
+---
+
 ## 1. 핵심 개념: `typeDtCd`로 영상/사진 구분
 
 기존 게시물은 `typeCd='V'`, `typeDtCd='V'`(영상). 사진 게시물은 다음으로 구분한다.
