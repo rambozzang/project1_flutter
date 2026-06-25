@@ -306,7 +306,9 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
 
   Widget makeBottomItem() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+      // 하단 메뉴를 시스템 내비/제스처 바 위로 올린다(물리 버튼과 겹침 방지).
+      // 영상 피드는 그 뒤로 몰입형으로 꽉 채워 보인다.
+      margin: EdgeInsets.only(left: 10, right: 10, bottom: MediaQuery.of(context).viewPadding.bottom),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
       decoration: BoxDecoration(
         // color: Colors.grey.withOpacity(0.63),
