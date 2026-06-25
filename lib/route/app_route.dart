@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart' show BlocProvider;
 import 'package:get/get.dart';
+import 'package:project1/app/camera/bloc/camera_bloc.dart';
+import 'package:project1/app/camera/page/camera_page.dart';
+import 'package:project1/app/camera/utils/camera_utils.dart';
+import 'package:project1/app/camera/utils/permission_utils.dart';
 import 'package:project1/app/bbs/bbs_list_page.dart';
 import 'package:project1/app/bbs/bbs_modify_page.dart';
 import 'package:project1/app/bbs/bbs_my_list_page.dart';
@@ -67,6 +72,13 @@ abstract class AppPages {
     // alramCd에 따라 이동할 페이지를 분기
     // 08: 게시판 좋아요
     // 09: 게시판 댓글
+    // 20: 날씨 이벤트(비/눈/노을 등) → 영상 공유 유도, 카메라 진입
+
+    // 날씨 이벤트 푸시는 boardId가 없으므로 가장 먼저 처리한다.
+    if (alramCd == '20') {
+      openCameraGlobal();
+      return;
+    }
 
     if (boardId == null || boardId == '' || boardId == 'null') {
       Get.toNamed('/OtherInfoPage/$custId');
@@ -82,6 +94,14 @@ abstract class AppPages {
         Get.toNamed('/VideoMyinfoListPage', arguments: {'datatype': 'ONE', 'custId': custId, 'boardId': boardId.toString()});
         break;
     }
+  }
+
+  // 어디서든(푸시 핸들러 등) 카메라를 연다 — context 불필요(Get.to).
+  // root_page.goRecord와 동일하게 CameraBloc을 사전 초기화한다.
+  static void openCameraGlobal() {
+    final camBloc = CameraBloc(cameraUtils: CameraUtils(), permissionUtils: PermissionUtils())
+      ..add(const CameraInitialize(recordingLimit: 15));
+    Get.to(() => BlocProvider<CameraBloc>.value(value: camBloc, child: const CameraPage()))?.then((_) => camBloc.close());
   }
 
   static final routes = [
