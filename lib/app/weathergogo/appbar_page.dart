@@ -43,18 +43,27 @@ class AppbarPage extends StatelessWidget {
                     )
                   ],
                 ),
-                SizedBox(
-                  width: 24,
-                  child: IconButton(
-                    padding: const EdgeInsets.all(0),
-                    constraints: const BoxConstraints(),
-                    style: ButtonStyle(
-                      padding: WidgetStateProperty.all(EdgeInsets.zero),
-                      // backgroundColor: WidgetStateProperty.all(Colors.grey[500]),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 스팟별 날씨(캠핑·낚시·골프) 진입
+                    IconButton(
+                      padding: const EdgeInsets.all(0),
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(Icons.travel_explore_rounded, color: Color.fromARGB(255, 196, 211, 196), size: 24.0),
+                      onPressed: () => Get.toNamed('/SpotWeatherPage'),
                     ),
-                    icon: const Icon(Icons.my_location, color: Color.fromARGB(255, 196, 211, 196), size: 24.0),
-                    onPressed: () => Get.find<WeatherGogoCntr>().getCurrentWeatherData(true),
-                  ),
+                    const SizedBox(width: 14),
+                    IconButton(
+                      padding: const EdgeInsets.all(0),
+                      constraints: const BoxConstraints(),
+                      style: ButtonStyle(
+                        padding: WidgetStateProperty.all(EdgeInsets.zero),
+                      ),
+                      icon: const Icon(Icons.my_location, color: Color.fromARGB(255, 196, 211, 196), size: 24.0),
+                      onPressed: () => Get.find<WeatherGogoCntr>().getCurrentWeatherData(true),
+                    ),
+                  ],
                 ),
               ],
             ),

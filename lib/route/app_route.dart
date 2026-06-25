@@ -5,6 +5,7 @@ import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/camera/page/camera_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/camera/utils/permission_utils.dart';
+import 'package:project1/app/spot/spot_weather_page.dart';
 import 'package:project1/app/bbs/bbs_list_page.dart';
 import 'package:project1/app/bbs/bbs_modify_page.dart';
 import 'package:project1/app/bbs/bbs_my_list_page.dart';
@@ -109,6 +110,11 @@ abstract class AppPages {
       name: '/AuthPage',
       page: () => const AuthPage(),
       transition: Transition.native,
+    ),
+    GetPage(
+      name: '/SpotWeatherPage',
+      page: () => const SpotWeatherPage(),
+      transition: Transition.cupertino,
     ),
     GetPage(
       name: '/JoinPage',
