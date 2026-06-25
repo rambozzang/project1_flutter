@@ -17,6 +17,7 @@ import 'package:project1/app/videocomment/comment_page.dart';
 import 'package:project1/app/videolist/video_sigo_page.dart';
 import 'package:project1/app/videomylist/video_manger_page.dart';
 import 'package:project1/app/videomylist/cntr/video_myinfo_list_cntr.dart';
+import 'package:project1/app/videolist/video_list_page.dart' show FastPageScrollPhysics;
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -444,6 +445,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
       children: [
         PageView.builder(
           controller: _photoController,
+          physics: const FastPageScrollPhysics(), // 더 민감·빠른 좌우 스와이프
           itemCount: imgs.length,
           onPageChanged: (i) => _photoIndex.value = i,
           itemBuilder: (context, i) {

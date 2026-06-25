@@ -13,6 +13,7 @@ import 'package:like_button/like_button.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
+import 'package:project1/app/videolist/video_list_page.dart' show FastPageScrollPhysics;
 import 'package:project1/app/videocomment/comment_page.dart';
 import 'package:project1/app/videolist/video_sigo_page.dart';
 import 'package:project1/repo/board/board_repo.dart';
@@ -426,6 +427,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
         // 가로 스와이프 캐러셀 — 세로 피드(PreloadPageView)와 직교라 제스처 충돌 없음
         PageView.builder(
           controller: _photoController,
+          physics: const FastPageScrollPhysics(), // 더 민감·빠른 좌우 스와이프(세로 피드와 동일)
           itemCount: imgs.length,
           onPageChanged: (i) => _photoIndex.value = i,
           itemBuilder: (context, i) {
