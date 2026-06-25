@@ -60,7 +60,7 @@ dependencies:
   flutter_local_notifications: ^17.2.1+2
   permission_handler: ^11.3.0  
   camera: ^0.11.3  # 0.11.3+: enablePersistentRecording(지속 녹화)로 녹화 시작 지연 개선
-  camera_android_camerax: ^0.6.14  # CameraX 백엔드(camera 0.11.x 호환)
+  camera_android_camerax: ^0.6.14  # CameraX 백엔드(camera 0.11.x 호환). 0.7.x는 AGP 9 필요로 비호환
   flutter_bloc: ^8.1.4
   equatable: ^2.0.5
   video_player: ^2.10.0
