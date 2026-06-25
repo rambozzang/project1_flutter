@@ -105,7 +105,10 @@ class BbsCommentsController extends GetxController {
   }
 
   void setInitData(BbsListData bbsListData) {
-    bbsListData = bbsListData;
+    // 파라미터명이 필드명과 같아 shadowing → this.로 필드에 대입해야 한다.
+    // (기존: `bbsListData = bbsListData;` 는 파라미터를 자기 자신에 대입해 late 필드가
+    //  초기화되지 않아, 이후 접근 시 LateInitializationError 발생했음)
+    this.bbsListData = bbsListData;
     rootId = bbsListData.boardId.toString();
     parentId = bbsListData.boardId.toString();
     isRootDeleted = bbsListData.delYn == 'Y';

@@ -110,7 +110,8 @@ class ShortCommentsController extends GetxController {
   }
 
   void setInitData(BbsListData bbsListData) {
-    bbsListData = bbsListData;
+    // 파라미터명이 필드명과 같아 shadowing → this.로 필드에 대입(LateInit 방지)
+    this.bbsListData = bbsListData;
     rootId = bbsListData.boardId.toString();
     parentId = bbsListData.boardId.toString();
     fetchComments();
