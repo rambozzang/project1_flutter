@@ -330,7 +330,7 @@
 		<key>UIMainStoryboardFile</key>
 		<string>Main</string>
 		<key>UIStatusBarHidden</key>
-		<false/>
+		<true/>
 		<key>UISupportedInterfaceOrientations</key>
 		<array>
 			<string>UIInterfaceOrientationPortrait</string>
@@ -355,6 +355,6 @@
 		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false/>
 		<key>LSMinimumSystemVersion</key>
-        <string>13.0.0</string>
+		<string>13.0.0</string>
 	</dict>
 </plist>

@@ -194,6 +194,21 @@ class WeatherGogoCntr extends GetxController {
       }
     }
 
+    // ── 빠른 진입(콜드 GPS 픽스 대기 제거) ──
+    // 마지막으로 알려진 위치가 있으면 즉시 사용해 홈으로 바로 진입하고,
+    // 정밀 위치는 백그라운드에서 조용히 갱신한다. (GPS 의존성은 그대로 유지)
+    try {
+      final last = await Geolocator.getLastKnownPosition();
+      if (last != null) {
+        positionData.value = last;
+        currentLocation.value.latLng = LatLng(last.latitude, last.longitude);
+        _refinePositionInBackground(); // fire-and-forget
+        return last;
+      }
+    } catch (e) {
+      lo.g('getLastKnownPosition skip: $e');
+    }
+
     Position position = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
       timeLimit: const Duration(seconds: 5),
@@ -206,6 +221,21 @@ class WeatherGogoCntr extends GetxController {
     currentLocation.value.latLng = LatLng(position.latitude, position.longitude);
 
     return position;
+  }
+
+  // 마지막 위치로 먼저 진입한 뒤, 정밀 위치를 백그라운드에서 갱신한다.
+  // (날씨는 이미 마지막 위치로 선로딩됨 → 큰 이동이 아니면 차이 없음, 다음 새로고침에 반영)
+  Future<void> _refinePositionInBackground() async {
+    try {
+      final precise = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 8),
+      );
+      positionData.value = precise;
+      currentLocation.value.latLng = LatLng(precise.latitude, precise.longitude);
+    } catch (e) {
+      lo.g('background precise location error: $e');
+    }
   }
 
   // 검색후 호출

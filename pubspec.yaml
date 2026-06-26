@@ -177,15 +177,13 @@ flutter:
      - assets/lottie/
 
 flutter_native_splash:
-  color: "#262B49"
-  image:  assets/skysnap1.png
+  color: "#FFFFFF"
+  image:  assets/icon/app_icon_v9.png
   android_12:
-    image:   assets/skysnap1.png
-   # color: "#262B49"
-    # icon_background_color: "#262B49"
-    image_dark:   assets/skysnap1.png
-  #  color_dark: "#262B49"
-    # icon_background_color_dark: "#262B49"
+    image:   assets/icon/app_icon_v9.png
+    color: "#FFFFFF"
+    image_dark:   assets/icon/app_icon_v9.png
+    color_dark: "#FFFFFF"
 
   fullscreen: true
   android: true

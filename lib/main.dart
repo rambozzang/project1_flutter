@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:bot_toast/bot_toast.dart';
@@ -37,8 +38,8 @@ void main() async {
   KakaoSdk.init(nativeAppKey: 'd0023f080e59afd633bc19e469ed4a73');
   // KakaoSdk.init(nativeAppKey: 'e94966b7ae7e09c06d47e9d9fa580f4c');
 
-  // // 광고 init
-  await AdManager.initialize(targetPlatform: Platform.isIOS ? TargetPlatform.iOS : TargetPlatform.android);
+  // // 광고 init — 시작(첫 화면)을 막지 않도록 백그라운드로. 광고는 피드 진입 시점엔 이미 준비됨.
+  unawaited(AdManager.initialize(targetPlatform: Platform.isIOS ? TargetPlatform.iOS : TargetPlatform.android));
 
   // supabase - 현재 중단 상태이므로 주석처리
   // await Supabase.initialize(url: supabaseOptions.url, anonKey: supabaseOptions.anonKey);
