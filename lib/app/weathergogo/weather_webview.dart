@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
@@ -54,12 +55,11 @@ class WeatherWEbviewPage extends StatelessWidget {
             ),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
-                  fullscreenDialog: false,
-                  builder: (context) => const CommonWebView(
-                        isBackBtn: true,
+                  builder: (context) => const AirInfoFullPage(
+                        title: '대기 흐름',
                         url: webViewUrl,
                       )),
-            ), // Get.toNamed('/WeatherWebView'),
+            ),
             child: Text('전체화면으로 ', style: semiboldText.copyWith(fontSize: 11.0)),
           ),
           const Gap(40)
@@ -145,9 +145,8 @@ class _RealtimeAirWebviewPageState extends State<RealtimeAirWebviewPage> {
               ),
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(
-                    fullscreenDialog: false,
-                    builder: (context) => const CommonWebView(
-                          isBackBtn: true,
+                    builder: (context) => const AirInfoFullPage(
+                          title: '실시간 대기정보',
                           url: _url,
                         )),
               ),
@@ -155,6 +154,58 @@ class _RealtimeAirWebviewPageState extends State<RealtimeAirWebviewPage> {
             ),
           const Gap(40)
         ],
+      ),
+    );
+  }
+}
+
+/// 대기정보 전체화면 보기 — 타이틀 바 + 웹뷰 전체.
+/// 넓은 위성 GIS 지도를 크게 보도록 가로 보기를 허용하고, 나가면 세로 고정으로 복귀한다.
+class AirInfoFullPage extends StatefulWidget {
+  final String title;
+  final String url;
+  const AirInfoFullPage({super.key, required this.title, required this.url});
+
+  @override
+  State<AirInfoFullPage> createState() => _AirInfoFullPageState();
+}
+
+class _AirInfoFullPageState extends State<AirInfoFullPage> {
+  @override
+  void initState() {
+    super.initState();
+    // 위성 지도는 가로가 넓어 가로 보기 허용(전역 세로고정 일시 해제)
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
+
+  @override
+  void dispose() {
+    // 나갈 때 다시 세로 고정으로 복귀
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: Text(widget.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, size: 20),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: SafeArea(
+        top: false,
+        child: CommonWebView(isBackBtn: false, url: widget.url),
       ),
     );
   }
