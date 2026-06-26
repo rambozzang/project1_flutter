@@ -89,4 +89,61 @@ class BackendWeatherApi {
       return [];
     }
   }
+
+  /// 미세먼지 조회 - GET /weather/mist?sidoName=
+  Future<Map<String, dynamic>?> getMistData(String sidoName) async {
+    try {
+      final dio = await AuthDio.instance.getDio();
+      final res = await dio.get(
+        '${UrlConfig.baseURL}/weather/mist',
+        queryParameters: {'sidoName': sidoName},
+      );
+      final resData = AuthDio.instance.dioResponse(res);
+      if (resData.code != '00' || resData.data == null) {
+        lo.g('BackendWeatherApi mist 빈응답');
+        return null;
+      }
+      return Map<String, dynamic>.from(resData.data as Map);
+    } catch (e) {
+      lo.g('BackendWeatherApi.getMistData error: $e');
+      return null;
+    }
+  }
+
+  /// 중기예보 조회 (육상+기온) - GET /weather/mid?lat=&lng=
+  Future<Map<String, dynamic>?> getMidForecast(double lat, double lng) async {
+    try {
+      final dio = await AuthDio.instance.getDio();
+      final res = await dio.get(
+        '${UrlConfig.baseURL}/weather/mid',
+        queryParameters: {'lat': lat, 'lng': lng},
+      );
+      final resData = AuthDio.instance.dioResponse(res);
+      if (resData.code != '00' || resData.data == null) {
+        lo.g('BackendWeatherApi mid 빈응답');
+        return null;
+      }
+      return Map<String, dynamic>.from(resData.data as Map);
+    } catch (e) {
+      lo.g('BackendWeatherApi.getMidForecast error: $e');
+      return null;
+    }
+  }
+
+  /// 기상특보 조회 - POST /weather/warn/current
+  Future<List<dynamic>> getWeatherWarnings() async {
+    try {
+      final dio = await AuthDio.instance.getDio();
+      final res = await dio.post('${UrlConfig.baseURL}/weather/warn/current');
+      final resData = AuthDio.instance.dioResponse(res);
+      if (resData.code != '00' || resData.data == null) {
+        lo.g('BackendWeatherApi warn 빈응답');
+        return [];
+      }
+      return resData.data as List<dynamic>;
+    } catch (e) {
+      lo.g('BackendWeatherApi.getWeatherWarnings error: $e');
+      return [];
+    }
+  }
 }

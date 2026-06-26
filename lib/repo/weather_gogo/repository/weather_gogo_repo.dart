@@ -1,19 +1,14 @@
 import 'package:dio/dio.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:project1/app/weathergogo/services/WeatherStation_utils.dart';
 import 'package:project1/config/url_config.dart';
 import 'package:project1/repo/api/auth_dio.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/weather_gogo/adapter/adapter_map.dart';
-import 'package:project1/app/weathergogo/services/regioninfo_util.dart';
 import 'package:project1/repo/weather_gogo/interface/imp_fct_repository.dart';
 import 'package:project1/repo/weather_gogo/interface/imp_fct_version_repository.dart';
 import 'package:project1/repo/weather_gogo/interface/imp_super_fct_repository.dart';
 import 'package:project1/repo/weather_gogo/interface/imp_super_nct_repository.dart';
 import 'package:project1/repo/weather_gogo/models/enum/data_type.dart';
-import 'package:project1/repo/weather_gogo/models/request/midland_fct_req.dart';
-import 'package:project1/repo/weather_gogo/models/request/midta_fct_req.dart';
-import 'package:project1/repo/weather_gogo/models/request/special_alert_req.dart';
 import 'package:project1/repo/weather_gogo/models/request/weather.dart';
 import 'package:project1/repo/weather_gogo/models/request/weather_cache_req.dart';
 import 'package:project1/repo/weather_gogo/models/request/weather_version.dart';
@@ -24,8 +19,7 @@ import 'package:project1/repo/weather_gogo/models/response/midta_fct/midta_fct_r
 import 'package:project1/repo/weather_gogo/models/response/special_alert/special_alert_res.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_fct/super_fct_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_nct/super_nct_model.dart';
-import 'package:project1/repo/weather_gogo/repository/midland_fct_repo.dart';
-import 'package:project1/repo/weather_gogo/repository/weather_alert_repo.dart';
+import 'package:project1/repo/weather_gogo/sources/backend_weather_api.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:dio/dio.dart' as rdio;
 
@@ -199,80 +193,42 @@ class WeatherGogoRepo {
     return items;
   }
 
-  //중기 예보 - 육상 상태 정보
+  //중기 예보 - 육상 상태 정보 (백엔드 /weather/mid 경유)
   Future<MidLandFcstResponse?> getMidFctJson(LatLng latLng, {isLog = true}) async {
     try {
-      // regId 구하기
-      String nearestRegId = findNearestRegId(latLng, '1');
-
-      // 육상 정보
-      MidLandFcstRequest req = MidLandFcstRequest(
-        serviceKey: _key,
-        pageNo: 1,
-        numOfRows: 1000,
-        regId: nearestRegId,
-        tmFc: getTmFc(),
-      );
-      MidlanFctRepo repo = MidlanFctRepo();
-      final res = await repo.getMidLandFcst(req);
-      return res;
+      final data = await BackendWeatherApi().getMidForecast(latLng.latitude, latLng.longitude);
+      if (data == null || data['land'] == null) return null;
+      return MidLandFcstResponse.fromMap(Map<String, dynamic>.from(data['land'] as Map));
     } catch (e) {
       lo.g(e.toString());
       return null;
     }
   }
 
-  //중기 예보 - 기온 정보 정보
+  //중기 예보 - 기온 정보 (백엔드 /weather/mid 경유)
   Future<MidTaResponse?> getMidTaJson(LatLng latLng, {isLog = true}) async {
     try {
-      // regId 구하기
-      String nearestRegId = findNearestRegId(latLng, '2');
-
-      // 육상 정보
-      MidTaRequest req = MidTaRequest(
-        serviceKey: _key,
-        pageNo: 1,
-        numOfRows: 1000,
-        regId: nearestRegId,
-        tmFc: getTmFc(),
-      );
-      MidlanFctRepo repo = MidlanFctRepo();
-      MidTaResponse res = await repo.getMidTa(req);
-      return res;
+      final data = await BackendWeatherApi().getMidForecast(latLng.latitude, latLng.longitude);
+      if (data == null || data['ta'] == null) return null;
+      return MidTaResponse.fromMap(Map<String, dynamic>.from(data['ta'] as Map));
     } catch (e) {
       lo.g(e.toString());
       return null;
     }
   }
 
-  // 특보 예보 - 기온 정보 정보
+  // 특보 (백엔드 /weather/warn/current 경유)
   Future<WeatherAlertRes?> getSpecialAlertJson(LatLng latLng, {isLog = true}) async {
     try {
-      /*
-         final today = DateTime.now();
-    final to = today.add(const Duration(days: 6));
-    final fromTmFc = '${today.year}${today.month.toString().padLeft(2, '0')}${today.day.toString().padLeft(2, '0')}';
-    final toTmFc = '${to.year}${to.month.toString().padLeft(2, '0')}${to.day.toString().padLeft(2, '0')}';
-      */
-      final today = DateTime.now();
-      final fromTmFc = '${today.year}${today.month.toString().padLeft(2, '0')}${today.day.toString().padLeft(2, '0')}';
-
-      final Map<String, String> mapData = await WeatherStationFinder.findNearestStation(latLng.latitude, latLng.longitude);
-      WeatherAlertRepo weatherAlertRepo = WeatherAlertRepo();
-      SpecialAlertReq req = SpecialAlertReq(
-        serviceKey: _key,
-        dataType: 'JSON',
-        numOfRows: 10,
-        pageNo: 1,
-        stnId: mapData['stnId'].toString(),
-        fromTmFc: fromTmFc,
-        toTmFc: fromTmFc,
+      final list = await BackendWeatherApi().getWeatherWarnings();
+      if (list.isEmpty) return null;
+      final first = Map<String, dynamic>.from(list[0] as Map);
+      return WeatherAlertRes(
+        stnId: first['areaId']?.toString(),
+        title: '[특보] ${first['wrnNm'] ?? ''} ${first['wrnMdivNm'] ?? ''} / ${first['areaNm'] ?? ''}',
+        tmFc: first['tmFc'] != null ? int.tryParse(first['tmFc'].toString()) : null,
+        tmSeq: null,
       );
-      lo.g("8888");
-      WeatherAlertRes res = await weatherAlertRepo.getWeatherAlerts(req);
-      lo.g("999");
-
-      return res;
     } catch (e) {
       lo.g(e.toString());
       return null;

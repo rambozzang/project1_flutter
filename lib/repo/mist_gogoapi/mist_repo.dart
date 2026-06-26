@@ -1,5 +1,5 @@
-import 'package:dio/dio.dart';
-import 'package:project1/repo/api/auth_dio.dart';
+import 'package:project1/repo/mist_gogoapi/data/mist_data.dart';
+import 'package:project1/repo/weather_gogo/sources/backend_weather_api.dart';
 
 /*
 환경부 등급 기준
@@ -17,64 +17,53 @@ import 'package:project1/repo/api/auth_dio.dart';
 */
 // https://www.data.go.kr/tcs/dss/selectApiDataDetailView.do?publicDataPk=15073861
 class MistRepo {
-  String endPoint = 'http://apis.data.go.kr/B552584/ArpltnStatsSvc';
-  String apiKey = 'CeGmiV26lUPH9guq1Lca6UA25Al%2FaZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur%2Bt2iPaL%2FLtEQdZebg%3D%3D';
-
-  //Decoding :  CeGmiV26lUPH9guq1Lca6UA25Al/aZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur+t2iPaL/LtEQdZebg==
-
-  Future<Response?> getMistData(String stationNm) async {
+  Future<MistData?> getMistData(String stationNm) async {
     try {
-      //시도명 2글자로 정리
-      //시도 이름(전국, 서울, 부산, 대구, 인천, 광주, 대전, 울산, 경기, 강원, 충북, 충남, 전북, 전남, 경북, 경남, 제주, 세종)
-      if (stationNm == '전라남도') {
-        stationNm = '전남';
-      } else if (stationNm == '전라북도') {
-        stationNm = '전북';
-      } else if (stationNm == '충청남도') {
-        stationNm = '충남';
-      } else if (stationNm == '충청북도') {
-        stationNm = '충북';
-      } else if (stationNm == '강원도' || stationNm == '강원특별자치도') {
-        stationNm = '강원';
-      } else if (stationNm == '제주특별자치도') {
-        stationNm = '제주';
-      } else if (stationNm == '서울특별시') {
-        stationNm = '서울';
-      } else if (stationNm == '경기도') {
-        stationNm = '경기';
-      } else if (stationNm == '경상남도') {
-        stationNm = '경남';
-      } else if (stationNm == '경상북도') {
-        stationNm = '경북';
-      } else if (stationNm == '광주광역시') {
-        stationNm = '광주';
-      } else if (stationNm == '대구광역시') {
-        stationNm = '대구';
-      } else if (stationNm == '대전광역시') {
-        stationNm = '대전';
-      } else if (stationNm == '부산광역시') {
-        stationNm = '부산';
-      } else if (stationNm == '울산광역시') {
-        stationNm = '울산';
-      }
+      String sidoName = _convertSidoName(stationNm);
 
-      // String airConditon = 'http://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty?'
-      //     'stationName=$stationNm&dataTerm=DAILY&pageNo=1&ver=1.0'
-      //     '&numOfRows=1&returnType=json&serviceKey=$apiKey';
+      final data = await BackendWeatherApi().getMistData(sidoName);
+      if (data == null) return null;
 
-      // 지역별 도시별 대기질 현황이 넘어오지만 갯수를 1개만 가져와 보녀준다.
-      String airConditon = 'http://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty?'
-          'sidoName=$stationNm&dataTerm=DAILY&pageNo=1&ver=1.0'
-          '&numOfRows=1&returnType=json&serviceKey=$apiKey';
-
-      final dio = await AuthDio.instance.getNoAuthDio();
-      Response response = await dio.get(airConditon);
-
-      return response;
+      return MistData.fromMap(Map<String, dynamic>.from(data));
     } catch (e) {
       print(e);
     }
     return null;
+  }
+
+  String _convertSidoName(String stationNm) {
+    if (stationNm == '전라남도') {
+      return '전남';
+    } else if (stationNm == '전라북도') {
+      return '전북';
+    } else if (stationNm == '충청남도') {
+      return '충남';
+    } else if (stationNm == '충청북도') {
+      return '충북';
+    } else if (stationNm == '강원도' || stationNm == '강원특별자치도') {
+      return '강원';
+    } else if (stationNm == '제주특별자치도') {
+      return '제주';
+    } else if (stationNm == '서울특별시') {
+      return '서울';
+    } else if (stationNm == '경기도') {
+      return '경기';
+    } else if (stationNm == '경상남도') {
+      return '경남';
+    } else if (stationNm == '경상북도') {
+      return '경북';
+    } else if (stationNm == '광주광역시') {
+      return '광주';
+    } else if (stationNm == '대구광역시') {
+      return '대구';
+    } else if (stationNm == '대전광역시') {
+      return '대전';
+    } else if (stationNm == '부산광역시') {
+      return '부산';
+    } else if (stationNm == '울산광역시') {
+      return '울산';
+    }
+    return stationNm;
   }
 
   String getMist10Grade(String str) {
@@ -104,12 +93,3 @@ class MistRepo {
     }
   }
 }
-
-
-// String airConditon = 'http://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty?'
-//         'stationName=강남구&dataTerm=DAILY&pageNo=1&ver=1.0'
-//         '&numOfRows=1&returnType=json&serviceKey=CeGmiV26lUPH9guq1Lca6UA25Al%2FaZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur%2Bt2iPaL%2FLtEQdZebg%3D%3D';
-
-
-// http://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty?stationName=강남구&dataTerm=DAILY&pageNo=1&ver=1.0&numOfRows=1&returnType=json&serviceKey=CeGmiV26lUPH9guq1Lca6UA25Al%2FaZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur%2Bt2iPaL%2FLtEQdZebg%3D%3D
-

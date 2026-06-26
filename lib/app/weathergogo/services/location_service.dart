@@ -1,13 +1,9 @@
-import 'dart:convert';
-
 import 'package:latlong2/latlong.dart';
 import 'package:project1/repo/kakao/kakao_repo.dart';
 import 'package:project1/repo/mist_gogoapi/data/mist_data.dart';
 import 'package:project1/repo/mist_gogoapi/mist_repo.dart';
 import 'package:project1/repo/weather/data/weather_view_data.dart';
 import 'package:project1/utils/log_utils.dart';
-
-import 'package:dio/src/response.dart' as dioRes;
 
 class LocationService {
   //  좌료를 통해 동네이름 주소 가져오기
@@ -34,8 +30,8 @@ class LocationService {
       MistRepo mistRepo = MistRepo();
       Lo.g('미세먼지 가져오기 시작 :  $localName');
 
-      dioRes.Response? res = await mistRepo.getMistData(localName);
-      MistData mistData = MistData.fromJson(jsonEncode(res!.data['response']['body']));
+      MistData? mistData = await mistRepo.getMistData(localName);
+      if (mistData == null || mistData.items == null || mistData.items!.isEmpty) return null;
       // 단위 ㎍/㎥
       MistViewData mistViewData = MistViewData(
         mist10: mistData.items![0].pm10Value!,
