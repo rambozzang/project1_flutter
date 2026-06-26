@@ -122,8 +122,8 @@ curl --location --request PUT 'https://<account-id>.r2.cloudflarestorage.com/<r2
       MistRepo mistRepo = MistRepo();
       Lo.g('미세먼지 가져오기 시작 :  $localName');
 
-      dioRes.Response? res = await mistRepo.getMistData(localName);
-      MistData mistData = MistData.fromJson(jsonEncode(res!.data['response']['body']));
+      MistData? mistData = await mistRepo.getMistData(localName);
+      if (mistData == null || mistData.items == null || mistData.items!.isEmpty) return;
 
       result.value = '${mistData.items![0].pm10Value} / ${mistData.items![0].pm25Value}㎍/㎥';
     } catch (e) {
