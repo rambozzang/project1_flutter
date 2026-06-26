@@ -67,14 +67,18 @@ class SpotWeatherPage extends StatelessWidget {
   Widget _categoryBar(SpotCntr c) {
     return SizedBox(
       height: 52,
-      child: Obx(() => ListView.separated(
+      child: Obx(() {
+        // category.value를 동기적으로 읽어야 Obx가 추적한다.
+        // (itemBuilder는 지연 호출이라 그 안에서만 읽으면 Obx가 reactive를 감지 못해 오류 발생)
+        final selected = c.category.value;
+        return ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             itemCount: _cats.length,
             separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (_, i) {
               final cat = _cats[i];
-              final bool sel = c.category.value == cat.code;
+              final bool sel = selected == cat.code;
               return GestureDetector(
                 onTap: () => c.changeCategory(cat.code),
                 child: AnimatedContainer(
@@ -97,7 +101,8 @@ class SpotWeatherPage extends StatelessWidget {
                 ),
               );
             },
-          )),
+          );
+        }),
     );
   }
 
