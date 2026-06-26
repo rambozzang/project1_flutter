@@ -653,17 +653,13 @@ class VideoScreenPageState extends State<VideoScreenPage> {
               const SizedBox(width: 2),
               SizedBox(
                 width: MediaQuery.of(context).size.width * 0.35,
-                child: TextScroll(
+                // 날씨 문구는 짧아 스크롤 불필요. endless TextScroll이 짧은 문구를
+                // 반복 표시("맑음 21° 맑음 21°")하던 문제 → 단순 Text로 1회만 표시.
+                child: Text(
                   '${widget.data.weatherInfo?.split('.')[0]} ${widget.data.currentTemp}°',
-                  mode: TextScrollMode.endless,
-                  numberOfReps: 20000,
-                  fadedBorder: true,
-                  delayBefore: const Duration(milliseconds: 4000),
-                  pauseBetween: const Duration(milliseconds: 2000),
-                  velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
                   style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w600),
                   textAlign: TextAlign.right,
-                  selectable: true,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
