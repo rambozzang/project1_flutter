@@ -1,157 +1,192 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:material_floating_search_bar_plus/material_floating_search_bar_plus.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:project1/app/weather/models/geocode.dart';
 import 'package:project1/app/weather/theme/colors.dart';
 import 'package:project1/repo/kakao/kakao_repo.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
-import 'package:project1/root/cntr/root_cntr.dart';
 
-class WeathergogoKakaoSearchPage extends StatefulWidget {
+/// 날씨 페이지 상단 검색 바(경량).
+/// 기존 material_floating_search_bar_plus(오버레이/백드롭/애니메이션이 항상 동작 → 렉)
+/// 대신, 가벼운 탭 버튼만 두고 실제 검색은 별도 페이지(WeatherSearchPage)에서 처리한다.
+/// → 날씨 페이지에는 상시 부하 위젯이 사라져 스크롤/렌더가 가벼워진다.
+class WeathergogoKakaoSearchPage extends StatelessWidget {
   const WeathergogoKakaoSearchPage({super.key});
 
   @override
-  State<WeathergogoKakaoSearchPage> createState() => _WeathergogoKakaoSearchPageState();
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 3, 12, 0),
+        child: GestureDetector(
+          onTap: () => Get.to(() => const WeatherSearchPage(), transition: Transition.fadeIn, duration: const Duration(milliseconds: 180)),
+          child: Container(
+            height: 46,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 1))],
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '국내 지명, 주소를 검색해주세요.',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const Icon(Icons.search, color: primaryBlue, size: 22),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class _WeathergogoKakaoSearchPageState extends State<WeathergogoKakaoSearchPage> {
-  final FloatingSearchBarController _searchController = FloatingSearchBarController();
-  final StreamController<List<Map<String, dynamic>>> _streamController = StreamController<List<Map<String, dynamic>>>();
+/// 전용 검색 페이지 — 가벼운 TextField + ListView 구조.
+/// 카카오 지오코딩(디바운스 400ms) → 결과 탭 시 해당 위치 날씨로 갱신 후 닫힘.
+class WeatherSearchPage extends StatefulWidget {
+  const WeatherSearchPage({super.key});
+
+  @override
+  State<WeatherSearchPage> createState() => _WeatherSearchPageState();
+}
+
+class _WeatherSearchPageState extends State<WeatherSearchPage> {
+  final TextEditingController _controller = TextEditingController();
   final KakaoRepo _kakaoRepo = KakaoRepo();
   Timer? _debounce;
+  List<Map<String, dynamic>> _results = [];
+  bool _loading = false;
 
   @override
   void dispose() {
     _debounce?.cancel();
-    _streamController.close();
-    _searchController.dispose();
-    RootCntr.to.bottomBarStreamController.add(true);
+    _controller.dispose();
     super.dispose();
   }
 
-  void _search(String query) {
+  void _onChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () async {
+    if (query.trim().isEmpty) {
+      setState(() {
+        _results = [];
+        _loading = false;
+      });
+      return;
+    }
+    setState(() => _loading = true);
+    _debounce = Timer(const Duration(milliseconds: 400), () async {
       try {
         final data = await _kakaoRepo.getCoordinates(query);
-        if (mounted) _streamController.add(data);
+        if (mounted) {
+          setState(() {
+            _results = data;
+            _loading = false;
+          });
+        }
       } catch (e) {
-        if (mounted) _streamController.addError(e);
+        if (mounted) {
+          setState(() {
+            _results = [];
+            _loading = false;
+          });
+        }
       }
     });
   }
 
-  void _selectLocation(Map<String, dynamic> data) {
+  void _select(Map<String, dynamic> data) {
     final geocodeData = GeocodeData(
       name: data['place_name'],
       latLng: LatLng(double.parse(data['y'] ?? '0'), double.parse(data['x'] ?? '0')),
     );
     Get.find<WeatherGogoCntr>().searchWeatherKakao(geocodeData);
-    _searchController.query = data['place_name'];
-    _searchController.close();
+    Get.back();
   }
 
   @override
   Widget build(BuildContext context) {
-    return FloatingSearchBar(
-      controller: _searchController,
-      hint: '국내 지명, 주소를 검색해주세요.',
-      scrollPadding: const EdgeInsets.fromLTRB(2, 0, 2, 56),
-      margins: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-      borderRadius: BorderRadius.circular(14),
-      accentColor: primaryBlue,
-      hintStyle: const TextStyle(color: Colors.black),
-      queryStyle: const TextStyle(color: Colors.black),
-      physics: const BouncingScrollPhysics(),
-      onFocusChanged: (isFocused) {
-        if (!isFocused) _searchController.clear();
-        RootCntr.to.bottomBarStreamController.add(false);
-      },
-      onQueryChanged: _search,
-      onSubmitted: _search,
-      transition: SlideFadeFloatingSearchBarTransition(),
-      actions: [
-        // _buildSearchIcon(),
-        _buildClearIcon(),
-      ],
-      builder: (context, transition) => _buildSearchResults(),
-    );
-  }
-
-  Widget _buildSearchIcon() {
-    return const FloatingSearchBarAction(
-      showIfOpened: false,
-      child: PhosphorIcon(PhosphorIconsBold.magnifyingGlass, color: primaryBlue),
-    );
-  }
-
-  Widget _buildClearIcon() {
-    return FloatingSearchBarAction.icon(
-      showIfOpened: true,
-      icon: const PhosphorIcon(PhosphorIconsBold.x, color: primaryBlue),
-      onTap: () {
-        if (_searchController.query.isEmpty) {
-          _searchController.close();
-        } else {
-          _searchController.clear();
-        }
-      },
-    );
-  }
-
-  Widget _buildSearchResults() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(4),
-      child: Material(
-        color: Colors.white,
-        elevation: 1,
-        child: StreamBuilder<List<Map<String, dynamic>>>(
-          stream: _streamController.stream,
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) return const SizedBox.shrink();
-            return ListView.separated(
-              shrinkWrap: true,
-              physics: const BouncingScrollPhysics(),
-              padding: EdgeInsets.zero,
-              itemCount: snapshot.data!.length,
-              separatorBuilder: (_, __) => const Divider(thickness: 1, height: 0),
-              itemBuilder: (context, index) => _buildSearchResultItem(snapshot.data![index]),
-            );
-          },
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0.5,
+        titleSpacing: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, size: 20, color: Colors.black87),
+          onPressed: () => Get.back(),
         ),
+        title: TextField(
+          controller: _controller,
+          autofocus: true,
+          textInputAction: TextInputAction.search,
+          onChanged: _onChanged,
+          style: const TextStyle(color: Colors.black, fontSize: 16),
+          decoration: InputDecoration(
+            hintText: '국내 지명, 주소를 검색해주세요.',
+            hintStyle: TextStyle(color: Colors.grey[500], fontSize: 15),
+            border: InputBorder.none,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.clear, color: Colors.black54),
+            onPressed: () {
+              _controller.clear();
+              _onChanged('');
+            },
+          ),
+        ],
       ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _results.isEmpty
+              ? const SizedBox.shrink()
+              : ListView.separated(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: EdgeInsets.zero,
+                  itemCount: _results.length,
+                  separatorBuilder: (_, __) => const Divider(thickness: 1, height: 0),
+                  itemBuilder: (context, i) => _buildItem(_results[i]),
+                ),
     );
   }
 
-  Widget _buildSearchResultItem(Map<String, dynamic> data) {
+  Widget _buildItem(Map<String, dynamic> data) {
     return InkWell(
-      onTap: () => _selectLocation(data),
+      onTap: () => _select(data),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         child: Row(
           children: [
-            const PhosphorIcon(PhosphorIconsFill.mapPin),
-            const SizedBox(width: 15),
+            const Icon(Icons.location_on, color: primaryBlue),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    data['place_name'],
-                    style: GoogleFonts.openSans(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black),
+                    data['place_name'] ?? '',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black),
                   ),
-                  Text(
-                    data['address_name'],
-                    style: GoogleFonts.openSans(fontSize: 12, fontWeight: FontWeight.w400, color: Colors.black),
-                  ),
+                  if (data['address_name'] != null)
+                    Text(
+                      data['address_name'],
+                      style: const TextStyle(fontSize: 12, color: Colors.black54),
+                    ),
                   if (data['road_address_name'] != null)
                     Text(
                       data['road_address_name'],
-                      style: GoogleFonts.openSans(fontSize: 12, fontWeight: FontWeight.w400, color: Colors.black),
+                      style: const TextStyle(fontSize: 12, color: Colors.black54),
                     ),
                 ],
               ),
