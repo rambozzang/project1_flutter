@@ -319,11 +319,17 @@ class WeatherService {
       case ForecastType.fct:
         return await _repo.getFctListJson(location, isLog: true, isChache: false) as T;
       case ForecastType.midFctLand:
-        return await _repo.getMidFctJson(location, isLog: true) as T;
+        final landData = await _repo.getMidFctJson(location, isLog: true);
+        if (landData == null) throw Exception('중기예보(육상) 백엔드 데이터 없음');
+        return landData as T;
       case ForecastType.midTa:
-        return await _repo.getMidTaJson(location, isLog: true) as T;
+        final taData = await _repo.getMidTaJson(location, isLog: true);
+        if (taData == null) throw Exception('중기예보(기온) 백엔드 데이터 없음');
+        return taData as T;
       case ForecastType.weatherAlert:
-        return await _repo.getSpecialAlertJson(location, isLog: true) as T;
+        final alertData = await _repo.getSpecialAlertJson(location, isLog: true);
+        if (alertData == null) throw Exception('기상특보 백엔드 데이터 없음');
+        return alertData as T;
       // case ForecastType.mistInfo:
       //   return await _repo.getSpecialFctJson(location, isLog: true) as T;
       default:
@@ -343,11 +349,17 @@ class WeatherService {
       case ForecastType.fct:
         return await _repo.getFctListJson(location, isLog: true, isChache: false) as T;
       case ForecastType.midFctLand:
-        return await _repo.getMidFctJson(location, isLog: true) as T;
+        final landData = await _repo.getMidFctJson(location, isLog: true);
+        if (landData == null) throw Exception('중기예보(육상) 백엔드 데이터 없음');
+        return landData as T;
       case ForecastType.midTa:
-        return await _repo.getMidTaJson(location, isLog: true) as T;
+        final taData = await _repo.getMidTaJson(location, isLog: true);
+        if (taData == null) throw Exception('중기예보(기온) 백엔드 데이터 없음');
+        return taData as T;
       case ForecastType.weatherAlert:
-        return await _repo.getSpecialAlertJson(location, isLog: true) as T;
+        final alertData = await _repo.getSpecialAlertJson(location, isLog: true);
+        if (alertData == null) throw Exception('기상특보 백엔드 데이터 없음');
+        return alertData as T;
       // case ForecastType.mistInfo:
       //   return await _repo.getSpecialFctJson(location, isLog: true) as T;
       default:
