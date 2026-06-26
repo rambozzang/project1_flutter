@@ -1,4 +1,5 @@
 import 'package:project1/repo/api/auth_dio.dart';
+import 'package:project1/repo/weather_gogo/models/response/fct/fct_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_fct/super_fct_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_nct/super_nct_model.dart';
 import 'package:project1/config/url_config.dart';
@@ -65,6 +66,26 @@ class BackendWeatherApi {
       return list.map((e) => ItemSuperNct.fromJson(Map<String, Object?>.from(e as Map))).toList();
     } catch (e) {
       lo.g('BackendWeatherApi.getYesterdayWeather error: $e');
+      return [];
+    }
+  }
+
+  Future<List<ItemFct>> getFct(int nx, int ny) async {
+    try {
+      final dio = await AuthDio.instance.getDio();
+      final res = await dio.get(
+        '${UrlConfig.baseURL}/weather/fct',
+        queryParameters: {'nx': nx, 'ny': ny},
+      );
+      final resData = AuthDio.instance.dioResponse(res);
+      if (resData.code != '00' || resData.data == null) {
+        lo.g('BackendWeatherApi fct 빈응답');
+        return [];
+      }
+      final list = resData.data as List<dynamic>;
+      return list.map((e) => ItemFct.fromJson(Map<String, Object?>.from(e as Map))).toList();
+    } catch (e) {
+      lo.g('BackendWeatherApi.getFct error: $e');
       return [];
     }
   }

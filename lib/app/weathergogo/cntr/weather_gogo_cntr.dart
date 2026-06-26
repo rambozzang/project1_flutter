@@ -592,8 +592,13 @@ class WeatherGogoCntr extends GetxController {
     try {
       List<HourlyWeatherData> resultList = [];
 
-      // 2.단기 예보 예제 +3일
-      List<ItemFct> itemFctList = await weatherService.getWeatherData<List<ItemFct>>(location, ForecastType.fct);
+      // 백엔드 경유(/weather/fct) - data.go.kr 직접호출 대신 백엔드 캐시 사용
+      final changeMap = MapAdapter.changeMap(location.longitude, location.latitude);
+      List<ItemFct> itemFctList = await BackendWeatherApi().getFct(changeMap.x, changeMap.y);
+      if (itemFctList.isEmpty) {
+        lo.g('백엔드 단기예보 빈응답 nx=${changeMap.x} ny=${changeMap.y}');
+        return;
+      }
 
       // 24시간 및 주간예보 셋팅이 필요함
       List<HourlyWeatherData> data = WeatherDataProcessor.instance.processShortTermForecast(itemFctList);
