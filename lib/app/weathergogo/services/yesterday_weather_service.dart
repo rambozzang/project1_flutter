@@ -1,7 +1,8 @@
 import 'package:latlong2/latlong.dart';
 import 'package:project1/app/weathergogo/cntr/data/hourly_weather_data.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_nct/super_nct_model.dart';
-import 'package:project1/repo/weather_gogo/repository/weather_gogo_caching.dart';
+import 'package:project1/repo/weather_gogo/adapter/adapter_map.dart';
+import 'package:project1/repo/weather_gogo/sources/backend_weather_api.dart';
 import 'package:project1/utils/log_utils.dart';
 
 class YesterdayHourlyWeatherService {
@@ -11,10 +12,11 @@ class YesterdayHourlyWeatherService {
     late List<ItemSuperNct> yesterdayWeather = [];
     List<HourlyWeatherData> yesterdayHourlyWeather = [];
 
-    WeatherService weatherService = WeatherService();
     try {
       yesterdayWeather.clear();
-      yesterdayWeather = await weatherService.getWeatherData<List<ItemSuperNct>>(latLng, ForecastType.superNctYesterDay);
+      // 백엔드 경유(/weather/yesterday) - data.go.kr 직접호출 대신 백엔드 누적 시계열 사용
+      final changeMap = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
+      yesterdayWeather = await BackendWeatherApi().getYesterdayWeather(changeMap.x, changeMap.y);
 
       // list 출력
       // yesterdayWeather.forEach((data) => data.category == 'T1H' ? lo.g('${data.baseDate!} ${data.baseTime!}=>${data.obsrValue!}') : null);
@@ -35,7 +37,7 @@ class YesterdayHourlyWeatherService {
       return yesterdayHourlyWeather;
     } catch (e) {
       Lo.g('getYesterdayWeather e =>$e');
-      return getYesterdayWeather(latLng);
+      return [];
     }
   }
 

@@ -20,6 +20,8 @@ import 'package:project1/app/weathergogo/cntr/data/daily_weather_data.dart';
 import 'package:project1/app/weathergogo/cntr/data/hourly_weather_data.dart';
 import 'package:project1/app/weathergogo/services/location_service.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
+import 'package:project1/repo/weather_gogo/adapter/adapter_map.dart';
+import 'package:project1/repo/weather_gogo/sources/backend_weather_api.dart';
 import 'package:project1/app/weathergogo/services/yesterday_weather_service.dart';
 import 'package:project1/repo/weather_gogo/models/response/fct/fct_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/midland_fct/midlan_fct_res.dart';
@@ -398,7 +400,13 @@ class WeatherGogoCntr extends GetxController {
   // 초단기 실황 가져오기
   Future<void> fetchSuperNct(LatLng location) async {
     try {
-      List<ItemSuperNct> itemSuperNctList = await weatherService.getWeatherData<List<ItemSuperNct>>(location, ForecastType.superNct);
+      // 백엔드 경유(/weather/current) - data.go.kr 직접호출 대신 백엔드 캐시 사용 (앱 키 quota 무관)
+      final changeMap = MapAdapter.changeMap(location.longitude, location.latitude);
+      List<ItemSuperNct> itemSuperNctList = await BackendWeatherApi().getCurrentWeather(changeMap.x, changeMap.y);
+      if (itemSuperNctList.isEmpty) {
+        lo.g('백엔드 현재날씨 빈응답 nx=${changeMap.x} ny=${changeMap.y}');
+        return;
+      }
       // 1.초단기 실황 파싱처리
       CurrentWeatherData value = WeatherDataProcessor.instance.parsingSuperNct(itemSuperNctList);
       lo.e('초단기 실황 현재온도 : ${value.temp}');
