@@ -457,7 +457,12 @@ class WeatherGogoCntr extends GetxController {
     try {
       List<HourlyWeatherData> resultList = [];
       // 2.초단기 예보 가져오기
-      List<ItemSuperFct> itemFctList = await weatherService.getWeatherData<List<ItemSuperFct>>(location, ForecastType.superFct);
+      final changeMap = MapAdapter.changeMap(location.longitude, location.latitude);
+      List<ItemSuperFct> itemFctList = await BackendWeatherApi().getSuperFct(changeMap.x, changeMap.y);
+      if (itemFctList.isEmpty) {
+        lo.g('백엔드 초단기예보 빈응답 nx=${changeMap.x} ny=${changeMap.y}');
+        return;
+      }
       // 2.초단기 예보 파싱처리
       List<HourlyWeatherData> data = WeatherDataProcessor.instance.processSuperShortTermForecast(itemFctList);
       // data.forEach((element) {
