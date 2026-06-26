@@ -36,7 +36,7 @@ class _ShortWritePageState extends State<ShortWritePage> {
               backgroundColor: Colors.transparent,
               resizeToAvoidBottomInset: true,
               body: _buildBody(),
-              bottomNavigationBar: _buildBottomBar(context),
+              bottomNavigationBar: SafeArea(top: false, child: _buildBottomBar(context)),
             ),
             _buildSavingIndicator(),
           ],

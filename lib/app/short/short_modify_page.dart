@@ -59,7 +59,7 @@ class _ShortModifyPageState extends State<ShortModifyPage> {
                 }
               },
             ),
-            bottomNavigationBar: _buildBottomBar(context),
+            bottomNavigationBar: SafeArea(top: false, child: _buildBottomBar(context)),
           ),
           _buildSavingIndicator(),
         ],

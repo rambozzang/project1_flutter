@@ -104,8 +104,12 @@ class _BbsViewPageState extends State<BbsViewPage> {
           appBar: _buildAppBar(),
           backgroundColor: Colors.white,
           body: _buildBody(),
-          bottomNavigationBar: BbsCommentsBottomPage(
-            tagNm: _tagNm,
+          // 댓글 입력창이 물리 내비/제스처 바에 가려지지 않도록 SafeArea (키보드는 내부 viewInsets로 처리)
+          bottomNavigationBar: SafeArea(
+            top: false,
+            child: BbsCommentsBottomPage(
+              tagNm: _tagNm,
+            ),
           ),
         ),
         Obx(() {

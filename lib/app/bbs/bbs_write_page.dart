@@ -33,7 +33,7 @@ class _BbsWritePageState extends State<BbsWritePage> {
             backgroundColor: Colors.white,
             resizeToAvoidBottomInset: false,
             body: _buildBody(),
-            bottomNavigationBar: _buildBottomBar(context),
+            bottomNavigationBar: SafeArea(top: false, child: _buildBottomBar(context)),
           ),
           _buildSavingIndicator(),
         ],

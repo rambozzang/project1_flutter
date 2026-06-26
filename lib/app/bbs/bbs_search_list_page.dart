@@ -42,7 +42,8 @@ class _BbsSearchListPageState extends State<BbsSearchListPage> with AutomaticKee
     super.build(context);
     return Scaffold(
       backgroundColor: Colors.white,
-      body: _buildBody(),
+      // AppBar가 없어 상단 상태바에 첫 항목이 가려지므로 SafeArea로 보정
+      body: SafeArea(child: _buildBody()),
       floatingActionButton: _buildFloatingActionButton(),
     );
   }

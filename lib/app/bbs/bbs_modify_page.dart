@@ -61,7 +61,7 @@ class _BbsModifyPageState extends State<BbsModifyPage> {
                 }
               },
             ),
-            bottomNavigationBar: _buildBottomBar(context),
+            bottomNavigationBar: SafeArea(top: false, child: _buildBottomBar(context)),
           ),
           _buildSavingIndicator(),
         ],
