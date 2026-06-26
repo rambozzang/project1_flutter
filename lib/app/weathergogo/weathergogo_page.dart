@@ -106,6 +106,8 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
             key: ValueKey('NaverNewPage'),
           ),
       // () => _buildWeatherWebView(),
+      // 실시간 대기정보(NIER 위성 GIS) — 대기 흐름 위에 표시, 2초 후 비동기 로딩
+      () => const RealtimeAirWebviewPage(),
       () => const WeatherWEbviewPage(),
       () => const SizedBox(
             height: 40,
