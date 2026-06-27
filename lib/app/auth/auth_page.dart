@@ -57,12 +57,13 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver, Single
 
   Future<void> initS() async {
     try {
-      // GPS·날씨는 부팅 시 이미 선행 시작됨(_prefetchLocationAndWeather).
-      // 로그인 완료 즉시 root로 이동 — 위치/날씨는 백그라운드에서 계속 로딩.
-      if (isGoRoot == false) {
-        Get.offAllNamed('/rootPage');
-        isGoRoot = true;
-      }
+      // build 중 네비게이션 충돌 방지: 다음 프레임에서 이동
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (isGoRoot == false) {
+          Get.offAllNamed('/rootPage');
+          isGoRoot = true;
+        }
+      });
     } catch (e) {
       lo.g(e.toString());
     }
