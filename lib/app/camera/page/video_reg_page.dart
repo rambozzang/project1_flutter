@@ -1827,8 +1827,10 @@ class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage> {
 
   void _seekRelative(int seconds) {
     final c = widget.videoPlayerController;
-    final pos = c.value.position + Duration(seconds: seconds);
-    c.seekTo(pos.clamp(Duration.zero, c.value.duration));
+    var pos = c.value.position + Duration(seconds: seconds);
+    if (pos < Duration.zero) pos = Duration.zero;
+    if (pos > c.value.duration) pos = c.value.duration;
+    c.seekTo(pos);
     _showControlsOverlay();
   }
 
