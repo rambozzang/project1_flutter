@@ -31,6 +31,7 @@ import 'package:project1/widget/custom_button.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
 // import 'package:video_compress/video_compress.dart';
 import 'package:video_player/video_player.dart';
+import 'package:project1/app/camera/page/video_preview_page.dart';
 
 import 'package:intl/intl.dart' as intl;
 
@@ -428,8 +429,7 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
-        title: const Text('새 영상',
-            style: TextStyle(color: _textHi, fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: -0.2)),
+        title: const Text('새 영상', style: TextStyle(color: _textHi, fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: -0.2)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _textHi, size: 20),
           onPressed: () => cancle(),
@@ -555,10 +555,10 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
   Widget _buildVideoThumb() {
     const double w = 104, h = 164;
     void openFull() {
-      Navigator.push<_PlayerVideoAndPopPage>(
+      Navigator.push<VideoPreviewPage>(
         context,
-        MaterialPageRoute<_PlayerVideoAndPopPage>(
-          builder: (BuildContext context) => _PlayerVideoAndPopPage(videoPlayerController: _videoController),
+        MaterialPageRoute<VideoPreviewPage>(
+          builder: (BuildContext context) => VideoPreviewPage(videoPlayerController: _videoController),
         ),
       );
     }
@@ -669,8 +669,7 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
           const Icon(Icons.auto_awesome_rounded, size: 22, color: _accent),
           const Gap(14),
           const Expanded(
-            child: Text('촬영한 곳의 날씨·위치가 자동으로 함께 기록돼요.',
-                style: TextStyle(fontSize: 14, color: _textHi, height: 1.3)),
+            child: Text('촬영한 곳의 날씨·위치가 자동으로 함께 기록돼요.', style: TextStyle(fontSize: 14, color: _textHi, height: 1.3)),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -698,8 +697,7 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                     const Icon(Icons.shield_outlined, size: 22, color: _textLo),
                     const Gap(14),
                     const Expanded(
-                      child: Text('게시 정책 · 저작권 안내',
-                          style: TextStyle(fontSize: 15, color: _textHi, fontWeight: FontWeight.w600)),
+                      child: Text('게시 정책 · 저작권 안내', style: TextStyle(fontSize: 15, color: _textHi, fontWeight: FontWeight.w600)),
                     ),
                     AnimatedRotation(
                       turns: open ? 0.5 : 0,
@@ -719,7 +717,8 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _PolicyLine(icon: Icons.music_note_rounded, text: '음악 저작권: 허락 없는 음원 사용 시 게시가 제한되거나 법적 책임이 따를 수 있어요. 저작권 free 음원을 권장합니다.'),
+                    _PolicyLine(
+                        icon: Icons.music_note_rounded, text: '음악 저작권: 허락 없는 음원 사용 시 게시가 제한되거나 법적 책임이 따를 수 있어요. 저작권 free 음원을 권장합니다.'),
                     Gap(10),
                     _PolicyLine(icon: Icons.gavel_rounded, text: '금지 콘텐츠: 불법·성적·폭력·혐오 영상은 즉시 삭제되며 계정 정지 및 법적 조치 대상이 됩니다.'),
                   ],
@@ -791,8 +790,7 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                 const Gap(5),
                 const Text('문구 입력', style: TextStyle(fontSize: 12.5, color: _accent, fontWeight: FontWeight.w700)),
                 const Spacer(),
-                Text('# 태그',
-                    style: TextStyle(fontSize: 11, color: _textLo.withOpacity(0.9), fontWeight: FontWeight.w600)),
+                Text('# 태그', style: TextStyle(fontSize: 11, color: _textLo.withOpacity(0.9), fontWeight: FontWeight.w600)),
               ],
             ),
             const Gap(6),
@@ -912,8 +910,7 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                       const Icon(Icons.shield_outlined, size: 18, color: _textLo),
                       const Gap(10),
                       const Expanded(
-                        child: Text('게시 정책 · 저작권 안내',
-                            style: TextStyle(fontSize: 13, color: _textHi, fontWeight: FontWeight.w600)),
+                        child: Text('게시 정책 · 저작권 안내', style: TextStyle(fontSize: 13, color: _textHi, fontWeight: FontWeight.w600)),
                       ),
                       AnimatedRotation(
                         turns: open ? 0.5 : 0,
@@ -933,7 +930,8 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _PolicyLine(icon: Icons.music_note_rounded, text: '음악 저작권: 허락 없는 음원 사용 시 게시가 제한되거나 법적 책임이 따를 수 있어요. 저작권 free 음원을 권장합니다.'),
+                      _PolicyLine(
+                          icon: Icons.music_note_rounded, text: '음악 저작권: 허락 없는 음원 사용 시 게시가 제한되거나 법적 책임이 따를 수 있어요. 저작권 free 음원을 권장합니다.'),
                       Gap(10),
                       _PolicyLine(icon: Icons.gavel_rounded, text: '금지 콘텐츠: 불법·성적·폭력·혐오 영상은 즉시 삭제되며 계정 정지 및 법적 조치 대상이 됩니다.'),
                     ],
@@ -964,10 +962,10 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
     }
 
     void openFull() {
-      Navigator.push<_PlayerVideoAndPopPage>(
+      Navigator.push<VideoPreviewPage>(
         context,
-        MaterialPageRoute<_PlayerVideoAndPopPage>(
-          builder: (BuildContext context) => _PlayerVideoAndPopPage(videoPlayerController: _videoController),
+        MaterialPageRoute<VideoPreviewPage>(
+          builder: (BuildContext context) => VideoPreviewPage(videoPlayerController: _videoController),
         ),
       );
     }
@@ -1125,14 +1123,12 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                   valueListenable: currentWeather,
                   builder: (context, value, child) {
                     if (value == null) {
-                      return const Text('기상정보를 가져오는 중…',
-                          style: TextStyle(fontSize: 12, color: _textLo, fontWeight: FontWeight.w500));
+                      return const Text('기상정보를 가져오는 중…', style: TextStyle(fontSize: 12, color: _textLo, fontWeight: FontWeight.w500));
                     }
                     return Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text('${value.temp}',
-                            style: const TextStyle(fontSize: 24, height: 1, color: _textHi, fontWeight: FontWeight.w800)),
+                        Text('${value.temp}', style: const TextStyle(fontSize: 24, height: 1, color: _textHi, fontWeight: FontWeight.w800)),
                         const Padding(
                           padding: EdgeInsets.only(top: 2),
                           child: Text('°', style: TextStyle(fontSize: 18, color: _textHi, fontWeight: FontWeight.w800)),
@@ -1684,9 +1680,7 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
               color: busy ? _surface : _accent,
               borderRadius: BorderRadius.circular(16),
               border: busy ? Border.all(color: _surfaceBorder) : null,
-              boxShadow: busy
-                  ? null
-                  : [BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 12, offset: const Offset(0, 4))],
+              boxShadow: busy ? null : [BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 12, offset: const Offset(0, 4))],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1754,434 +1748,6 @@ class _PolicyLine extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _PlayerVideoAndPopPage extends StatefulWidget {
-  final VideoPlayerController videoPlayerController;
-
-  const _PlayerVideoAndPopPage({required this.videoPlayerController});
-  @override
-  _PlayerVideoAndPopPageState createState() => _PlayerVideoAndPopPageState();
-}
-
-class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage>
-    with SingleTickerProviderStateMixin {
-  static const Color _accent = Color(0xFF4C8DFF);
-  static const Color _textHi = Color(0xFFF2F5FA);
-
-  bool _initialized = false;
-  bool _showControls = true;
-  bool _isDragging = false;
-  bool _muted = false;
-  double _speed = 1.0;
-  double _volume = 1.0;
-  late Timer _hideTimer;
-
-  // 더블탭 피드백 애니메이션
-  AnimationController? _rippleAnim;
-  bool _rippleIsForward = true;
-  int _lastTapTime = 0;
-
-  static const List<double> _speeds = [0.25, 0.5, 1.0, 1.5, 2.0, 3.0];
-
-  @override
-  void initState() {
-    super.initState();
-    _ensureInit();
-    _hideTimer = Timer(const Duration(seconds: 4), _hideControls);
-  }
-
-  Future<void> _ensureInit() async {
-    if (!widget.videoPlayerController.value.isInitialized) {
-      await widget.videoPlayerController.initialize();
-    }
-    widget.videoPlayerController.setLooping(true);
-    widget.videoPlayerController.setVolume(1.0);
-    widget.videoPlayerController.play();
-    widget.videoPlayerController.addListener(_listener);
-    if (mounted) setState(() => _initialized = true);
-  }
-
-  void _listener() {
-    if (mounted && !_isDragging) setState(() {});
-  }
-
-  void _togglePlayPause() {
-    final c = widget.videoPlayerController;
-    if (c.value.isPlaying) {
-      c.pause();
-    } else {
-      c.play();
-    }
-    _showControlsOverlay();
-  }
-
-  void _toggleMute() {
-    _muted = !_muted;
-    widget.videoPlayerController.setVolume(_muted ? 0 : _volume);
-    _showControlsOverlay();
-  }
-
-  void _cycleSpeed() {
-    final idx = _speeds.indexOf(_speed);
-    _speed = _speeds[(idx + 1) % _speeds.length];
-    widget.videoPlayerController.setPlaybackSpeed(_speed);
-    _showControlsOverlay();
-  }
-
-  void _seekRelative(int seconds) {
-    final c = widget.videoPlayerController;
-    var pos = c.value.position + Duration(seconds: seconds);
-    if (pos < Duration.zero) pos = Duration.zero;
-    if (pos > c.value.duration) pos = c.value.duration;
-    c.seekTo(pos);
-  }
-
-  void _triggerRipple(bool forward) {
-    _rippleIsForward = forward;
-    _rippleAnim?.dispose();
-    _rippleAnim = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    _rippleAnim!.forward();
-    setState(() {});
-  }
-
-  void _showControlsOverlay() {
-    if (!_showControls) setState(() => _showControls = true);
-    _hideTimer.cancel();
-    _hideTimer = Timer(const Duration(seconds: 4), _hideControls);
-  }
-
-  void _hideControls() {
-    if (mounted) setState(() => _showControls = false);
-  }
-
-  String _fmt(Duration d) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${two(d.inMinutes)}:${two(d.inSeconds.remainder(60))}';
-  }
-
-  @override
-  void dispose() {
-    _hideTimer.cancel();
-    _rippleAnim?.dispose();
-    widget.videoPlayerController.removeListener(_listener);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: _showControls
-          ? AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              forceMaterialTransparency: true,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios, color: _textHi),
-                onPressed: () => Navigator.pop(context),
-              ),
-              title: const Text('미리보기', style: TextStyle(color: _textHi, fontSize: 16)),
-            )
-          : null,
-      body: !_initialized
-          ? const Center(child: CircularProgressIndicator(color: _accent))
-          : GestureDetector(
-              onTap: _showControlsOverlay,
-              onDoubleTapDown: (details) {
-                final w = MediaQuery.of(context).size.width;
-                final isLeft = details.globalPosition.dx < w / 2;
-                _seekRelative(isLeft ? -10 : 10);
-                _triggerRipple(!isLeft);
-              },
-              // 세로 드래그로 볼륨 조절 (우측 절반)
-              onVerticalDragUpdate: (details) {
-                final w = MediaQuery.of(context).size.width;
-                final dx = details.globalPosition.dx;
-                if (dx < w / 2) return; // 좌측은 무시
-                setState(() {
-                  _volume = (_volume - details.delta.dy * 0.005).clamp(0.0, 1.0);
-                  _muted = _volume == 0;
-                  widget.videoPlayerController.setVolume(_volume);
-                });
-              },
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // 영상 — 화면 전체 채우기 (틱톡/인스타식 cover)
-                  FittedBox(
-                    fit: BoxFit.cover,
-                    clipBehavior: Clip.hardEdge,
-                    child: SizedBox(
-                      width: widget.videoPlayerController.value.size.width,
-                      height: widget.videoPlayerController.value.size.height,
-                      child: VideoPlayer(widget.videoPlayerController),
-                    ),
-                  ),
-                  // 더블탭 리플 피드백
-                  _buildRippleFeedback(),
-                  // 중앙 재생/일시정지
-                  if (_showControls) _buildCenterPlayPause(),
-                  // 하단 컨트롤
-                  if (_showControls) _buildBottomControls(),
-                  // 상단 우측 버튼
-                  if (_showControls) _buildTopControls(),
-                  // 볼륨 표시 (드래그 중)
-                  _buildVolumeIndicator(),
-                ],
-              ),
-            ),
-    );
-  }
-
-  Widget _buildRippleFeedback() {
-    if (_rippleAnim == null) return const SizedBox.shrink();
-    return Positioned.fill(
-      child: AnimatedBuilder(
-        animation: _rippleAnim!,
-        builder: (context, child) {
-          if (_rippleAnim!.value > 0.9) return const SizedBox.shrink();
-          final opacity = (1 - _rippleAnim!.value).clamp(0.0, 1.0);
-          return Align(
-            alignment: _rippleIsForward ? Alignment.centerRight : Alignment.centerLeft,
-            child: Padding(
-              padding: EdgeInsets.only(
-                right: _rippleIsForward ? 60 : 0,
-                left: _rippleIsForward ? 0 : 60,
-              ),
-              child: Opacity(
-                opacity: opacity,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _rippleIsForward ? Icons.fast_forward_rounded : Icons.fast_rewind_rounded,
-                      color: Colors.white,
-                      size: 40 * (1 + _rippleAnim!.value * 0.3),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _rippleIsForward ? '+10초' : '-10초',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildCenterPlayPause() {
-    return Center(
-      child: GestureDetector(
-        onTap: _togglePlayPause,
-        child: AnimatedOpacity(
-          opacity: widget.videoPlayerController.value.isPlaying ? 0.0 : 1.0,
-          duration: const Duration(milliseconds: 200),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.black54,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.play_arrow_rounded,
-              color: Colors.white,
-              size: 40,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopControls() {
-    return Positioned(
-      top: MediaQuery.of(context).padding.top + 8,
-      right: 12,
-      child: Row(
-        children: [
-          _circleBtn(
-            onTap: _toggleMute,
-            icon: _muted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
-          ),
-          const Gap(8),
-          _circleBtn(
-            onTap: _cycleSpeed,
-            child: Text('${_speed}x',
-                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomControls() {
-    final c = widget.videoPlayerController;
-    final pos = c.value.position;
-    final dur = c.value.duration;
-    final progress = dur.inMilliseconds > 0 ? pos.inMilliseconds / dur.inMilliseconds : 0.0;
-    final buffer = c.value.buffered.isNotEmpty
-        ? c.value.buffered.last.end.inMilliseconds / dur.inMilliseconds.clamp(1, 999999999)
-        : 0.0;
-
-    return Positioned(
-      left: 12,
-      right: 12,
-      bottom: MediaQuery.of(context).padding.bottom + 8,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 시간 라벨
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(_fmt(pos), style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
-                Text(_fmt(dur), style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 4),
-          // 커스텀 Progress Bar (틱톡식 씬 바)
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final barWidth = constraints.maxWidth;
-              return GestureDetector(
-                onTapDown: (details) {
-                  final ratio = (details.localPosition.dx / barWidth).clamp(0.0, 1.0);
-                  c.seekTo(Duration(milliseconds: (ratio * dur.inMilliseconds).toInt()));
-                },
-                onHorizontalDragUpdate: (details) {
-                  setState(() => _isDragging = true);
-                  final ratio = (details.localPosition.dx / barWidth).clamp(0.0, 1.0);
-                  c.seekTo(Duration(milliseconds: (ratio * dur.inMilliseconds).toInt()));
-                },
-                onHorizontalDragEnd: (_) {
-                  _isDragging = false;
-                  _showControlsOverlay();
-                },
-                child: Container(
-                  height: 28,
-                  alignment: Alignment.center,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      // 트랙 배경
-                      Container(
-                        height: _isDragging ? 5 : 3,
-                        decoration: BoxDecoration(
-                          color: Colors.white24,
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                      ),
-                      // 버퍼링 표시
-                      FractionallySizedBox(
-                        widthFactor: buffer.clamp(0.0, 1.0),
-                        child: Container(
-                          height: _isDragging ? 5 : 3,
-                          decoration: BoxDecoration(
-                            color: Colors.white38,
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        ),
-                      ),
-                      // 재생 진행
-                      FractionallySizedBox(
-                        widthFactor: progress.clamp(0.0, 1.0),
-                        child: Container(
-                          height: _isDragging ? 5 : 3,
-                          decoration: BoxDecoration(
-                            color: _accent,
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        ),
-                      ),
-                      // 드래그 핸들 (씬 중에만)
-                      if (_isDragging)
-                        Positioned(
-                          left: (progress.clamp(0.0, 1.0) * barWidth) - 7,
-                          child: Container(
-                            width: 14,
-                            height: 14,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 4),
-                              ],
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVolumeIndicator() {
-    if (_volume >= 1.0 && !_muted) return const SizedBox.shrink();
-    // 간단한 볼륨 표시 (항상 표시하되 최소한으로)
-    return Positioned(
-      top: MediaQuery.of(context).padding.top + 56,
-      right: 14,
-      child: AnimatedOpacity(
-        opacity: _showControls ? 0.5 : 0.0,
-        duration: const Duration(milliseconds: 300),
-        child: Container(
-          width: 4,
-          height: 60,
-          decoration: BoxDecoration(
-            color: Colors.white12,
-            borderRadius: BorderRadius.circular(2),
-          ),
-          child: FractionallySizedBox(
-            alignment: Alignment.bottomCenter,
-            heightFactor: _volume.clamp(0.0, 1.0),
-            child: Container(
-              decoration: BoxDecoration(
-                color: _accent,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _circleBtn({required VoidCallback onTap, IconData? icon, Widget? child}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 38,
-        height: 38,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: Colors.black54,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white24),
-        ),
-        child: child ?? Icon(icon, size: 20, color: Colors.white),
-      ),
     );
   }
 }
