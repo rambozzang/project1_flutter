@@ -160,8 +160,6 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
   void initializeVideo() async {
     try {
       lo.g("initializeVideo() widget.videoFile : ${widget.videoFile.path}");
-      // 초기화 전 딜레이 추가
-      await Future.delayed(const Duration(milliseconds: 300));
 
       _videoController = VideoPlayerController.file(
         widget.videoFile,
@@ -377,17 +375,18 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
 
   void cancle() {
     FocusScope.of(context).unfocus();
-    sleep(const Duration(milliseconds: 500));
-    if (isUploading.value == true) {
-      return;
-    }
-    Utils.showConfirmDialog('나가기', '영상이 삭제됩니다. 나가겠습니까?', BackButtonBehavior.none, confirm: () async {
-      Lo.g('cancel');
-      isCancle = true;
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (isUploading.value == true) {
+        return;
+      }
+      Utils.showConfirmDialog('나가기', '영상이 삭제됩니다. 나가겠습니까?', BackButtonBehavior.none, confirm: () async {
+        Lo.g('cancel');
+        isCancle = true;
       Navigator.of(context).pop();
     }, cancel: () async {
       Lo.g('cancel');
     }, backgroundReturn: () {});
+    });
   }
 
   @override

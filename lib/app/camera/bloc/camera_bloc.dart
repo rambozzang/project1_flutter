@@ -139,7 +139,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       // Check if the recorded video duration is less than 3 seconds to prevent
       // potential issues with very short videos resulting in corrupt files.
       bool hasRecordingLimitError = recordingDuration.value < limitSec ? true : false;
-      emit(CameraReady(isRecordingVideo: false, hasRecordingError: hasRecordingLimitError, decativateRecordButton: true));
+      emit(CameraReady(isRecordingVideo: false, hasRecordingError: hasRecordingLimitError, decativateRecordButton: true, isProcessingStop: !hasRecordingLimitError));
       File? videoFile;
       try {
         videoFile = await _stopRecording(); // Stop video recording and get the recorded video file
@@ -254,7 +254,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     } else {
       if (await permissionUtils.askForPermission()) {
         // 릴레이를 쭤야 함 안그럼 빨간딱지 나옴 - 여긴 최초한번만 실행되니까
-        sleep(const Duration(milliseconds: 500));
+        await Future.delayed(const Duration(milliseconds: 500));
         await _initializeCamera(emit);
       } else {
         return Future.error(CameraErrorType.permission); // Throw the specific error type for permission denial
@@ -318,7 +318,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   }
 
   Future<File> ensureMP4Extension(File videoFile) async {
-    if (!videoFile.existsSync()) {
+    if (!await videoFile.exists()) {
       throw FileSystemException('Video file does not exist', videoFile.path);
     }
 
@@ -332,7 +332,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
         final File renamedFile = await videoFile.rename(newPath);
 
         // 변경된 파일이 실제로 존재하는지 확인
-        if (!renamedFile.existsSync()) {
+        if (!await renamedFile.exists()) {
           throw FileSystemException('Failed to rename the file', newPath);
         }
 

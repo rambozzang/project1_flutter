@@ -272,6 +272,18 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
                             key: ValueKey(controller.description.lensDirection),
                             controller: controller,
                           ),
+                          // 녹화 종료 처리 중 로딩 오버레이
+                          if (state.isProcessingStop)
+                            Container(
+                              color: Colors.black54,
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 40,
+                                  height: 40,
+                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+                                ),
+                              ),
+                            ),
                           // AspectRatio(
                           //   aspectRatio: deviceRatio,
                           //   child: Transform(
@@ -599,7 +611,8 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.file(_photos[i], height: 62, width: 48, fit: BoxFit.cover),
+                  child: Image.file(_photos[i], height: 62, width: 48, fit: BoxFit.cover,
+                    cacheWidth: 96, cacheHeight: 124),
                 ),
                 Positioned(
                   top: -4,
