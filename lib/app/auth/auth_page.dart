@@ -58,9 +58,7 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver, Single
   Future<void> initS() async {
     try {
       // GPS·날씨는 부팅 시 이미 선행 시작됨(_prefetchLocationAndWeather).
-      // 로그인 완료 후, 진행 중이던 위치 요청이 끝나면 root로 이동한다.
-      // (root의 영상 피드가 lat/lon을 필요로 하므로 위치 완료를 기다림)
-      await (_locationFuture ?? Get.find<WeatherGogoCntr>().requestLocation());
+      // 로그인 완료 즉시 root로 이동 — 위치/날씨는 백그라운드에서 계속 로딩.
       if (isGoRoot == false) {
         Get.offAllNamed('/rootPage');
         isGoRoot = true;
