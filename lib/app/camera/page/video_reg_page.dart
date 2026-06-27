@@ -504,26 +504,17 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 인스타그램식 컴포저: 썸네일(좌) + 캡션(우)
-          _buildComposerRow(),
+          // 큰 영상 플레이어 (음소거 + 전체화면 + 재생시간 포함)
+          Center(child: _buildVideoPlayer()),
+          const Gap(12),
+          // 캡션 입력
+          _buildCaptionField(),
           const Gap(10),
           _igDivider(),
-          // 설정 행들 (좌: 아이콘+설명, 우: 스위치)
-          _settingRow(
-            icon: _hideChecked ? Icons.lock_outline_rounded : Icons.public_rounded,
-            title: '비공개로 게시',
-            subtitle: _hideChecked ? '나만 볼 수 있어요' : '모두에게 공개돼요',
-            value: _hideChecked,
-            onChanged: (_) => _toggleHideCheckbox(),
-          ),
-          _igDivider(),
-          _settingRow(
-            icon: _anonyChecked ? Icons.person_off_outlined : Icons.person_outline_rounded,
-            title: '익명으로 게시',
-            subtitle: _anonyChecked ? '닉네임을 숨겨요' : '내 닉네임이 표시돼요',
-            value: _anonyChecked,
-            onChanged: (_) => _toggleAnonyCheckbox(),
-          ),
+          // 비공개 + 익명을 한 줄 컴팩트 칩으로
+          const Gap(4),
+          _buildOptionPills(),
+          const Gap(4),
           _igDivider(),
           _autoWeatherRow(),
           _igDivider(),
@@ -778,12 +769,12 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
     );
   }
 
-  // ── 캡션 입력 (인스타식: 썸네일 옆 무테두리 멀티라인) ──
+  // ── 캡션 입력 (영상 하단 독립 영역) ──
   Widget _buildCaptionField() {
     return GestureDetector(
       onTap: () => FocusScope.of(context).requestFocus(hashTagFocusNode),
       child: Container(
-        height: 164, // 썸네일 높이에 맞춰 정렬
+        height: 100,
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
         decoration: BoxDecoration(
           color: _surface,
@@ -877,27 +868,19 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: active ? activeColor.withOpacity(0.16) : _surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: active ? activeColor.withOpacity(0.9) : _surfaceBorder, width: 1.2),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: active ? activeColor.withOpacity(0.9) : _surfaceBorder, width: 1),
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 20, color: active ? activeColor : _textLo),
-            const Gap(10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label,
-                      style: TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w700, color: active ? _textHi : _textHi.withOpacity(0.85))),
-                  Text(sub, style: const TextStyle(fontSize: 11, color: _textLo)),
-                ],
-              ),
-            ),
+            Icon(icon, size: 17, color: active ? activeColor : _textLo),
+            const Gap(7),
+            Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: active ? _textHi : _textHi.withOpacity(0.85))),
           ],
         ),
       ),
