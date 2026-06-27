@@ -61,6 +61,7 @@ dependencies:
   permission_handler: ^11.3.0  
   camera: ^0.11.3  # 0.11.3+: enablePersistentRecording(지속 녹화)로 녹화 시작 지연 개선
   camera_android_camerax: ^0.6.14  # CameraX 백엔드(camera 0.11.x 호환). 0.7.x는 AGP 9 필요로 비호환
+  camerawesome: ^2.5.0  # 프리즈 개선 테스트용 대체 카메라 엔진
   flutter_bloc: ^8.1.4
   equatable: ^2.0.5
   video_player: ^2.10.0
@@ -79,7 +80,7 @@ dependencies:
   path_provider: ^2.1.4
   image_cropper: ^9.1.0
   image_picker: ^1.1.2
-  rxdart: ^0.27.7
+  rxdart: ^0.28.0
   share_plus: ^10.0.2
   flutter_staggered_grid_view: ^0.7.0
   cloudflare: ^3.2.1+1
