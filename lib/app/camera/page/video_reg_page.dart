@@ -1913,10 +1913,13 @@ class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage>
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // 영상
-                  Center(
-                    child: AspectRatio(
-                      aspectRatio: widget.videoPlayerController.value.aspectRatio,
+                  // 영상 — 화면 전체 채우기 (틱톡/인스타식 cover)
+                  FittedBox(
+                    fit: BoxFit.cover,
+                    clipBehavior: Clip.hardEdge,
+                    child: SizedBox(
+                      width: widget.videoPlayerController.value.size.width,
+                      height: widget.videoPlayerController.value.size.height,
                       child: VideoPlayer(widget.videoPlayerController),
                     ),
                   ),
