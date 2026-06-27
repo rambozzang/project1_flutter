@@ -1766,19 +1766,25 @@ class _PlayerVideoAndPopPage extends StatefulWidget {
   _PlayerVideoAndPopPageState createState() => _PlayerVideoAndPopPageState();
 }
 
-class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage> {
+class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage>
+    with SingleTickerProviderStateMixin {
   static const Color _accent = Color(0xFF4C8DFF);
   static const Color _textHi = Color(0xFFF2F5FA);
-  static const Color _textLo = Color(0xFF9AA6C2);
 
   bool _initialized = false;
   bool _showControls = true;
   bool _isDragging = false;
   bool _muted = false;
   double _speed = 1.0;
+  double _volume = 1.0;
   late Timer _hideTimer;
 
-  static const List<double> _speeds = [0.5, 1.0, 2.0];
+  // 더블탭 피드백 애니메이션
+  AnimationController? _rippleAnim;
+  bool _rippleIsForward = true;
+  int _lastTapTime = 0;
+
+  static const List<double> _speeds = [0.25, 0.5, 1.0, 1.5, 2.0, 3.0];
 
   @override
   void initState() {
@@ -1814,7 +1820,7 @@ class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage> {
 
   void _toggleMute() {
     _muted = !_muted;
-    widget.videoPlayerController.setVolume(_muted ? 0 : 1.0);
+    widget.videoPlayerController.setVolume(_muted ? 0 : _volume);
     _showControlsOverlay();
   }
 
@@ -1831,7 +1837,17 @@ class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage> {
     if (pos < Duration.zero) pos = Duration.zero;
     if (pos > c.value.duration) pos = c.value.duration;
     c.seekTo(pos);
-    _showControlsOverlay();
+  }
+
+  void _triggerRipple(bool forward) {
+    _rippleIsForward = forward;
+    _rippleAnim?.dispose();
+    _rippleAnim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _rippleAnim!.forward();
+    setState(() {});
   }
 
   void _showControlsOverlay() {
@@ -1852,6 +1868,7 @@ class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage> {
   @override
   void dispose() {
     _hideTimer.cancel();
+    _rippleAnim?.dispose();
     widget.videoPlayerController.removeListener(_listener);
     super.dispose();
   }
@@ -1877,8 +1894,21 @@ class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage> {
           : GestureDetector(
               onTap: _showControlsOverlay,
               onDoubleTapDown: (details) {
-                final isLeft = details.globalPosition.dx < MediaQuery.of(context).size.width / 2;
+                final w = MediaQuery.of(context).size.width;
+                final isLeft = details.globalPosition.dx < w / 2;
                 _seekRelative(isLeft ? -10 : 10);
+                _triggerRipple(!isLeft);
+              },
+              // 세로 드래그로 볼륨 조절 (우측 절반)
+              onVerticalDragUpdate: (details) {
+                final w = MediaQuery.of(context).size.width;
+                final dx = details.globalPosition.dx;
+                if (dx < w / 2) return; // 좌측은 무시
+                setState(() {
+                  _volume = (_volume - details.delta.dy * 0.005).clamp(0.0, 1.0);
+                  _muted = _volume == 0;
+                  widget.videoPlayerController.setVolume(_volume);
+                });
               },
               child: Stack(
                 fit: StackFit.expand,
@@ -1890,37 +1920,87 @@ class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage> {
                       child: VideoPlayer(widget.videoPlayerController),
                     ),
                   ),
-                  // 중앙 재생/일시정지 아이콘
-                  if (_showControls)
-                    Center(
-                      child: GestureDetector(
-                        onTap: _togglePlayPause,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.black54,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            widget.videoPlayerController.value.isPlaying
-                                ? Icons.pause_rounded
-                                : Icons.play_arrow_rounded,
-                            color: Colors.white,
-                            size: 40,
-                          ),
-                        ),
-                      ),
-                    ),
-                  // 더블탭 피드백 (좌/우)
-                  if (_showControls) _buildDoubleTapHints(),
-                  // 하단 시크바 + 컨트롤
+                  // 더블탭 리플 피드백
+                  _buildRippleFeedback(),
+                  // 중앙 재생/일시정지
+                  if (_showControls) _buildCenterPlayPause(),
+                  // 하단 컨트롤
                   if (_showControls) _buildBottomControls(),
-                  // 상단 우측 버튼들 (음소거, 배속)
+                  // 상단 우측 버튼
                   if (_showControls) _buildTopControls(),
+                  // 볼륨 표시 (드래그 중)
+                  _buildVolumeIndicator(),
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildRippleFeedback() {
+    if (_rippleAnim == null) return const SizedBox.shrink();
+    return Positioned.fill(
+      child: AnimatedBuilder(
+        animation: _rippleAnim!,
+        builder: (context, child) {
+          if (_rippleAnim!.value > 0.9) return const SizedBox.shrink();
+          final opacity = (1 - _rippleAnim!.value).clamp(0.0, 1.0);
+          return Align(
+            alignment: _rippleIsForward ? Alignment.centerRight : Alignment.centerLeft,
+            child: Padding(
+              padding: EdgeInsets.only(
+                right: _rippleIsForward ? 60 : 0,
+                left: _rippleIsForward ? 0 : 60,
+              ),
+              child: Opacity(
+                opacity: opacity,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _rippleIsForward ? Icons.fast_forward_rounded : Icons.fast_rewind_rounded,
+                      color: Colors.white,
+                      size: 40 * (1 + _rippleAnim!.value * 0.3),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _rippleIsForward ? '+10초' : '-10초',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCenterPlayPause() {
+    return Center(
+      child: GestureDetector(
+        onTap: _togglePlayPause,
+        child: AnimatedOpacity(
+          opacity: widget.videoPlayerController.value.isPlaying ? 0.0 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.play_arrow_rounded,
+              color: Colors.white,
+              size: 40,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1950,49 +2030,137 @@ class _PlayerVideoAndPopPageState extends State<_PlayerVideoAndPopPage> {
     final pos = c.value.position;
     final dur = c.value.duration;
     final progress = dur.inMilliseconds > 0 ? pos.inMilliseconds / dur.inMilliseconds : 0.0;
+    final buffer = c.value.buffered.isNotEmpty
+        ? c.value.buffered.last.end.inMilliseconds / dur.inMilliseconds.clamp(1, 999999999)
+        : 0.0;
 
     return Positioned(
-      left: 16,
-      right: 16,
-      bottom: MediaQuery.of(context).padding.bottom + 12,
+      left: 12,
+      right: 12,
+      bottom: MediaQuery.of(context).padding.bottom + 8,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 시크바
-          Row(
-            children: [
-              Text(_fmt(pos), style: const TextStyle(color: Colors.white70, fontSize: 12)),
-              Expanded(
-                child: Slider(
-                  value: progress.clamp(0.0, 1.0),
-                  onChanged: (v) {
-                    setState(() => _isDragging = true);
-                    c.seekTo(Duration(milliseconds: (v * dur.inMilliseconds).toInt()));
-                  },
-                  onChangeEnd: (_) {
-                    _isDragging = false;
-                    _showControlsOverlay();
-                  },
-                  activeColor: _accent,
-                  inactiveColor: Colors.white24,
+          // 시간 라벨
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(_fmt(pos), style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
+                Text(_fmt(dur), style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          // 커스텀 Progress Bar (틱톡식 씬 바)
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final barWidth = constraints.maxWidth;
+              return GestureDetector(
+                onTapDown: (details) {
+                  final ratio = (details.localPosition.dx / barWidth).clamp(0.0, 1.0);
+                  c.seekTo(Duration(milliseconds: (ratio * dur.inMilliseconds).toInt()));
+                },
+                onHorizontalDragUpdate: (details) {
+                  setState(() => _isDragging = true);
+                  final ratio = (details.localPosition.dx / barWidth).clamp(0.0, 1.0);
+                  c.seekTo(Duration(milliseconds: (ratio * dur.inMilliseconds).toInt()));
+                },
+                onHorizontalDragEnd: (_) {
+                  _isDragging = false;
+                  _showControlsOverlay();
+                },
+                child: Container(
+                  height: 28,
+                  alignment: Alignment.center,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      // 트랙 배경
+                      Container(
+                        height: _isDragging ? 5 : 3,
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                      // 버퍼링 표시
+                      FractionallySizedBox(
+                        widthFactor: buffer.clamp(0.0, 1.0),
+                        child: Container(
+                          height: _isDragging ? 5 : 3,
+                          decoration: BoxDecoration(
+                            color: Colors.white38,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        ),
+                      ),
+                      // 재생 진행
+                      FractionallySizedBox(
+                        widthFactor: progress.clamp(0.0, 1.0),
+                        child: Container(
+                          height: _isDragging ? 5 : 3,
+                          decoration: BoxDecoration(
+                            color: _accent,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        ),
+                      ),
+                      // 드래그 핸들 (씬 중에만)
+                      if (_isDragging)
+                        Positioned(
+                          left: (progress.clamp(0.0, 1.0) * barWidth) - 7,
+                          child: Container(
+                            width: 14,
+                            height: 14,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 4),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              Text(_fmt(dur), style: const TextStyle(color: Colors.white70, fontSize: 12)),
-            ],
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDoubleTapHints() {
-    return Positioned.fill(
-      child: Row(
-        children: [
-          // 좌측 더블탭 힌트는 항상 보이지 않음 - 하지만 시각적 가이드는 영구 표시
-          Expanded(child: SizedBox()),
-          Expanded(child: SizedBox()),
-        ],
+  Widget _buildVolumeIndicator() {
+    if (_volume >= 1.0 && !_muted) return const SizedBox.shrink();
+    // 간단한 볼륨 표시 (항상 표시하되 최소한으로)
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 56,
+      right: 14,
+      child: AnimatedOpacity(
+        opacity: _showControls ? 0.5 : 0.0,
+        duration: const Duration(milliseconds: 300),
+        child: Container(
+          width: 4,
+          height: 60,
+          decoration: BoxDecoration(
+            color: Colors.white12,
+            borderRadius: BorderRadius.circular(2),
+          ),
+          child: FractionallySizedBox(
+            alignment: Alignment.bottomCenter,
+            heightFactor: _volume.clamp(0.0, 1.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: _accent,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
