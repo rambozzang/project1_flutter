@@ -377,7 +377,6 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
 
   void cancle() {
     FocusScope.of(context).unfocus();
-    sleep(const Duration(milliseconds: 500));
     if (isUploading.value == true) {
       return;
     }
