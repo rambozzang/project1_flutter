@@ -11,7 +11,7 @@ import 'package:get/get.dart';
 import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/app/alram/alram_page.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
-import 'package:project1/app/camera/page/camera_page.dart';
+import 'package:project1/app/camera/page/camera_awesome_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/camera/utils/permission_utils.dart';
 import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
@@ -122,6 +122,9 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
       mainlist[4] = const MyPage();
     }
     RootCntr.to.changeRootPageIndex(index);
+    // 탭 전환 시 하단 플로팅 메뉴바는 항상 표시한다.
+    // (이전: Feed 진입 시 add(index != 1)로 무조건 숨겨, 영상을 스와이프해야 다시 나오는 버그가 있었음)
+    RootCntr.to.bottomBarStreamController.sink.add(true);
   }
 
   DateTime? currentBackPressTime = DateTime.now();
@@ -284,13 +287,9 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     Navigator.of(context)
         .push(
           MaterialPageRoute(
-            builder: (context) => BlocProvider<CameraBloc>.value(
-              value: camBloc,
-              child: const CameraPage(),
-            ),
+            builder: (context) => const CameraAwesomePage(),
           ),
-        )
-        .then((_) => camBloc.close()); // 라우트가 닫히면 블록 정리(메모리 누수 방지)
+        );
   }
 
   BottomNavigationBarItem bottomItem(IconData icondata, String label) {
