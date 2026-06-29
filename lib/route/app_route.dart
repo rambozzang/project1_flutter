@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart' show BlocProvider;
 import 'package:get/get.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
+import 'package:project1/app/camera/page/camera_awesome_page.dart';
 import 'package:project1/app/camera/page/camera_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/camera/utils/permission_utils.dart';
@@ -100,9 +101,7 @@ abstract class AppPages {
   // 어디서든(푸시 핸들러 등) 카메라를 연다 — context 불필요(Get.to).
   // root_page.goRecord와 동일하게 CameraBloc을 사전 초기화한다.
   static void openCameraGlobal() {
-    final camBloc = CameraBloc(cameraUtils: CameraUtils(), permissionUtils: PermissionUtils())
-      ..add(const CameraInitialize(recordingLimit: 15));
-    Get.to(() => BlocProvider<CameraBloc>.value(value: camBloc, child: const CameraPage()))?.then((_) => camBloc.close());
+    Get.to(() => const CameraAwesomePage());
   }
 
   static final routes = [
@@ -143,6 +142,9 @@ abstract class AppPages {
     GetPage(
       name: '/VideoMyinfoListPage',
       page: () => const VideoMyinfoListPage(),
+      fullscreenDialog: false,
+      opaque: true,
+      transition: Transition.native,
       // binding: VideoMyinfoListBinding(),
       //  transition: Transition.downToUp,
     ),

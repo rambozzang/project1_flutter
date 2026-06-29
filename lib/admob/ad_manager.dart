@@ -16,10 +16,16 @@ class AdManager {
   final Map<String, AdManagerBannerAd> _bannerAds = {};
   late final Map<String, String> _adUnitIds;
   final Map<String, Timer> _adTimers = {}; // 광고 갱신을 위한 타이머
+  bool _initialized = false;
+  final Completer<void> _initCompleter = Completer<void>();
 
   static Future<void> initialize({required TargetPlatform targetPlatform}) async {
     await MobileAds.instance.initialize();
     _instance._adUnitIds = Platform.isIOS ? AdUnitIds.ios : AdUnitIds.android;
+    _instance._initialized = true;
+    if (!_instance._initCompleter.isCompleted) {
+      _instance._initCompleter.complete();
+    }
   }
 
   bool isTestMode() {
@@ -33,9 +39,18 @@ class AdManager {
   }
 
   Future<void> loadBannerAd(String screenName) async {
-    if (!_bannerAds.containsKey(screenName)) {
-      await _createAndLoadBannerAd(screenName);
+    // 초기화가 완료될 때까지 대기한다. (main.dart에서 unawaited로 호출될 수 있음)
+    if (!_initialized) {
+      await _initCompleter.future.timeout(const Duration(seconds: 10));
     }
+
+    if (_bannerAds.containsKey(screenName)) {
+      // 이미 로드된 광고가 있으면 상태만 다시 업데이트한다.
+      Get.find<RootCntr>().updateAdLoadingStatus(screenName, true);
+      return;
+    }
+
+    await _createAndLoadBannerAd(screenName);
   }
 
   void _startAdTimer(String screenName) {
@@ -45,12 +60,28 @@ class AdManager {
     });
   }
 
+  /// 디버그 모드에서는 Google 공식 테스트 광고 ID를 사용한다.
+  String _resolveAdUnitId(String screenName) {
+    if (kDebugMode) {
+      return Platform.isIOS
+          ? 'ca-app-pub-3940256099942544/2934735716'
+          : 'ca-app-pub-3940256099942544/6300978111';
+    }
+    final adUnitId = _adUnitIds[screenName];
+    if (adUnitId == null) {
+      throw Exception('Ad unit ID not found for screen: $screenName');
+    }
+    return adUnitId;
+  }
+
   Future<void> _createAndLoadBannerAd(String screenName) async {
     try {
-      final adUnitId = _adUnitIds[screenName];
-      if (adUnitId == null) {
-        throw Exception('Ad unit ID not found for screen: $screenName');
-      }
+      final adUnitId = _resolveAdUnitId(screenName);
+
+      // 기존 광고가 있다면 정리 후 새로 로드한다.
+      _bannerAds[screenName]?.dispose();
+      _bannerAds.remove(screenName);
+      _adTimers[screenName]?.cancel();
 
       final ad = AdManagerBannerAd(
         adUnitId: adUnitId,

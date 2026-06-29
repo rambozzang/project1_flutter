@@ -77,7 +77,8 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     final safeBottom = mediaQuery.viewPadding.bottom;
 
     if (Platform.isIOS) {
-      return safeBottom + 25;
+      // iOS 홈 인디케이터 영역이 크므로 카드를 더 위로 띄워 메뉴/프로그레스바와 겹치지 않게 한다.
+      return safeBottom + 76;
     }
 
     // SafeArea(bottom)를 제거했으므로, 사라진 시스템 하단 영역을 직접 보정한다.
@@ -629,7 +630,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
                         pauseBetween: const Duration(milliseconds: 2000),
                         velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
                         style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w600),
-                        textAlign: TextAlign.right,
+                        textAlign: TextAlign.left,
                         selectable: false,
                       ),
                     ),
@@ -658,7 +659,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
                 child: Text(
                   '${widget.data.weatherInfo?.split('.')[0]} ${widget.data.currentTemp}°',
                   style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w600),
-                  textAlign: TextAlign.right,
+                  textAlign: TextAlign.left,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -823,26 +824,15 @@ class VideoScreenPageState extends State<VideoScreenPage> {
               likeCountPadding: const EdgeInsets.only(top: 5, right: 0, left: 0),
               countPostion: CountPostion.bottom,
               countBuilder: (int? count, bool isLiked, String text) {
-                Color color = isLiked ? Colors.redAccent : Colors.white;
-                Widget result;
-                if (count == 0) {
-                  result = Text(
-                    "Love",
-                    style: TextStyle(color: color, fontSize: 10),
-                  );
-                } else {
-                  result = SizedBox(
-                    width: 30,
-                    height: 18,
-                    // color: Colors.red,
-                    child: Text(
-                      text,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
-                    ),
-                  );
-                }
-                return result;
+                return SizedBox(
+                  width: 30,
+                  height: 18,
+                  child: Text(
+                    '${count ?? 0}',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: isLiked ? Colors.redAccent : Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
+                );
               },
             ),
           ),
@@ -938,7 +928,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     // 물리 버튼 '바로 위'에 명확히 보이도록 8px 띄운다.
     final safeBottom = MediaQuery.of(context).viewPadding.bottom;
     return Positioned(
-      bottom: safeBottom + 8,
+      bottom: safeBottom,
       left: 1,
       right: 1,
       // child: VideoProgressIndicator(

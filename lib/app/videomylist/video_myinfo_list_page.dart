@@ -7,6 +7,7 @@ import 'package:project1/app/videolist/video_list_page.dart' show FastPageScroll
 import 'package:project1/app/videomylist/Video_myScreen_page.dart';
 import 'package:project1/app/videomylist/cntr/video_myinfo_list_cntr.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
+import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/WeatherLottie.dart';
 import 'package:project1/utils/utils.dart';
 
@@ -41,10 +42,16 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
       Get.back();
     }
     Get.put(VideoMyinfoListCntr(datatype, custId, boardId, searchWord));
+
+    // 동영상 리스트 진입 시 메인 하단 탭바를 숨겨 겹침/뒤로 보임을 방지한다.
+    RootCntr.to.bottomBarStreamController.sink.add(false);
   }
 
   @override
   void dispose() {
+    // 페이지 종료 시 메인 하단 탭바를 다시 보이게 복원한다.
+    RootCntr.to.bottomBarStreamController.sink.add(true);
+
     _controller.dispose();
     scrollController.dispose();
     Get.find<VideoMyinfoListCntr>().videoMyListCntr.close();
@@ -57,9 +64,9 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
     return Scaffold(
       key: Scaffoldkey,
       extendBodyBehindAppBar: true,
+      extendBody: true,
       resizeToAvoidBottomInset: false,
       backgroundColor: Colors.black,
-      extendBody: true,
       // body: RefreshIndicator(
       //   onRefresh: () async {
       //     Get.find<VideoMyinfoListCntr>().pageNum = 0;

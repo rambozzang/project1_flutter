@@ -19,6 +19,10 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
   bool _navigated = false;
   final List<File> _photos = [];
 
+  /// Camera brightness correction (0.0 ~ 1.0). 0.5 is the neutral value
+  /// and can be used to compensate the auto exposure.
+  double _brightness = 0.5;
+
   void _onMediaCaptureEvent(MediaCapture? mediaCapture) {
     if (mediaCapture == null) return;
     if (mediaCapture.status != MediaCaptureStatus.success) return;
@@ -93,6 +97,29 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
             saveConfig: SaveConfig.photoAndVideo(
               initialCaptureMode: CaptureMode.video,
             ),
+            previewFit: CameraPreviewFit.cover,
+            onPreviewTapBuilder: (state) => OnPreviewTap(
+              onTap: (position, flutterPreviewSize, pixelPreviewSize) {
+                state.when(
+                  onPreparingCamera: (_) {},
+                  onPhotoMode: (photoState) => photoState.focusOnPoint(
+                    flutterPosition: position,
+                    flutterPreviewSize: flutterPreviewSize,
+                    pixelPreviewSize: pixelPreviewSize,
+                  ),
+                  onVideoMode: (videoState) => videoState.focusOnPoint(
+                    flutterPosition: position,
+                    flutterPreviewSize: flutterPreviewSize,
+                    pixelPreviewSize: pixelPreviewSize,
+                  ),
+                  onVideoRecordingMode: (recordingState) => recordingState.focusOnPoint(
+                    flutterPosition: position,
+                    flutterPreviewSize: flutterPreviewSize,
+                    pixelPreviewSize: pixelPreviewSize,
+                  ),
+                );
+              },
+            ),
             onMediaCaptureEvent: _onMediaCaptureEvent,
             topActionsBuilder: (state) {
               return Row(
@@ -135,6 +162,13 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
             bottomActionsBuilder: (state) {
               return CamerAwesomeBottomActions(
                 state: state,
+                brightness: _brightness,
+                onBrightnessChanged: (value) {
+                  setState(() {
+                    _brightness = value;
+                  });
+                  state.sensorConfig.setBrightness(value);
+                },
                 onGalleryTap: _openGallery,
                 photos: _photos,
                 onRemovePhoto: (index) {
@@ -157,6 +191,8 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
 /// CamerAwesome Bottom actions
 class CamerAwesomeBottomActions extends StatefulWidget {
   final CameraState state;
+  final double brightness;
+  final ValueChanged<double> onBrightnessChanged;
   final Function(CameraState) onGalleryTap;
   final List<File> photos;
   final Function(int) onRemovePhoto;
@@ -164,6 +200,8 @@ class CamerAwesomeBottomActions extends StatefulWidget {
   const CamerAwesomeBottomActions({
     super.key,
     required this.state,
+    required this.brightness,
+    required this.onBrightnessChanged,
     required this.onGalleryTap,
     required this.photos,
     required this.onRemovePhoto,
@@ -251,8 +289,8 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
           end: Alignment.bottomCenter,
           colors: [
             Colors.transparent,
-            Colors.black.withOpacity(0.5),
-            Colors.black.withOpacity(0.85),
+            Colors.black.withValues(alpha: 0.35),
+            Colors.black.withValues(alpha: 0.65),
           ],
           stops: const [0.0, 0.3, 1.0],
         ),
@@ -267,6 +305,8 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
               _buildPhotoStrip(),
               const SizedBox(height: 12),
             ],
+            _buildBrightnessSlider(),
+            const SizedBox(height: 12),
             if (!isRecording) ...[
               _buildQuickSettings(widget.state),
               const SizedBox(height: 16),
@@ -325,6 +365,28 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildBrightnessSlider() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 36),
+      child: Row(
+        children: [
+          const Icon(Icons.brightness_2, color: Colors.white70, size: 18),
+          Expanded(
+            child: Slider(
+              value: widget.brightness,
+              min: 0.0,
+              max: 1.0,
+              activeColor: Colors.white,
+              inactiveColor: Colors.white.withValues(alpha: 0.3),
+              onChanged: widget.onBrightnessChanged,
+            ),
+          ),
+          const Icon(Icons.brightness_5, color: Colors.white70, size: 18),
+        ],
       ),
     );
   }

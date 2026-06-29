@@ -44,7 +44,11 @@ class MyPage extends StatefulWidget {
   State<MyPage> createState() => _MyPageState();
 }
 
-class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin, WidgetsBindingObserver {
+class _MyPageState extends State<MyPage>
+    with
+        AutomaticKeepAliveClientMixin,
+        SingleTickerProviderStateMixin,
+        WidgetsBindingObserver {
   final ValueNotifier<List<String>> urls = ValueNotifier<List<String>>([]);
 
   @override
@@ -63,7 +67,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
   int myboardPageNum = 0;
   int myboardageSize = 10;
   List<BoardWeatherListData> myboardlist = [];
-  StreamController<ResStream<List<BoardWeatherListData>>> myVideoListCntr = BehaviorSubject();
+  StreamController<ResStream<List<BoardWeatherListData>>> myVideoListCntr =
+      BehaviorSubject();
   ScrollController myboardScrollCtrl = ScrollController();
   bool isMyBoardLastPage = false;
   final ValueNotifier<bool> isMyBoardMoreLoading = ValueNotifier<bool>(false);
@@ -72,7 +77,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
   int followboardPageNum = 0;
   int followboardageSize = 10;
   List<BoardWeatherListData> followboardlist = [];
-  StreamController<ResStream<List<BoardWeatherListData>>> followVideoListCntr = BehaviorSubject();
+  StreamController<ResStream<List<BoardWeatherListData>>> followVideoListCntr =
+      BehaviorSubject();
   ScrollController followboardScrollCtrl = ScrollController();
   bool isFollowLastPage = false;
   final ValueNotifier<bool> isFollowMoreLoading = ValueNotifier<bool>(false);
@@ -115,14 +121,21 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
   }
 
   Future<void> fetchAllData() async {
-    await Future.wait([getCountData(), getInitMyBoard(), getInitFollowBoard(), getTag(), Get.find<WeatherGogoCntr>().getLocalTag()]);
+    await Future.wait([
+      getCountData(),
+      getInitMyBoard(),
+      getInitFollowBoard(),
+      getTag(),
+      Get.find<WeatherGogoCntr>().getLocalTag()
+    ]);
   }
 
   Future<void> getCountData() async {
     try {
       myCountCntr.sink.add(ResStream.loading());
       BoardRepo repo = BoardRepo();
-      ResData res = await repo.getCustCount(Get.find<AuthCntr>().resLoginData.value.custId.toString());
+      ResData res = await repo.getCustCount(
+          Get.find<AuthCntr>().resLoginData.value.custId.toString());
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         myCountCntr.sink.add(ResStream.error(res.msg.toString()));
@@ -152,7 +165,10 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
         myboardlist.clear();
       }
       BoardRepo repo = BoardRepo();
-      ResData res = await repo.getMyBoard(Get.find<AuthCntr>().resLoginData.value.custId.toString(), myboardPageNum, myboardageSize);
+      ResData res = await repo.getMyBoard(
+          Get.find<AuthCntr>().resLoginData.value.custId.toString(),
+          myboardPageNum,
+          myboardageSize);
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         // isMyBoardLastPage = true;
@@ -160,7 +176,9 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
         return;
       }
       print(res.data);
-      List<BoardWeatherListData> list = ((res.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
+      List<BoardWeatherListData> list = ((res.data) as List)
+          .map((data) => BoardWeatherListData.fromMap(data))
+          .toList();
       myboardlist.addAll(list);
 
       if (list.length < myboardageSize) {
@@ -188,15 +206,19 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
         followboardlist.clear();
       }
       BoardRepo repo = BoardRepo();
-      ResData res =
-          await repo.getFollowBoard(Get.find<AuthCntr>().resLoginData.value.custId.toString(), followboardPageNum, followboardageSize);
+      ResData res = await repo.getFollowBoard(
+          Get.find<AuthCntr>().resLoginData.value.custId.toString(),
+          followboardPageNum,
+          followboardageSize);
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         followVideoListCntr.sink.add(ResStream.error(res.msg.toString()));
         return;
       }
       print(res.data);
-      List<BoardWeatherListData> list = ((res.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
+      List<BoardWeatherListData> list = ((res.data) as List)
+          .map((data) => BoardWeatherListData.fromMap(data))
+          .toList();
       followboardlist.addAll(list);
 
       if (list.length < followboardageSize) {
@@ -251,7 +273,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                 context: context,
                 builder: (BuildContext context) => AlertDialog(
                   title: const Text('권한이 필요합니다'),
-                  content: const Text('사진을 선택하기 위해 갤러리 접근 권한이 필요합니다. 설정에서 권한을 허용해주세요.'),
+                  content: const Text(
+                      '사진을 선택하기 위해 갤러리 접근 권한이 필요합니다. 설정에서 권한을 허용해주세요.'),
                   actions: <Widget>[
                     TextButton(
                       child: const Text('취소'),
@@ -334,7 +357,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     AuthCntr.to.resLoginData.value.profilePath = resthumbnail;
     isLoading.value = true;
     CustRepo repo = CustRepo();
-    ResData res = await repo.modiProfilePath(AuthCntr.to.resLoginData.value.custId.toString(), resthumbnail);
+    ResData res = await repo.modiProfilePath(
+        AuthCntr.to.resLoginData.value.custId.toString(), resthumbnail);
     isLoading.value = false;
     if (res.code != '00') {
       Utils.alert(res.msg.toString());
@@ -359,7 +383,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     // 썸네일 업로드
     CloudflareRepo cloudflare = CloudflareRepo();
     await cloudflare.init();
-    CloudflareHTTPResponse<CloudflareImage?>? resthumbnail = await cloudflare.imageFileUpload(uploadFile);
+    CloudflareHTTPResponse<CloudflareImage?>? resthumbnail =
+        await cloudflare.imageFileUpload(uploadFile);
     if (resthumbnail?.isSuccessful == false) {
       Utils.alert('썸네일 업로드에 실패했습니다.');
       return Future.error('썸네일 업로드에 실패했습니다.');
@@ -375,7 +400,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     //     print('Thank you for sharing the picture!');
     // }
     // final result = await Share.shareWithResult('check out my website https://example.com');
-    final result = await Share.share('check out my website https://example.com');
+    final result =
+        await Share.share('check out my website https://example.com');
 
     if (result.status == ShareResultStatus.success) {
       print('Thank you for sharing my website!');
@@ -392,7 +418,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
         tagStream.sink.add(ResStream.completed(_taglist));
       }
 
-      ResData res = await repo.deleteTag(AuthCntr.to.resLoginData.value.custId.toString(), tagNm, tagType);
+      ResData res = await repo.deleteTag(
+          AuthCntr.to.resLoginData.value.custId.toString(), tagNm, tagType);
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         return;
@@ -447,12 +474,14 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     try {
       CustRepo repo = CustRepo();
 
-      ResData res = await repo.getTagList(AuthCntr.to.resLoginData.value.custId.toString(), 'TAG');
+      ResData res = await repo.getTagList(
+          AuthCntr.to.resLoginData.value.custId.toString(), 'TAG');
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         return;
       }
-      _taglist = (res.data as List).map((e) => e['id']['tagNm'].toString()).toList();
+      _taglist =
+          (res.data as List).map((e) => e['id']['tagNm'].toString()).toList();
 
       tagStream.sink.add(ResStream.completed(_taglist));
     } catch (e) {
@@ -482,7 +511,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
         if (notification.depth >= 2) {
           // if (notification.direction == ScrollDirection.reverse) {
 
-          if (notification.metrics.pixels == notification.metrics.maxScrollExtent) {
+          if (notification.metrics.pixels ==
+              notification.metrics.maxScrollExtent) {
             if (!isMyBoardLastPage && tabController.index == 0) {
               myboardPageNum++;
               isMyBoardMoreLoading.value = true;
@@ -516,7 +546,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                 children: [
                   RefreshIndicator.adaptive(
                     notificationPredicate: (notification) {
-                      if (notification is OverscrollNotification || Platform.isIOS) {
+                      if (notification is OverscrollNotification ||
+                          Platform.isIOS) {
                         return notification.depth == 2;
                       }
                       return notification.depth == 0;
@@ -571,7 +602,10 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
             ValueListenableBuilder<bool>(
               valueListenable: isLoading,
               builder: (context, value, child) {
-                return CustomIndicatorOffstage(isLoading: !value, color: const Color(0xFFEA3799), opacity: 0.5);
+                return CustomIndicatorOffstage(
+                    isLoading: !value,
+                    color: const Color(0xFFEA3799),
+                    opacity: 0.5);
               },
             )
           ],
@@ -688,14 +722,30 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
 
   Widget _buildActivityMenu() {
     final items = [
-      {'icon': Icons.emoji_events, 'label': '챌린지', 'color': const Color(0xFFFF8F00), 'route': '/ChallengeMainPage'},
-      {'icon': Icons.military_tech, 'label': '업적', 'color': const Color(0xFF7B1FA2), 'route': '/AchievementPage'},
-      {'icon': Icons.leaderboard, 'label': '체감 랭킹', 'color': const Color(0xFF1565C0), 'route': '/FeelRankingPage'},
+      {
+        'icon': Icons.emoji_events,
+        'label': '챌린지',
+        'color': const Color(0xFFFF8F00),
+        'route': '/ChallengeMainPage'
+      },
+      {
+        'icon': Icons.military_tech,
+        'label': '업적',
+        'color': const Color(0xFF7B1FA2),
+        'route': '/AchievementPage'
+      },
+      {
+        'icon': Icons.leaderboard,
+        'label': '체감 랭킹',
+        'color': const Color(0xFF1565C0),
+        'route': '/FeelRankingPage'
+      },
     ];
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       child: Row(
-        children: items.map((item) {
+        children: items.asMap().entries.map((entry) {
+          final item = entry.value;
           return Expanded(
             child: GestureDetector(
               onTap: () => Get.toNamed(item['route'] as String),
@@ -704,18 +754,34 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
                   color: (item['color'] as Color).withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: (item['color'] as Color).withOpacity(0.2)),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                      color: (item['color'] as Color).withOpacity(0.2)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (item['color'] as Color).withOpacity(0.05),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(item['icon'] as IconData, color: item['color'] as Color, size: 26),
-                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: (item['color'] as Color).withOpacity(0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(item['icon'] as IconData,
+                          color: item['color'] as Color, size: 24),
+                    ),
+                    const SizedBox(height: 8),
                     Text(item['label'] as String,
                         style: TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                           color: item['color'] as Color,
                         )),
                   ],
@@ -738,9 +804,14 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Text('관심지역', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+              const Text('관심지역',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
               const Spacer(),
-              const Text('*리스트 구성 기준', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12, color: Colors.black54)),
+              const Text('*리스트 구성 기준',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 12,
+                      color: Colors.black54)),
               const Gap(10),
               SizedBox(
                 height: 30,
@@ -749,14 +820,17 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                     padding: const EdgeInsets.all(0),
                     constraints: const BoxConstraints(),
                     style: ButtonStyle(
-                        shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                        shape: WidgetStateProperty.all(RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10))),
                         padding: WidgetStateProperty.all(EdgeInsets.zero),
                         backgroundColor: WidgetStateProperty.all(
                           const Color.fromARGB(255, 95, 96, 103),
                         ),
-                        shadowColor: const WidgetStatePropertyAll(Color.fromARGB(255, 50, 125, 237))),
+                        shadowColor: const WidgetStatePropertyAll(
+                            Color.fromARGB(255, 50, 125, 237))),
                     onPressed: () async =>
-                        await Get.toNamed('/FavoriteAreaPage')!.then((value) => Get.find<WeatherGogoCntr>().getLocalTag()),
+                        await Get.toNamed('/FavoriteAreaPage')!.then((value) =>
+                            Get.find<WeatherGogoCntr>().getLocalTag()),
                     icon: const Icon(
                       Icons.add,
                       size: 20,
@@ -777,11 +851,17 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
               children: <TextSpan>[
                 TextSpan(
                   text: '"학교, 지하철역, 골프장, 등산장소 , 캠핑장 , 유원지"',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.black),
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: Colors.black),
                 ),
                 TextSpan(
                   text: '를 자유롭게 지정해 주시면 해당 영상이 리스트에 구성됩니다.',
-                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14, color: Colors.black54),
+                  style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                      color: Colors.black54),
                 ),
               ],
             ),
@@ -814,7 +894,10 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                 alignment: WrapAlignment.start,
                 children: Get.find<WeatherGogoCntr>()
                     .areaList
-                    .map((e) => buildLocalChip(e.id!.tagNm.toString(), double.parse(e.lat.toString()), double.parse(e.lon.toString())))
+                    .map((e) => buildLocalChip(
+                        e.id!.tagNm.toString(),
+                        double.parse(e.lat.toString()),
+                        double.parse(e.lon.toString())))
                     .toList(),
               );
             }),
@@ -861,9 +944,14 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Text('관심태그', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+              const Text('관심태그',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
               const Spacer(),
-              const Text('*리스트 구성 기준', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12, color: Colors.black54)),
+              const Text('*리스트 구성 기준',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 12,
+                      color: Colors.black54)),
               const Gap(10),
               SizedBox(
                 height: 30,
@@ -872,7 +960,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                     padding: const EdgeInsets.all(0),
                     constraints: const BoxConstraints(),
                     style: ButtonStyle(
-                      shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(7))),
+                      shape: WidgetStateProperty.all(RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(7))),
                       padding: WidgetStateProperty.all(EdgeInsets.zero),
                       elevation: WidgetStateProperty.all(7),
                       backgroundColor: WidgetStateProperty.all(
@@ -909,11 +998,17 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
               children: <TextSpan>[
                 TextSpan(
                   text: '"Tag"',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.black),
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: Colors.black),
                 ),
                 TextSpan(
                   text: '를 등록해 주시면 해당하는 영상이 리스트로 구성됩니다.',
-                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14, color: Colors.black54),
+                  style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                      color: Colors.black54),
                 ),
               ],
             ),
@@ -1000,34 +1095,52 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10.0, vertical: 0),
               // color: Colors.yellow,
               width: 100,
               child: Stack(
                 children: [
                   Obx(
-                    () => !StringUtils.isEmpty(Get.find<AuthCntr>().resLoginData.value.profilePath)
+                    () => !StringUtils.isEmpty(
+                            Get.find<AuthCntr>().resLoginData.value.profilePath)
                         ? GestureDetector(
                             onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => ProfileImagePage(
-                                    imageUrl: data.custInfo!.profilePath.toString(), nickNm: data.custInfo!.nickNm.toString()),
+                                    imageUrl:
+                                        data.custInfo!.profilePath.toString(),
+                                    nickNm: data.custInfo!.nickNm.toString()),
                               ),
                             ),
                             child: Hero(
-                              tag: Get.find<AuthCntr>().resLoginData.value.profilePath.toString(),
+                              tag: Get.find<AuthCntr>()
+                                  .resLoginData
+                                  .value
+                                  .profilePath
+                                  .toString(),
                               child: Container(
                                   height: 70,
                                   width: 70,
                                   decoration: BoxDecoration(
                                     color: Colors.transparent,
                                     borderRadius: BorderRadius.circular(25),
-                                    border: Border.all(color: Colors.grey.withOpacity(0.5), width: 1),
+                                    border: Border.all(
+                                        color: Colors.grey.withOpacity(0.5),
+                                        width: 1),
                                     image: DecorationImage(
                                       image: CachedNetworkImageProvider(
-                                          cacheKey: Get.find<AuthCntr>().resLoginData.value.profilePath.toString(),
-                                          Get.find<AuthCntr>().resLoginData.value.profilePath.toString()),
+                                          cacheKey: Get.find<AuthCntr>()
+                                              .resLoginData
+                                              .value
+                                              .profilePath
+                                              .toString(),
+                                          Get.find<AuthCntr>()
+                                              .resLoginData
+                                              .value
+                                              .profilePath
+                                              .toString()),
                                       fit: BoxFit.cover,
                                     ),
                                   )),
@@ -1043,11 +1156,26 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                             ),
                             child: Center(
                               child: Text(
-                                (Get.find<AuthCntr>().resLoginData.value.nickNm == null ||
-                                        Get.find<AuthCntr>().resLoginData.value.nickNm == '')
+                                (Get.find<AuthCntr>()
+                                                .resLoginData
+                                                .value
+                                                .nickNm ==
+                                            null ||
+                                        Get.find<AuthCntr>()
+                                                .resLoginData
+                                                .value
+                                                .nickNm ==
+                                            '')
                                     ? 'S'
-                                    : Get.find<AuthCntr>().resLoginData.value.nickNm!.substring(0, 1),
-                                style: const TextStyle(fontSize: 35, color: Colors.white, fontWeight: FontWeight.bold),
+                                    : Get.find<AuthCntr>()
+                                        .resLoginData
+                                        .value
+                                        .nickNm!
+                                        .substring(0, 1),
+                                style: const TextStyle(
+                                    fontSize: 35,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold),
                               ),
                             ),
                           ),
@@ -1104,7 +1232,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                         MyPageInfo(
                           count: data.followCnt!.toInt(),
                           label: '팔로워',
-                          onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/2/${null}'),
+                          onTap: () => Get.toNamed(
+                              '/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/2/${null}'),
                         ),
                         // const VerticalDivider(
                         //   color: Colors.grey,
@@ -1113,7 +1242,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                         MyPageInfo(
                           count: data.followerCnt!.toInt(),
                           label: '팔로잉',
-                          onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/3/${null}'),
+                          onTap: () => Get.toNamed(
+                              '/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/3/${null}'),
                         ),
                       ],
                     ),
@@ -1124,24 +1254,30 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
           ],
         ),
         const Gap(15),
-        data.custInfo!.custNm == 'null' || data.custInfo!.custNm == null || data.custInfo!.custNm == ''
+        data.custInfo!.custNm == 'null' ||
+                data.custInfo!.custNm == null ||
+                data.custInfo!.custNm == ''
             ? const Text(
                 '-',
                 style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
               )
             : Text(
                 data.custInfo!.custNm.toString(),
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
               ),
         const Gap(5),
-        data.custInfo!.selfIntro == 'null' || data.custInfo!.selfIntro == null || data.custInfo!.selfIntro == ''
+        data.custInfo!.selfIntro == 'null' ||
+                data.custInfo!.selfIntro == null ||
+                data.custInfo!.selfIntro == ''
             ? const Text(
                 '자기 소개 내용을 만들어주세요.\n아래 프로필 수정 버튼을 클릭해주세요!',
                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
               )
             : Text(
                 data.custInfo!.selfIntro.toString(),
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
               ),
         const Gap(5),
         Container(
@@ -1165,10 +1301,16 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                 child: Row(
                   children: [
                     const Text('👍좋아요',
-                        style: TextStyle(color: Color.fromARGB(255, 42, 96, 44), fontWeight: FontWeight.w500, fontSize: 12)),
+                        style: TextStyle(
+                            color: Color.fromARGB(255, 42, 96, 44),
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12)),
                     const Gap(5),
                     Text('${data.likeCnt}',
-                        style: const TextStyle(color: Color.fromARGB(255, 42, 96, 44), fontWeight: FontWeight.w700, fontSize: 12)),
+                        style: const TextStyle(
+                            color: Color.fromARGB(255, 42, 96, 44),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12)),
                   ],
                 ),
               ),
@@ -1178,12 +1320,16 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                   minimumSize: Size.zero,
                   // backgroundColor: Colors.red,
                 ),
-                onPressed: () => Get.toNamed('/MyinfoModifyPage')!.then((value) => value == true ? getCountData() : null),
+                onPressed: () => Get.toNamed('/MyinfoModifyPage')!
+                    .then((value) => value == true ? getCountData() : null),
                 child: const Row(
                   children: [
                     Text(
                       '회원정보 수정',
-                      style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12.0, color: Colors.black),
+                      style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12.0,
+                          color: Colors.black),
                     ),
                     Icon(
                       Icons.arrow_forward_ios,
@@ -1213,11 +1359,15 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
           Expanded(
               flex: 4,
               child: MyPageButton(
-                  onTap: () => Get.toNamed('/MyinfoModifyPage')!.then((value) => value == true ? getCountData() : null), label: '프로필 수정')),
+                  onTap: () => Get.toNamed('/MyinfoModifyPage')!
+                      .then((value) => value == true ? getCountData() : null),
+                  label: '프로필 수정')),
           const SizedBox(
             width: 10.0,
           ),
-          Expanded(flex: 4, child: MyPageButton(onTap: () => share(), label: '프로필 공유')),
+          Expanded(
+              flex: 4,
+              child: MyPageButton(onTap: () => share(), label: '프로필 공유')),
           const SizedBox(
             width: 20.0,
           ),
@@ -1236,8 +1386,10 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     return Expanded(
       child: TabBarView(controller: tabController, children: [
         //_myFeeds(),
-        Utils.commonStreamList<BoardWeatherListData>(myVideoListCntr, _myFeeds, getInitMyBoard),
-        Utils.commonStreamList<BoardWeatherListData>(followVideoListCntr, _followFeeds, getInitFollowBoard),
+        Utils.commonStreamList<BoardWeatherListData>(
+            myVideoListCntr, _myFeeds, getInitMyBoard),
+        Utils.commonStreamList<BoardWeatherListData>(
+            followVideoListCntr, _followFeeds, getInitFollowBoard),
         // _followFeeds(),
       ]),
     );
@@ -1262,7 +1414,11 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                 onTap: () {
                   Get.toNamed('/VideoMyinfoListPage', arguments: {
                     'datatype': 'MYFEED',
-                    'custId': Get.find<AuthCntr>().resLoginData.value.custId.toString(),
+                    'custId': Get.find<AuthCntr>()
+                        .resLoginData
+                        .value
+                        .custId
+                        .toString(),
                     'boardId': list[index].boardId.toString()
                   });
                 },
@@ -1288,7 +1444,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                           // ),
                           fadeInDuration: const Duration(milliseconds: 100),
                           fadeOutDuration: const Duration(milliseconds: 100),
-                          errorWidget: (context, url, error) => const Icon(Icons.error),
+                          errorWidget: (context, url, error) =>
+                              const Icon(Icons.error),
                         ),
                         Align(
                           alignment: Alignment.bottomRight,
@@ -1296,7 +1453,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 5),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 5),
                                 child: Row(
                                   children: [
                                     const Icon(
@@ -1307,13 +1465,16 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                                     const Gap(5),
                                     Text(
                                       list[index].likeCnt.toString(),
-                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold),
                                     ),
                                   ],
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 5),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 5),
                                 child: Row(
                                   children: [
                                     const Icon(
@@ -1324,7 +1485,9 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                                     const Gap(5),
                                     Text(
                                       list[index].viewCnt.toString(),
-                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold),
                                     ),
                                   ],
                                 ),
@@ -1336,14 +1499,16 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                           const Positioned(
                             top: 10,
                             left: 10,
-                            child: Icon(Icons.lock, color: Colors.red, size: 20),
+                            child:
+                                Icon(Icons.lock, color: Colors.red, size: 20),
                           ),
                         ],
                         if (list[index].anonyYn == 'Y') ...[
                           const Positioned(
                             top: 10,
                             right: 10,
-                            child: Icon(Icons.person_off, color: Colors.green, size: 20),
+                            child: Icon(Icons.person_off,
+                                color: Colors.green, size: 20),
                           ),
                         ],
                       ],
@@ -1372,7 +1537,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
               onTap: () {
                 Get.toNamed('/VideoMyinfoListPage', arguments: {
                   'datatype': 'FOLLOW',
-                  'custId': Get.find<AuthCntr>().resLoginData.value.custId.toString(),
+                  'custId':
+                      Get.find<AuthCntr>().resLoginData.value.custId.toString(),
                   'boardId': list[index].boardId.toString()
                 });
               },
@@ -1408,7 +1574,9 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                                 const Gap(5),
                                 Text(
                                   list[index].likeCnt.toString(),
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold),
                                 ),
                               ],
                             ),
@@ -1425,7 +1593,9 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                                 const Gap(5),
                                 Text(
                                   list[index].viewCnt.toString(),
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold),
                                 ),
                               ],
                             ),
@@ -1438,7 +1608,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                       right: 10,
                       child: Text(
                         list[index].nickNm.toString(),
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold),
                       ),
                     )
                   ],
@@ -1496,7 +1667,9 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
               showModalBottomSheet(
                   showDragHandle: true,
                   shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.only(topLeft: Radius.circular(10.0), topRight: Radius.circular(10.0))),
+                      borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(10.0),
+                          topRight: Radius.circular(10.0))),
                   context: context,
                   builder: (context) => Container(
                         height: 400,
@@ -1504,7 +1677,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
             },
             child: Obx(() => Text(
                   Get.find<AuthCntr>().resLoginData.value.nickNm.toString(),
-                  style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 25, fontWeight: FontWeight.bold),
                 )),
           ),
           IconButton(
@@ -1528,7 +1702,9 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
       showDragHandle: false,
       backgroundColor: Colors.white,
       useSafeArea: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.only(topLeft: Radius.circular(10.0), topRight: Radius.circular(10.0))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(10.0), topRight: Radius.circular(10.0))),
       context: context,
       builder: (BuildContext context) {
         return Padding(
@@ -1541,13 +1717,17 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                   height: 45,
                   decoration: const BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.only(topLeft: Radius.circular(10.0), topRight: Radius.circular(10.0)),
+                    borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(10.0),
+                        topRight: Radius.circular(10.0)),
                   ),
                   child: Row(
                     children: [
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20),
-                        child: Text('관심태그 추가', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        child: Text('관심태그 추가',
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold)),
                       ),
                       const Spacer(),
                       IconButton(
@@ -1575,11 +1755,13 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   color: Colors.white,
 
-                  child: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
+                  child:
+                      Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
                     const Gap(10),
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 0),
-                      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 0, vertical: 0),
                       height: 54,
                       child: TextFormField(
                         controller: tagController,
@@ -1587,15 +1769,18 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                         autofocus: true,
                         maxLines: 1,
                         // maxLength: 20,
-                        style: const TextStyle(decorationThickness: 0), // 한글밑줄제거
+                        style:
+                            const TextStyle(decorationThickness: 0), // 한글밑줄제거
                         decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 0),
                           filled: true,
                           fillColor: Colors.grey[100],
                           //  suffixIcon: const Icon(Icons.search, color: Colors.grey),
                           enabledBorder: OutlineInputBorder(
                             // width: 0.0 produces a thin "hairline" border
-                            borderSide: const BorderSide(color: Colors.grey, width: 0.2),
+                            borderSide: const BorderSide(
+                                color: Colors.grey, width: 0.2),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           border: OutlineInputBorder(
@@ -1604,7 +1789,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
                             borderRadius: BorderRadius.circular(20),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderSide: const BorderSide(color: Colors.grey, width: 0.2),
+                            borderSide: const BorderSide(
+                                color: Colors.grey, width: 0.2),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           label: const Text("Tag 를 입력해주세요."),
@@ -1660,11 +1846,13 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
     return SizedBox(
         height: 40,
         child: GestureDetector(
-          onTap: () => Get.toNamed('/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/0/${Uri.encodeComponent(label)}'),
+          onTap: () => Get.toNamed(
+              '/MainView1/${AuthCntr.to.resLoginData.value.custId.toString()}/0/${Uri.encodeComponent(label)}'),
           child: Chip(
             elevation: 0,
             padding: EdgeInsets.zero,
-            backgroundColor: const Color.fromARGB(255, 140, 131, 221), // Color.fromARGB(255, 76, 70, 124),
+            backgroundColor: const Color.fromARGB(
+                255, 140, 131, 221), // Color.fromARGB(255, 76, 70, 124),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
               side: const BorderSide(color: Colors.transparent),
@@ -1672,9 +1860,13 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
             label: Text(
               '  $label',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600),
             ),
-            labelPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+            labelPadding:
+                const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
             onDeleted: () => removeTag(label, 'TAG'),
             deleteButtonTooltipMessage: '삭제',
             deleteIconColor: Colors.white60,
@@ -1694,7 +1886,8 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
           child: Chip(
             elevation: 0,
             padding: EdgeInsets.zero,
-            backgroundColor: const Color.fromARGB(255, 140, 131, 221), // Color.fromARGB(255, 76, 70, 124),
+            backgroundColor: const Color.fromARGB(
+                255, 140, 131, 221), // Color.fromARGB(255, 76, 70, 124),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
               side: const BorderSide(color: Colors.transparent),
@@ -1702,9 +1895,13 @@ class _MyPageState extends State<MyPage> with AutomaticKeepAliveClientMixin, Sin
             label: Text(
               '  $label',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600),
             ),
-            labelPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+            labelPadding:
+                const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
             onDeleted: () => removeTag(label, 'LOCAL'),
             deleteButtonTooltipMessage: '삭제',
             deleteIconColor: Colors.white60,
@@ -1724,7 +1921,9 @@ class MyPageButton extends StatelessWidget {
         onTap: onTap,
         child: Container(
           height: 40,
-          decoration: BoxDecoration(color: const Color(0xfff3f3f3), borderRadius: BorderRadius.circular(8.0)),
+          decoration: BoxDecoration(
+              color: const Color(0xfff3f3f3),
+              borderRadius: BorderRadius.circular(8.0)),
           child: Center(
               child: Text(
             label,
@@ -1738,7 +1937,11 @@ class MyPageInfo extends StatelessWidget {
   final int count;
   final String label;
   final void Function() onTap;
-  const MyPageInfo({super.key, required this.count, required this.label, required this.onTap});
+  const MyPageInfo(
+      {super.key,
+      required this.count,
+      required this.label,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1760,14 +1963,18 @@ class MyPageInfo extends StatelessWidget {
         children: [
           Text(
             count.toString(),
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black),
+            style: const TextStyle(
+                fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black),
           ),
           const SizedBox(
             height: 4,
           ),
           Text(
             label,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black54),
+            style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.black54),
           ),
         ],
       ),

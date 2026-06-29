@@ -8,9 +8,14 @@ import 'package:project1/repo/spot/data/spot_data.dart';
 /// "스팟별 날씨" — 캠핑·낚시·골프 스팟을 현재 날씨와 함께 둘러보고,
 /// 스팟을 탭하면 그곳 커뮤니티 영상으로 "지금 거기 어때?"를 확인한다.
 /// (백엔드 /api/spot/* 준비 시 자동 연동 — WEATHER_ACTIVATION_API_CONTRACT.md)
-class SpotWeatherPage extends StatelessWidget {
+class SpotWeatherPage extends StatefulWidget {
   const SpotWeatherPage({super.key});
 
+  @override
+  State<SpotWeatherPage> createState() => _SpotWeatherPageState();
+}
+
+class _SpotWeatherPageState extends State<SpotWeatherPage> {
   static const Color _bg = Color(0xFF11141C);
   static const Color _surface = Color(0xFF1B1F2A);
   static const Color _border = Color(0xFF2A2F3C);
@@ -24,9 +29,23 @@ class SpotWeatherPage extends StatelessWidget {
     (code: 'golf', label: '골프', icon: Icons.golf_course_rounded),
   ];
 
+  late final SpotCntr _c;
+
+  @override
+  void initState() {
+    super.initState();
+    // 페이지별 고유 tag로 등록하여 Get.put 중복 충돌을 방지한다.
+    _c = Get.put(SpotCntr(), tag: 'spotWeather');
+  }
+
+  @override
+  void dispose() {
+    Get.delete<SpotCntr>(tag: 'spotWeather');
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final SpotCntr c = Get.put(SpotCntr());
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
@@ -38,23 +57,23 @@ class SpotWeatherPage extends StatelessWidget {
       ),
       body: Column(
         children: [
-          _categoryBar(c),
+          _categoryBar(),
           Expanded(
             child: Obx(() {
-              if (c.isLoading.value) {
+              if (_c.isLoading.value) {
                 return const Center(child: CircularProgressIndicator(color: _accent));
               }
-              if (c.spots.isEmpty) {
+              if (_c.spots.isEmpty) {
                 return _emptyState();
               }
               return RefreshIndicator(
                 color: _accent,
-                onRefresh: c.fetch,
+                onRefresh: _c.fetch,
                 child: ListView.separated(
                   padding: const EdgeInsets.fromLTRB(14, 8, 14, 24),
-                  itemCount: c.spots.length,
+                  itemCount: _c.spots.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (_, i) => _spotCard(c.spots[i]),
+                  itemBuilder: (_, i) => _spotCard(_c.spots[i]),
                 ),
               );
             }),
@@ -64,13 +83,13 @@ class SpotWeatherPage extends StatelessWidget {
     );
   }
 
-  Widget _categoryBar(SpotCntr c) {
+  Widget _categoryBar() {
     return SizedBox(
       height: 52,
       child: Obx(() {
         // category.value를 동기적으로 읽어야 Obx가 추적한다.
         // (itemBuilder는 지연 호출이라 그 안에서만 읽으면 Obx가 reactive를 감지 못해 오류 발생)
-        final selected = c.category.value;
+        final selected = _c.category.value;
         return ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -80,7 +99,7 @@ class SpotWeatherPage extends StatelessWidget {
               final cat = _cats[i];
               final bool sel = selected == cat.code;
               return GestureDetector(
-                onTap: () => c.changeCategory(cat.code),
+                onTap: () => _c.changeCategory(cat.code),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 160),
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -179,19 +198,23 @@ class SpotWeatherPage extends StatelessWidget {
   }
 
   Widget _emptyState() {
+    final msg = _c.errorMsg.value ?? '주변 스팟이 아직 없어요';
+    final sub = _c.errorMsg.value == null
+        ? '백엔드 스팟 데이터가 준비되면 표시됩니다'
+        : '아래로 당겨서 다시 시도해 보세요';
     return ListView(
-      children: const [
-        SizedBox(height: 120),
-        Icon(Icons.travel_explore_rounded, size: 56, color: _textLo),
-        SizedBox(height: 14),
+      children: [
+        const SizedBox(height: 120),
+        const Icon(Icons.travel_explore_rounded, size: 56, color: _textLo),
+        const SizedBox(height: 14),
         Center(
-          child: Text('주변 스팟이 아직 없어요',
-              style: TextStyle(color: _textLo, fontSize: 15, fontWeight: FontWeight.w600)),
+          child: Text(msg,
+              style: const TextStyle(color: _textLo, fontSize: 15, fontWeight: FontWeight.w600)),
         ),
-        SizedBox(height: 6),
+        const SizedBox(height: 6),
         Center(
-          child: Text('백엔드 스팟 데이터가 준비되면 표시됩니다',
-              style: TextStyle(color: Color(0xFF5B6472), fontSize: 12)),
+          child: Text(sub,
+              style: const TextStyle(color: Color(0xFF5B6472), fontSize: 12)),
         ),
       ],
     );

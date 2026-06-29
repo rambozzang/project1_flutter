@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"echo \\\"=== Android adaptive 레이어 density별 크기 ===\\\" && for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do f=\\\"android/app/src/main/res/mipmap-$d/ic_launcher_adaptive_fore.png\\\"; b=\\\"android/app/src...",
+  "error": "Exit code 1\n=== Android adaptive 레이어 density별 크기 ===\nmdpi fore:   back: \nhdpi fore:   back: \nxhdpi fore:   back: \nxxhdpi fore:   back: \nxxxhdpi fore:   back: \n\n=== adaptive 배경색 리소스 참조 확인 ===\n(eval):3: no matches found: android/app/src/main/res/values*\n\n=== iOS appiconset 숫자 png 유니크 사이즈 ===\n(eval):cd:5: no such file or directory: ios/Runner/Assets.xcassets/AppIcon.appiconset/",
+  "timestamp": "2026-06-23T05:18:50.997Z",
+  "retry_count": 1
+}

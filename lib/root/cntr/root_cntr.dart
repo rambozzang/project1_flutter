@@ -328,6 +328,10 @@ class RootCntr extends GetxController {
       weatherVo.feelCd = boardSaveData.boardWeatherVo?.feelCd;
       boardSaveData.boardWeatherVo = weatherVo;
 
+      // 🔎 진단: 게시 직전 실제 전송되는 내용(contents) 확인
+      lo.g('📤[영상] 게시 contents="${boardSaveData.boardMastInVo?.contents}" subject="${boardSaveData.boardMastInVo?.subject}"');
+      lo.g('📤[영상] payload=${boardSaveData.toJson()}');
+
       ResData resData = await boardRepo.save(boardSaveData);
 
       if (resData.code != '00') {
@@ -425,6 +429,10 @@ class RootCntr extends GetxController {
       // 사용자가 고른 체감 날씨 태그 보존
       weatherVo.feelCd = boardSaveData.boardWeatherVo?.feelCd;
       boardSaveData.boardWeatherVo = weatherVo;
+
+      // 🔎 진단: 게시 직전 실제 전송되는 내용(contents) 확인
+      lo.g('📤[사진] 게시 contents="${boardSaveData.boardMastInVo?.contents}" subject="${boardSaveData.boardMastInVo?.subject}"');
+      lo.g('📤[사진] payload=${boardSaveData.toJson()}');
 
       BoardRepo boardRepo = BoardRepo();
       ResData resData = await boardRepo.save(boardSaveData);

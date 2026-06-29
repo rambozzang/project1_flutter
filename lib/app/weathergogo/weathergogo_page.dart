@@ -52,7 +52,6 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
   late AnimateIconController controller;
 
   // final WeatherGogoCntr controller = Get.find();
-  ValueNotifier<bool> isAdLoading = ValueNotifier<bool>(false);
 
   List<TwinklingStar> twinklingStars = [];
   ValueNotifier<List<TwinklingStar>> starsNotifier = ValueNotifier<List<TwinklingStar>>([]);
@@ -118,7 +117,6 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
 
   Future<void> _loadAd() async {
     await AdManager().loadBannerAd('WeatherPage');
-    isAdLoading.value = true;
   }
 
   void createTwinklingStars() {
@@ -479,18 +477,18 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
   }
 
   Widget _buildAdWidget() {
-    return ValueListenableBuilder<bool>(
-        valueListenable: isAdLoading,
-        builder: (context, value, child) {
-          if (!value) {
-            return const SizedBox.shrink();
-          }
-          return const Center(
-            child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 5, vertical: 15),
-                child: SizedBox(height: 70, child: BannerAdWidget(screenName: 'WeatherPage'))),
-          );
-        });
+    return Obx(() {
+      final isLoaded = Get.find<RootCntr>().isAdLoaded('WeatherPage');
+      if (!isLoaded) {
+        return const SizedBox.shrink();
+      }
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 5, vertical: 15),
+          child: SizedBox(height: 70, child: BannerAdWidget(screenName: 'WeatherPage')),
+        ),
+      );
+    });
   }
 
   // Widget _buildWeatherWebView() {

@@ -1,8 +1,24 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
+
+const String _logoSvg = '''
+<svg viewBox="0 0 100 100" width="96" height="96">
+  <g fill="#ffffff">
+    <circle cx="38" cy="50" r="19"/>
+    <circle cx="60" cy="45" r="23"/>
+    <circle cx="27" cy="59" r="13"/>
+    <circle cx="74" cy="59" r="14"/>
+    <rect x="25" y="55" width="54" height="20" rx="10"/>
+    <path d="M45 71 L37 90 L56 73 Z"/>
+  </g>
+</svg>
+''';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -101,16 +117,20 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver, Single
           initS();
         }
       }
-      // 화이트 클린 로딩화면 — 네이티브 스플래시(흰 배경+로고)와 끊김 없이 이어진다.
-      // 순백 대신 아주 옅은 하늘빛 틴트를 더해 브랜드 톤을 살짝 머금는다.
+      // 그라데이션 및 로고/문구 레이아웃 반영 (Skysnap 로고 및 앱 아이콘 적용)
       return Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFFF8F8F),
         body: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFFFFFFFF), Color(0xFFF2F7FE)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFFFCB6B),
+                Color(0xFFFF8F8F),
+                Color(0xFFFF6FA6),
+              ],
+              stops: [0.0, 0.5, 1.0],
             ),
           ),
           child: Stack(
@@ -119,43 +139,73 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver, Single
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // 로고 — 부드럽게 확대+페이드 등장
+                    // 로고 — 부드럽게 확대+페이드 등장 및 커스텀 SVG 드롭섀도우 효과 적용
                     ScaleTransition(
                       scale: _logoScale,
                       child: FadeTransition(
                         opacity: _fade,
-                        child: Image.asset(
-                          'assets/icon/app_icon_v9.png',
-                          width: 104,
-                          height: 104,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // 섀도우 레이어 (ImageFiltered 및 blur 필터를 활용한 고성능 그림자)
+                            Transform.translate(
+                              offset: const Offset(0, 8),
+                              child: ImageFiltered(
+                                imageFilter: ui.ImageFilter.blur(sigmaX: 7, sigmaY: 7),
+                                child: SvgPicture.string(
+                                  _logoSvg.replaceAll('#ffffff', '#AA285A').replaceAll('#fff', '#AA285A'),
+                                  width: 96,
+                                  height: 96,
+                                ),
+                              ),
+                            ),
+                            // 포그라운드 로고 레이어
+                            SvgPicture.string(
+                              _logoSvg,
+                              width: 96,
+                              height: 96,
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 26),
                     FadeTransition(
                       opacity: _fade,
-                      child: const Text(
-                        "SkySnap",
-                        style: TextStyle(
-                          fontSize: 23,
-                          color: Color(0xFF1B2A4A),
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.4,
+                      child: Text(
+                        "skysnap",
+                        style: GoogleFonts.quicksand(
+                          fontSize: 40,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 28),
-                    // 얇은 진행바
+                    const SizedBox(height: 8),
+                    FadeTransition(
+                      opacity: _fade,
+                      child: Text(
+                        "오늘의 하늘을 나누다",
+                        style: GoogleFonts.nunito(
+                          fontSize: 15,
+                          color: Colors.white.withOpacity(0.85),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    // 얇은 화이트 반투명 진행바
                     FadeTransition(
                       opacity: _fade,
                       child: SizedBox(
                         width: 128,
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(6),
-                          child: const LinearProgressIndicator(
+                          child: LinearProgressIndicator(
                             minHeight: 3,
-                            backgroundColor: Color(0xFFE3EBF6),
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4A90E2)),
+                            backgroundColor: Colors.white.withOpacity(0.2),
+                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         ),
                       ),
@@ -163,7 +213,7 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver, Single
                   ],
                 ),
               ),
-              const Positioned(
+              Positioned(
                 bottom: 28,
                 left: 0,
                 right: 0,
@@ -172,7 +222,7 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver, Single
                     "CodeLabTiger",
                     style: TextStyle(
                       fontSize: 10,
-                      color: Color(0xFFAAB3C5),
+                      color: Colors.white.withOpacity(0.5),
                       fontWeight: FontWeight.w500,
                       letterSpacing: 0.5,
                     ),

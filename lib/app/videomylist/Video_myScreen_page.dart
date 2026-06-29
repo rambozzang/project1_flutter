@@ -5,7 +5,6 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
@@ -25,8 +24,6 @@ import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/utils/StringUtils.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:project1/widget/custom_button.dart';
-import 'package:text_scroll/text_scroll.dart';
 import 'package:video_player/video_player.dart';
 
 // import 'package:video_player/video_player.dart';
@@ -55,19 +52,11 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
   // double progress = 0;
   Duration position = Duration.zero;
 
+  /// 하단 컨텐츠/메뉴의 기준선.
+  /// iOS 홈 인디케이터 영역이 크므로 카드를 더 위로 띄워 메뉴/프로그레스바와 겹치지 않게 한다.
   double get bottomHeight {
-    final mediaQuery = MediaQuery.of(context);
-    final bottomPadding = mediaQuery.padding.bottom;
-    final viewInsets = mediaQuery.viewInsets.bottom;
-
-    // iOS의 경우 기본 높이 + 하단 안전 영역
-    if (Platform.isIOS) {
-      return bottomPadding;
-    }
-
-    // 안드로이드의 경우 기본 높이 + 시스템 네비게이션 바 높이
-    // SafeArea를 사용하므로 기본 높이만 사용하되, 추가 여백 제공
-    return 80.0; // SafeArea가 시스템 UI를 처리하므로 기본 높이 + 여백만 사용
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    return bottomPadding + (Platform.isIOS ? 76 : 44);
   }
 
   bool isUpdateCount = true;
@@ -343,6 +332,8 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                 buildBottomContent(),
                 // 오른쪽 메뉴바
                 buildRightMenuBar(),
+                // 본인 게시물 관리
+                buildOwnerActions(),
 
                 // 재생 progressbar (영상 전용)
                 if (!isPhotoPost) buildPlayProgress(),
@@ -371,61 +362,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
               ],
             ),
           ),
-          Get.find<AuthCntr>().custId.value == widget.data.custId.toString()
-              ? Container(
-                  height: 100,
-                  color: Colors.black.withOpacity(0.5),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Gap(10),
-                      widget.data.hideYn == 'Y'
-                          ? const Row(
-                              children: [
-                                Icon(Icons.lock, color: Colors.red, size: 20),
-                                Text(
-                                  '숨기기 게시물',
-                                  style: TextStyle(color: Colors.red, fontSize: 15),
-                                ),
-                              ],
-                            )
-                          : const Text(
-                              '게시물 관리',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                              ),
-                            ),
-                      const Spacer(),
-                      SizedBox(
-                        width: 80,
-                        child: CustomButton(
-                          text: ' 게시물수정 ',
-                          type: 'XS',
-                          isEnable: true,
-                          onPressed: () async {
-                            Map<String, dynamic>? returnMap = await VideoManagePageSheet().open(context, widget.data.boardId.toString(),
-                                widget.data.hideYn.toString(), widget.data.anonyYn.toString(), widget.data.contents.toString());
-                            if (returnMap == null) {
-                              return;
-                            }
-                            if (returnMap['isDelete'] == 'Y') {
-                              Get.back();
-                              return;
-                            }
-                            widget.data.contents = returnMap['contents'];
-                            widget.data.hideYn = returnMap['hideYn'];
-
-                            setState(() {});
-                          },
-                        ),
-                      )
-                    ],
-                  ),
-                )
-              : const SizedBox.shrink(),
+          // 본인 게시물 관리 UI는 상단 buildOwnerActions()로 이동
         ],
       ),
     );
@@ -543,88 +480,103 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
     );
   }
 
+  // 본인 게시물 관리 버튼 (상단 우측, close 버튼 왼쪽)
+  Widget buildOwnerActions() {
+    if (Get.find<AuthCntr>().custId.value != widget.data.custId.toString()) {
+      return const SizedBox.shrink();
+    }
+    return Positioned(
+      top: 40,
+      right: 56,
+      child: IconButton(
+        icon: widget.data.hideYn == 'Y'
+            ? const Icon(Icons.lock_outline, color: Colors.redAccent, size: 24)
+            : const Icon(Icons.more_horiz, color: Colors.white, size: 26),
+        onPressed: () async {
+          final returnMap = await VideoManagePageSheet().open(
+            context,
+            widget.data.boardId.toString(),
+            widget.data.hideYn.toString(),
+            widget.data.anonyYn.toString(),
+            widget.data.contents.toString(),
+          );
+          if (returnMap == null) return;
+          if (returnMap['isDelete'] == 'Y') {
+            Get.back();
+            return;
+          }
+          widget.data.contents = returnMap['contents'];
+          widget.data.hideYn = returnMap['hideYn'];
+          setState(() {});
+        },
+      ),
+    );
+  }
+
+
   // 하단 컨텐츠
   Widget buildBottomContent() {
-    String profilePath = widget.data.profilePath ?? '';
 
-    String locationNm = widget.data.location.toString();
+    final weatherText = '${widget.data.weatherInfo?.split('.').firstOrNull ?? ''} ${widget.data.currentTemp ?? '-'}°';
+    final locationText = '${widget.data.location} ${widget.data.distance?.toStringAsFixed(1) ?? '0.0'}km';
+    final createdAt = widget.data.crtDtm.toString();
+    final timeLabel = createdAt.length >= 16
+        ? '${createdAt.substring(0, 10).replaceAll('-', '/')} ${createdAt.substring(11, 16)}'
+        : createdAt;
 
     return Positioned(
       bottom: bottomHeight,
-      left: 10,
+      left: 14,
+      right: 86, // 오른쪽 메뉴 공간 확보
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          _buildPhotoDots(), // 사진 점 인디케이터(하단 정보 위)
-          const Gap(5),
+          _buildPhotoDots(),
+          const Gap(8),
+          // 시간 / 날씨 한 줄
           Row(
             children: [
-              Text(
-                '${widget.data.crtDtm.toString().split(':')[0].replaceAll('-', '/')}:${widget.data.crtDtm.toString().split(':')[1]}',
-                style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(width: 20, height: 13, child: VerticalDivider(thickness: 1, color: Colors.white)),
-              SizedBox(
-                  height: 30,
-                  width: 30,
-                  child: WeatherDataProcessor.instance.getWeatherGogoImage(widget.data.sky.toString(), widget.data.rain.toString())
-                  // child: Lottie.asset(
-                  //   WeatherDataProcessor.instance.getWeatherGogoImage(widget.data!.sky.toString(), widget.data!.rain.toString()),
-                  //   height: 138.0,
-                  //   width: 138.0,
-                  // ),
-                  ),
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.35,
-                // 날씨 문구는 짧아 스크롤 불필요. endless TextScroll이 짧은 문구를
-                // 반복 표시("맑음 21° 맑음 21°")하던 문제 → 단순 Text로 1회만 표시.
-                child: Text(
-                  '${widget.data.weatherInfo?.split('.')[0]} ${widget.data.currentTemp}°',
-                  style: const TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w700),
-                  textAlign: TextAlign.right,
-                  overflow: TextOverflow.ellipsis,
-                ),
+              Text(timeLabel, style: const TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w600)),
+              const SizedBox(width: 8, height: 12, child: VerticalDivider(thickness: 1, color: Colors.white54)),
+              SizedBox(width: 24, height: 24, child: WeatherDataProcessor.instance.getWeatherGogoImage(
+                  widget.data.sky.toString(), widget.data.rain.toString())),
+              const Gap(6),
+              Flexible(
+                child: Text(weatherText,
+                    style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w700),
+                    overflow: TextOverflow.ellipsis),
               ),
             ],
           ),
+          const Gap(4),
+          // 위치
           Row(
             children: [
-              const Icon(Icons.location_on, color: Colors.white, size: 15),
-              SizedBox(
-                width: MediaQuery.of(context).size.width * 0.75,
-                child: TextScroll(
-                  '${locationNm.toString()} ${widget.data.distance?.toStringAsFixed(1)}km ',
-                  mode: TextScrollMode.endless,
-                  numberOfReps: 20000,
-                  fadedBorder: true,
-                  delayBefore: const Duration(milliseconds: 4000),
-                  pauseBetween: const Duration(milliseconds: 2000),
-                  velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
-                  style: const TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w700),
-                  textAlign: TextAlign.right,
-                  selectable: true,
-                ),
+              const Icon(Icons.location_on, color: Colors.white70, size: 14),
+              const Gap(4),
+              Flexible(
+                child: Text(locationText,
+                    style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w700),
+                    overflow: TextOverflow.ellipsis),
               ),
             ],
           ),
-          const Gap(5),
-          widget.data.contents != ""
-              ? Padding(
-                  padding: const EdgeInsets.only(right: 40),
-                  child: HashTagText(
-                    text: "${widget.data.contents}",
-                    basicStyle: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w700),
-                    decoratedStyle: const TextStyle(fontSize: 17, color: Color.fromARGB(255, 218, 245, 253), fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.left,
-                    onTap: (text) {
-                      print(text);
-                    },
-                  ),
-                )
-              : const SizedBox(),
-          const Gap(15),
-          buildProfile()
+          const Gap(6),
+          // 본문
+          if (widget.data.contents?.isNotEmpty == true)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: HashTagText(
+                text: widget.data.contents!,
+                basicStyle: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w600),
+                decoratedStyle: const TextStyle(fontSize: 14, color: Color.fromARGB(255, 218, 245, 253), fontWeight: FontWeight.bold),
+                textAlign: TextAlign.left,
+                onTap: (text) => lo.g('hashTag tap: $text'),
+              ),
+            ),
+          const Gap(12),
+          buildProfile(),
         ],
       ),
     );
@@ -721,27 +673,29 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
   }
 
   // 오른쪽 메뉴바
+  // 오른쪽 메뉴 — 좋아요/댓글/조회수 세로 정렬.
   Widget buildRightMenuBar() {
     return Positioned(
       bottom: bottomHeight,
-      right: 0,
+      right: 10,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           IgnorePointer(
-            ignoring: widget.data.custId.toString() == AuthCntr.to.custId.value.toString() ? true : false,
+            ignoring: widget.data.custId.toString() == AuthCntr.to.custId.value.toString(),
             child: LikeButton(
-              size: 27,
+              size: 28,
               circleColor: const CircleColor(start: Color(0xff00ddff), end: Color(0xff0099cc)),
               bubblesColor: const BubblesColor(
                 dotPrimaryColor: Color(0xff33b5e5),
                 dotSecondaryColor: Color(0xff0099cc),
               ),
-              isLiked: widget.data.likeYn.toString().contains('Y') ? true : false,
+              isLiked: widget.data.likeYn.toString().contains('Y'),
               likeBuilder: (bool isLiked) {
                 return Icon(
                   isLiked ? Icons.favorite : Icons.favorite_border,
                   color: isLiked ? Colors.redAccent : Colors.white,
-                  size: 27,
+                  size: 28,
                 );
               },
               onTap: (isLiked) {
@@ -752,65 +706,40 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                 }
                 return Future.value(!isLiked);
               },
-              animationDuration: const Duration(milliseconds: 1500),
-              likeCount: widget.data.likeCnt,
-              likeCountPadding: const EdgeInsets.only(top: 5, right: 15, left: 15),
+              animationDuration: const Duration(milliseconds: 1200),
+              likeCount: widget.data.likeCnt ?? 0,
+              likeCountPadding: const EdgeInsets.only(top: 4),
               countPostion: CountPostion.bottom,
               countBuilder: (int? count, bool isLiked, String text) {
-                Color color = isLiked ? Colors.redAccent : Colors.white;
-                Widget result;
-                if (count == 0) {
-                  result = Text(
-                    "love",
-                    style: TextStyle(color: color, fontSize: 12),
-                  );
-                } else {
-                  result = SizedBox(
-                    width: 30,
-                    height: 18,
-                    // color: Colors.red,
-                    child: Text(
-                      text,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
-                    ),
-                  );
-                }
-                return result;
+                return Text('${count ?? 0}',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: isLiked ? Colors.redAccent : Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600));
               },
             ),
           ),
-          const Gap(10),
-          IconButton(
-            icon: const Icon(Icons.message_outlined, color: Colors.white),
-            onPressed: () => commentSheet(),
-          ),
-          Text(
-            widget.data.replyCnt == null ? '0' : widget.data.replyCnt.toString(),
-            style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600),
-          ),
-
-          const Gap(10),
-          IconButton(
-            icon: const Icon(Icons.play_arrow_outlined, color: Colors.white),
-            onPressed: () {},
-          ),
-          Text(
-            widget.data.viewCnt.toString(),
-            style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600),
-          ),
-          const Gap(5),
-          // IconButton(
-          //   icon: const Icon(Icons.send, color: Colors.white),
-          //   onPressed: () {},
-          // ),
-          // const Gap(5),
-          // IconButton(
-          //   icon: const Icon(Icons.more_vert, color: Colors.white),
-          //   onPressed: () => Get.toNamed('/MyinfoPage'),
-          // ),
+          const Gap(14),
+          _menuItem(Icons.message_outlined, widget.data.replyCnt ?? 0),
+          const Gap(14),
+          _menuItem(Icons.visibility_outlined, widget.data.viewCnt ?? 0),
         ],
       ),
+    );
+  }
+
+  Widget _menuItem(IconData icon, int count) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: Colors.white, size: 26),
+        const Gap(2),
+        Text(
+          count.toString(),
+          style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600),
+        ),
+      ],
     );
   }
 
@@ -844,32 +773,31 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
     );
   }
 
-  // 재생 progressbar
+  // 재생 progressbar — 화면 최하단에 고정, 높이 3px.
   Widget buildPlayProgress() {
-    // edge-to-edge(extendBody)라 bottom:0이면 바가 물리 내비바 뒤로 숨는다.
-    // 시스템 내비/제스처 바 높이만큼 + 8px 띄워 물리 버튼 바로 위에 보이게 한다.
-    final safeBottom = MediaQuery.of(context).viewPadding.bottom;
+    final safeBottom = MediaQuery.of(context).padding.bottom;
     return Positioned(
-      bottom: safeBottom + 8,
-      left: 1,
-      right: 1,
+      bottom: safeBottom,
+      left: 0,
+      right: 0,
       child: ValueListenableBuilder<double>(
-          valueListenable: progress,
-          builder: (context, value, child) {
-            return Stack(
+        valueListenable: progress,
+        builder: (context, value, child) {
+          return SizedBox(
+            height: 3,
+            child: Stack(
               children: [
-                Container(height: 2, color: Colors.grey, width: MediaQuery.of(context).size.width),
+                Container(color: Colors.white.withOpacity(0.2)),
                 AnimatedContainer(
                   duration: Duration(milliseconds: value == 0.0 ? 200 : 1000),
-                  height: 2,
-                  width: (MediaQuery.of(context).size.width) * (value / 100),
-                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(4), color: Colors.red),
+                  width: MediaQuery.of(context).size.width * (value / 100),
+                  decoration: const BoxDecoration(color: Colors.redAccent),
                 ),
               ],
-            );
-          }),
-      // child:
-      //     VideoProgressIndicator(_controller, allowScrubbing: true),
+            ),
+          );
+        },
+      ),
     );
   }
 
