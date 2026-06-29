@@ -78,8 +78,15 @@ class BoardListPageState extends State<BoardListPage> with AutomaticKeepAliveCli
 
       BoardRepo repo = BoardRepo();
 
-      ResData res = await repo.getSearchBoard(Get.find<WeatherGogoCntr>().positionData.value!.latitude.toString(),
-          Get.find<WeatherGogoCntr>().positionData.value!.longitude.toString(), boardPageNum, boardageSize, searchWord);
+      // GPS 위치(positionData)가 아직 없을 수 있다(특히 Cellular/위치권한 지연).
+      // 강제 언래핑(!) 시 "Null check operator used on a null value" 크래시가 나므로,
+      // null이면 currentLocation(마지막/기본 좌표)으로 폴백한다.
+      final cntr = Get.find<WeatherGogoCntr>();
+      final pos = cntr.positionData.value;
+      final lat = (pos?.latitude ?? cntr.currentLocation.value.latLng.latitude).toString();
+      final lon = (pos?.longitude ?? cntr.currentLocation.value.latLng.longitude).toString();
+
+      ResData res = await repo.getSearchBoard(lat, lon, boardPageNum, boardageSize, searchWord);
 
       if (res.code != '00') {
         Utils.alert(res.msg.toString());

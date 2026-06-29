@@ -96,14 +96,16 @@ class _FaqPageState extends State<FaqPage> {
         return;
       }
 
-      List<BoardDetailData> list = ((resData.data['list']) as List).map((data) => BoardDetailData.fromMap(data)).toList();
+      // 백엔드 응답에 list/pageData가 없거나 null일 수 있으므로 방어적으로 파싱(크래시 방지).
+      final dataMap = resData.data;
+      final rawList = (dataMap is Map ? dataMap['list'] : null) as List?;
+      List<BoardDetailData> list = (rawList ?? []).map((data) => BoardDetailData.fromMap(data)).toList();
 
       if (page == 0) {
         boardList.clear();
       }
-      PagingData pageData = PagingData.fromMap(resData.data['pageData']);
-      page = pageData.currPageNum!;
-      isLastPage.value = pageData.last!;
+      final rawPaging = dataMap is Map ? dataMap['pageData'] : null;
+      isLastPage.value = rawPaging is Map<String, dynamic> ? (PagingData.fromMap(rawPaging).last ?? true) : true;
       boardList.addAll(list);
       isMoreLoading.value = false;
 
@@ -126,7 +128,9 @@ class _FaqPageState extends State<FaqPage> {
         return;
       }
 
-      boardList = ((resData.data['list']) as List).map((data) => BoardDetailData.fromMap(data)).toList();
+      // 응답 구조 방어(list 누락/null 시 빈 목록).
+      final rawList = (resData.data is Map ? resData.data['list'] : null) as List?;
+      boardList = (rawList ?? []).map((data) => BoardDetailData.fromMap(data)).toList();
 
       listCtrl.sink.add(ResStream.completed(boardList, message: '조회가 완료되었습니다.'));
     } catch (e) {

@@ -75,14 +75,16 @@ class _NotiPageState extends State<NotiPage> with AutomaticKeepAliveClientMixin 
         listCtrl.sink.add(ResStream.error(resData.msg.toString()));
         return;
       }
-      List<BoardDetailData> list = ((resData.data['list']) as List).map((data) => BoardDetailData.fromMap(data)).toList();
+      // 백엔드 응답에 list/pageData가 없거나 null일 수 있으므로 방어적으로 파싱(크래시 방지).
+      final dataMap = resData.data;
+      final rawList = (dataMap is Map ? dataMap['list'] : null) as List?;
+      List<BoardDetailData> list = (rawList ?? []).map((data) => BoardDetailData.fromMap(data)).toList();
 
       if (page == 0) {
         boardList.clear();
       }
-      PagingData pageData = PagingData.fromMap(resData.data['pageData']);
-      page = pageData.currPageNum!;
-      isLastPage.value = pageData.last!;
+      final rawPaging = dataMap is Map ? dataMap['pageData'] : null;
+      isLastPage.value = rawPaging is Map<String, dynamic> ? (PagingData.fromMap(rawPaging).last ?? true) : true;
       boardList.addAll(list);
       isMoreLoading.value = false;
 
@@ -161,6 +163,12 @@ class _NotiPageState extends State<NotiPage> with AutomaticKeepAliveClientMixin 
     );
   }
 
+  // regDate가 null이거나 8자 미만이면 빈 문자열 반환(RangeError 방지). 'YYYYMMDD...' → 'YYYY.MM.DD'
+  String _formatRegDate(String? raw) {
+    if (raw == null || raw.length < 8) return '';
+    return '${raw.substring(0, 4)}.${raw.substring(4, 6)}.${raw.substring(6, 8)}';
+  }
+
 // 공지사항 아이템
   Widget buildItem(BoardDetailData data) {
     return Padding(
@@ -225,7 +233,7 @@ class _NotiPageState extends State<NotiPage> with AutomaticKeepAliveClientMixin 
                     ),
                     const Gap(10),
                     Text(
-                      '${data.regDate.toString().substring(0, 4)}.${data.regDate.toString().substring(4, 6)}.${data.regDate.toString().substring(6, 8)}',
+                      _formatRegDate(data.regDate),
                       style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black),
                     ),
                   ],
