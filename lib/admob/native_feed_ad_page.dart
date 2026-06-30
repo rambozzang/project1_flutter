@@ -20,9 +20,11 @@ class _NativeFeedAdPageState extends State<NativeFeedAdPage> with AutomaticKeepA
   NativeAd? _nativeAd;
   bool _loaded = false;
 
-  // Google 공식 테스트 네이티브 광고 유닛 ID (운영 발급 후 교체)
+  // 네이티브 광고 유닛 ID
+  // - iOS: 운영 유닛
+  // - Android: 운영 유닛 발급 전까지 Google 테스트 ID 사용 (발급 후 교체)
   static String get _adUnitId => Platform.isIOS
-      ? 'ca-app-pub-3940256099942544/3986624511'
+      ? 'ca-app-pub-7861255216779015/8744717221'
       : 'ca-app-pub-3940256099942544/2247696110';
 
   @override
