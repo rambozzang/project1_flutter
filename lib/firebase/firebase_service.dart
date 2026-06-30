@@ -44,10 +44,17 @@ void _processMessageData(Map<String, dynamic> messageData) async {
   Lo.g("onMessage : ${messageData.toString()}");
   final boardId = messageData["boardId"];
   final receiveCustId = messageData["receiveCustId"];
+  final reportId = messageData["reportId"]?.toString();
 
-  // 날씨 이벤트(20): boardId가 없으므로 아래 가드보다 먼저 처리(카메라 진입).
+  // 날씨 이벤트(20): boardId가 없으므로 아래 가드보다 먼저 처리(칼메라 진입).
   if (messageData["alramCd"] == '20') {
     Future.delayed(const Duration(milliseconds: 300), () => AppPages.goRoute('20', '', null));
+    return;
+  }
+
+  // 기상 특보(30): reportId로 특보 상세 페이지 이동.
+  if (messageData["alramCd"] == '30') {
+    Future.delayed(const Duration(milliseconds: 300), () => AppPages.goRoute('30', '', null, reportId: reportId));
     return;
   }
 
@@ -234,13 +241,21 @@ class FirebaseService {
     if (message.notification != null) {
       final boardId = message.data["boardId"];
       final receiveCustId = message.data["receiveCustId"];
+      final reportId = message.data["reportId"]?.toString();
 
-      // 날씨 이벤트(20): boardId 없이 카메라 진입(가드보다 먼저).
+      // 날씨 이벤트(20): boardId 없이 칼메라 진입(가드보다 먼저).
       if (message.data["alramCd"] == '20') {
         Future.delayed(const Duration(milliseconds: 500), () => AppPages.goRoute('20', '', null));
         return;
       }
 
+      // 기상 특보(30): reportId로 특보 상세 페이지 이동.
+      if (message.data["alramCd"] == '30') {
+        Future.delayed(const Duration(milliseconds: 500), () => AppPages.goRoute('30', '', null, reportId: reportId));
+        return;
+      }
+
+      // 대화하기인 경우
       // 대화하기인 경우
       if (message.data["alramCd"] == '07') {
         types.User otherUser = types.User(
@@ -270,13 +285,21 @@ class FirebaseService {
 
     final boardId = message!.data["boardId"];
     final receiveCustId = message.data["receiveCustId"];
+    final reportId = message.data["reportId"]?.toString();
 
-    // 날씨 이벤트(20): boardId 없이 카메라 진입(가드보다 먼저).
+    // 날씨 이벤트(20): boardId 없이 칼메라 진입(가드보다 먼저).
     if (message.data["alramCd"] == '20') {
       Future.delayed(const Duration(milliseconds: 1500), () => AppPages.goRoute('20', '', null));
       return;
     }
 
+    // 기상 특보(30): reportId로 특보 상세 페이지 이동.
+    if (message.data["alramCd"] == '30') {
+      Future.delayed(const Duration(milliseconds: 1500), () => AppPages.goRoute('30', '', null, reportId: reportId));
+      return;
+    }
+
+    // 대화하기인 경우
     // 대화하기인 경우
     if (message.data["alramCd"] == '07') {
       types.User otherUser = types.User(

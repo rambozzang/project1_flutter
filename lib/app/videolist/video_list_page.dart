@@ -29,11 +29,11 @@ class FastPageScrollPhysics extends ScrollPhysics {
   }
 
   // 이 속도(px/s)만 넘으면 한 페이지 넘어간다. 낮을수록 더 민감(살짝 튕겨도 전환).
-  static const double _flingThreshold = 1.5;
+  static const double _flingThreshold = 0.3;
 
   // 느린 드래그에서 페이지를 넘기는 데 필요한 이동 비율(뷰포트 대비).
   // 0.5(50%, round)가 기본이지만, 0.03(3%)로 낮춰 화면 3%만 끌어도 전환 → 극도로 민감.
-  static const double _commitFraction = 0.03;
+  static const double _commitFraction = 0.01;
 
   double _page(ScrollMetrics p) => p.pixels / p.viewportDimension;
   double _pixels(ScrollMetrics p, double page) => page * p.viewportDimension;
@@ -77,13 +77,13 @@ class FastPageScrollPhysics extends ScrollPhysics {
 
   @override
   SpringDescription get spring => SpringDescription.withDampingRatio(
-        mass: 0.3, // 가볍게 → 즉각 반응
-        stiffness: 850, // 극도로 단단하게 → 즉각 스냅
+        mass: 0.2, // 가볍게 → 즉각 반응
+        stiffness: 750, // 극도로 단단하게 → 즉각 스냅
         ratio: 1.1, // 과감쇠 → 출렁임 없음
       );
 
   @override
-  double get minFlingVelocity => 0.8;
+  double get minFlingVelocity => 0.85;
 
   @override
   double get minFlingDistance => 0.0;

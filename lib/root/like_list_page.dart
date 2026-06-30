@@ -288,7 +288,7 @@ class _LikeListPageState extends State<LikeListPage> with AutomaticKeepAliveClie
                             ),
                           ),
                           Text(
-                            '${Utils.timeage(list[index].crtDtm.toString())}전',
+                            Utils.timeage(list[index].crtDtm.toString()),
                             style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w400, color: Colors.black),
                           ),
                           // Text(

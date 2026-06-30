@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart' show BlocProvider;
 import 'package:get/get.dart';
-import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/camera/page/camera_awesome_page.dart';
-import 'package:project1/app/camera/page/camera_page.dart';
-import 'package:project1/app/camera/utils/camera_utils.dart';
-import 'package:project1/app/camera/utils/permission_utils.dart';
 import 'package:project1/app/spot/spot_weather_page.dart';
+import 'package:project1/app/special_weather/special_weather_list_page.dart';
+import 'package:project1/app/special_weather/special_weather_detail_page.dart';
 import 'package:project1/app/bbs/bbs_list_page.dart';
 import 'package:project1/app/bbs/bbs_modify_page.dart';
 import 'package:project1/app/bbs/bbs_my_list_page.dart';
@@ -70,7 +67,7 @@ abstract class AppPages {
   static const INITIAL = '/AuthPage';
 
   // fcm 또는 알람 리스트에서 알람을 클릭했을 때 해당 알람에 대한 상세 페이지로 이동하는 라우트
-  static goRoute(String alramCd, String custId, String? boardId) {
+  static goRoute(String alramCd, String custId, String? boardId, {String? reportId}) {
     // alramCd에 따라 이동할 페이지를 분기
     // 08: 게시판 좋아요
     // 09: 게시판 댓글
@@ -79,6 +76,12 @@ abstract class AppPages {
     // 날씨 이벤트 푸시는 boardId가 없으므로 가장 먼저 처리한다.
     if (alramCd == '20') {
       openCameraGlobal();
+      return;
+    }
+
+    // 기상 특보(30) 푸시 클릭 시 상세 페이지로 이동. reportId가 없으면 boardId를 fallback으로 사용.
+    if (alramCd == '30') {
+      Get.toNamed('/SpecialWeatherDetailPage', arguments: {'reportId': reportId ?? boardId ?? ''});
       return;
     }
 
@@ -379,6 +382,16 @@ abstract class AppPages {
     GetPage(
       name: '/FeelRankingPage',
       page: () => const FeelRankingPage(),
+      transition: Transition.rightToLeftWithFade,
+    ),
+    GetPage(
+      name: '/SpecialWeatherListPage',
+      page: () => const SpecialWeatherListPage(),
+      transition: Transition.rightToLeftWithFade,
+    ),
+    GetPage(
+      name: '/SpecialWeatherDetailPage',
+      page: () => const SpecialWeatherDetailPage(),
       transition: Transition.rightToLeftWithFade,
     ),
   ];

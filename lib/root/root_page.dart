@@ -5,10 +5,8 @@ import 'package:app_version_update/app_version_update.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/app/alram/alram_page.dart';
 import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/camera/page/camera_awesome_page.dart';
@@ -81,10 +79,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
 
   void initSetting() {
     Future.delayed(const Duration(milliseconds: 3500), () {
-      // 광고 init
-      AdManager.initialize(targetPlatform: Platform.isIOS ? TargetPlatform.iOS : TargetPlatform.android);
-
-      // supabase
+      // 광고 초기화는 main.dart에서 한 번만 수행한다. 여기서는 supabase만 초기화한다.
       Supabase.initialize(url: supabaseOptions.url, anonKey: supabaseOptions.anonKey);
     });
   }

@@ -94,7 +94,12 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver, Single
       }
 
       Future.delayed(const Duration(milliseconds: 500), () {
-        Get.find<WeatherGogoCntr>().requestLocation().then((value) {
+        Get.find<WeatherGogoCntr>()
+            .requestLocation()
+            .then((_) => Get.offAllNamed('/rootPage'))
+            .catchError((e) {
+          lo.g('resume location error: $e');
+          // 위치 재요청 실패하더라도 메인으로 이동해야 멈춰 보이지 않는다.
           Get.offAllNamed('/rootPage');
         });
       });
@@ -110,12 +115,11 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver, Single
 
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<AuthCntr>(builder: (controller) {
-      if (controller.isLogged.value) {
-        if (isInitSYn == false) {
-          isInitSYn = true;
-          initS();
-        }
+    return Obx(() {
+      final isLogged = Get.find<AuthCntr>().isLogged.value;
+      if (isLogged && !isInitSYn) {
+        isInitSYn = true;
+        initS();
       }
       // 그라데이션 및 로고/문구 레이아웃 반영 (Skysnap 로고 및 앱 아이콘 적용)
       return Scaffold(
@@ -189,7 +193,7 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver, Single
                         "오늘의 하늘을 나누다",
                         style: GoogleFonts.nunito(
                           fontSize: 15,
-                          color: Colors.white.withOpacity(0.85),
+                          color: Colors.white.withValues(alpha: 0.85),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -204,7 +208,7 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver, Single
                           borderRadius: BorderRadius.circular(6),
                           child: LinearProgressIndicator(
                             minHeight: 3,
-                            backgroundColor: Colors.white.withOpacity(0.2),
+                            backgroundColor: Colors.white.withValues(alpha: 0.2),
                             valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         ),
@@ -222,7 +226,7 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver, Single
                     "CodeLabTiger",
                     style: TextStyle(
                       fontSize: 10,
-                      color: Colors.white.withOpacity(0.5),
+                      color: Colors.white.withValues(alpha: 0.5),
                       fontWeight: FontWeight.w500,
                       letterSpacing: 0.5,
                     ),

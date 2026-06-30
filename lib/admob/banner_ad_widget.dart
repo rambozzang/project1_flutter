@@ -16,7 +16,9 @@ class BannerAdWidget extends StatefulWidget {
 class _BannerAdWidgetState extends State<BannerAdWidget> {
   /// AdWidget은 동일한 광고 인스턴스로 여러 번 build 되면 안 되므로
   /// 한 번 생성된 위젯을 캐싱해서 재사용한다.
+  /// 단, 광고 인스턴스가 교체(dispose 후 재생성)되면 캐시를 무효화해야 한다.
   Widget? _adWidget;
+  AdManagerBannerAd? _cachedAd;
 
   @override
   Widget build(BuildContext context) {
@@ -25,15 +27,21 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
       final ad = AdManager().getBannerAd(widget.screenName);
 
       if (!isLoaded || ad == null) {
+        _adWidget = null;
+        _cachedAd = null;
         return const SizedBox.shrink();
       }
 
-      _adWidget ??= Container(
-        alignment: Alignment.center,
-        width: ad.sizes[0].width.toDouble(),
-        height: ad.sizes[0].height.toDouble(),
-        child: AdWidget(ad: ad),
-      );
+      // 광고 인스턴스가 바뀌면 AdWidget을 새로 생성한다.
+      if (_adWidget == null || _cachedAd != ad) {
+        _cachedAd = ad;
+        _adWidget = Container(
+          alignment: Alignment.center,
+          width: ad.sizes[0].width.toDouble(),
+          height: ad.sizes[0].height.toDouble(),
+          child: AdWidget(ad: ad),
+        );
+      }
 
       return _adWidget!;
     });

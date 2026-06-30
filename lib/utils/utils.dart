@@ -17,8 +17,6 @@ import 'package:project1/widget/custom_button.dart';
 import 'package:project1/widget/custom_sec_button.dart';
 import 'package:project1/widget/error_page.dart';
 import 'package:project1/widget/no_data_widget.dart';
-import 'package:timeago/timeago.dart' as timeago;
-
 // import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -184,7 +182,19 @@ abstract class Utils {
   }
 
   static String timeage(String strTime) {
-    return '${timeago.format(DateTime.now().subtract(Duration(milliseconds: DateTime.now().millisecondsSinceEpoch - DateTime.parse(strTime).millisecondsSinceEpoch)), locale: 'ko_short').replaceAll('~', '')}전';
+    final date = DateTime.tryParse(strTime);
+    if (date == null) return strTime;
+
+    final now = DateTime.now();
+    final diff = now.difference(date);
+
+    if (diff.inDays >= 365) return '${(diff.inDays / 365).floor()}년 전';
+    if (diff.inDays >= 30) return '${(diff.inDays / 30).floor()}개월 전';
+    if (diff.inDays >= 7) return '${(diff.inDays / 7).floor()}주 전';
+    if (diff.inDays >= 1) return '${diff.inDays}일 전';
+    if (diff.inHours >= 1) return '${diff.inHours}시간 전';
+    if (diff.inMinutes >= 1) return '${diff.inMinutes}분 전';
+    return '방금 전';
   }
 
   static void alertLong(String msg) {
