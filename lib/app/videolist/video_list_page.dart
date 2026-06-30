@@ -111,16 +111,34 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
 
   final ValueNotifier<bool> _showInterstitial = ValueNotifier<bool>(false);
 
+  // 틱톡형 전면광고: 영상 N장마다 1회 노출.
+  static const int _adEveryNVideos = 5;
+  int _swipeCount = 0;
+
   @override
   void initState() {
     super.initState();
     // permissionLocation();
     // Get.put(VideoListCntr());
 
-    // AdManager().loadInterstitialAd();
+    // 전면광고(VideoPage 유닛) 첫 로드 — 5장마다 노출 대비
+    adManager.loadInterstitialAd(screenName: 'VideoPage');
     Future.delayed(const Duration(seconds: 2), () {
       _showInterstitial.value = true;
     });
+  }
+
+  // 스와이프할 때마다 호출 — 5장째마다 전면광고 노출(준비된 경우에만)
+  void _onVideoSwiped() {
+    _swipeCount++;
+    if (_swipeCount % _adEveryNVideos == 0) {
+      if (adManager.isInterstitialReady) {
+        adManager.showInterstitialAd(); // 닫히면 ad_manager가 다음 광고 자동 재로드
+      } else {
+        // 아직 준비 안 됐으면 다음 기회를 위해 미리 로드
+        adManager.loadInterstitialAd(screenName: 'VideoPage');
+      }
+    }
   }
 
   void getData() {
@@ -295,6 +313,8 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
               cntr.getDataWithPagination();
             }
             RootCntr.to.bottomBarStreamController.sink.add(true);
+            // 틱톡형 전면광고: 5장 스와이프마다 1회 노출
+            _onVideoSwiped();
           },
           itemBuilder: (context, videoIndex) {
             PageStorageKey key = PageStorageKey('key_$videoIndex');

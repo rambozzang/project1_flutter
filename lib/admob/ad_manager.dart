@@ -166,15 +166,40 @@ class AdManager {
   InterstitialAd? _interstitialAd;
   bool _isInterstitialAdReady = false;
 
-  Future<void> loadInterstitialAd() async {
+  bool get isInterstitialReady => _isInterstitialAdReady;
+
+  /// 전면광고 로드. 영상 피드(틱톡형) 5장마다 노출에 사용.
+  /// 광고 유닛은 'VideoPage'(전면광고)로 고정 — 안드 .../9035579155, iOS .../8309654992
+  Future<void> loadInterstitialAd({String screenName = 'VideoPage'}) async {
+    final adUnitId = _adUnitIds[screenName] ?? '';
+    if (adUnitId.isEmpty) {
+      lo.g('InterstitialAd adUnitId 없음: $screenName');
+      return;
+    }
     await InterstitialAd.load(
-      adUnitId: _adUnitIds['interstitial'] ?? '',
+      adUnitId: adUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (InterstitialAd ad) {
           _interstitialAd = ad;
           _isInterstitialAdReady = true;
           Get.find<RootCntr>().updateInterstitialAdStatus(true);
+
+          // 광고가 닫히거나 표시 실패하면 즉시 다음 광고를 미리 로드한다(연속 노출 대비).
+          ad.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (InterstitialAd ad) {
+              ad.dispose();
+              _interstitialAd = null;
+              _isInterstitialAdReady = false;
+              loadInterstitialAd(screenName: screenName);
+            },
+            onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
+              ad.dispose();
+              _interstitialAd = null;
+              _isInterstitialAdReady = false;
+              loadInterstitialAd(screenName: screenName);
+            },
+          );
         },
         onAdFailedToLoad: (LoadAdError error) {
           lo.g('InterstitialAd failed to load: $error');
@@ -186,7 +211,7 @@ class AdManager {
   }
 
   void showInterstitialAd() {
-    if (_isInterstitialAdReady) {
+    if (_isInterstitialAdReady && _interstitialAd != null) {
       _interstitialAd?.show();
       _isInterstitialAdReady = false;
       Get.find<RootCntr>().updateInterstitialAdStatus(false);
