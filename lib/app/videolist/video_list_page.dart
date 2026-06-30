@@ -113,8 +113,8 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
   final ValueNotifier<bool> _showInterstitial = ValueNotifier<bool>(false);
 
   // 틱톡형 인라인 광고: 영상 N장마다 광고 페이지 1장을 피드에 끼워넣는다(스와이프로 넘김).
-  static const int _adEveryNVideos = 5;
-  static const int _blockSize = _adEveryNVideos + 1; // 영상5 + 광고1 = 6페이지가 한 블록
+  static const int _adEveryNVideos = 20;
+  static const int _blockSize = _adEveryNVideos + 1; // 영상20 + 광고1 = 21페이지가 한 블록
 
   // 광고 페이지 여부 (각 블록의 마지막 페이지 = 광고)
   bool _isAdPage(int page) => (page + 1) % _blockSize == 0;
