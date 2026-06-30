@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 
 import 'package:preload_page_view/preload_page_view.dart' hide PageScrollPhysics;
 import 'package:project1/admob/ad_manager.dart';
+import 'package:project1/admob/native_feed_ad_page.dart';
 import 'package:project1/app/videolist/Video_screen_page.dart';
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
@@ -111,9 +112,16 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
 
   final ValueNotifier<bool> _showInterstitial = ValueNotifier<bool>(false);
 
-  // 틱톡형 전면광고: 영상 N장마다 1회 노출.
+  // 틱톡형 인라인 광고: 영상 N장마다 광고 페이지 1장을 피드에 끼워넣는다(스와이프로 넘김).
   static const int _adEveryNVideos = 5;
-  int _swipeCount = 0;
+  static const int _blockSize = _adEveryNVideos + 1; // 영상5 + 광고1 = 6페이지가 한 블록
+
+  // 광고 페이지 여부 (각 블록의 마지막 페이지 = 광고)
+  bool _isAdPage(int page) => (page + 1) % _blockSize == 0;
+  // 페이지 인덱스 → 영상 데이터 인덱스 (앞에 끼워진 광고 수만큼 당김)
+  int _pageToVideoIndex(int page) => page - ((page + 1) ~/ _blockSize);
+  // 영상 수 → 전체 페이지 수 (영상 + 끼워넣을 광고 수)
+  int _pageCount(int videoCount) => videoCount + (videoCount ~/ _adEveryNVideos);
 
   @override
   void initState() {
@@ -121,24 +129,9 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
     // permissionLocation();
     // Get.put(VideoListCntr());
 
-    // 전면광고(VideoPage 유닛) 첫 로드 — 5장마다 노출 대비
-    adManager.loadInterstitialAd(screenName: 'VideoPage');
     Future.delayed(const Duration(seconds: 2), () {
       _showInterstitial.value = true;
     });
-  }
-
-  // 스와이프할 때마다 호출 — 5장째마다 전면광고 노출(준비된 경우에만)
-  void _onVideoSwiped() {
-    _swipeCount++;
-    if (_swipeCount % _adEveryNVideos == 0) {
-      if (adManager.isInterstitialReady) {
-        adManager.showInterstitialAd(); // 닫히면 ad_manager가 다음 광고 자동 재로드
-      } else {
-        // 아직 준비 안 됐으면 다음 기회를 위해 미리 로드
-        adManager.loadInterstitialAd(screenName: 'VideoPage');
-      }
-    }
   }
 
   void getData() {
@@ -304,19 +297,28 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
           controller: _controller,
           preloadPagesCount: cntr.preLoadingCount,
           scrollDirection: Axis.vertical,
-          itemCount: data.length,
+          itemCount: _pageCount(data.length),
           physics: const FastPageScrollPhysics(),
-          onPageChanged: (int inx) {
-            // 현재 페이지 인덱스 갱신: 좋아요/팔로우가 현재 영상을 정확히 가리키도록
-            cntr.currentIndex.value = inx;
-            if (inx >= cntr.list.length - (cntr.preLoadingCount + 1)) {
+          onPageChanged: (int page) {
+            RootCntr.to.bottomBarStreamController.sink.add(true);
+            // 광고 페이지면 현재영상 인덱스/페이징을 건드리지 않는다(list[currentIndex] 정합 유지).
+            if (_isAdPage(page)) return;
+            final int videoIndex = _pageToVideoIndex(page);
+            // 좋아요/팔로우가 현재 영상을 정확히 가리키도록 '데이터 인덱스'를 저장.
+            cntr.currentIndex.value = videoIndex;
+            if (videoIndex >= cntr.list.length - (cntr.preLoadingCount + 1)) {
               cntr.getDataWithPagination();
             }
-            RootCntr.to.bottomBarStreamController.sink.add(true);
-            // 틱톡형 전면광고: 5장 스와이프마다 1회 노출
-            _onVideoSwiped();
           },
-          itemBuilder: (context, videoIndex) {
+          itemBuilder: (context, page) {
+            // 5장마다 끼워넣는 틱톡형 인라인 광고 페이지
+            if (_isAdPage(page)) {
+              return const SizedBox.expand(child: NativeFeedAdPage());
+            }
+            final int videoIndex = _pageToVideoIndex(page);
+            if (videoIndex < 0 || videoIndex >= data.length) {
+              return const SizedBox.shrink();
+            }
             PageStorageKey key = PageStorageKey('key_$videoIndex');
             return SizedBox(
               width: MediaQuery.of(context).size.width,
