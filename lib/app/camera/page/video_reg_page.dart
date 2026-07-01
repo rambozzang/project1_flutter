@@ -341,7 +341,8 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
       ..typeCd = 'V'
       ..typeDtCd = 'V'
       ..anonyYn = anonyYn
-      ..hideYn = hideYn;
+      ..hideYn = hideYn
+      ..communityId = Get.find<RootCntr>().pendingCommunityId; // 모임에서 진입했으면 소속 모임ID
   }
 
   BoardSaveWeatherData _createBoardSaveWeatherData() {

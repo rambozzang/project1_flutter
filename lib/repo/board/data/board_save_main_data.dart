@@ -11,6 +11,7 @@ class BoardSaveMainData {
   String? depthNo;
   String? anonyYn;
   String? hideYn;
+  int? communityId; // 소속 모임ID (없으면 일반 게시물)
   BoardSaveMainData({
     this.typeCd,
     this.typeDtCd,
@@ -21,6 +22,7 @@ class BoardSaveMainData {
     this.depthNo,
     this.anonyYn,
     this.hideYn,
+    this.communityId,
   });
 
   BoardSaveMainData copyWith({
@@ -58,6 +60,7 @@ class BoardSaveMainData {
       'depthNo': depthNo,
       'anonyYn': anonyYn,
       'hideYn': hideYn,
+      'communityId': communityId,
     };
   }
 

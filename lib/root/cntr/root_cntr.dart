@@ -45,6 +45,10 @@ class RootCntr extends GetxController {
   RxBool isCategoryPageOpen = false.obs;
   var isFileUploading = UploadingType.NONE.obs;
 
+  // 카메라 진입 시 대상 모임ID(모임 홈에서 '글 올리기'로 진입하면 설정).
+  // 일반 카메라 진입(하단 + 탭, 푸시 등)에서는 항상 null로 초기화되어 누수 방지.
+  int? pendingCommunityId;
+
   ScrollController hideButtonController1 = ScrollController();
   // ScrollController hideButtonController11 = ScrollController();
   ScrollController hideButtonController12 = ScrollController();

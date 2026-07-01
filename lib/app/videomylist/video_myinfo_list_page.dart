@@ -28,6 +28,7 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
   late final String custId;
   late final String boardId;
   late final String searchWord;
+  int? communityId;
 
   @override
   void initState() {
@@ -37,11 +38,12 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
     custId = Get.arguments['custId'];
     boardId = Get.arguments['boardId'];
     searchWord = Get.arguments['searchWord'] ?? "";
+    communityId = Get.arguments['communityId'] == null ? null : (Get.arguments['communityId'] as num).toInt();
 
     if (datatype == 'ONE' && (boardId == '' || boardId == 'null')) {
       Get.back();
     }
-    Get.put(VideoMyinfoListCntr(datatype, custId, boardId, searchWord));
+    Get.put(VideoMyinfoListCntr(datatype, custId, boardId, searchWord, communityId: communityId));
 
     // 동영상 리스트 진입 시 메인 하단 탭바를 숨겨 겹침/뒤로 보임을 방지한다.
     RootCntr.to.bottomBarStreamController.sink.add(false);

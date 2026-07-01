@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:project1/app/alram/alram_page.dart';
+import 'package:project1/app/community/community_hub_page.dart';
 import 'package:project1/app/camera/page/camera_awesome_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
@@ -50,7 +50,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     bottomItem(Icons.cloudy_snowing, 'Feed'),
     // bottomItem(Icons.cloud_queue, '날씨'),
     bottomItem(Icons.add, '추가'),
-    bottomItem(Icons.favorite, '라운지'),
+    bottomItem(Icons.groups, '라운지'),
     bottomItem(Icons.person, '내정보'),
   ];
   // body Widget List
@@ -104,11 +104,9 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
       goRecord();
       return;
     }
-    // 알람 페이지로 이동
+    // 스카이라운지(모임 허브)로 이동
     if (index == 3) {
-      mainlist[3] = const AlramPage();
-      // Get.to(() => const AlramPage2());
-      // return;
+      mainlist[3] = const CommunityHubPage();
     }
     //내정보 페이지로 이동
     if (index == 4) {
@@ -271,6 +269,8 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   }
 
   void goRecord() {
+    // 일반 카메라 진입: 모임 대상 초기화(모임 홈이 아닌 곳에서 올린 글이 모임에 섞이지 않도록).
+    RootCntr.to.pendingCommunityId = null;
     // 카메라는 CameraAwesomePage(camerawesome 패키지)가 자체적으로 열고 권한도 처리한다.
     // ⚠️ 이전: 여기서 CameraBloc(camera 패키지)으로 카메라를 '또' 열어 →
     //   서로 다른 두 카메라 엔진이 같은 카메라 하드웨어를 동시에 점유 →

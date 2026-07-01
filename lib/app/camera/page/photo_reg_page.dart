@@ -185,7 +185,8 @@ class _PhotoRegPageState extends State<PhotoRegPage> {
         ..typeCd = 'V'
         ..typeDtCd = 'I' // ★ 사진 게시물
         ..anonyYn = 'N'
-        ..hideYn = 'N')
+        ..hideYn = 'N'
+        ..communityId = Get.find<RootCntr>().pendingCommunityId) // 모임에서 진입했으면 소속 모임ID
       ..boardWeatherVo = (BoardSaveWeatherData()..feelCd = null);
 
     // 백그라운드 업로드 시작(영상과 동일하게 isFileUploading 전역 표시)

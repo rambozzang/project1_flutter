@@ -35,6 +35,11 @@ import 'package:project1/app/setting/maketing_page.dart';
 import 'package:project1/app/favoriteArea/favorite_area_page.dart';
 import 'package:project1/app/test/weather_compare_page.dart';
 import 'package:project1/app/videomylist/video_myinfo_list_page.dart';
+import 'package:project1/app/community/community_hub_page.dart';
+import 'package:project1/app/community/community_create_page.dart';
+import 'package:project1/app/community/community_home_page.dart';
+import 'package:project1/app/community/community_members_page.dart';
+import 'package:project1/app/alram/alram_page.dart';
 import 'package:project1/app/myinfo/myinfo_modify_page.dart';
 import 'package:project1/app/myinfo/otherinfo_page.dart';
 import 'package:project1/app/search/cntr/map_cntr.dart';
@@ -104,6 +109,8 @@ abstract class AppPages {
   // 어디서든(푸시 핸들러 등) 카메라를 연다 — context 불필요(Get.to).
   // root_page.goRecord와 동일하게 CameraBloc을 사전 초기화한다.
   static void openCameraGlobal() {
+    // 일반 카메라 진입: 모임 대상 초기화(모임 외 업로드가 모임에 섞이지 않도록).
+    RootCntr.to.pendingCommunityId = null;
     Get.to(() => const CameraAwesomePage());
   }
 
@@ -392,6 +399,32 @@ abstract class AppPages {
     GetPage(
       name: '/SpecialWeatherDetailPage',
       page: () => const SpecialWeatherDetailPage(),
+      transition: Transition.rightToLeftWithFade,
+    ),
+    // ───────────────────────── 모임(스카이라운지) ─────────────────────────
+    GetPage(
+      name: '/CommunityHubPage',
+      page: () => const CommunityHubPage(),
+      transition: Transition.rightToLeftWithFade,
+    ),
+    GetPage(
+      name: '/CommunityCreatePage',
+      page: () => const CommunityCreatePage(),
+      transition: Transition.downToUp,
+    ),
+    GetPage(
+      name: '/CommunityHomePage',
+      page: () => const CommunityHomePage(),
+      transition: Transition.rightToLeftWithFade,
+    ),
+    GetPage(
+      name: '/CommunityMembersPage',
+      page: () => const CommunityMembersPage(),
+      transition: Transition.rightToLeftWithFade,
+    ),
+    GetPage(
+      name: '/AlramPage',
+      page: () => const AlramPage(),
       transition: Transition.rightToLeftWithFade,
     ),
   ];

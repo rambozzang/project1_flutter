@@ -7,6 +7,7 @@ import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/repo/community/community_repo.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/repo/weather/data/current_weather.dart';
 import 'package:project1/utils/log_utils.dart';
@@ -20,8 +21,10 @@ class VideoMyinfoListCntr extends GetxController {
   final String? southWest;
   final String? northEast;
   final int? searchDay;
+  final int? communityId; // 모임 피드(datatype == 'COMMUNITY')용
 
-  VideoMyinfoListCntr(this.datatype, this.custId, this.boardId, this.searchWord, {this.southWest, this.northEast, this.searchDay});
+  VideoMyinfoListCntr(this.datatype, this.custId, this.boardId, this.searchWord,
+      {this.southWest, this.northEast, this.searchDay, this.communityId});
 
   // 비디오 리스트
   StreamController<ResStream<List<BoardWeatherListData>>> videoMyListCntr = StreamController();
@@ -105,6 +108,9 @@ class VideoMyinfoListCntr extends GetxController {
           pageNum,
           pagesize,
         );
+      } else if (datatype == "COMMUNITY") {
+        // 모임 피드 - 기존 board 인프라 재사용(community_id 필터)
+        resListData = await CommunityRepo().getFeedRes(communityId ?? 0, pageNum, pagesize);
       } else {
         position = Get.find<WeatherGogoCntr>().positionData.value;
 
