@@ -477,18 +477,19 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
   }
 
   Widget _buildAdWidget() {
-    return Obx(() {
-      final isLoaded = Get.find<RootCntr>().isAdLoaded('WeatherPage');
-      if (!isLoaded) {
-        return const SizedBox.shrink();
-      }
-      return const Center(
+    // 광고 미로드/5분마다 자동 갱신 시에도 '항상 같은 높이'를 예약한다.
+    // 이전엔 미로드 시 SizedBox.shrink(높이 0) → 로드/갱신 때마다 높이 0↔100이 되어
+    // 아래 스크롤 콘텐츠가 위아래로 튀고 깜빡였다(안드/iOS 공통).
+    // 슬롯 높이를 고정하면 배너가 같은 자리를 채우거나 비어도 레이아웃이 흔들리지 않는다.
+    return const SizedBox(
+      height: 100,
+      child: Center(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 5, vertical: 15),
-          child: SizedBox(height: 70, child: BannerAdWidget(screenName: 'WeatherPage')),
+          child: BannerAdWidget(screenName: 'WeatherPage'),
         ),
-      );
-    });
+      ),
+    );
   }
 
   // Widget _buildWeatherWebView() {
