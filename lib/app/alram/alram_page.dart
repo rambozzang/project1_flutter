@@ -18,7 +18,6 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
   @override
   bool get wantKeepAlive => true;
 
-  final ScrollController mainScrollController = ScrollController();
   final ScrollController bbsListScrollController = ScrollController();
 
   TextEditingController searChWordController = TextEditingController();
@@ -27,46 +26,33 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
 
   late TabController tabController;
   final ValueNotifier<int> tabIndex = ValueNotifier<int>(0);
-  final globalKey = GlobalKey<NestedScrollViewState>();
+
   @override
   void initState() {
     super.initState();
     _initializeControllers();
-    _setupScrollListener();
   }
 
   void _initializeControllers() {
     tabController = TabController(vsync: this, length: 2);
 
+    // 탭 변경 시 상단 검색바 노출 여부(라운지 탭에서만)를 갱신.
     tabController.addListener(() {
       tabIndex.value = tabController.index;
-    });
-  }
-
-  void _setupScrollListener() {
-    bbsListScrollController.addListener(() {
-      mainScrollController.jumpTo(bbsListScrollController.offset);
     });
   }
 
   @override
   void dispose() {
     tabController.dispose();
-    mainScrollController.dispose();
     bbsListScrollController.dispose();
-
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-
-    return DefaultTabController(
-      length: 2,
-      initialIndex: 0,
-      child: _buildScaffold(),
-    );
+    return _buildScaffold();
   }
 
   TabBar _tabBar() {
@@ -120,99 +106,90 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
   }
 
   Widget _buildScaffold() {
+    // 고정 AppBar(제목+검색+탭바) + TabBarView 표준 구조.
+    // (기존 NestedScrollView + mainScrollController.jumpTo 강제동기화 + 이중 TabController가
+    //  탭/스크롤 이상 작동의 원인 → 제거)
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      body: NestedScrollView(
-        key: globalKey,
-        controller: mainScrollController,
-        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-          return <Widget>[
-            SliverOverlapAbsorber(
-              handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-              sliver: SliverAppBar(
-                  pinned: true,
-                  floating: true,
-                  scrolledUnderElevation: 0,
-                  snap: false,
-                  forceElevated: innerBoxIsScrolled,
-                  backgroundColor: Colors.white,
-                  elevation: innerBoxIsScrolled ? 2 : 0,
-                  automaticallyImplyLeading: false,
-                  title: const Text('스카이 라운지', style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
-                  centerTitle: false,
-                  actions: [
-                    ValueListenableBuilder<int>(
-                        valueListenable: tabIndex,
-                        builder: (context, value, child) {
-                          return AnimatedSwitcher(
-                              key: const ValueKey('AnimatedSwitcher9'),
-                              duration: const Duration(milliseconds: 200),
-                              switchInCurve: Curves.easeIn,
-                              switchOutCurve: Curves.ease,
-                              transitionBuilder: (Widget child, Animation<double> animation) {
-                                return ScaleTransition(
-                                  key: const ValueKey('FadeTransition9'),
-                                  // opacity: animation,
-                                  filterQuality: FilterQuality.high,
-                                  scale: animation,
-                                  child: child,
-                                );
-                              },
-                              child: value != 0
-                                  ? const SizedBox.shrink()
-                                  : AnimSearchBar(
-                                      height: 48,
-                                      autoFocus: true,
-                                      helpText: '검색어를 입력하세요',
-                                      width: (MediaQuery.of(context).size.width - 63),
-                                      style: const TextStyle(fontSize: 14, decorationThickness: 0),
-                                      textController: searChWordController,
-                                      textFieldColor: Colors.grey.shade100,
-                                      onSuffixTap: () {
-                                        searChWordController.clear();
-                                      },
-                                      rtl: true,
-                                      onSubmitted: (String value) {
-                                        if (value.isEmpty) return;
-                                        bbsListController.searchWord.value = value;
-                                        bbsListController.getDataInit();
-                                      },
-                                      textInputAction: TextInputAction.search,
-                                      searchBarOpen: (_) {
-                                        searChWordController.text = '';
-                                        bbsListController.isShowRegButton.value = false;
-                                      },
-                                    ));
-                        }),
-                    IconButton(
-                      onPressed: () {
-                        switch (tabController.index) {
-                          case 0:
-                            Get.find<BbsListController>().getDataInit();
-                            break;
-                          case 1:
-                            // 스팟별 날씨 탭은 SpotWeatherBody 낭비에서 당겨서 새로고침한다.
-                            break;
-                        }
-                      },
-                      icon: Icon(
-                        Icons.refresh_outlined,
-                        color: Theme.of(context).primaryColor,
-                      ),
-                    ),
-                  ],
-                  bottom: _tabBar()),
-            )
-          ];
-        },
-        body: TabBarView(
-          controller: tabController,
-          physics: const CustomTabBarViewScrollPhysics(),
-          children: [
-            BbsListPage(scrollController: bbsListScrollController),
-            const SpotWeatherBody(topPadding: 8),
-          ],
-        ),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        titleSpacing: 16,
+        title: const Text('스카이 라운지', style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
+        centerTitle: false,
+        actions: [
+          ValueListenableBuilder<int>(
+              valueListenable: tabIndex,
+              builder: (context, value, child) {
+                return AnimatedSwitcher(
+                    key: const ValueKey('AnimatedSwitcher9'),
+                    duration: const Duration(milliseconds: 200),
+                    switchInCurve: Curves.easeIn,
+                    switchOutCurve: Curves.ease,
+                    transitionBuilder: (Widget child, Animation<double> animation) {
+                      return ScaleTransition(
+                        key: const ValueKey('FadeTransition9'),
+                        filterQuality: FilterQuality.high,
+                        scale: animation,
+                        child: child,
+                      );
+                    },
+                    child: value != 0
+                        ? const SizedBox.shrink()
+                        : AnimSearchBar(
+                            height: 48,
+                            autoFocus: true,
+                            helpText: '검색어를 입력하세요',
+                            width: (MediaQuery.of(context).size.width - 63),
+                            style: const TextStyle(fontSize: 14, decorationThickness: 0),
+                            textController: searChWordController,
+                            textFieldColor: Colors.grey.shade100,
+                            onSuffixTap: () {
+                              searChWordController.clear();
+                            },
+                            rtl: true,
+                            onSubmitted: (String value) {
+                              if (value.isEmpty) return;
+                              bbsListController.searchWord.value = value;
+                              bbsListController.getDataInit();
+                            },
+                            textInputAction: TextInputAction.search,
+                            searchBarOpen: (_) {
+                              searChWordController.text = '';
+                              bbsListController.isShowRegButton.value = false;
+                            },
+                          ));
+              }),
+          IconButton(
+            onPressed: () {
+              switch (tabController.index) {
+                case 0:
+                  Get.find<BbsListController>().getDataInit();
+                  break;
+                case 1:
+                  // 스팟별 날씨 탭은 SpotWeatherBody에서 당겨서 새로고침한다.
+                  break;
+              }
+            },
+            icon: Icon(
+              Icons.refresh_outlined,
+              color: Theme.of(context).primaryColor,
+            ),
+          ),
+        ],
+        bottom: _tabBar(),
+      ),
+      body: TabBarView(
+        controller: tabController,
+        physics: const CustomTabBarViewScrollPhysics(),
+        children: [
+          BbsListPage(scrollController: bbsListScrollController),
+          const SpotWeatherBody(topPadding: 8),
+        ],
       ),
     );
   }
