@@ -68,6 +68,13 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
         // 플러그인의 setBrightness(=setCorrection)를 직접 호출해 즉시 반영.
         _brightness = (_brightness - dy * _dragBrightFactor).clamp(0.0, 1.0);
         CamerawesomePlugin.setBrightness(_brightness);
+        // 밝기 게이지 표시 → 마지막 조작 900ms 후 자동 숨김
+        _brightnessVN.value = _brightness;
+        _gaugeVN.value = true;
+        _gaugeHideTimer?.cancel();
+        _gaugeHideTimer = Timer(const Duration(milliseconds: 900), () {
+          if (mounted) _gaugeVN.value = false;
+        });
       }
     }
   }
@@ -75,6 +82,11 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
   // 카메라 초기화 시 조작 안내(↕밝기·↔줌)를 잠깐 띄웠다 사라지게 한다.
   bool _showGestureHint = false;
   Timer? _hintTimer;
+
+  // 밝기 게이지: 상하 드래그로 밝기 조절 중에만 잠깐 표시.
+  final ValueNotifier<double> _brightnessVN = ValueNotifier<double>(0.5);
+  final ValueNotifier<bool> _gaugeVN = ValueNotifier<bool>(false);
+  Timer? _gaugeHideTimer;
 
   @override
   void initState() {
@@ -92,6 +104,9 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
   @override
   void dispose() {
     _hintTimer?.cancel();
+    _gaugeHideTimer?.cancel();
+    _brightnessVN.dispose();
+    _gaugeVN.dispose();
     _zoomSub?.cancel();
     super.dispose();
   }
@@ -269,26 +284,110 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
               onScaleUpdate: _onScaleUpdate,
             ),
           ),
-          // 초기화 시 조작 안내(2초간 페이드 인/아웃). 터치는 통과(IgnorePointer).
-          Center(
+          // 밝기 게이지: 상하 드래그 중에만 좌측 중앙에 표시 후 자동 사라짐
+          Positioned(
+            left: 22,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: IgnorePointer(
+                child: ValueListenableBuilder<bool>(
+                  valueListenable: _gaugeVN,
+                  builder: (context, visible, _) {
+                    return AnimatedOpacity(
+                      opacity: visible ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 250),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.wb_sunny_rounded, color: Colors.white, size: 18),
+                          const SizedBox(height: 8),
+                          Container(
+                            width: 6,
+                            height: 170,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.25),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: ValueListenableBuilder<double>(
+                              valueListenable: _brightnessVN,
+                              builder: (context, b, __) {
+                                return Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: FractionallySizedBox(
+                                    heightFactor: b.clamp(0.02, 1.0),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(3),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+          // 초기화 시 조작 안내(우측 아래, 상하=밝기·좌우=줌을 실제 방향에 십자 배치, 2초 페이드).
+          Positioned(
+            right: 22,
+            bottom: 230,
             child: IgnorePointer(
               child: AnimatedOpacity(
                 opacity: _showGestureHint ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 450),
                 curve: Curves.easeInOut,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.55),
-                    borderRadius: BorderRadius.circular(20),
+                    color: Colors.black.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      _HintRow(icon: Icons.swap_vert_rounded, text: '상하 드래그  ·  밝기 조절'),
-                      SizedBox(height: 12),
-                      _HintRow(icon: Icons.swap_horiz_rounded, text: '좌우 드래그  ·  줌 조절'),
-                    ],
+                  child: SizedBox(
+                    width: 132,
+                    height: 116,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // 세로축(상하) = 밝기
+                        Align(
+                          alignment: Alignment.topCenter,
+                          child: Column(mainAxisSize: MainAxisSize.min, children: const [
+                            Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white, size: 22),
+                            Text('밝기', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                          ]),
+                        ),
+                        const Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 22),
+                        ),
+                        // 가로축(좌우) = 줌
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Icon(Icons.keyboard_arrow_left_rounded, color: Colors.white, size: 22),
+                        ),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Row(mainAxisSize: MainAxisSize.min, children: const [
+                            Text('줌', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                            Icon(Icons.keyboard_arrow_right_rounded, color: Colors.white, size: 22),
+                          ]),
+                        ),
+                        // 중앙 점
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(color: Colors.white54, shape: BoxShape.circle),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -982,21 +1081,3 @@ class AwesomeCircleButton extends StatelessWidget {
   }
 }
 
-/// 카메라 조작 안내 한 줄 (아이콘 + 텍스트)
-class _HintRow extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  const _HintRow({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: Colors.white, size: 20),
-        const SizedBox(width: 10),
-        Text(text, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-      ],
-    );
-  }
-}
