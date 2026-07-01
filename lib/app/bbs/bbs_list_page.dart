@@ -29,7 +29,6 @@ class _BbsListPageState extends State<BbsListPage> with AutomaticKeepAliveClient
   ScrollController typeScrollCtrl = ScrollController();
 
   final cntr = Get.put(BbsListController());
-  double appbarBottomHeight = Platform.isIOS ? 110 : 80;
 
   @override
   bool get wantKeepAlive => true;
@@ -80,7 +79,7 @@ class _BbsListPageState extends State<BbsListPage> with AutomaticKeepAliveClient
         controller: cntr.scrollCtrl,
         padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
         children: [
-          Gap(appbarBottomHeight),
+          // (제거) 이전 NestedScrollView 겹침 헤더 보정용 상단 여백 → 고정 AppBar 전환으로 불필요
           ValueListenableBuilder<bool>(
               valueListenable: isAdLoading,
               builder: (context, value, child) {

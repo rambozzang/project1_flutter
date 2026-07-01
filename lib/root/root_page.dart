@@ -8,10 +8,8 @@ import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/alram/alram_page.dart';
-import 'package:project1/app/camera/bloc/camera_bloc.dart';
 import 'package:project1/app/camera/page/camera_awesome_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
-import 'package:project1/app/camera/utils/permission_utils.dart';
 import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
 import 'package:project1/app/chatting/supabase_options.dart';
 import 'package:project1/app/myinfo/myinfo_page.dart';
@@ -273,18 +271,15 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   }
 
   void goRecord() {
-    // 탭하는 "즉시"(라우트 전환 시작 전) 카메라 블록을 만들고 초기화를 시작한다.
-    // → 화면 전환 애니메이션(~300ms) 동안 카메라 HW 오픈이 병렬로 진행되어
-    //   촬영 화면이 뜰 때쯤 이미 프리뷰가 준비된다(틱톡식 사전 초기화).
-    final camBloc = CameraBloc(cameraUtils: CameraUtils(), permissionUtils: PermissionUtils())
-      ..add(const CameraInitialize(recordingLimit: 15));
-
-    Navigator.of(context)
-        .push(
-          MaterialPageRoute(
-            builder: (context) => const CameraAwesomePage(),
-          ),
-        );
+    // 카메라는 CameraAwesomePage(camerawesome 패키지)가 자체적으로 열고 권한도 처리한다.
+    // ⚠️ 이전: 여기서 CameraBloc(camera 패키지)으로 카메라를 '또' 열어 →
+    //   서로 다른 두 카메라 엔진이 같은 카메라 하드웨어를 동시에 점유 →
+    //   최초 설치 후 첫 카메라 실행 시 크래시(iOS/Android). 고아 bloc 제거로 해결.
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const CameraAwesomePage(),
+      ),
+    );
   }
 
   BottomNavigationBarItem bottomItem(IconData icondata, String label) {
