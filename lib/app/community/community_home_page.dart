@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:project1/app/camera/page/camera_awesome_page.dart';
+import 'package:project1/app/community/widget/cover_template.dart';
+import 'package:project1/app/community/widget/cover_template_picker.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/community/community_repo.dart';
 import 'package:project1/repo/community/data/community_data.dart';
@@ -180,6 +182,50 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
     );
   }
 
+  Future<void> _showCoverEditSheet() async {
+    final c = _community;
+    if (c == null) return;
+    String? selectedTemplateId = c.coverTemplateId;
+    bool isCustomSelected = c.coverTemplateId == null && (c.imageUrl?.isNotEmpty ?? false);
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(ctx).viewInsets.bottom + 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('표지 수정', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
+              const SizedBox(height: 14),
+              CoverTemplatePicker(
+                selectedTemplateId: selectedTemplateId,
+                isCustomPhotoSelected: isCustomSelected,
+                onSelectTemplate: (id) async {
+                  Navigator.of(ctx).pop();
+                  final (ok, msg) = await _repo.updateCover(_communityId, coverTemplateId: id);
+                  Utils.alert(msg.isEmpty ? (ok ? '표지를 변경했습니다.' : '실패했습니다.') : msg);
+                  if (ok) _refresh();
+                },
+                onPickCustomPhoto: () async {
+                  final url = await pickAndUploadCoverPhoto();
+                  if (url == null) return;
+                  Navigator.of(ctx).pop();
+                  final (ok, msg) = await _repo.updateCover(_communityId, imageUrl: url);
+                  Utils.alert(msg.isEmpty ? (ok ? '표지를 변경했습니다.' : '실패했습니다.') : msg);
+                  if (ok) _refresh();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _openViewer(BoardWeatherListData item) {
     Get.toNamed('/VideoMyinfoListPage', arguments: {
       'datatype': 'COMMUNITY',
@@ -267,49 +313,101 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
     final c = _community!;
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0xFFECEEF3))),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              _thumb(c, 64),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          _coverBanner(c),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Flexible(child: Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87))),
-                        if (c.isPrivate) ...[const SizedBox(width: 6), const Icon(Icons.lock, size: 15, color: Color(0xFF9AA3B2))],
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.people, size: 14, color: Color(0xFF9AA3B2)),
-                        const SizedBox(width: 3),
-                        Text('멤버 ${c.memberCnt}명', style: const TextStyle(fontSize: 12.5, color: Color(0xFF7A8291))),
-                        const SizedBox(width: 10),
-                        Text(c.isApproval ? '승인제' : '자유가입', style: const TextStyle(fontSize: 12.5, color: Color(0xFF7A8291))),
-                      ],
+                    _thumb(c, 64),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(child: Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87))),
+                              if (c.isPrivate) ...[const SizedBox(width: 6), const Icon(Icons.lock, size: 15, color: Color(0xFF9AA3B2))],
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(Icons.people, size: 14, color: Color(0xFF9AA3B2)),
+                              const SizedBox(width: 3),
+                              Text('멤버 ${c.memberCnt}명', style: const TextStyle(fontSize: 12.5, color: Color(0xFF7A8291))),
+                              const SizedBox(width: 10),
+                              Text(c.isApproval ? '승인제' : '자유가입', style: const TextStyle(fontSize: 12.5, color: Color(0xFF7A8291))),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ),
-            ],
+                if (c.description != null && c.description!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(c.description!, style: const TextStyle(fontSize: 13.5, color: Color(0xFF4A5162), height: 1.45)),
+                ],
+                const SizedBox(height: 14),
+                _actionButton(c),
+              ],
+            ),
           ),
-          if (c.description != null && c.description!.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(c.description!, style: const TextStyle(fontSize: 13.5, color: Color(0xFF4A5162), height: 1.45)),
-          ],
-          const SizedBox(height: 14),
-          _actionButton(c),
         ],
       ),
+    );
+  }
+
+  Widget _coverBanner(CommunityData c) {
+    return Stack(
+      children: [
+        if (c.imageUrl != null && c.imageUrl!.isNotEmpty)
+          CachedNetworkImage(
+            imageUrl: '${c.imageUrl}?w=800',
+            width: double.infinity, height: 140, fit: BoxFit.cover,
+            errorWidget: (_, __, ___) => _coverFallback(c),
+          )
+        else
+          _coverFallback(c),
+        if (c.canEditCover)
+          Positioned(
+            top: 10, right: 10,
+            child: Material(
+              color: Colors.black45,
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: _showCoverEditSheet,
+                child: const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Icon(Icons.edit, color: Colors.white, size: 18),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _coverFallback(CommunityData c) {
+    return Container(
+      width: double.infinity, height: 140,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(colors: [Color(0xFF5B8DEF), Color(0xFF3B6FE0)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+      ),
+      alignment: Alignment.center,
+      child: Text(c.name.isNotEmpty ? c.name.characters.first : '?',
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 40)),
     );
   }
 
