@@ -218,10 +218,37 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
   Timer? _timer;
   int _seconds = 0;
 
+  // 렌즈(센서) 정보 — 초광각(0.5x) 지원 감지 및 전환용.
+  SensorDeviceData? _sensors;
+  SensorType _currentLens = SensorType.wideAngle;
+
+  bool get _hasUltraWide => _sensors?.ultraWideAngle != null;
+  bool get _onUltraWide => _currentLens == SensorType.ultraWideAngle;
+
   @override
   void initState() {
     super.initState();
     _checkRecordingState();
+    _loadSensors();
+  }
+
+  // 기기의 후면 렌즈 목록을 조회해 초광각 지원 여부를 감지한다.
+  void _loadSensors() {
+    try {
+      widget.state.getSensors().then((data) {
+        if (mounted) setState(() => _sensors = data);
+      }).catchError((_) {});
+    } catch (_) {}
+  }
+
+  // 광각 ↔ 초광각 물리 렌즈 전환. (디지털 줌과 별개)
+  void _switchLens(SensorType type) {
+    final details = type == SensorType.ultraWideAngle ? _sensors?.ultraWideAngle : _sensors?.wideAngle;
+    if (details == null) return;
+    try {
+      widget.state.setSensorType(0, type, details.uid);
+      if (mounted) setState(() => _currentLens = type);
+    } catch (_) {}
   }
 
   @override
@@ -486,6 +513,11 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // 초광각(0.5x) — 기기에 초광각 렌즈가 있을 때만 노출
+                  if (_hasUltraWide) ...[
+                    _buildUltraWidePill(),
+                    const SizedBox(width: 6),
+                  ],
                   _buildZoomPill(state, '1x', 0.0, zoom),
                   const SizedBox(width: 6),
                   _buildZoomPill(state, '2x', 0.3, zoom),
@@ -522,9 +554,14 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
   }
 
   Widget _buildZoomPill(CameraState state, String label, double value, double currentValue) {
-    final bool isActive = (currentValue - value).abs() < 0.15;
+    // 초광각(0.5x)에 있을 땐 디지털 줌 핀은 비활성 표시.
+    final bool isActive = !_onUltraWide && (currentValue - value).abs() < 0.15;
     return GestureDetector(
-      onTap: () => state.sensorConfig.setZoom(value),
+      onTap: () {
+        // 초광각 상태에서 1x/2x/5x를 누르면 먼저 광각 렌즈로 복귀 후 줌 적용.
+        if (_onUltraWide) _switchLens(SensorType.wideAngle);
+        state.sensorConfig.setZoom(value);
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: 30,
@@ -537,6 +574,33 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
         ),
         child: Text(
           label,
+          style: TextStyle(
+            color: isActive ? Colors.black : Colors.white70,
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 초광각(0.5x) 렌즈 전환 핀
+  Widget _buildUltraWidePill() {
+    final bool isActive = _onUltraWide;
+    return GestureDetector(
+      onTap: () => _switchLens(SensorType.ultraWideAngle),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 38,
+        height: 30,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isActive ? Colors.white : Colors.white.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(15),
+          border: isActive ? null : Border.all(color: Colors.white.withOpacity(0.1), width: 0.5),
+        ),
+        child: Text(
+          '0.5x',
           style: TextStyle(
             color: isActive ? Colors.black : Colors.white70,
             fontSize: 10,
