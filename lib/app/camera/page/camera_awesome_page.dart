@@ -42,6 +42,34 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
     _zoomSub = state.sensorConfig.zoom$.listen((z) => _lastZoom = z);
   }
 
+  void _onScaleStart() {
+    _pinchBaseZoom = _lastZoom;
+  }
+
+  // 화면 드래그/핀치 → 줌·밝기 조절
+  void _onScaleUpdate(ScaleUpdateDetails details) {
+    if (_cameraState == null) return;
+    if (details.pointerCount >= 2) {
+      // 두 손가락 핀치 → 줌
+      final double z = (_pinchBaseZoom + (details.scale - 1.0) * _zoomSensitivity).clamp(0.0, 1.0);
+      _lastZoom = z;
+      _cameraState!.sensorConfig.setZoom(z);
+    } else {
+      // 한 손가락 드래그 → 좌우:줌 / 상하:밝기
+      final double dx = details.focalPointDelta.dx;
+      final double dy = details.focalPointDelta.dy;
+      if (dx.abs() > 0.01) {
+        _lastZoom = (_lastZoom + dx * _dragZoomFactor).clamp(0.0, 1.0);
+        _cameraState!.sensorConfig.setZoom(_lastZoom);
+      }
+      if (dy.abs() > 0.01) {
+        // 위로 드래그(dy<0) = 더 밝게
+        _brightness = (_brightness - dy * _dragBrightFactor).clamp(0.0, 1.0);
+        _cameraState!.sensorConfig.setBrightness(_brightness);
+      }
+    }
+  }
+
   @override
   void dispose() {
     _zoomSub?.cancel();
@@ -114,32 +142,7 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onScaleStart: (_) => _pinchBaseZoom = _lastZoom,
-            onScaleUpdate: (details) {
-              if (details.pointerCount >= 2) {
-                // 두 손가락 핀치 → 줌
-                final double z =
-                    (_pinchBaseZoom + (details.scale - 1.0) * _zoomSensitivity).clamp(0.0, 1.0);
-                _lastZoom = z;
-                _cameraState?.sensorConfig.setZoom(z);
-              } else {
-                // 한 손가락 드래그 → 좌우:줌 / 상하:밝기
-                final double dx = details.focalPointDelta.dx;
-                final double dy = details.focalPointDelta.dy;
-                if (dx.abs() > 0.01) {
-                  _lastZoom = (_lastZoom + dx * _dragZoomFactor).clamp(0.0, 1.0);
-                  _cameraState?.sensorConfig.setZoom(_lastZoom);
-                }
-                if (dy.abs() > 0.01) {
-                  // 위로 드래그(dy<0) = 더 밝게
-                  _brightness = (_brightness - dy * _dragBrightFactor).clamp(0.0, 1.0);
-                  _cameraState?.sensorConfig.setBrightness(_brightness);
-                }
-              }
-            },
-            child: CameraAwesomeBuilder.awesome(
+          CameraAwesomeBuilder.awesome(
             sensorConfig: SensorConfig.single(
               sensor: Sensor.position(SensorPosition.back),
               aspectRatio: CameraAspectRatios.ratio_16_9,
@@ -235,6 +238,15 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
             theme: AwesomeTheme(
               bottomActionsBackgroundColor: Colors.transparent,
             ),
+          ),
+          // 화면 드래그 오버레이(맨 위): 한 손가락 좌우=줌·상하=밝기, 두 손가락=핀치줌.
+          // 부모 래핑 대신 최상위 오버레이로 둬야 camerawesome 내부 제스처에 안 먹힘.
+          // translucent라 버튼 탭은 아래로 통과(탭>스케일), 드래그/핀치만 여기서 처리.
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onScaleStart: (_) => _onScaleStart(),
+              onScaleUpdate: _onScaleUpdate,
             ),
           ),
         ],
