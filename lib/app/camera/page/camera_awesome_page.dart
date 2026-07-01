@@ -63,9 +63,11 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
         _cameraState!.sensorConfig.setZoom(_lastZoom);
       }
       if (dy.abs() > 0.01) {
-        // 위로 드래그(dy<0) = 더 밝게
+        // 위로 드래그(dy<0) = 더 밝게.
+        // sensorConfig.setBrightness는 500ms 디바운스라 라이브 반응이 없음 →
+        // 플러그인의 setBrightness(=setCorrection)를 직접 호출해 즉시 반영.
         _brightness = (_brightness - dy * _dragBrightFactor).clamp(0.0, 1.0);
-        _cameraState!.sensorConfig.setBrightness(_brightness);
+        CamerawesomePlugin.setBrightness(_brightness);
       }
     }
   }
