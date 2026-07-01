@@ -54,7 +54,8 @@ class CommunityData {
       // Jackson 은 boolean isOwner 를 'owner' 키로 직렬화 → 두 키 모두 방어적으로 처리
       isOwner: (map['owner'] ?? map['isOwner'] ?? false) == true,
       coverTemplateId: map['coverTemplateId']?.toString(),
-      isManager: (map['isManager'] ?? map['owner'] ?? map['isOwner'] ?? false) == true,
+      // Jackson 은 boolean isManager 를 'manager' 키로 직렬화(isOwner→owner 와 동일 패턴) → manager 키를 fallback 체인에 포함
+      isManager: (map['isManager'] ?? map['manager'] ?? map['owner'] ?? map['isOwner'] ?? false) == true,
     );
   }
 }
