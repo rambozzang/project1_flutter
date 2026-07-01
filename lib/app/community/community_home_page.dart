@@ -11,7 +11,7 @@ import 'package:project1/repo/community/data/community_invite_info_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/utils.dart';
 
-/// 모임 홈. 헤더(가입/탈퇴/멤버) + 앨범 그리드 피드.
+/// 앨범 홈. 헤더(가입/탈퇴/멤버) + 앨범 그리드 피드.
 /// 앨범 탭 → 풀스크린 틱톡 뷰어(VideoMyinfoListPage, datatype=COMMUNITY) 재사용.
 class CommunityHomePage extends StatefulWidget {
   const CommunityHomePage({super.key});
@@ -104,8 +104,8 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
 
   Future<void> _leave() async {
     final confirmed = await Get.dialog<bool>(AlertDialog(
-      title: const Text('모임 탈퇴'),
-      content: Text('${_community?.name ?? '이 모임'}에서 탈퇴하시겠어요?'),
+      title: const Text('앨범 탈퇴'),
+      content: Text('${_community?.name ?? '이 앨범'}에서 탈퇴하시겠어요?'),
       actions: [
         TextButton(onPressed: () => Get.back(result: false), child: const Text('취소')),
         TextButton(onPressed: () => Get.back(result: true), child: const Text('탈퇴', style: TextStyle(color: Colors.red))),
@@ -123,7 +123,7 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
   }
 
   Future<void> _openCamera() async {
-    // 카메라 진입 전 대상 모임 지정 → 촬영 후 등록 시 이 모임에 소속되어 저장됨.
+    // 카메라 진입 전 대상 앨범 지정 → 촬영 후 등록 시 이 앨범에 소속되어 저장됨.
     RootCntr.to.pendingCommunityId = _communityId;
     await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CameraAwesomePage()));
     RootCntr.to.pendingCommunityId = null; // 복귀 시 초기화(누수 방지)
@@ -178,7 +178,7 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
       appBar: AppBar(
         forceMaterialTransparency: true,
         iconTheme: const IconThemeData(color: Colors.black87),
-        title: Text(_community?.name ?? '모임', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: Text(_community?.name ?? '앨범', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         centerTitle: true,
         actions: [
           if (_canPost)
@@ -202,7 +202,7 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _community == null
-              ? const Center(child: Text('모임을 찾을 수 없습니다.', style: TextStyle(color: Color(0xFF7A8291))))
+              ? const Center(child: Text('앨범을 찾을 수 없습니다.', style: TextStyle(color: Color(0xFF7A8291))))
               : RefreshIndicator(
                   onRefresh: _refresh,
                   child: CustomScrollView(
@@ -337,7 +337,7 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
           children: [
             const Icon(Icons.lock_outline, size: 48, color: Color(0xFF9AA3B2)),
             const SizedBox(height: 12),
-            const Text('비공개 모임입니다', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
+            const Text('비공개 앨범입니다', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
             const SizedBox(height: 6),
             const Text('가입 후 멤버가 되면\n게시물을 볼 수 있어요.',
                 textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: Color(0xFF7A8291), height: 1.5)),
@@ -438,7 +438,7 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
   }
 }
 
-/// 모임 초대 바텀시트: 초대코드 + 복사/공유/친구초대
+/// 앨범 초대 바텀시트: 초대코드 + 복사/공유/친구초대
 class _InviteSheet extends StatelessWidget {
   const _InviteSheet({required this.info, required this.onInviteFriends});
   final CommunityInviteInfoData info;

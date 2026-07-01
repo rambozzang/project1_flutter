@@ -5,7 +5,7 @@ import 'package:project1/repo/community/community_repo.dart';
 import 'package:project1/repo/community/data/community_member_data.dart';
 import 'package:project1/utils/utils.dart';
 
-/// 모임 멤버 목록 + (방장/매니저) 가입 승인 관리.
+/// 앨범 멤버 목록 + (방장/매니저) 가입 승인 관리.
 class CommunityMembersPage extends StatefulWidget {
   const CommunityMembersPage({super.key});
 

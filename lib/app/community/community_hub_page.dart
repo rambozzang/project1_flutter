@@ -4,8 +4,8 @@ import 'package:get/get.dart';
 import 'package:project1/repo/community/community_repo.dart';
 import 'package:project1/repo/community/data/community_data.dart';
 
-/// 스카이라운지(모임 허브). 하단탭 '라운지' 확장.
-/// - 내가 가입한 모임 + 추천/검색 모임 + [모임 만들기]
+/// 스카이라운지(앨범 허브). 하단탭 '라운지' 확장.
+/// - 내가 가입한 앨범 + 추천/검색 앨범 + [앨범 만들기]
 class CommunityHubPage extends StatefulWidget {
   const CommunityHubPage({super.key});
 
@@ -105,7 +105,7 @@ class _CommunityHubPageState extends State<CommunityHubPage> with AutomaticKeepA
     ));
     if (code == null || code.isEmpty) return;
     final (ok, msg, community) = await _repo.joinByCode(code);
-    Get.snackbar('모임', msg.isEmpty ? (ok ? '참여했습니다.' : '실패했습니다.') : msg,
+    Get.snackbar('앨범', msg.isEmpty ? (ok ? '참여했습니다.' : '실패했습니다.') : msg,
         snackPosition: SnackPosition.BOTTOM, margin: const EdgeInsets.all(12));
     if (ok && community != null) {
       _openHome(community);
@@ -157,7 +157,7 @@ class _CommunityHubPageState extends State<CommunityHubPage> with AutomaticKeepA
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               ),
               icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('새 모임', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              label: const Text('새 앨범', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             ),
           ),
           IconButton(
@@ -181,14 +181,14 @@ class _CommunityHubPageState extends State<CommunityHubPage> with AutomaticKeepA
                     ..._invites.map((c) => _inviteCard(c)),
                     const SizedBox(height: 24),
                   ],
-                  _sectionTitle('내 모임', _my.length),
+                  _sectionTitle('내 앨범', _my.length),
                   const SizedBox(height: 8),
                   if (_my.isEmpty)
                     _emptyMy()
                   else
                     ..._my.map((c) => _myCard(c)),
                   const SizedBox(height: 24),
-                  _sectionTitle('모임 찾기', null),
+                  _sectionTitle('앨범 찾기', null),
                   const SizedBox(height: 10),
                   _searchBox(),
                   const SizedBox(height: 12),
@@ -227,9 +227,9 @@ class _CommunityHubPageState extends State<CommunityHubPage> with AutomaticKeepA
         children: [
           const Icon(Icons.groups_2_outlined, size: 40, color: Color(0xFF9AA3B2)),
           const SizedBox(height: 10),
-          const Text('아직 가입한 모임이 없어요', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+          const Text('아직 가입한 앨범이 없어요', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
           const SizedBox(height: 4),
-          const Text('아래에서 관심 모임을 찾아 가입하거나\n직접 모임을 만들어보세요.',
+          const Text('아래에서 관심 앨범을 찾아 가입하거나\n직접 앨범을 만들어보세요.',
               textAlign: TextAlign.center, style: TextStyle(fontSize: 12.5, color: Color(0xFF7A8291), height: 1.4)),
           const SizedBox(height: 16),
           OutlinedButton.icon(
@@ -241,7 +241,7 @@ class _CommunityHubPageState extends State<CommunityHubPage> with AutomaticKeepA
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             icon: const Icon(Icons.add_rounded, size: 19),
-            label: const Text('모임 만들기', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+            label: const Text('앨범 만들기', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
           ),
         ],
       ),
@@ -251,7 +251,7 @@ class _CommunityHubPageState extends State<CommunityHubPage> with AutomaticKeepA
   Widget _emptyDiscover() {
     return const Padding(
       padding: EdgeInsets.symmetric(vertical: 30),
-      child: Center(child: Text('검색된 모임이 없어요', style: TextStyle(color: Color(0xFF7A8291)))),
+      child: Center(child: Text('검색된 앨범이 없어요', style: TextStyle(color: Color(0xFF7A8291)))),
     );
   }
 
@@ -261,7 +261,7 @@ class _CommunityHubPageState extends State<CommunityHubPage> with AutomaticKeepA
       textInputAction: TextInputAction.search,
       onSubmitted: _search,
       decoration: InputDecoration(
-        hintText: '모임 이름으로 검색',
+        hintText: '앨범 이름으로 검색',
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -427,7 +427,7 @@ class _CommunityHubPageState extends State<CommunityHubPage> with AutomaticKeepA
 
   Future<void> _join(CommunityData c) async {
     final (ok, status, msg) = await _repo.join(c.communityId);
-    Get.snackbar('모임', msg.isEmpty ? (ok ? '처리되었습니다.' : '실패했습니다.') : msg,
+    Get.snackbar('앨범', msg.isEmpty ? (ok ? '처리되었습니다.' : '실패했습니다.') : msg,
         snackPosition: SnackPosition.BOTTOM, margin: const EdgeInsets.all(12));
     if (ok) {
       if (status == 'JOINED') {

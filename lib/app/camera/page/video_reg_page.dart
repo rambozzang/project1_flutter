@@ -25,6 +25,7 @@ import 'package:project1/repo/weather_gogo/models/response/super_fct/super_fct_m
 import 'package:project1/repo/weather_gogo/repository/weather_gogo_caching.dart';
 import 'package:project1/repo/weather_gogo/repository/weather_gogo_repo.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
+import 'package:project1/app/community/widget/album_target_selector.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_button.dart';
@@ -74,6 +75,9 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
   bool initVideo = false;
   String hideYn = 'N';
   String anonyYn = 'N';
+
+  // 업로드 대상 앨범(null = 전체 피드). 앨범 홈에서 진입했으면 pendingCommunityId로 초기 선택.
+  int? _selectedCommunityId = RootCntr.to.pendingCommunityId;
 
   bool _hideChecked = false;
   bool _anonyChecked = false;
@@ -342,7 +346,7 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
       ..typeDtCd = 'V'
       ..anonyYn = anonyYn
       ..hideYn = hideYn
-      ..communityId = Get.find<RootCntr>().pendingCommunityId; // 모임에서 진입했으면 소속 모임ID
+      ..communityId = _selectedCommunityId; // 사용자가 선택한 앨범(없으면 전체 피드)
   }
 
   BoardSaveWeatherData _createBoardSaveWeatherData() {
@@ -510,6 +514,12 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
           const Gap(12),
           // 캡션 입력
           _buildCaptionField(),
+          const Gap(10),
+          // 어느 앨범에 올릴지 선택
+          AlbumTargetSelector(
+            selectedCommunityId: _selectedCommunityId,
+            onChanged: (c) => setState(() => _selectedCommunityId = c?.communityId),
+          ),
           const Gap(10),
           _igDivider(),
           // 비공개 + 익명을 한 줄 컴팩트 칩으로

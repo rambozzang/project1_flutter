@@ -6,6 +6,7 @@ import 'package:project1/repo/board/data/board_save_data.dart';
 import 'package:project1/repo/board/data/board_save_main_data.dart';
 import 'package:project1/repo/board/data/board_save_weather_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
+import 'package:project1/app/community/widget/album_target_selector.dart';
 import 'package:project1/utils/utils.dart';
 
 /// 사진(다중) 등록 화면.
@@ -31,6 +32,9 @@ class _PhotoRegPageState extends State<PhotoRegPage> {
   final PageController _pageController = PageController();
   final TextEditingController _captionController = TextEditingController();
   int _currentPage = 0;
+
+  // 업로드 대상 앨범(null = 전체 피드). 앨범 홈에서 진입했으면 pendingCommunityId로 초기 선택.
+  int? _selectedCommunityId = RootCntr.to.pendingCommunityId;
 
   @override
   void dispose() {
@@ -61,6 +65,14 @@ class _PhotoRegPageState extends State<PhotoRegPage> {
           children: [
             Expanded(child: _buildCarousel(photos)),
             _buildCaptionField(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+              child: AlbumTargetSelector(
+                dark: true,
+                selectedCommunityId: _selectedCommunityId,
+                onChanged: (c) => setState(() => _selectedCommunityId = c?.communityId),
+              ),
+            ),
           ],
         ),
       ),
@@ -186,7 +198,7 @@ class _PhotoRegPageState extends State<PhotoRegPage> {
         ..typeDtCd = 'I' // ★ 사진 게시물
         ..anonyYn = 'N'
         ..hideYn = 'N'
-        ..communityId = Get.find<RootCntr>().pendingCommunityId) // 모임에서 진입했으면 소속 모임ID
+        ..communityId = _selectedCommunityId) // 사용자가 선택한 앨범(없으면 전체 피드)
       ..boardWeatherVo = (BoardSaveWeatherData()..feelCd = null);
 
     // 백그라운드 업로드 시작(영상과 동일하게 isFileUploading 전역 표시)

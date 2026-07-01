@@ -65,7 +65,7 @@ class _CommunityInvitePageState extends State<CommunityInvitePage> {
       _sending.remove(id);
       if (ok) _invited.add(id);
     });
-    Get.snackbar('모임 초대', msg.isEmpty ? (ok ? '초대를 보냈습니다.' : '초대에 실패했습니다.') : msg,
+    Get.snackbar('앨범 초대', msg.isEmpty ? (ok ? '초대를 보냈습니다.' : '초대에 실패했습니다.') : msg,
         snackPosition: SnackPosition.BOTTOM, margin: const EdgeInsets.all(12));
   }
 
