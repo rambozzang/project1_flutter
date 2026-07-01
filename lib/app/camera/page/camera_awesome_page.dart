@@ -35,6 +35,12 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
   static const double _dragZoomFactor = 0.006; // px당 줌 변화
   static const double _dragBrightFactor = 0.005; // px당 밝기 변화
 
+  // 축 잠금: 제스처 초반 이만큼 움직인 뒤 우세 축을 정하고 그 축만 적용
+  // (좌우 스와이프인데 밝기가 같이 바뀌던 문제 방지 — 느슨하게 판단)
+  int _panAxis = 0; // 0=미결정, 1=좌우(줌), 2=상하(밝기)
+  double _panAccumDx = 0.0, _panAccumDy = 0.0;
+  static const double _axisLockThreshold = 16.0;
+
   void _captureState(CameraState state) {
     if (identical(_cameraState, state)) return;
     _cameraState = state;
@@ -44,6 +50,10 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
 
   void _onScaleStart() {
     _pinchBaseZoom = _lastZoom;
+    // 축 잠금 초기화
+    _panAxis = 0;
+    _panAccumDx = 0.0;
+    _panAccumDy = 0.0;
   }
 
   // 화면 드래그/핀치 → 줌·밝기 조절
@@ -55,17 +65,27 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
       _lastZoom = z;
       _cameraState!.sensorConfig.setZoom(z);
     } else {
-      // 한 손가락 드래그 → 좌우:줌 / 상하:밝기
+      // 한 손가락 드래그 → 우세 축 하나만 적용(좌우:줌 / 상하:밝기)
       final double dx = details.focalPointDelta.dx;
       final double dy = details.focalPointDelta.dy;
-      if (dx.abs() > 0.01) {
+
+      // 아직 축 미결정: 누적 이동이 임계 넘으면 큰 쪽으로 잠금
+      if (_panAxis == 0) {
+        _panAccumDx += dx;
+        _panAccumDy += dy;
+        if (_panAccumDx.abs() < _axisLockThreshold && _panAccumDy.abs() < _axisLockThreshold) {
+          return; // 아직 방향 판단 전 → 아무것도 안 함
+        }
+        _panAxis = _panAccumDx.abs() >= _panAccumDy.abs() ? 1 : 2;
+      }
+
+      if (_panAxis == 1) {
+        // 좌우 → 줌만
         _lastZoom = (_lastZoom + dx * _dragZoomFactor).clamp(0.0, 1.0);
         _cameraState!.sensorConfig.setZoom(_lastZoom);
-      }
-      if (dy.abs() > 0.01) {
-        // 위로 드래그(dy<0) = 더 밝게.
-        // sensorConfig.setBrightness는 500ms 디바운스라 라이브 반응이 없음 →
-        // 플러그인의 setBrightness(=setCorrection)를 직접 호출해 즉시 반영.
+      } else {
+        // 상하 → 밝기만. 위로 드래그(dy<0) = 더 밝게.
+        // sensorConfig.setBrightness는 500ms 디바운스라 setCorrection을 직접 호출해 즉시 반영.
         _brightness = (_brightness - dy * _dragBrightFactor).clamp(0.0, 1.0);
         CamerawesomePlugin.setBrightness(_brightness);
         // 밝기 게이지 표시 → 마지막 조작 900ms 후 자동 숨김
