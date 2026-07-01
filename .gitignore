@@ -61,3 +61,4 @@ android/app/key.properties
 .omc/
 lib/.omc/
 .claude/worktrees/
+.superpowers/
