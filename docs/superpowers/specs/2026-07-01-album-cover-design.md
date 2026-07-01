@@ -10,7 +10,7 @@
 - 원하면 언제든 자신의 사진으로 교체할 수 있다.
 - 표지 위에 제목/날짜 등 문구를 편집하는 기능은 넣지 않는다 (앨범 이름은 이미 상단바 등 기존 위치에 표시되므로 중복 방지, 스코프 최소화).
 
-## 템플릿 목록 (8종, 무료 스톡사진 URL 하드코딩)
+## 템플릿 목록 (10종, 무료 스톡사진 URL 하드코딩)
 
 코드에 고정된 상수 목록으로 관리한다(DB 테이블 없음). 각 항목은 `templateId`(문자열 키) + 표시명 + 이미지 URL.
 
@@ -24,6 +24,8 @@
 | `birthday` | 생일 | `https://images.unsplash.com/photo-1464349095431-e9a21285b5f3` |
 | `travel` | 여행 | `https://images.unsplash.com/photo-1501785888041-af3ef285b470` |
 | `family` | 가족모임 | `https://images.unsplash.com/photo-1516450360452-9312f5e86fc7` |
+| `friends` | 친구모임 | `https://images.unsplash.com/photo-1543269865-cbf427effbad` |
+| `couple` | 연애 | `https://images.unsplash.com/photo-1524504388940-b1c1722653e1` |
 
 모든 URL은 `curl -o /dev/null -w '%{http_code}'`로 200 응답을 확인했다(2026-07-01 기준). **단, URL 도달 가능 여부만 확인했고 사진 내용이 테마와 실제로 어울리는지는 육안 확인이 필요하다 — 구현 단계에서 실제 화면으로 한 번씩 렌더링해서 부적절한 사진이 있으면 같은 표에서 교체한다.** (플레이스홀더가 아니라 정상 설계 산출물이며, 이 최종 확인 절차 자체가 구현 계획의 한 단계다.)
 
@@ -56,14 +58,14 @@ POST /community/updateCover
     - coverTemplateId와 imageUrl이 둘 다 없으면 DefaultException("표지 정보가 없습니다")
 ```
 
-서버 쪽에도 템플릿 목록(8종)을 동일하게 상수로 둔다(프론트와 이중 관리이지만, 서버가 신뢰할 수 있는 URL만 저장하도록 하기 위한 최소한의 검증 장치 — 프론트가 보낸 imageUrl을 그대로 믿지 않음).
+서버 쪽에도 템플릿 목록(10종)을 동일하게 상수로 둔다(프론트와 이중 관리이지만, 서버가 신뢰할 수 있는 URL만 저장하도록 하기 위한 최소한의 검증 장치 — 프론트가 보낸 imageUrl을 그대로 믿지 않음).
 
 `CommunityVo.CreateReq`에는 이미 `imageUrl`, `spotId` 등이 있으므로 `coverTemplateId` 필드 하나만 추가하면 생성 시점에도 동일한 방식으로 재사용 가능(생성 자체는 기존 `/community/create` 그대로, 서비스 로직에서 coverTemplateId 검증 후 image_url 채우는 부분만 추가).
 
 ## 프론트 UI
 
 ### 1. 템플릿 피커 위젯 (신규, 공용 컴포넌트)
-`lib/app/community/widget/cover_template_picker.dart` — 8개 템플릿을 사진 카드 그리드로 보여주고, 맨 마지막에 "직접 사진 선택" 카드 추가. 선택된 항목은 테두리 하이라이트.
+`lib/app/community/widget/cover_template_picker.dart` — 10개 템플릿을 사진 카드 그리드로 보여주고, 맨 마지막에 "직접 사진 선택" 카드 추가. 선택된 항목은 테두리 하이라이트.
 
 ### 2. 생성 화면 (`community_create_page.dart`)
 템플릿 피커를 노출하고 **첫 번째 템플릿(`wedding`)이 기본 선택된 상태**로 시작 — 사용자가 아무것도 안 건드려도 표지가 채워진 채로 앨범이 생성된다("기본적으로 꾸밀 수 있다" 요구사항 충족). "직접 사진 선택"을 고르면 기존에 쓰던 이미지 업로드 유틸(프로필 사진 교체 등에서 쓰는 것과 동일한 방식)을 재사용해 업로드 후 URL을 받아온다.
