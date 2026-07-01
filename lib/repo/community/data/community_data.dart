@@ -12,12 +12,15 @@ class CommunityData {
   final String? crtDtm;
   final String? myStatus; // 'JOINED' | 'PENDING' | null(미가입)
   final bool isOwner;
+  final String? coverTemplateId;
+  final bool isManager; // 방장 포함 true — 표지 수정 등 매니저 권한 UI 노출용
 
   CommunityData({
     required this.communityId,
     required this.name,
     this.description,
     this.imageUrl,
+    this.coverTemplateId,
     this.ownerCustId,
     this.spotId,
     this.isPublic = 'Y',
@@ -26,12 +29,14 @@ class CommunityData {
     this.crtDtm,
     this.myStatus,
     this.isOwner = false,
+    this.isManager = false,
   });
 
   bool get isJoined => myStatus == 'JOINED';
   bool get isPending => myStatus == 'PENDING';
   bool get isPrivate => isPublic == 'N';
   bool get isApproval => joinType == 'APPROVAL';
+  bool get canEditCover => isOwner || isManager;
 
   factory CommunityData.fromMap(Map<String, dynamic> map) {
     return CommunityData(
@@ -48,6 +53,8 @@ class CommunityData {
       myStatus: map['myStatus']?.toString(),
       // Jackson 은 boolean isOwner 를 'owner' 키로 직렬화 → 두 키 모두 방어적으로 처리
       isOwner: (map['owner'] ?? map['isOwner'] ?? false) == true,
+      coverTemplateId: map['coverTemplateId']?.toString(),
+      isManager: (map['isManager'] ?? map['owner'] ?? map['isOwner'] ?? false) == true,
     );
   }
 }
