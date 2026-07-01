@@ -57,6 +57,7 @@ class CommunityRepo {
     required String name,
     String? description,
     String? imageUrl,
+    String? coverTemplateId,
     int? spotId,
     String isPublic = 'Y',
     String joinType = 'AUTO',
@@ -69,6 +70,7 @@ class CommunityRepo {
         'name': name,
         'description': description,
         'imageUrl': imageUrl,
+        'coverTemplateId': coverTemplateId,
         'spotId': spotId,
         'isPublic': isPublic,
         'joinType': joinType,
@@ -310,6 +312,23 @@ class CommunityRepo {
     } catch (e) {
       lo.g('CommunityRepo.getBySpot error: $e');
       return [];
+    }
+  }
+
+  /// 표지 수정(템플릿 또는 커스텀 사진, 방장/매니저). coverTemplateId가 있으면 imageUrl은 무시됨(서버가 재검증).
+  Future<(bool, String)> updateCover(int communityId, {String? coverTemplateId, String? imageUrl}) async {
+    try {
+      final dio = await AuthDio.instance.getDio();
+      final res = await dio.post('${UrlConfig.baseURL}/community/updateCover', queryParameters: {
+        'communityId': communityId,
+        if (coverTemplateId != null) 'coverTemplateId': coverTemplateId,
+        if (imageUrl != null) 'imageUrl': imageUrl,
+      });
+      final resData = AuthDio.instance.dioResponse(res);
+      return (resData.code == '00', resData.msg?.toString() ?? '');
+    } catch (e) {
+      lo.g('CommunityRepo.updateCover error: $e');
+      return (false, '표지 변경 중 오류가 발생했습니다: $e');
     }
   }
 }
