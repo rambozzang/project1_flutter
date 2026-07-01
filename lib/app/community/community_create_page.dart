@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:project1/app/community/widget/cover_template.dart';
+import 'package:project1/app/community/widget/cover_template_picker.dart';
 import 'package:project1/repo/community/community_repo.dart';
 import 'package:project1/repo/kakao/kakao_repo.dart';
 import 'package:project1/utils/utils.dart';
@@ -25,6 +27,11 @@ class _CommunityCreatePageState extends State<CommunityCreatePage> {
   bool _isPublic = true;
   String _joinType = 'AUTO';
   bool _saving = false;
+
+  // 표지 (기본: 첫 템플릿이 선택된 상태로 시작)
+  String? _coverTemplateId = kCoverTemplates.first.id;
+  String? _customCoverUrl;
+  bool _uploadingCover = false;
 
   // 장소 연결(선택)
   Timer? _debounce;
@@ -111,6 +118,26 @@ class _CommunityCreatePageState extends State<CommunityCreatePage> {
     });
   }
 
+  void _selectTemplate(String templateId) {
+    setState(() {
+      _coverTemplateId = templateId;
+      _customCoverUrl = null;
+    });
+  }
+
+  Future<void> _pickCustomCover() async {
+    setState(() => _uploadingCover = true);
+    final url = await pickAndUploadCoverPhoto();
+    if (!mounted) return;
+    setState(() {
+      _uploadingCover = false;
+      if (url != null) {
+        _customCoverUrl = url;
+        _coverTemplateId = null;
+      }
+    });
+  }
+
   Future<void> _submit() async {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
@@ -126,6 +153,8 @@ class _CommunityCreatePageState extends State<CommunityCreatePage> {
       spotId: _spotId,
       lat: _spotLat,
       lon: _spotLon,
+      coverTemplateId: _customCoverUrl == null ? _coverTemplateId : null,
+      imageUrl: _customCoverUrl,
     );
     if (!mounted) return;
     setState(() => _saving = false);
@@ -154,6 +183,18 @@ class _CommunityCreatePageState extends State<CommunityCreatePage> {
           _label('소개'),
           const SizedBox(height: 6),
           _input(_descCtrl, '어떤 앨범인지 소개해주세요.', maxLines: 4, maxLength: 200),
+          const SizedBox(height: 20),
+          _label('표지'),
+          const SizedBox(height: 6),
+          if (_uploadingCover)
+            const Padding(padding: EdgeInsets.symmetric(vertical: 20), child: Center(child: CircularProgressIndicator()))
+          else
+            CoverTemplatePicker(
+              selectedTemplateId: _coverTemplateId,
+              isCustomPhotoSelected: _customCoverUrl != null,
+              onSelectTemplate: _selectTemplate,
+              onPickCustomPhoto: _pickCustomCover,
+            ),
           const SizedBox(height: 20),
           _label('장소 연결 (선택)'),
           const SizedBox(height: 6),
