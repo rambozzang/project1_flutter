@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:project1/app/achievement/service/achievement_service.dart';
 import 'package:project1/repo/achievement/achievement_repo.dart';
 import 'package:project1/repo/achievement/data/achievement_data.dart';
 import 'package:project1/utils/log_utils.dart';
@@ -10,6 +11,7 @@ class AchievementCntr extends GetxController {
 
   final Rx<MyAchievementsData?> myData = Rx<MyAchievementsData?>(null);
   final RxBool isLoading = false.obs;
+  final RxBool hasError = false.obs;
   final RxString selectedCategory = 'ALL'.obs;
 
   final List<Map<String, String>> categories = [
@@ -35,14 +37,20 @@ class AchievementCntr extends GetxController {
 
   Future<void> fetchAchievements() async {
     isLoading.value = true;
+    hasError.value = false;
     try {
       final res = await _repo.getMyAchievements();
       if (res.code == '00') {
         myData.value = AchievementRepo.parseMyAchievements(res.data);
+        if (Get.isRegistered<AchievementService>()) {
+          AchievementService.to.markAllSeen();
+        }
       } else {
+        hasError.value = true;
         lo.g('fetchAchievements error: ${res.msg}');
       }
     } catch (e) {
+      hasError.value = true;
       lo.g('fetchAchievements exception: $e');
     } finally {
       isLoading.value = false;

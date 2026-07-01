@@ -3,9 +3,11 @@ import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/attendance/cntr/attendance_cntr.dart';
 import 'package:project1/app/challenge/cntr/challenge_cntr.dart';
+import 'package:project1/app/challenge/challenge_task.dart';
 import 'package:project1/app/common/widgets/animated_list_item.dart';
 import 'package:project1/config/app_color.dart';
 import 'package:project1/repo/challenge/data/challenge_complete_data.dart';
+import 'package:project1/route/app_route.dart';
 import 'package:project1/utils/utils.dart';
 
 class ChallengeMainPage extends StatefulWidget {
@@ -78,27 +80,37 @@ class _ChallengeMainPageState extends State<ChallengeMainPage>
           return const Center(
               child: CircularProgressIndicator(color: AppColor.primaryColor));
         }
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AnimatedListItem(
-                index: 0,
-                child: _buildTodayChallengeCard(),
-              ),
-              const Gap(24),
-              AnimatedListItem(
-                index: 1,
-                child: _buildAttendanceSection(),
-              ),
-              const Gap(24),
-              AnimatedListItem(
-                index: 2,
-                child: _buildMyChallengeSection(),
-              ),
-              const Gap(24),
-            ],
+        return RefreshIndicator(
+          color: AppColor.primaryColor,
+          onRefresh: () async {
+            await challengeCntr.loadAll();
+            if (Get.isRegistered<AttendanceCntr>()) {
+              await Get.find<AttendanceCntr>().fetchMyAttendance();
+            }
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AnimatedListItem(
+                  index: 0,
+                  child: _buildTodayChallengeCard(),
+                ),
+                const Gap(24),
+                AnimatedListItem(
+                  index: 1,
+                  child: _buildAttendanceSection(),
+                ),
+                const Gap(24),
+                AnimatedListItem(
+                  index: 2,
+                  child: _buildMyChallengeSection(),
+                ),
+                const Gap(24),
+              ],
+            ),
           ),
         );
       }),
@@ -119,6 +131,8 @@ class _ChallengeMainPageState extends State<ChallengeMainPage>
       }
 
       final isComplete = challenge.completeYn == 'Y';
+      final isCapture =
+          ChallengeTask.isCaptureTask(challenge.typeCd, challenge.targetCd);
 
       return Container(
         width: double.infinity,
@@ -262,40 +276,70 @@ class _ChallengeMainPageState extends State<ChallengeMainPage>
                               ],
                             ),
                           )
-                        : ElevatedButton(
-                            key: const ValueKey('action'),
-                            onPressed: () async {
-                              final result =
-                                  await ChallengeCntr.to.completeChallenge();
-                              if (result != null) {
-                                _triggerCelebration();
-                                _showCompleteDialog(result);
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: AppColor.primaryColor,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.flash_on, size: 18),
-                                Gap(6),
-                                Text(
-                                  '챌린지 완료하기',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                        : isCapture
+                            ? ElevatedButton(
+                                key: const ValueKey('capture'),
+                                onPressed: () => AppPages.openCameraGlobal(),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: AppColor.primaryColor,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.camera_alt, size: 18),
+                                    Gap(6),
+                                    Text(
+                                      '지금 도전하러 가기',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : ElevatedButton(
+                                key: const ValueKey('action'),
+                                onPressed: () async {
+                                  final result =
+                                      await ChallengeCntr.to.completeChallenge();
+                                  if (result != null) {
+                                    _triggerCelebration();
+                                    _showCompleteDialog(result);
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: AppColor.primaryColor,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.flash_on, size: 18),
+                                    Gap(6),
+                                    Text(
+                                      '챌린지 완료하기',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                   ),
                 ),
               ],
@@ -436,7 +480,7 @@ class _ChallengeMainPageState extends State<ChallengeMainPage>
                 Expanded(
                   child: _buildStatBox(
                     label: '이번달 완료',
-                    value: '${status.monthCompleteCount}회',
+                    value: '${status.monthCompleteCount ?? 0}회',
                     icon: Icons.emoji_events,
                     iconColor: Colors.amber.shade700,
                     iconBgColor: Colors.amber.withOpacity(0.1),
@@ -446,7 +490,7 @@ class _ChallengeMainPageState extends State<ChallengeMainPage>
                 Expanded(
                   child: _buildStatBox(
                     label: '총 완료',
-                    value: '${status.totalCompleteCount}회',
+                    value: '${status.totalCompleteCount ?? 0}회',
                     icon: Icons.military_tech,
                     iconColor: Colors.purple,
                     iconBgColor: Colors.purple.withOpacity(0.1),
@@ -634,7 +678,12 @@ class _ChallengeMainPageState extends State<ChallengeMainPage>
   }
 
   void _showCompleteDialog(ChallengeCompleteData result) {
-    final message = result.message ?? '챌린지 완료!';
+    final base = (result.message != null && result.message!.isNotEmpty)
+        ? result.message!
+        : '챌린지 완료!';
+    final days = result.consecutiveDays;
+    final message =
+        (days != null && days > 0) ? '$base  🔥 $days일 연속 달성!' : base;
     Utils.alertIcon(
       message,
       icontype: 'S',

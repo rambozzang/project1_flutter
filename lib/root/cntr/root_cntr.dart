@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
+import 'package:project1/app/achievement/service/achievement_service.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_save_data.dart';
@@ -447,6 +448,10 @@ class RootCntr extends GetxController {
       }
 
       isFileUploading.value = UploadingType.SUCCESS;
+
+      // 사진 게시도 영상 업로드와 동일하게 오늘 챌린지를 완료 처리한다.
+      _completeTodayChallengeAfterUpload();
+
       Future.delayed(const Duration(milliseconds: 2000), () {
         isFileUploading.value = UploadingType.NONE;
       });
@@ -531,6 +536,11 @@ class RootCntr extends GetxController {
 
   /// 영상 업로드 성공 후 오늘 챌린지 완료 처리
   Future<void> _completeTodayChallengeAfterUpload() async {
+    // 업로드 직후, 새로 달성된 업적이 있는지 확인해 알림/배지에 반영한다.
+    // (오늘 챌린지 완료 여부와 무관하게 항상 실행되도록 메서드 초반에 호출)
+    if (Get.isRegistered<AchievementService>()) {
+      AchievementService.to.syncAndNotify();
+    }
     try {
       final custId = AuthCntr.to.custId.value;
       if (custId.isEmpty) return;

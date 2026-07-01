@@ -38,7 +38,36 @@ class AchievementPage extends StatelessWidget {
           }
           final data = cntr.myData.value;
           if (data == null) {
-            return const Center(child: Text('데이터 없음'));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.cloud_off, size: 56, color: Colors.grey.shade300),
+                  const SizedBox(height: 14),
+                  Text(
+                    cntr.hasError.value ? '업적을 불러오지 못했어요' : '표시할 업적이 없어요',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: cntr.fetchAchievements,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColor.primaryColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text('다시 시도'),
+                  ),
+                ],
+              ),
+            );
           }
 
           return Column(
@@ -196,22 +225,27 @@ class AchievementPage extends StatelessWidget {
       );
     }
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 0.82,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
+    return RefreshIndicator(
+      color: AppColor.primaryColor,
+      onRefresh: cntr.fetchAchievements,
+      child: GridView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          childAspectRatio: 0.82,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+        ),
+        itemCount: items.length,
+        itemBuilder: (ctx, i) {
+          final ach = items[i];
+          return _AchievementCard(
+            achievement: ach,
+            onTap: () => _onAchievementTap(ach),
+          );
+        },
       ),
-      itemCount: items.length,
-      itemBuilder: (ctx, i) {
-        final ach = items[i];
-        return _AchievementCard(
-          achievement: ach,
-          onTap: () => _onAchievementTap(ach),
-        );
-      },
     );
   }
 

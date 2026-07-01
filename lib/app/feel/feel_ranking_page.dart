@@ -29,10 +29,29 @@ class FeelRankingPage extends StatelessWidget {
               fontSize: 18,
             ),
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh, color: AppColor.primaryColor),
+              tooltip: '새로고침',
+              onPressed: () => cntr.fetchRanking(),
+            ),
+          ],
         ),
         body: Column(
           children: [
             _buildPeriodChips(cntr),
+            Padding(
+              padding: const EdgeInsets.only(
+                  left: 16, right: 16, top: 2, bottom: 8),
+              child: Text(
+                '체감 태그를 가장 많이 남긴 SkySnapper 순위예요',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+            ),
             Expanded(
               child: Obx(() {
                 if (cntr.isLoading.value) {
@@ -52,6 +71,8 @@ class FeelRankingPage extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 24),
                   child: Column(
                     children: [
+                      _buildMyRankCard(cntr),
+                      _buildAreaCard(cntr),
                       if (top3.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         _PodiumSection(top3: top3),
@@ -94,11 +115,13 @@ class FeelRankingPage extends StatelessWidget {
                             return _RankingTile(
                               rank: i + 4,
                               item: item,
-                              isMe: item.custId == AuthCntr.to.custId.value,
+                              isMe: item.custId.isNotEmpty &&
+                                  item.custId == AuthCntr.to.custId.value,
                             );
                           },
                         ),
                       ],
+                      _buildLoadMore(cntr),
                     ],
                   ),
                 );
@@ -188,6 +211,200 @@ class FeelRankingPage extends StatelessWidget {
       ),
     );
   }
+
+  /// 내 순위 카드. 리스트에서 나를 찾으면 primaryColor 강조, 없으면 muted 안내.
+  Widget _buildMyRankCard(FeelRankingCntr cntr) {
+    final my = cntr.myRank;
+    if (my != null) {
+      final data = my.data;
+      final emoji = FeelCode.getEmoji(data.topFeelCd);
+      final name = FeelCode.getName(data.topFeelCd);
+      return Container(
+        margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColor.primaryColor.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColor.primaryColor.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColor.primaryColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                '내 순위',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '#${my.position} · ${data.feelCount}회 · $emoji $name',
+                style: const TextStyle(
+                  color: AppColor.primaryColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.emoji_events_outlined,
+              color: Colors.grey.shade500, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '아직 순위권 안에 없어요 — 체감 태그를 남기고 순위에 도전해보세요!',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 우리 동네 체감 카드. best-effort 라 areaStats 가 비어있으면 아무것도 안 그린다.
+  Widget _buildAreaCard(FeelRankingCntr cntr) {
+    if (cntr.areaStats.isEmpty) return const SizedBox.shrink();
+    final sorted = [...cntr.areaStats]
+      ..sort((a, b) => b.count.compareTo(a.count));
+    final top = sorted.take(5).toList();
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.place, color: AppColor.primaryColor, size: 18),
+              SizedBox(width: 6),
+              Text(
+                '우리 동네 체감',
+                style: TextStyle(
+                  color: AppColor.primaryColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: top.map((s) {
+              return Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  '${FeelCode.getEmoji(s.feelCd)} ${FeelCode.getName(s.feelCd)} ${s.count}',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: Colors.grey.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 리스트 하단의 더 보기 / 로딩 / 마지막 안내.
+  Widget _buildLoadMore(FeelRankingCntr cntr) {
+    if (cntr.isLoadingMore.value) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.4,
+              color: AppColor.primaryColor,
+            ),
+          ),
+        ),
+      );
+    }
+    if (cntr.hasMore.value) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+        child: SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: () => cntr.loadMore(),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColor.primaryColor,
+              side: BorderSide(color: AppColor.primaryColor.withOpacity(0.4)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            child: const Text(
+              '더 보기',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Center(
+        child: Text(
+          '마지막이에요',
+          style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+        ),
+      ),
+    );
+  }
 }
 
 class _PodiumSection extends StatelessWidget {
@@ -219,7 +436,7 @@ class _PodiumSection extends StatelessWidget {
                   item: second,
                   height: 90,
                   color: const Color(0xFFC0C0C0),
-                  isMe: second.custId == myId,
+                  isMe: second.custId.isNotEmpty && second.custId == myId,
                 ),
               )
             else
@@ -233,7 +450,7 @@ class _PodiumSection extends StatelessWidget {
                   item: first,
                   height: 120,
                   color: const Color(0xFFFFD700),
-                  isMe: first.custId == myId,
+                  isMe: first.custId.isNotEmpty && first.custId == myId,
                 ),
               )
             else
@@ -246,7 +463,7 @@ class _PodiumSection extends StatelessWidget {
                   item: third,
                   height: 70,
                   color: const Color(0xFFCD7F32),
-                  isMe: third.custId == myId,
+                  isMe: third.custId.isNotEmpty && third.custId == myId,
                 ),
               )
             else

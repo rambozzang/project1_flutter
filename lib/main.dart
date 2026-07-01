@@ -11,6 +11,7 @@ import 'package:get/get.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 // import 'package:media_kit/media_kit.dart';
 import 'package:project1/admob/ad_manager.dart';
+import 'package:project1/app/achievement/service/achievement_service.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 // import 'package:project1/app/chatting/supabase_options.dart';
 import 'package:project1/config/app_theme.dart';
@@ -83,6 +84,8 @@ class TigerBk extends StatelessWidget {
       initialRoute: AppPages.INITIAL,
       initialBinding: BindingsBuilder(() {
         Get.put(AuthCntr());
+        // 업적 알림 루프(업로드/로그인 시 새 업적 감지 → 다이얼로그/배지). 앱 전역 상주.
+        Get.put(AchievementService(), permanent: true);
         // Get.put(LifeCycleGetx());
         Get.put(WeatherGogoCntr());
         // 앨범(커뮤니티) 초대 딥링크 - AuthCntr 등록 이후 초기화(로그인 상태 리스닝 필요).

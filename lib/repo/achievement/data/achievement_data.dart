@@ -25,12 +25,24 @@ class AchievementData {
         achievementDesc: map['achievementDesc'] ?? '',
         achievementIcon: map['achievementIcon'] ?? '🏆',
         category: map['category'] ?? '',
-        achieved: map['achieved'] ?? false,
+        achieved: _asBool(map['achieved']),
         achievedDtm: map['achievedDtm'] != null
             ? DateTime.tryParse(map['achievedDtm'].toString())
             : null,
         totalAchievers: map['totalAchievers'] ?? 0,
       );
+
+  /// 서버가 bool / int(0,1) / 문자열("Y","N","true","1") 중 무엇으로 보내도
+  /// 안전하게 bool 로 변환한다. (타입 불일치로 파싱 전체가 실패하던 문제 방지)
+  static bool _asBool(dynamic v) {
+    if (v is bool) return v;
+    if (v is num) return v != 0;
+    if (v is String) {
+      final s = v.trim().toLowerCase();
+      return s == 'y' || s == 'true' || s == '1';
+    }
+    return false;
+  }
 }
 
 class MyAchievementsData {

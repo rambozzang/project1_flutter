@@ -25,6 +25,14 @@ class FeelRankingData {
       );
 }
 
+/// 지역별 체감 통계 한 건 (best-effort).
+class AreaFeelStat {
+  final String feelCd;
+  final int count;
+
+  const AreaFeelStat({required this.feelCd, required this.count});
+}
+
 class FeelCode {
   static const Map<String, Map<String, String>> codes = {
     'HELL':   {'name': '찜통더위',     'emoji': '🌋'},

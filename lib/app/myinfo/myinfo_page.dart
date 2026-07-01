@@ -10,6 +10,7 @@ import 'package:get/get.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/achievement/service/achievement_service.dart';
 import 'package:project1/app/myinfo/otherinfo_page.dart';
 import 'package:project1/app/weather/widgets/customShimmer.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
@@ -768,14 +769,52 @@ class _MyPageState extends State<MyPage>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: (item['color'] as Color).withOpacity(0.12),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(item['icon'] as IconData,
-                          color: item['color'] as Color, size: 24),
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: (item['color'] as Color).withOpacity(0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(item['icon'] as IconData,
+                              color: item['color'] as Color, size: 24),
+                        ),
+                        if (item['label'] == '업적' &&
+                            Get.isRegistered<AchievementService>())
+                          Positioned(
+                            right: -2,
+                            top: -2,
+                            child: Obx(() {
+                              final n =
+                                  AchievementService.to.unseenCount.value;
+                              if (n <= 0) return const SizedBox.shrink();
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 5, vertical: 1),
+                                constraints:
+                                    const BoxConstraints(minWidth: 16),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE23E28),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                      color: Colors.white, width: 1.5),
+                                ),
+                                child: Text(
+                                  n > 9 ? '9+' : '$n',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Text(item['label'] as String,

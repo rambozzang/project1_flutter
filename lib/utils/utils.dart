@@ -216,6 +216,9 @@ abstract class Utils {
     } else if (icontype == 'W') {
       clr = const Color(0xFFFF9900);
       icondata = Icons.priority_high_rounded;
+    } else if (icontype == 'I') {
+      clr = const Color(0xFF3B82F6);
+      icondata = Icons.info_outline_rounded;
     }
     BotToast.showCustomText(
       duration: duration ?? const Duration(seconds: 2),

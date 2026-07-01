@@ -20,12 +20,24 @@ class ChallengeCntr extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // 이미 로그인된 상태에서 컨트롤러가 생성되는 경우(챌린지 화면 진입 등)
+    // 즉시 로드한다. ever는 값이 '변할 때'만 실행되므로 이것만으로는
+    // 로드가 트리거되지 않아 화면이 빈 채로 남는 문제가 있었다.
+    if (AuthCntr.to.isLogged.value == true) {
+      loadAll();
+    }
     ever(AuthCntr.to.isLogged, (isLogged) {
       if (isLogged == true) {
-        fetchTodayChallenge();
-        fetchMyChallengeStatus();
+        loadAll();
       }
     });
+  }
+
+  /// 오늘의 챌린지 → 내 챌린지 현황 순서로 로드한다.
+  /// (내 현황 조회는 todayChallenge.challengeId 에 의존하므로 반드시 순차 실행)
+  Future<void> loadAll() async {
+    await fetchTodayChallenge();
+    await fetchMyChallengeStatus();
   }
 
   Future<void> fetchTodayChallenge() async {

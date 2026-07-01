@@ -18,6 +18,14 @@ class AttendanceCntr extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // 이미 로그인된 상태에서 컨트롤러가 생성될 때(챌린지 화면 진입 등)
+    // 출석 현황을 즉시 불러온다. ever는 값이 변할 때만 실행되므로 이것만으로는
+    // 로드되지 않아 출석 카드가 0으로만 표시되던 문제를 방지한다.
+    // 화면 진입 시에는 표시용 현황만 조회하고, 실제 출석 체크(check-in)는
+    // 로그인 시점(auth 흐름)과 로그인 상태 전환 시에만 수행한다.
+    if (AuthCntr.to.isLogged.value == true) {
+      fetchMyAttendance();
+    }
     ever(AuthCntr.to.isLogged, (isLogged) {
       if (isLogged == true) {
         checkAttendance();
