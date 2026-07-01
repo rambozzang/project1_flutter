@@ -72,8 +72,26 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
     }
   }
 
+  // 카메라 초기화 시 조작 안내(↕밝기·↔줌)를 잠깐 띄웠다 사라지게 한다.
+  bool _showGestureHint = false;
+  Timer? _hintTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // 다음 프레임에 페이드인 → 2.4초 후 페이드아웃
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() => _showGestureHint = true);
+      _hintTimer = Timer(const Duration(milliseconds: 2400), () {
+        if (mounted) setState(() => _showGestureHint = false);
+      });
+    });
+  }
+
   @override
   void dispose() {
+    _hintTimer?.cancel();
     _zoomSub?.cancel();
     super.dispose();
   }
@@ -249,6 +267,31 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
               behavior: HitTestBehavior.translucent,
               onScaleStart: (_) => _onScaleStart(),
               onScaleUpdate: _onScaleUpdate,
+            ),
+          ),
+          // 초기화 시 조작 안내(2초간 페이드 인/아웃). 터치는 통과(IgnorePointer).
+          Center(
+            child: IgnorePointer(
+              child: AnimatedOpacity(
+                opacity: _showGestureHint ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 450),
+                curve: Curves.easeInOut,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.55),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      _HintRow(icon: Icons.swap_vert_rounded, text: '상하 드래그  ·  밝기 조절'),
+                      SizedBox(height: 12),
+                      _HintRow(icon: Icons.swap_horiz_rounded, text: '좌우 드래그  ·  줌 조절'),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -935,6 +978,25 @@ class AwesomeCircleButton extends StatelessWidget {
         ),
         child: child,
       ),
+    );
+  }
+}
+
+/// 카메라 조작 안내 한 줄 (아이콘 + 텍스트)
+class _HintRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _HintRow({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: Colors.white, size: 20),
+        const SizedBox(width: 10),
+        Text(text, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+      ],
     );
   }
 }
