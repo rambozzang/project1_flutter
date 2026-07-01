@@ -356,9 +356,8 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
             ),
           ),
           // 초기화 시 조작 안내(상하=밝기·좌우=줌을 실제 방향에 십자 배치, 2초 페이드).
-          // 하단 고정 컨트롤(플래시/줌/모드/촬영 버튼)과 겹치지 않게 미리보기 상단-우측 여백에 배치.
-          Align(
-            alignment: const Alignment(0.5, -0.35),
+          // 화면 정중앙에 표시 후 사라짐.
+          Center(
             child: IgnorePointer(
               child: AnimatedOpacity(
                 opacity: _showGestureHint ? 1.0 : 0.0,
