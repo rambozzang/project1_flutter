@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"cat /Users/bumkyuchun/work/app/project1/src/main/resources/static/.well-known/assetlinks.json; echo \\\"---check keystore exists---\\\"; ls -la /Users/bumkyuchun/work/app/flutter/project1/andr...",
+  "error": "Exit code 1\n[\n  {\n    \"relation\": [\"delegate_permission/common.handle_all_urls\"],\n    \"target\": {\n      \"namespace\": \"android_app\",\n      \"package_name\": \"com.codelabtiger.skysnap\",\n      \"sha256_cert_fingerprints\": [\n        \"8E:95:C1:A1:8A:D4:F7:9D:0F:DB:07:79:CB:A0:03:47:6D:C5:4A:61:4C:86:E4:94:FD:0A:26:DE:9B:BE:7D:DC\"\n      ]\n    }\n  }\n]\n---check keystore exists---\n-rw-r--r--  1 bumkyuchun  staff  2682  6월 13  2024 /Users/bumkyuchun/work/app/flutter/project1/android/app/debug.keystore\n-rw-r-...",
+  "timestamp": "2026-07-01T13:15:44.657Z",
+  "retry_count": 1
+}

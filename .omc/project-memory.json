@@ -1,0 +1,519 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1782890288784,
+  "projectRoot": "/Users/bumkyuchun/work/app/flutter/project1",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "assets",
+      "lib",
+      "scripts",
+      "test"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "android": {
+      "path": "android",
+      "purpose": null,
+      "fileCount": 11,
+      "lastAccessed": 1782890288770,
+      "keyFiles": [
+        "build.gradle",
+        "build.gradle.kts",
+        "gradle.properties",
+        "gradlew",
+        "gradlew.bat"
+      ]
+    },
+    "assets": {
+      "path": "assets",
+      "purpose": "Static assets",
+      "fileCount": 2,
+      "lastAccessed": 1782890288771,
+      "keyFiles": [
+        "transparent.png"
+      ]
+    },
+    "build": {
+      "path": "build",
+      "purpose": "Build output",
+      "fileCount": 2,
+      "lastAccessed": 1782890288771,
+      "keyFiles": [
+        "b91b994338c11c54cf5c76fd8ba5acce.cache.dill.track.dill"
+      ]
+    },
+    "debug-info": {
+      "path": "debug-info",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1782890288771,
+      "keyFiles": [
+        "app.android-arm.symbols",
+        "app.android-arm64.symbols",
+        "app.android-x64.symbols"
+      ]
+    },
+    "debug-info.zip": {
+      "path": "debug-info.zip",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1782890288771,
+      "keyFiles": [
+        "app.android-arm.symbols",
+        "app.android-arm64.symbols",
+        "app.android-x64.symbols"
+      ]
+    },
+    "ios": {
+      "path": "ios",
+      "purpose": null,
+      "fileCount": 5,
+      "lastAccessed": 1782890288771,
+      "keyFiles": [
+        "Podfile",
+        "Podfile.lock",
+        "firebase_app_id_file.json"
+      ]
+    },
+    "lib": {
+      "path": "lib",
+      "purpose": "Library code",
+      "fileCount": 5,
+      "lastAccessed": 1782890288772,
+      "keyFiles": [
+        "firebase_options.dart",
+        "main.dart",
+        "oss_licenses.dart",
+        "subscriptService.dart"
+      ]
+    },
+    "package": {
+      "path": "package",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1782890288772,
+      "keyFiles": []
+    },
+    "scripts": {
+      "path": "scripts",
+      "purpose": "Build/utility scripts",
+      "fileCount": 7,
+      "lastAccessed": 1782890288772,
+      "keyFiles": [
+        "README.md",
+        "bump_version.sh",
+        "config.env.example",
+        "deploy.sh",
+        "deploy_android.sh"
+      ]
+    },
+    "supabase": {
+      "path": "supabase",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1782890288772,
+      "keyFiles": []
+    },
+    "test": {
+      "path": "test",
+      "purpose": "Test files",
+      "fileCount": 1,
+      "lastAccessed": 1782890288772,
+      "keyFiles": [
+        "widget_test.dart"
+      ]
+    },
+    "tools": {
+      "path": "tools",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1782890288772,
+      "keyFiles": []
+    },
+    "web": {
+      "path": "web",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1782890288773,
+      "keyFiles": [
+        "favicon.png",
+        "index.html",
+        "manifest.json"
+      ]
+    },
+    "android/app": {
+      "path": "android/app",
+      "purpose": "Application code",
+      "fileCount": 10,
+      "lastAccessed": 1782890288773,
+      "keyFiles": [
+        "build.gradle",
+        "build.gradle.kts",
+        "debug.keystore"
+      ]
+    },
+    "android/build": {
+      "path": "android/build",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1782890288773,
+      "keyFiles": []
+    },
+    "build/app": {
+      "path": "build/app",
+      "purpose": "Application code",
+      "fileCount": 2,
+      "lastAccessed": 1782890288774,
+      "keyFiles": [
+        "deeplink.json"
+      ]
+    },
+    "lib/app": {
+      "path": "lib/app",
+      "purpose": "Application code",
+      "fileCount": 1,
+      "lastAccessed": 1782890288775,
+      "keyFiles": []
+    },
+    "lib/config": {
+      "path": "lib/config",
+      "purpose": "Configuration files",
+      "fileCount": 7,
+      "lastAccessed": 1782890288775,
+      "keyFiles": [
+        "app_color.dart",
+        "app_config.dart",
+        "app_theme.dart"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "lib/app/camera/page/camera_awesome_page.dart",
+      "accessCount": 64,
+      "lastAccessed": 1782908844396,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/videolist/video_list_page.dart",
+      "accessCount": 11,
+      "lastAccessed": 1782892495944,
+      "type": "file"
+    },
+    {
+      "path": "lib/root/root_page.dart",
+      "accessCount": 10,
+      "lastAccessed": 1782893420100,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/community/community_hub_page.dart",
+      "accessCount": 10,
+      "lastAccessed": 1782907773562,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/community/community_home_page.dart",
+      "accessCount": 9,
+      "lastAccessed": 1782907768343,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/camera/page/video_reg_page.dart",
+      "accessCount": 8,
+      "lastAccessed": 1782907925584,
+      "type": "file"
+    },
+    {
+      "path": "lib/route/app_route.dart",
+      "accessCount": 7,
+      "lastAccessed": 1782898196372,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/camera/page/photo_reg_page.dart",
+      "accessCount": 7,
+      "lastAccessed": 1782908020946,
+      "type": "file"
+    },
+    {
+      "path": "lib/repo/community/community_repo.dart",
+      "accessCount": 5,
+      "lastAccessed": 1782911783293,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/setting/noti_page.dart",
+      "accessCount": 4,
+      "lastAccessed": 1782720244059,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/bbs/bbs_list_page.dart",
+      "accessCount": 4,
+      "lastAccessed": 1782867967205,
+      "type": "file"
+    },
+    {
+      "path": "lib/repo/spot/spot_repo.dart",
+      "accessCount": 4,
+      "lastAccessed": 1782892472752,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/videomylist/cntr/video_myinfo_list_cntr.dart",
+      "accessCount": 4,
+      "lastAccessed": 1782893064632,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/setting/faq_page.dart",
+      "accessCount": 3,
+      "lastAccessed": 1782720258788,
+      "type": "file"
+    },
+    {
+      "path": "lib/admob/native_feed_ad_page.dart",
+      "accessCount": 3,
+      "lastAccessed": 1782810811739,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/alram/alram_page.dart",
+      "accessCount": 3,
+      "lastAccessed": 1782867619520,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/auth/cntr/auth_cntr.dart",
+      "accessCount": 3,
+      "lastAccessed": 1782885799803,
+      "type": "file"
+    },
+    {
+      "path": "COMMUNITY_DESIGN.md",
+      "accessCount": 3,
+      "lastAccessed": 1782892448291,
+      "type": "file"
+    },
+    {
+      "path": "lib/root/board_list_page.dart",
+      "accessCount": 3,
+      "lastAccessed": 1782892555991,
+      "type": "file"
+    },
+    {
+      "path": "lib/repo/board/data/board_save_main_data.dart",
+      "accessCount": 3,
+      "lastAccessed": 1782893393346,
+      "type": "file"
+    },
+    {
+      "path": "lib/root/cntr/root_cntr.dart",
+      "accessCount": 3,
+      "lastAccessed": 1782893410490,
+      "type": "file"
+    },
+    {
+      "path": "lib/repo/board/board_repo.dart",
+      "accessCount": 3,
+      "lastAccessed": 1782897970321,
+      "type": "file"
+    },
+    {
+      "path": "lib/admob/ad_manager.dart",
+      "accessCount": 3,
+      "lastAccessed": 1782909395787,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/spot/spot_weather_page.dart",
+      "accessCount": 2,
+      "lastAccessed": 1782821535255,
+      "type": "file"
+    },
+    {
+      "path": "pubspec.yaml",
+      "accessCount": 2,
+      "lastAccessed": 1782826890335,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/videolist/Video_screen_page.dart",
+      "accessCount": 2,
+      "lastAccessed": 1782868578216,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/videomylist/Video_myScreen_page.dart",
+      "accessCount": 2,
+      "lastAccessed": 1782868628131,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/weathergogo/cntr/weather_gogo_cntr.dart",
+      "accessCount": 2,
+      "lastAccessed": 1782885941288,
+      "type": "file"
+    },
+    {
+      "path": "lib/config/url_config.dart",
+      "accessCount": 2,
+      "lastAccessed": 1782892473152,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/videomylist/video_myinfo_list_page.dart",
+      "accessCount": 2,
+      "lastAccessed": 1782893075266,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/community/community_create_page.dart",
+      "accessCount": 2,
+      "lastAccessed": 1782907764372,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/community/community_invite_page.dart",
+      "accessCount": 2,
+      "lastAccessed": 1782907779743,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/community/community_members_page.dart",
+      "accessCount": 2,
+      "lastAccessed": 1782907783756,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/myinfo/myinfo_page.dart",
+      "accessCount": 1,
+      "lastAccessed": 1782719873781,
+      "type": "file"
+    },
+    {
+      "path": "lib/repo/board/data/board_main_detail_data.dart",
+      "accessCount": 1,
+      "lastAccessed": 1782719898369,
+      "type": "file"
+    },
+    {
+      "path": "lib/root/main_view1.dart",
+      "accessCount": 1,
+      "lastAccessed": 1782719927004,
+      "type": "file"
+    },
+    {
+      "path": "lib/widget/hide_bottombar.dart",
+      "accessCount": 1,
+      "lastAccessed": 1782720966008,
+      "type": "file"
+    },
+    {
+      "path": "lib/repo/weather_gogo/adapter/adapter_map.dart",
+      "accessCount": 1,
+      "lastAccessed": 1782821261193,
+      "type": "file"
+    },
+    {
+      "path": "lib/repo/kakao/kakao_repo.dart",
+      "accessCount": 1,
+      "lastAccessed": 1782821295886,
+      "type": "file"
+    },
+    {
+      "path": "lib/repo/spot/data/spot_admin_data.dart",
+      "accessCount": 1,
+      "lastAccessed": 1782821366069,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/spot/spot_submit_page.dart",
+      "accessCount": 1,
+      "lastAccessed": 1782821436005,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/spot/spot_my_page.dart",
+      "accessCount": 1,
+      "lastAccessed": 1782821464791,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/spot/spot_admin_page.dart",
+      "accessCount": 1,
+      "lastAccessed": 1782821500021,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/auth/auth_page.dart",
+      "accessCount": 1,
+      "lastAccessed": 1782885673389,
+      "type": "file"
+    },
+    {
+      "path": "lib/app/videolist/cntr/video_list_cntr.dart",
+      "accessCount": 1,
+      "lastAccessed": 1782892473767,
+      "type": "file"
+    },
+    {
+      "path": "lib/repo/common/res_data.dart",
+      "accessCount": 1,
+      "lastAccessed": 1782892622216,
+      "type": "file"
+    },
+    {
+      "path": "lib/repo/board/data/board_save_data.dart",
+      "accessCount": 1,
+      "lastAccessed": 1782892731199,
+      "type": "file"
+    },
+    {
+      "path": "lib/repo/community/data/community_data.dart",
+      "accessCount": 1,
+      "lastAccessed": 1782892780611,
+      "type": "file"
+    },
+    {
+      "path": "lib/repo/community/data/community_member_data.dart",
+      "accessCount": 1,
+      "lastAccessed": 1782892789540,
+      "type": "file"
+    },
+    {
+      "path": "lib/repo/community/data/community_invite_info_data.dart",
+      "accessCount": 1,
+      "lastAccessed": 1782898005243,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}
