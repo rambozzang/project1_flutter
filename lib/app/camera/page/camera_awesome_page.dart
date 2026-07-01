@@ -178,6 +178,9 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
                 },
               );
             },
+            // 기본 middleContent(camerawesome 기본 PHOTO/VIDEO 모드 선택기 + 필터)를 제거한다.
+            // → 하단 커스텀 '사진/영상' 토글과 중복되던 것을 없앰.
+            middleContentBuilder: (state) => const SizedBox.shrink(),
             theme: AwesomeTheme(
               bottomActionsBackgroundColor: Colors.transparent,
             ),
