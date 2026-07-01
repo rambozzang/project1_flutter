@@ -284,15 +284,17 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
     return Container(
       padding: const EdgeInsets.only(bottom: 24, top: 12),
       decoration: BoxDecoration(
+        // 하단 스크림: 컨트롤 가독성용 최소한의 그라데이션(과한 검정 제거).
+        // 상단 절반 이상은 완전 투명 → 카메라 화면이 어둡게 안 보이게, 맨 아래만 옅게.
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
             Colors.transparent,
-            Colors.black.withValues(alpha: 0.35),
-            Colors.black.withValues(alpha: 0.65),
+            Colors.black.withValues(alpha: 0.10),
+            Colors.black.withValues(alpha: 0.40),
           ],
-          stops: const [0.0, 0.3, 1.0],
+          stops: const [0.0, 0.55, 1.0],
         ),
       ),
       child: SafeArea(
@@ -395,9 +397,9 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.45),
+        color: Colors.black.withOpacity(0.28),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.12), width: 0.8),
+        border: Border.all(color: Colors.white.withOpacity(0.14), width: 0.8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -554,9 +556,9 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
     return Container(
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.45),
+        color: Colors.black.withOpacity(0.30),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.08), width: 0.8),
+        border: Border.all(color: Colors.white.withOpacity(0.12), width: 0.8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -629,9 +631,9 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
         width: 52,
         height: 52,
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.4),
+          color: Colors.black.withOpacity(0.28),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
+          border: Border.all(color: Colors.white.withOpacity(0.25), width: 1.4),
         ),
         child: const Icon(Icons.photo_library_outlined, color: Colors.white, size: 22),
       ),
@@ -647,9 +649,9 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
         width: 52,
         height: 52,
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.4),
+          color: Colors.black.withOpacity(0.28),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
+          border: Border.all(color: Colors.white.withOpacity(0.25), width: 1.4),
         ),
         child: const Icon(Icons.cached_rounded, color: Colors.white, size: 24),
       ),
@@ -804,8 +806,9 @@ class AwesomeCircleButton extends StatelessWidget {
         height: 44,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.4),
+          color: Colors.black.withOpacity(0.3),
           shape: BoxShape.circle,
+          border: Border.all(color: Colors.white.withOpacity(0.15), width: 0.8),
         ),
         child: child,
       ),
