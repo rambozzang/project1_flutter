@@ -87,6 +87,20 @@
                 <category
                     android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
+            <!-- 앨범(커뮤니티) 초대 딥링크 - 커스텀 스킴: skysnap://invite?code=XXX -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="skysnap" android:host="invite" />
+            </intent-filter>
+            <!-- 앨범(커뮤니티) 초대 딥링크 - App Links(Universal Links): https://skysnap.co.kr/invite -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="skysnap.co.kr" android:pathPrefix="/invite" />
+            </intent-filter>
         </activity>
         <!-- 카카오 로그인 커스텀 URL 스킴 설정 -->
         <activity
