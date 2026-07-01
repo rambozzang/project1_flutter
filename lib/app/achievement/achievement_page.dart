@@ -397,6 +397,37 @@ class _AchievementCard extends StatelessWidget {
                       ),
                     ),
                   ],
+                  if (!achieved && achievement.targetValue > 0) ...[
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Column(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: (achievement.currentValue /
+                                      achievement.targetValue)
+                                  .clamp(0.0, 1.0),
+                              backgroundColor: Colors.grey.shade300,
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                  AppColor.primaryColor),
+                              minHeight: 5,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${achievement.currentValue}/${achievement.targetValue}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
               if (achieved)

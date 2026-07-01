@@ -7,6 +7,8 @@ class AchievementData {
   final bool achieved;
   final DateTime? achievedDtm;
   final int totalAchievers;
+  final int currentValue;
+  final int targetValue;
 
   AchievementData({
     required this.achievementId,
@@ -17,6 +19,8 @@ class AchievementData {
     required this.achieved,
     this.achievedDtm,
     required this.totalAchievers,
+    this.currentValue = 0,
+    this.targetValue = 1,
   });
 
   factory AchievementData.fromMap(Map<String, dynamic> map) => AchievementData(
@@ -30,6 +34,8 @@ class AchievementData {
             ? DateTime.tryParse(map['achievedDtm'].toString())
             : null,
         totalAchievers: map['totalAchievers'] ?? 0,
+        currentValue: _asInt(map['currentValue']),
+        targetValue: _asInt(map['targetValue'], fallback: 1),
       );
 
   /// 서버가 bool / int(0,1) / 문자열("Y","N","true","1") 중 무엇으로 보내도
@@ -42,6 +48,14 @@ class AchievementData {
       return s == 'y' || s == 'true' || s == '1';
     }
     return false;
+  }
+
+  /// 서버가 int/num/String 형태로 복귀해줄 수 있는 진행도 값을 안전하게 int 로 변환.
+  static int _asInt(dynamic v, {int fallback = 0}) {
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    if (v is String) return int.tryParse(v) ?? fallback;
+    return fallback;
   }
 }
 
