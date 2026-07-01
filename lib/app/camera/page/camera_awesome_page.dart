@@ -15,7 +15,7 @@ class CameraAwesomePage extends StatefulWidget {
   State<CameraAwesomePage> createState() => _CameraAwesomePageState();
 }
 
-class _CameraAwesomePageState extends State<CameraAwesomePage> {
+class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTickerProviderStateMixin {
   bool _navigated = false;
   final List<File> _photos = [];
 
@@ -102,6 +102,9 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
   // 카메라 초기화 시 조작 안내(↕밝기·↔줌)를 잠깐 띄웠다 사라지게 한다.
   bool _showGestureHint = false;
   Timer? _hintTimer;
+  // 힌트 캡슐 내부의 손가락(점)이 왕복 스와이프하는 애니메이션(0↔1 반복).
+  late final AnimationController _swipeCtrl;
+  late final Animation<double> _swipeAnim;
 
   // 밝기 게이지: 상하 드래그로 밝기 조절 중에만 잠깐 표시.
   final ValueNotifier<double> _brightnessVN = ValueNotifier<double>(0.5);
@@ -111,11 +114,14 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
   @override
   void initState() {
     super.initState();
-    // 다음 프레임에 페이드인 → 2.4초 후 페이드아웃
+    // 손가락 왕복 스와이프 애니메이션(0→1→0 반복, 부드럽게)
+    _swipeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 950))..repeat(reverse: true);
+    _swipeAnim = CurvedAnimation(parent: _swipeCtrl, curve: Curves.easeInOut);
+    // 다음 프레임에 페이드인 → 3.4초 후 페이드아웃(스와이프 왕복이 몇 번 보이도록)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       setState(() => _showGestureHint = true);
-      _hintTimer = Timer(const Duration(milliseconds: 2400), () {
+      _hintTimer = Timer(const Duration(milliseconds: 3400), () {
         if (mounted) setState(() => _showGestureHint = false);
       });
     });
@@ -125,6 +131,7 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
   void dispose() {
     _hintTimer?.cancel();
     _gaugeHideTimer?.cancel();
+    _swipeCtrl.dispose();
     _brightnessVN.dispose();
     _gaugeVN.dispose();
     _zoomSub?.cancel();
@@ -355,61 +362,127 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
               ),
             ),
           ),
-          // 초기화 시 조작 안내(상하=밝기·좌우=줌을 실제 방향에 십자 배치, 2초 페이드).
-          // 화면 정중앙에 표시 후 사라짐.
+          // 초기화 시 조작 안내: 좌우(줌)·상하(밝기)를 각각 캡슐로 분리 + 손가락 스와이프 애니메이션.
           Center(
             child: IgnorePointer(
               child: AnimatedOpacity(
                 opacity: _showGestureHint ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 450),
                 curve: Curves.easeInOut,
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: SizedBox(
-                    width: 132,
-                    height: 116,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // 세로축(상하) = 밝기
-                        Align(
-                          alignment: Alignment.topCenter,
-                          child: Column(mainAxisSize: MainAxisSize.min, children: const [
-                            Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white, size: 22),
-                            Text('밝기', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
-                          ]),
-                        ),
-                        const Align(
-                          alignment: Alignment.bottomCenter,
-                          child: Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 22),
-                        ),
-                        // 가로축(좌우) = 줌
-                        const Align(
-                          alignment: Alignment.centerLeft,
-                          child: Icon(Icons.keyboard_arrow_left_rounded, color: Colors.white, size: 22),
-                        ),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Row(mainAxisSize: MainAxisSize.min, children: const [
-                            Text('줌', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
-                            Icon(Icons.keyboard_arrow_right_rounded, color: Colors.white, size: 22),
-                          ]),
-                        ),
-                        // 중앙 점
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: const BoxDecoration(color: Colors.white54, shape: BoxShape.circle),
-                        ),
-                      ],
-                    ),
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildBrightnessHint(),
+                    const SizedBox(height: 16),
+                    _buildZoomHint(),
+                  ],
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── 제스처 안내 캡슐 (좌우=줌 / 상하=밝기) + 손가락 스와이프 애니메이션 ──
+
+  static const Color _hintBg = Color(0xCC000000); // 검정 80%
+
+  // 왕복하는 손가락(흰 점 + 은은한 글로우)
+  Widget _swipeDot() {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(color: Colors.white.withOpacity(0.55), blurRadius: 10, spreadRadius: 1),
+        ],
+      ),
+    );
+  }
+
+  // 상하(밝기): 세로 트랙에서 점이 위↕아래로 움직임
+  Widget _buildBrightnessHint() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(color: _hintBg, borderRadius: BorderRadius.circular(26)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 30,
+            height: 92,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                const Align(alignment: Alignment.topCenter, child: Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white70, size: 22)),
+                const Align(alignment: Alignment.bottomCenter, child: Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 22)),
+                AnimatedBuilder(
+                  animation: _swipeAnim,
+                  builder: (context, child) => Transform.translate(offset: Offset(0, (_swipeAnim.value * 2 - 1) * 22), child: child),
+                  child: _swipeDot(),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.wb_sunny_rounded, color: Colors.white, size: 15),
+                SizedBox(width: 6),
+                Text('밝기', style: TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.w800)),
+              ]),
+              SizedBox(height: 2),
+              Text('위·아래로 밀기', style: TextStyle(color: Colors.white70, fontSize: 11.5, fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 좌우(줌): 가로 트랙에서 점이 왼쪽↔오른쪽으로 움직임
+  Widget _buildZoomHint() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(color: _hintBg, borderRadius: BorderRadius.circular(26)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: const [
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.zoom_in_rounded, color: Colors.white, size: 15),
+                SizedBox(width: 6),
+                Text('줌', style: TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.w800)),
+              ]),
+              SizedBox(height: 2),
+              Text('좌·우로 밀기', style: TextStyle(color: Colors.white70, fontSize: 11.5, fontWeight: FontWeight.w500)),
+            ],
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 92,
+            height: 30,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                const Align(alignment: Alignment.centerLeft, child: Icon(Icons.keyboard_arrow_left_rounded, color: Colors.white70, size: 22)),
+                const Align(alignment: Alignment.centerRight, child: Icon(Icons.keyboard_arrow_right_rounded, color: Colors.white70, size: 22)),
+                AnimatedBuilder(
+                  animation: _swipeAnim,
+                  builder: (context, child) => Transform.translate(offset: Offset((_swipeAnim.value * 2 - 1) * 22, 0), child: child),
+                  child: _swipeDot(),
+                ),
+              ],
             ),
           ),
         ],
