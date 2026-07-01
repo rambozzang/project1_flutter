@@ -56,3 +56,8 @@ android/app/key.properties
 *.jks
 *.keystore
 *.p8
+
+# Claude Code / OMC local session state (not project content)
+.omc/
+lib/.omc/
+.claude/worktrees/
