@@ -124,8 +124,8 @@ class FeelRankingCntr extends GetxController {
       }
       final position = await Geolocator.getCurrentPosition();
       final res = await _repo.getAreaFeelStats(
-        loX: position.longitude.toString(),
-        loY: position.latitude.toString(),
+        lat: position.latitude.toString(),
+        lon: position.longitude.toString(),
       );
       if (res.code == '00') {
         areaStats.value = FeelRepo.parseAreaStats(res.data);

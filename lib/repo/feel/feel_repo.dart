@@ -22,11 +22,11 @@ class FeelRepo {
     }
   }
 
-  Future<ResData> getAreaFeelStats({required String loX, required String loY}) async {
+  Future<ResData> getAreaFeelStats({required String lat, required String lon}) async {
     final dio = await AuthDio.instance.getDio();
     try {
       final response = await dio.post(
-        '${UrlConfig.baseURL}/feel/stats?loX=$loX&loY=$loY',
+        '${UrlConfig.baseURL}/feel/stats?lat=$lat&lon=$lon',
       );
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
