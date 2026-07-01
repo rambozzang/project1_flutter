@@ -22,6 +22,7 @@ class _CommunityHubPageState extends State<CommunityHubPage> with AutomaticKeepA
 
   List<CommunityData> _my = [];
   List<CommunityData> _discover = [];
+  List<CommunityData> _invites = [];
   bool _loading = true;
   String _keyword = '';
 
@@ -42,11 +43,13 @@ class _CommunityHubPageState extends State<CommunityHubPage> with AutomaticKeepA
     final results = await Future.wait([
       _repo.getMyCommunities(),
       _repo.search(_keyword),
+      _repo.getMyInvites(),
     ]);
     if (!mounted) return;
     setState(() {
       _my = results[0];
       _discover = results[1];
+      _invites = results[2];
       _loading = false;
     });
   }
@@ -68,6 +71,63 @@ class _CommunityHubPageState extends State<CommunityHubPage> with AutomaticKeepA
     });
   }
 
+  Future<void> _showJoinByCodeDialog() async {
+    final ctrl = TextEditingController();
+    final code = await Get.dialog<String>(AlertDialog(
+      title: const Text('코드로 참여'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('전달받은 초대 코드를 입력하세요.', style: TextStyle(fontSize: 13, color: Color(0xFF7A8291))),
+          const SizedBox(height: 12),
+          TextField(
+            controller: ctrl,
+            autofocus: true,
+            textCapitalization: TextCapitalization.characters,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 3),
+            decoration: InputDecoration(
+              hintText: '초대 코드',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: () => Get.back(), child: const Text('취소')),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF3B6FE0)),
+          onPressed: () => Get.back(result: ctrl.text.trim()),
+          child: const Text('참여', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ));
+    if (code == null || code.isEmpty) return;
+    final (ok, msg, community) = await _repo.joinByCode(code);
+    Get.snackbar('모임', msg.isEmpty ? (ok ? '참여했습니다.' : '실패했습니다.') : msg,
+        snackPosition: SnackPosition.BOTTOM, margin: const EdgeInsets.all(12));
+    if (ok && community != null) {
+      _openHome(community);
+      _load();
+    }
+  }
+
+  Future<void> _acceptInvite(CommunityData c) async {
+    final (ok, msg) = await _repo.acceptInvite(c.communityId);
+    Get.snackbar('초대', msg.isEmpty ? (ok ? '수락했습니다.' : '실패했습니다.') : msg,
+        snackPosition: SnackPosition.BOTTOM, margin: const EdgeInsets.all(12));
+    if (ok) {
+      _openHome(c);
+      _load();
+    }
+  }
+
+  Future<void> _declineInvite(CommunityData c) async {
+    final (ok, _) = await _repo.declineInvite(c.communityId);
+    if (ok) _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -79,6 +139,11 @@ class _CommunityHubPageState extends State<CommunityHubPage> with AutomaticKeepA
         title: const Text('스카이라운지', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         centerTitle: false,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.vpn_key_outlined, color: Colors.black87),
+            tooltip: '코드로 참여',
+            onPressed: _showJoinByCodeDialog,
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 2),
             child: TextButton.icon(
@@ -110,6 +175,12 @@ class _CommunityHubPageState extends State<CommunityHubPage> with AutomaticKeepA
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
                 children: [
+                  if (_invites.isNotEmpty) ...[
+                    _sectionTitle('받은 초대', _invites.length),
+                    const SizedBox(height: 8),
+                    ..._invites.map((c) => _inviteCard(c)),
+                    const SizedBox(height: 24),
+                  ],
                   _sectionTitle('내 모임', _my.length),
                   const SizedBox(height: 8),
                   if (_my.isEmpty)
@@ -364,6 +435,52 @@ class _CommunityHubPageState extends State<CommunityHubPage> with AutomaticKeepA
       }
       _load();
     }
+  }
+
+  Widget _inviteCard(CommunityData c) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFF1F5FF),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFD6E0FA)),
+        ),
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            _thumb(c, 48),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: Colors.black87)),
+                  const SizedBox(height: 2),
+                  const Text('초대를 받았어요', style: TextStyle(fontSize: 12, color: Color(0xFF3B6FE0), fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: () => _declineInvite(c),
+              style: TextButton.styleFrom(minimumSize: const Size(0, 34), padding: const EdgeInsets.symmetric(horizontal: 8)),
+              child: const Text('거절', style: TextStyle(color: Color(0xFF9AA3B2), fontWeight: FontWeight.bold, fontSize: 13)),
+            ),
+            const SizedBox(width: 2),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF3B6FE0), elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), minimumSize: const Size(0, 34),
+              ),
+              onPressed: () => _acceptInvite(c),
+              child: const Text('수락', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _tag(String text, Color color) {

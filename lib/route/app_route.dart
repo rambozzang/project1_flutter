@@ -39,6 +39,7 @@ import 'package:project1/app/community/community_hub_page.dart';
 import 'package:project1/app/community/community_create_page.dart';
 import 'package:project1/app/community/community_home_page.dart';
 import 'package:project1/app/community/community_members_page.dart';
+import 'package:project1/app/community/community_invite_page.dart';
 import 'package:project1/app/alram/alram_page.dart';
 import 'package:project1/app/myinfo/myinfo_modify_page.dart';
 import 'package:project1/app/myinfo/otherinfo_page.dart';
@@ -420,6 +421,11 @@ abstract class AppPages {
     GetPage(
       name: '/CommunityMembersPage',
       page: () => const CommunityMembersPage(),
+      transition: Transition.rightToLeftWithFade,
+    ),
+    GetPage(
+      name: '/CommunityInvitePage',
+      page: () => const CommunityInvitePage(),
       transition: Transition.rightToLeftWithFade,
     ),
     GetPage(

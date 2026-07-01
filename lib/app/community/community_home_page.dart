@@ -1,10 +1,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:project1/app/camera/page/camera_awesome_page.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/community/community_repo.dart';
 import 'package:project1/repo/community/data/community_data.dart';
+import 'package:project1/repo/community/data/community_invite_info_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/utils.dart';
 
@@ -131,6 +134,25 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
     }
   }
 
+  Future<void> _showInviteSheet() async {
+    final info = await _repo.getInviteInfo(_communityId);
+    if (!mounted) return;
+    if (info == null) {
+      Utils.alert('초대 정보를 불러오지 못했습니다.');
+      return;
+    }
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      builder: (ctx) => _InviteSheet(info: info, onInviteFriends: () {
+        Navigator.of(ctx).pop();
+        Get.toNamed('/CommunityInvitePage', arguments: {'communityId': _communityId});
+      }),
+    );
+  }
+
   void _openViewer(BoardWeatherListData item) {
     Get.toNamed('/VideoMyinfoListPage', arguments: {
       'datatype': 'COMMUNITY',
@@ -159,6 +181,12 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
         title: Text(_community?.name ?? '모임', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         centerTitle: true,
         actions: [
+          if (_canPost)
+            IconButton(
+              icon: const Icon(Icons.person_add_alt_1, color: Colors.black87),
+              tooltip: '초대',
+              onPressed: _showInviteSheet,
+            ),
           if (_community != null)
             IconButton(
               icon: const Icon(Icons.people_alt_outlined, color: Colors.black87),
@@ -406,6 +434,96 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
       alignment: Alignment.center,
       child: Text(c.name.isNotEmpty ? c.name.characters.first : '?',
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24)),
+    );
+  }
+}
+
+/// 모임 초대 바텀시트: 초대코드 + 복사/공유/친구초대
+class _InviteSheet extends StatelessWidget {
+  const _InviteSheet({required this.info, required this.onInviteFriends});
+  final CommunityInviteInfoData info;
+  final VoidCallback onInviteFriends;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(width: 40, height: 4, decoration: BoxDecoration(color: const Color(0xFFE0E3EA), borderRadius: BorderRadius.circular(2))),
+            ),
+            const SizedBox(height: 16),
+            Text("'${info.name}' 초대하기", textAlign: TextAlign.center,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.black87)),
+            const SizedBox(height: 4),
+            const Text('아래 코드/링크를 공유하거나 친구를 직접 초대하세요.',
+                textAlign: TextAlign.center, style: TextStyle(fontSize: 12.5, color: Color(0xFF7A8291))),
+            const SizedBox(height: 20),
+            // 초대 코드 박스
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5FF),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFD6E0FA)),
+              ),
+              child: Row(
+                children: [
+                  const Text('초대 코드', style: TextStyle(fontSize: 12.5, color: Color(0xFF7A8291), fontWeight: FontWeight.bold)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(info.inviteCode, textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 3, color: Color(0xFF2C4FA0))),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.copy_rounded, color: Color(0xFF3B6FE0), size: 20),
+                    tooltip: '코드 복사',
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: info.inviteCode));
+                      Get.snackbar('복사됨', '초대 코드를 복사했어요.', snackPosition: SnackPosition.BOTTOM, margin: const EdgeInsets.all(12));
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF3B6FE0),
+                      side: const BorderSide(color: Color(0xFF3B6FE0)),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.ios_share, size: 18),
+                    label: const Text('공유하기', style: TextStyle(fontWeight: FontWeight.bold)),
+                    onPressed: () => Share.share(info.shareText),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF3B6FE0), elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.group_add, color: Colors.white, size: 18),
+                    label: const Text('친구 초대', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    onPressed: onInviteFriends,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

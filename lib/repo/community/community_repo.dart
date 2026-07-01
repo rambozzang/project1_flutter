@@ -3,6 +3,7 @@ import 'package:project1/config/url_config.dart';
 import 'package:project1/repo/api/auth_dio.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/community/data/community_data.dart';
+import 'package:project1/repo/community/data/community_invite_info_data.dart';
 import 'package:project1/repo/community/data/community_member_data.dart';
 import 'package:project1/utils/log_utils.dart';
 
@@ -148,6 +149,90 @@ class CommunityRepo {
     } catch (e) {
       lo.g('CommunityRepo.approve error: $e');
       return (false, '승인 중 오류가 발생했습니다: $e');
+    }
+  }
+
+  // ───────────────────────── 초대 ─────────────────────────
+
+  /// 초대 정보(코드+공유문구) 조회/발급.
+  Future<CommunityInviteInfoData?> getInviteInfo(int communityId) async {
+    try {
+      final dio = await AuthDio.instance.getDio();
+      final res = await dio.get('${UrlConfig.baseURL}/community/inviteInfo', queryParameters: {'communityId': communityId});
+      final resData = AuthDio.instance.dioResponse(res);
+      if (resData.code != '00' || resData.data == null) return null;
+      return CommunityInviteInfoData.fromMap(Map<String, dynamic>.from(resData.data as Map));
+    } catch (e) {
+      lo.g('CommunityRepo.getInviteInfo error: $e');
+      return null;
+    }
+  }
+
+  /// 초대 코드로 가입. 성공 시 (true, 메시지, 가입한 모임).
+  Future<(bool, String, CommunityData?)> joinByCode(String code) async {
+    try {
+      final dio = await AuthDio.instance.getDio();
+      final res = await dio.post('${UrlConfig.baseURL}/community/joinByCode', queryParameters: {'code': code});
+      final resData = AuthDio.instance.dioResponse(res);
+      final ok = resData.code == '00';
+      final c = ok && resData.data != null ? CommunityData.fromMap(Map<String, dynamic>.from(resData.data as Map)) : null;
+      return (ok, resData.msg?.toString() ?? '', c);
+    } catch (e) {
+      lo.g('CommunityRepo.joinByCode error: $e');
+      return (false, '참여 중 오류가 발생했습니다: $e', null);
+    }
+  }
+
+  /// 사용자 지정 초대(+푸시).
+  Future<(bool, String)> inviteUser(int communityId, String custId) async {
+    try {
+      final dio = await AuthDio.instance.getDio();
+      final res = await dio.post('${UrlConfig.baseURL}/community/invite', queryParameters: {'communityId': communityId, 'custId': custId});
+      final resData = AuthDio.instance.dioResponse(res);
+      return (resData.code == '00', resData.msg?.toString() ?? '');
+    } catch (e) {
+      lo.g('CommunityRepo.inviteUser error: $e');
+      return (false, '초대 중 오류가 발생했습니다: $e');
+    }
+  }
+
+  /// 내가 받은 초대 목록.
+  Future<List<CommunityData>> getMyInvites() async {
+    try {
+      final dio = await AuthDio.instance.getDio();
+      final res = await dio.get('${UrlConfig.baseURL}/community/myInvites');
+      final resData = AuthDio.instance.dioResponse(res);
+      if (resData.code != '00' || resData.data == null) return [];
+      return (resData.data as List).map((e) => CommunityData.fromMap(Map<String, dynamic>.from(e as Map))).toList();
+    } catch (e) {
+      lo.g('CommunityRepo.getMyInvites error: $e');
+      return [];
+    }
+  }
+
+  /// 초대 수락.
+  Future<(bool, String)> acceptInvite(int communityId) async {
+    try {
+      final dio = await AuthDio.instance.getDio();
+      final res = await dio.post('${UrlConfig.baseURL}/community/acceptInvite', queryParameters: {'communityId': communityId});
+      final resData = AuthDio.instance.dioResponse(res);
+      return (resData.code == '00', resData.msg?.toString() ?? '');
+    } catch (e) {
+      lo.g('CommunityRepo.acceptInvite error: $e');
+      return (false, '수락 중 오류가 발생했습니다: $e');
+    }
+  }
+
+  /// 초대 거절.
+  Future<(bool, String)> declineInvite(int communityId) async {
+    try {
+      final dio = await AuthDio.instance.getDio();
+      final res = await dio.post('${UrlConfig.baseURL}/community/declineInvite', queryParameters: {'communityId': communityId});
+      final resData = AuthDio.instance.dioResponse(res);
+      return (resData.code == '00', resData.msg?.toString() ?? '');
+    } catch (e) {
+      lo.g('CommunityRepo.declineInvite error: $e');
+      return (false, '거절 중 오류가 발생했습니다: $e');
     }
   }
 
