@@ -121,7 +121,13 @@ class AuthCntr extends GetxController with SecureStorage {
   Future<String> _getFcmToken() async {
     String fcmId = "";
     try {
-      fcmId = await FirebaseMessaging.instance.getToken() ?? "0000000000";
+      // ⚠️ getToken()은 타임아웃이 없으면 네트워크/FCM 미준비(특히 콜드 스타트) 시
+      // 무한 블록 → 로그인 미완료 → 스플래시(AuthPage)에서 영영 멈춤.
+      // 5초 타임아웃으로 폴백해 로그인 흐름이 절대 막히지 않게 한다.
+      fcmId = await FirebaseMessaging.instance
+              .getToken()
+              .timeout(const Duration(seconds: 5), onTimeout: () => "0000000000") ??
+          "0000000000";
     } catch (e) {
       Lo.g("fcmId 발급 에러: $e");
       fcmId = "0000000000";

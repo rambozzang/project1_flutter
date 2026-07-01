@@ -136,9 +136,19 @@ class WeatherGogoCntr extends GetxController {
 
     isLoading.value = true;
 
-    // 날씨 가져오기
-    positionData.value = await Geolocator.getCurrentPosition();
-    currentLocation.value.latLng = LatLng(positionData.value!.latitude, positionData.value!.longitude);
+    // 날씨 가져오기 (GPS 지연/타임아웃 시 마지막 위치→기존 좌표로 폴백 = 화면 멈춤 방지)
+    try {
+      positionData.value = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 5),
+      );
+    } catch (e) {
+      lo.g('getCurrentWeatherData 위치 타임아웃/오류: $e');
+      positionData.value = await Geolocator.getLastKnownPosition().catchError((_) => null) ?? positionData.value;
+    }
+    if (positionData.value != null) {
+      currentLocation.value.latLng = LatLng(positionData.value!.latitude, positionData.value!.longitude);
+    }
     await getWeatherDataByLatLng(currentLocation.value.latLng, isAllSearch);
   }
 
