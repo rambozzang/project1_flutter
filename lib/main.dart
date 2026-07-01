@@ -17,6 +17,7 @@ import 'package:project1/config/app_theme.dart';
 import 'package:project1/firebase/firebase_service.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/route/app_route.dart';
+import 'package:project1/services/deep_link_service.dart';
 // import 'package:project1/theme/app_theme.dart';
 // import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -84,6 +85,8 @@ class TigerBk extends StatelessWidget {
         Get.put(AuthCntr());
         // Get.put(LifeCycleGetx());
         Get.put(WeatherGogoCntr());
+        // 앨범(커뮤니티) 초대 딥링크 - AuthCntr 등록 이후 초기화(로그인 상태 리스닝 필요).
+        DeepLinkService.instance.initialize();
       }),
       locale: const Locale('ko'),
       supportedLocales: const [
