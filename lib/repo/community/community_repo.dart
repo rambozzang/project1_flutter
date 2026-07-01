@@ -247,4 +247,20 @@ class CommunityRepo {
       return AuthDio.instance.dioException(e);
     }
   }
+
+  // ───────────────────────── Spot 연동 ─────────────────────────
+
+  /// 장소(Spot)에 연결된 공개 앨범 목록 (멤버 많은 순).
+  Future<List<CommunityData>> getBySpot(int spotId) async {
+    try {
+      final dio = await AuthDio.instance.getDio();
+      final res = await dio.get('${UrlConfig.baseURL}/community/bySpot', queryParameters: {'spotId': spotId});
+      final resData = AuthDio.instance.dioResponse(res);
+      if (resData.code != '00' || resData.data == null) return [];
+      return (resData.data as List).map((e) => CommunityData.fromMap(Map<String, dynamic>.from(e as Map))).toList();
+    } catch (e) {
+      lo.g('CommunityRepo.getBySpot error: $e');
+      return [];
+    }
+  }
 }

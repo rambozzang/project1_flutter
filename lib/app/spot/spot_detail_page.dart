@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
+import 'package:project1/repo/community/community_repo.dart';
+import 'package:project1/repo/community/data/community_data.dart';
 import 'package:project1/repo/spot/data/spot_data.dart';
 import 'package:project1/repo/spot/spot_repo.dart';
+import 'package:project1/utils/utils.dart';
 
-/// 스팟 상세 — 현재 날씨 헤더 + 그 스팟 커뮤니티 영상 썸네일 그리드.
+/// 스팟 상세 — 현재 날씨 헤더 + 이 장소의 앨범 섹션 + 그 스팟 커뮤니티 영상 썸네일 그리드.
 /// 썸네일 탭 → 기존 단일 영상 뷰어(/VideoMyinfoListPage) 재사용.
 class SpotDetailPage extends StatefulWidget {
   final SpotData spot;
@@ -24,13 +27,17 @@ class _SpotDetailPageState extends State<SpotDetailPage> {
   static const Color _textLo = Color(0xFF98A2B3);
 
   final SpotRepo _repo = SpotRepo();
+  final CommunityRepo _communityRepo = CommunityRepo();
   final List<BoardWeatherListData> _videos = [];
+  List<CommunityData> _communities = [];
   bool _loading = true;
+  bool _communityLoading = true;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _loadCommunities();
   }
 
   Future<void> _load() async {
@@ -43,6 +50,46 @@ class _SpotDetailPageState extends State<SpotDetailPage> {
         _loading = false;
       });
     }
+  }
+
+  Future<void> _loadCommunities() async {
+    final spotId = widget.spot.spotId;
+    if (spotId == null) {
+      if (mounted) setState(() => _communityLoading = false);
+      return;
+    }
+    final list = await _communityRepo.getBySpot(spotId);
+    if (mounted) {
+      setState(() {
+        _communities = list;
+        _communityLoading = false;
+      });
+    }
+  }
+
+  Future<void> _joinCommunity(CommunityData c) async {
+    final (ok, status, msg) = await _communityRepo.join(c.communityId);
+    if (!mounted) return;
+    if (ok && status == 'JOINED') {
+      Utils.alert('앨범에 가입되었습니다.');
+      Get.toNamed('/CommunityHomePage', arguments: {'communityId': c.communityId});
+    } else if (ok && status == 'PENDING') {
+      Utils.alert('가입 신청되었습니다. 방장 승인 후 참여됩니다.');
+    } else {
+      Utils.alert(msg.isEmpty ? '가입에 실패했습니다.' : msg);
+    }
+  }
+
+  void _createCommunityForSpot() {
+    final s = widget.spot;
+    Get.toNamed('/CommunityCreatePage', arguments: {
+      'spotId': s.spotId,
+      'spotName': s.name,
+      'lat': s.lat,
+      'lon': s.lon,
+    })?.then((created) {
+      if (created == true) _loadCommunities();
+    });
   }
 
   String _thumb(BoardWeatherListData d) {
@@ -68,6 +115,7 @@ class _SpotDetailPageState extends State<SpotDetailPage> {
       body: Column(
         children: [
           _weatherHeader(s),
+          _communitySection(),
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator(color: _accent))
@@ -125,6 +173,112 @@ class _SpotDetailPageState extends State<SpotDetailPage> {
           if (s.distanceKm != null)
             Text('${s.distanceKm!.toStringAsFixed(1)}km',
                 style: const TextStyle(color: _textLo, fontSize: 13, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  Widget _communitySection() {
+    if (_communityLoading) {
+      return const Padding(
+        padding: EdgeInsets.only(bottom: 8),
+        child: SizedBox(height: 2),
+      );
+    }
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: _surface, borderRadius: BorderRadius.circular(16)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('이 장소의 앨범', style: TextStyle(color: _textHi, fontSize: 15, fontWeight: FontWeight.w800)),
+              const Spacer(),
+              if (_communities.isNotEmpty)
+                TextButton.icon(
+                  onPressed: _createCommunityForSpot,
+                  icon: const Icon(Icons.add, size: 16, color: _accent),
+                  label: const Text('앨범 만들기', style: TextStyle(color: _accent, fontSize: 12, fontWeight: FontWeight.w700)),
+                  style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 0)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (_communities.isEmpty)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('아직 이 장소에 연결된 앨범이 없어요.',
+                    style: TextStyle(color: _textLo, fontSize: 13)),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: _createCommunityForSpot,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _accent,
+                      side: const BorderSide(color: _accent),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: const Text('이 장소로 앨범 만들기', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                  ),
+                ),
+              ],
+            )
+          else
+            Column(children: _communities.map(_communityTile).toList()),
+        ],
+      ),
+    );
+  }
+
+  Widget _communityTile(CommunityData c) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () => Get.toNamed('/CommunityHomePage', arguments: {'communityId': c.communityId}),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: _textHi, fontSize: 14, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 2),
+                  Text('멤버 ${c.memberCnt}명${c.isPrivate ? ' · 비공개' : ''}',
+                      style: const TextStyle(color: _textLo, fontSize: 12)),
+                ],
+              ),
+            ),
+          ),
+          if (c.isJoined)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6),
+              child: Text('가입됨', style: TextStyle(color: _textLo, fontSize: 12, fontWeight: FontWeight.w700)),
+            )
+          else if (c.isPending)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6),
+              child: Text('승인대기', style: TextStyle(color: _textLo, fontSize: 12, fontWeight: FontWeight.w700)),
+            )
+          else
+            SizedBox(
+              height: 30,
+              child: ElevatedButton(
+                onPressed: () => _joinCommunity(c),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _accent,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: Text(c.isApproval ? '가입 신청' : '가입', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+              ),
+            ),
         ],
       ),
     );
