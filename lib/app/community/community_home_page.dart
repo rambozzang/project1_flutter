@@ -8,6 +8,7 @@ import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/community/community_repo.dart';
 import 'package:project1/repo/community/data/community_data.dart';
 import 'package:project1/repo/community/data/community_invite_info_data.dart';
+import 'package:project1/repo/community/data/community_tag_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/utils.dart';
 
@@ -32,6 +33,9 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
   bool _lastPage = false;
   int _pageNum = 0;
   final int _pageSize = 12;
+
+  List<CommunityTagData> _tags = [];
+  String? _activeTag; // 선택된 인기 태그 (탭하면 피드를 클라이언트에서 필터링)
 
   @override
   void initState() {
@@ -58,13 +62,33 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
       _community = detail;
       _loading = false;
     });
-    if (_canViewFeed) _loadFeed(reset: true);
+    if (_canViewFeed) {
+      _loadFeed(reset: true);
+      _loadTags();
+    }
   }
 
   bool get _canViewFeed {
     final c = _community;
     if (c == null) return false;
     return !c.isPrivate || c.isJoined; // 공개거나, 비공개+멤버
+  }
+
+  Future<void> _loadTags() async {
+    final tags = await _repo.getTags(_communityId);
+    if (!mounted) return;
+    setState(() => _tags = tags);
+  }
+
+  /// 태그 탭 → 선택 토글. 이미 로드된 피드 안에서 해당 해시태그가 포함된 게시물만 보여준다(과설계 방지).
+  void _onTagTap(String tag) {
+    setState(() => _activeTag = _activeTag == tag ? null : tag);
+  }
+
+  List<BoardWeatherListData> get _visibleFeed {
+    final tag = _activeTag;
+    if (tag == null) return _feed;
+    return _feed.where((e) => (e.contents ?? '').contains(tag)).toList();
   }
 
   Future<void> _loadFeed({bool reset = false}) async {
@@ -93,7 +117,10 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
     final detail = await _repo.getDetail(_communityId);
     if (!mounted) return;
     setState(() => _community = detail);
-    if (_canViewFeed) await _loadFeed(reset: true);
+    if (_canViewFeed) {
+      await _loadFeed(reset: true);
+      _loadTags();
+    }
   }
 
   Future<void> _join() async {
@@ -212,7 +239,8 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
                       if (!_canViewFeed)
                         SliverFillRemaining(hasScrollBody: false, child: _privateGate())
                       else ...[
-                        if (_feed.isEmpty && !_feedLoading)
+                        if (_tags.isNotEmpty) SliverToBoxAdapter(child: _tagSection()),
+                        if (_visibleFeed.isEmpty && !_feedLoading)
                           SliverFillRemaining(hasScrollBody: false, child: _emptyFeed())
                         else
                           SliverPadding(
@@ -221,8 +249,8 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
                               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2, childAspectRatio: 0.62, mainAxisSpacing: 10, crossAxisSpacing: 10),
                               delegate: SliverChildBuilderDelegate(
-                                (context, i) => _feedCard(_feed[i]),
-                                childCount: _feed.length,
+                                (context, i) => _feedCard(_visibleFeed[i]),
+                                childCount: _visibleFeed.length,
                               ),
                             ),
                           ),
@@ -347,18 +375,65 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
     );
   }
 
+  Widget _tagSection() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(left: 4, bottom: 8),
+            child: Text('인기 태그', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)),
+          ),
+          SizedBox(
+            height: 34,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _tags.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, i) {
+                final t = _tags[i];
+                final selected = _activeTag == t.tag;
+                return GestureDetector(
+                  onTap: () => _onTagTap(t.tag),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: selected ? const Color(0xFF3B6FE0) : const Color(0xFFF1F5FF),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: selected ? const Color(0xFF3B6FE0) : const Color(0xFFD6E0FA)),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text('${t.tag} ${t.count}',
+                        style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.bold,
+                            color: selected ? Colors.white : const Color(0xFF3B6FE0))),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _emptyFeed() {
+    final filtered = _activeTag != null;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(30),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.photo_library_outlined, size: 46, color: Color(0xFF9AA3B2)),
-            SizedBox(height: 12),
-            Text('아직 게시물이 없어요', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
-            SizedBox(height: 4),
-            Text('첫 게시물을 올려보세요!', style: TextStyle(fontSize: 12.5, color: Color(0xFF7A8291))),
+          children: [
+            const Icon(Icons.photo_library_outlined, size: 46, color: Color(0xFF9AA3B2)),
+            const SizedBox(height: 12),
+            Text(filtered ? "'$_activeTag' 태그 게시물이 없어요" : '아직 게시물이 없어요',
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+            const SizedBox(height: 4),
+            Text(filtered ? '다른 태그를 선택해보세요.' : '첫 게시물을 올려보세요!',
+                style: const TextStyle(fontSize: 12.5, color: Color(0xFF7A8291))),
           ],
         ),
       ),

@@ -5,6 +5,7 @@ import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/community/data/community_data.dart';
 import 'package:project1/repo/community/data/community_invite_info_data.dart';
 import 'package:project1/repo/community/data/community_member_data.dart';
+import 'package:project1/repo/community/data/community_tag_data.dart';
 import 'package:project1/utils/log_utils.dart';
 
 /// 모임(커뮤니티) API 클라이언트. 백엔드 /api/community/* 계약.
@@ -245,6 +246,54 @@ class CommunityRepo {
       return AuthDio.instance.dioResponse(res);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);
+    }
+  }
+
+  // ───────────────────────── 매니저 지정/해제 · 강퇴 · 태그 ─────────────────────────
+
+  /// 매니저 지정/해제 (방장만 가능).
+  Future<(bool, String)> setManager(int communityId, String custId, bool isManager) async {
+    try {
+      final dio = await AuthDio.instance.getDio();
+      final res = await dio.post('${UrlConfig.baseURL}/community/setManager',
+          queryParameters: {'communityId': communityId, 'custId': custId, 'isManager': isManager});
+      final resData = AuthDio.instance.dioResponse(res);
+      return (resData.code == '00', resData.msg?.toString() ?? '');
+    } catch (e) {
+      lo.g('CommunityRepo.setManager error: $e');
+      return (false, '매니저 지정 중 오류가 발생했습니다: $e');
+    }
+  }
+
+  /// 멤버 강퇴(방장/매니저). reason은 선택.
+  Future<(bool, String)> kickMember(int communityId, String custId, {String? reason}) async {
+    try {
+      final dio = await AuthDio.instance.getDio();
+      final res = await dio.post('${UrlConfig.baseURL}/community/kick', queryParameters: {
+        'communityId': communityId,
+        'custId': custId,
+        if (reason != null && reason.isNotEmpty) 'reason': reason,
+      });
+      final resData = AuthDio.instance.dioResponse(res);
+      return (resData.code == '00', resData.msg?.toString() ?? '');
+    } catch (e) {
+      lo.g('CommunityRepo.kickMember error: $e');
+      return (false, '강퇴 중 오류가 발생했습니다: $e');
+    }
+  }
+
+  /// 앨범 인기 태그 집계.
+  Future<List<CommunityTagData>> getTags(int communityId, {int topN = 10}) async {
+    try {
+      final dio = await AuthDio.instance.getDio();
+      final res = await dio.get('${UrlConfig.baseURL}/community/tags',
+          queryParameters: {'communityId': communityId, 'topN': topN});
+      final resData = AuthDio.instance.dioResponse(res);
+      if (resData.code != '00' || resData.data == null) return [];
+      return (resData.data as List).map((e) => CommunityTagData.fromMap(Map<String, dynamic>.from(e as Map))).toList();
+    } catch (e) {
+      lo.g('CommunityRepo.getTags error: $e');
+      return [];
     }
   }
 }
