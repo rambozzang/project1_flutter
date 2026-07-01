@@ -29,7 +29,11 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
   StreamSubscription<double>? _zoomSub; // 현재 줌값 추적(핀 버튼/핀치 공통)
   double _lastZoom = 0.0; // 최신 줌(0~1)
   double _pinchBaseZoom = 0.0; // 핀치 시작 시점의 줌
-  static const double _zoomSensitivity = 1.6; // 클수록 빠르게 줌
+  static const double _zoomSensitivity = 1.6; // 핀치: 클수록 빠르게 줌
+
+  // 한 손가락 드래그: 좌우=줌, 상하=밝기 (화면 아무데나 드래그)
+  static const double _dragZoomFactor = 0.006; // px당 줌 변화
+  static const double _dragBrightFactor = 0.005; // px당 밝기 변화
 
   void _captureState(CameraState state) {
     if (identical(_cameraState, state)) return;
@@ -114,10 +118,26 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> {
             behavior: HitTestBehavior.translucent,
             onScaleStart: (_) => _pinchBaseZoom = _lastZoom,
             onScaleUpdate: (details) {
-              if (details.pointerCount < 2) return; // 두 손가락 핀치만 줌
-              final double z =
-                  (_pinchBaseZoom + (details.scale - 1.0) * _zoomSensitivity).clamp(0.0, 1.0);
-              _cameraState?.sensorConfig.setZoom(z);
+              if (details.pointerCount >= 2) {
+                // 두 손가락 핀치 → 줌
+                final double z =
+                    (_pinchBaseZoom + (details.scale - 1.0) * _zoomSensitivity).clamp(0.0, 1.0);
+                _lastZoom = z;
+                _cameraState?.sensorConfig.setZoom(z);
+              } else {
+                // 한 손가락 드래그 → 좌우:줌 / 상하:밝기
+                final double dx = details.focalPointDelta.dx;
+                final double dy = details.focalPointDelta.dy;
+                if (dx.abs() > 0.01) {
+                  _lastZoom = (_lastZoom + dx * _dragZoomFactor).clamp(0.0, 1.0);
+                  _cameraState?.sensorConfig.setZoom(_lastZoom);
+                }
+                if (dy.abs() > 0.01) {
+                  // 위로 드래그(dy<0) = 더 밝게
+                  _brightness = (_brightness - dy * _dragBrightFactor).clamp(0.0, 1.0);
+                  _cameraState?.sensorConfig.setBrightness(_brightness);
+                }
+              }
             },
             child: CameraAwesomeBuilder.awesome(
             sensorConfig: SensorConfig.single(
@@ -254,8 +274,6 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
   SensorDeviceData? _sensors;
   SensorType _currentLens = SensorType.wideAngle;
 
-  // 밝기(노출) 조절: 버튼 탭 시 플로팅 슬라이더 표시
-  bool _showBrightness = false;
 
   bool get _hasUltraWide => _sensors?.ultraWideAngle != null;
   bool get _onUltraWide => _currentLens == SensorType.ultraWideAngle;
@@ -274,11 +292,16 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
     try {
       widget.state.getSensors().then((data) {
         if (!mounted) return;
+        // 진단: 이 기기가 어떤 후면 렌즈를 보고하는지 (초광각 미노출 원인 파악용)
+        debugPrint('[CAM] backSensors=${data.availableBackSensors} '
+            'ultraWide=${data.ultraWideAngle != null} wide=${data.wideAngle != null} tele=${data.telephoto != null}');
         if (data.availableBackSensors > 0) {
           setState(() => _sensors = data);
         }
-      }).catchError((_) {});
-    } catch (_) {}
+      }).catchError((e) => debugPrint('[CAM] getSensors error: $e'));
+    } catch (e) {
+      debugPrint('[CAM] getSensors throw: $e');
+    }
   }
 
   // 광각 ↔ 초광각 물리 렌즈 전환. (디지털 줌과 별개)
@@ -379,20 +402,7 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
               _buildPhotoStrip(),
               const SizedBox(height: 12),
             ],
-            // 밝기: 버튼 탭 시에만 플로팅 슬라이더가 위로 펼쳐짐(항상 막대 노출 X)
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              transitionBuilder: (child, anim) => SizeTransition(sizeFactor: anim, child: FadeTransition(opacity: anim, child: child)),
-              child: _showBrightness
-                  ? Padding(
-                      key: const ValueKey('brightnessSlider'),
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: _buildBrightnessSlider(),
-                    )
-                  : const SizedBox.shrink(key: ValueKey('brightnessHidden')),
-            ),
-            _buildBrightnessButton(),
-            const SizedBox(height: 12),
+            // 밝기/줌은 화면 드래그로 조절(상하=밝기, 좌우=줌) → 별도 UI 없음
             if (!isRecording) ...[
               _buildQuickSettings(widget.state),
               const SizedBox(height: 16),
@@ -451,68 +461,6 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
             ),
           );
         },
-      ),
-    );
-  }
-
-  // 플로팅 밝기 슬라이더(카드형) — 밝기 버튼 탭 시 표시
-  Widget _buildBrightnessSlider() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.35),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.12), width: 0.8),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.brightness_2, color: Colors.white70, size: 18),
-          Expanded(
-            child: SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                trackHeight: 3,
-                overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
-              ),
-              child: Slider(
-                value: widget.brightness,
-                min: 0.0,
-                max: 1.0,
-                activeColor: Colors.white,
-                inactiveColor: Colors.white.withValues(alpha: 0.3),
-                onChanged: widget.onBrightnessChanged,
-              ),
-            ),
-          ),
-          const Icon(Icons.brightness_5, color: Colors.white, size: 18),
-        ],
-      ),
-    );
-  }
-
-  // 밝기 조절 토글 버튼 (탭하면 플로팅 슬라이더 표시/숨김)
-  Widget _buildBrightnessButton() {
-    final bool on = _showBrightness;
-    return GestureDetector(
-      onTap: () => setState(() => _showBrightness = !_showBrightness),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: on ? Colors.white : Colors.black.withOpacity(0.28),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(on ? 0.0 : 0.14), width: 0.8),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.brightness_6_rounded, color: on ? Colors.black : Colors.white, size: 16),
-            const SizedBox(width: 6),
-            Text('밝기',
-                style: TextStyle(color: on ? Colors.black : Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
-          ],
-        ),
       ),
     );
   }
