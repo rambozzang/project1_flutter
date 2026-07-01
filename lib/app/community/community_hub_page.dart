@@ -79,18 +79,29 @@ class _CommunityHubPageState extends State<CommunityHubPage> with AutomaticKeepA
         title: const Text('스카이라운지', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         centerTitle: false,
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 2),
+            child: TextButton.icon(
+              onPressed: _openCreate,
+              style: TextButton.styleFrom(
+                backgroundColor: const Color(0xFFEAF0FE),
+                foregroundColor: const Color(0xFF3B6FE0),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                minimumSize: const Size(0, 34),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              ),
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('새 모임', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.notifications_none, color: Colors.black87),
             tooltip: '알림',
             onPressed: () => Get.toNamed('/AlramPage'),
           ),
+          const SizedBox(width: 4),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openCreate,
-        backgroundColor: const Color(0xFF3B6FE0),
-        icon: const Icon(Icons.group_add, color: Colors.white),
-        label: const Text('모임 만들기', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -141,14 +152,26 @@ class _CommunityHubPageState extends State<CommunityHubPage> with AutomaticKeepA
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE6E8EF)),
       ),
-      child: const Column(
+      child: Column(
         children: [
-          Icon(Icons.groups_2_outlined, size: 40, color: Color(0xFF9AA3B2)),
-          SizedBox(height: 10),
-          Text('아직 가입한 모임이 없어요', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
-          SizedBox(height: 4),
-          Text('아래에서 관심 모임을 찾아 가입하거나\n직접 모임을 만들어보세요.',
+          const Icon(Icons.groups_2_outlined, size: 40, color: Color(0xFF9AA3B2)),
+          const SizedBox(height: 10),
+          const Text('아직 가입한 모임이 없어요', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+          const SizedBox(height: 4),
+          const Text('아래에서 관심 모임을 찾아 가입하거나\n직접 모임을 만들어보세요.',
               textAlign: TextAlign.center, style: TextStyle(fontSize: 12.5, color: Color(0xFF7A8291), height: 1.4)),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: _openCreate,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF3B6FE0),
+              side: const BorderSide(color: Color(0xFF3B6FE0)),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            icon: const Icon(Icons.add_rounded, size: 19),
+            label: const Text('모임 만들기', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+          ),
         ],
       ),
     );
