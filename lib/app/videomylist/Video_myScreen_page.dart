@@ -775,9 +775,12 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
 
   // 재생 progressbar — 화면 최하단에 고정, 높이 3px.
   Widget buildPlayProgress() {
+    // iOS: 홈 인디케이터는 얇은 오버레이라 맨 아래(0)에 붙임(safeBottom만큼 띄우면 붕 떠 보임).
+    // Android: 내비 위로 올려야 가려지지 않으므로 padding.bottom 유지.
     final safeBottom = MediaQuery.of(context).padding.bottom;
+    final double bottomOffset = Platform.isIOS ? 0 : safeBottom;
     return Positioned(
-      bottom: safeBottom,
+      bottom: bottomOffset,
       left: 0,
       right: 0,
       child: ValueListenableBuilder<double>(
