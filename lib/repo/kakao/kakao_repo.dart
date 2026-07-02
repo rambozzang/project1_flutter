@@ -24,7 +24,8 @@ class KakaoRepo {
       },
     );
 
-    Lo.g('response : ${response.body} ');
+    // 전체 응답 바디 로깅은 검색 키 입력마다 대용량 JSON 문자열을 만들어 비용이 큼 → 상태코드만.
+    Lo.g('kakao response status: ${response.statusCode}');
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -91,7 +92,8 @@ https://developers.kakao.com/docs/latest/ko/local/dev-guide#coord-to-address
       },
     );
 
-    Lo.g('response : ${response.body} ');
+    // 전체 응답 바디 로깅은 검색 키 입력마다 대용량 JSON 문자열을 만들어 비용이 큼 → 상태코드만.
+    Lo.g('kakao response status: ${response.statusCode}');
 
     if (response.statusCode == 200) {
       String doo = json.decode(response.body)['documents'][0]['address']['region_1depth_name'];

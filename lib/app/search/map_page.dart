@@ -20,7 +20,7 @@ import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:text_scroll/text_scroll.dart';
 import 'package:video_player/video_player.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -197,12 +197,12 @@ class _MapPageState extends State<MapPage> {
       final thumb = element.thumbnailPath?.toString() ?? '';
       NOverlayImage? icon = _iconCache[thumb];
       if (icon == null && thumb.isNotEmpty) {
-        final request = await http.get(Uri.parse(thumb)).timeout(const Duration(seconds: 8));
-        if (request.statusCode == 200) {
-          // cacheKey에 boardId를 주어 재조회·재진입 시 이미지 재디코딩을 피한다.
-          icon = await NOverlayImage.fromByteArray(request.bodyBytes, cacheKey: 'board_$id');
-          _iconCache[thumb] = icon;
-        }
+        // 썸네일은 피드가 cached_network_image 로 이미 디스크에 캐시해 둔 것과 동일하므로,
+        // 같은 캐시(DefaultCacheManager)에서 파일을 가져와 재다운로드를 피한다.
+        // (raw http.get 은 캐시를 무시하고 매번 새로 받으므로 마커 생성이 느렸음)
+        final file = await DefaultCacheManager().getSingleFile(thumb).timeout(const Duration(seconds: 8));
+        icon = NOverlayImage.fromFile(file); // 바이트를 dart 로 읽지 않고 파일 경로만 넘김(가벼움)
+        _iconCache[thumb] = icon;
       }
 
       final marker = NClusterableMarker(

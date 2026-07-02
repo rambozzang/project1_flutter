@@ -24,6 +24,8 @@ class _MapSearchPageState extends State<MapSearchPage> {
   FloatingSearchBarController fsc = FloatingSearchBarController();
 
   final StreamController<List<Map<String, dynamic>>> _streamController = StreamController<List<Map<String, dynamic>>>();
+  final KakaoRepo _kakaoRepo = KakaoRepo();
+  String _lastQuery = ''; // 마지막으로 요청한 검색어(응답 순서 뒤바뀜 방지)
 
   @override
   void initState() {
@@ -31,12 +33,21 @@ class _MapSearchPageState extends State<MapSearchPage> {
   }
 
   void _search() async {
+    final query = fsc.query.trim();
+    // 1~2글자 검색은 결과가 과하고 호출만 늘어남 → 2글자 이상부터 조회.
+    if (query.length < 2) {
+      if (!_streamController.isClosed) _streamController.sink.add([]);
+      return;
+    }
+    _lastQuery = query;
     try {
-      KakaoRepo kakaoRepo = KakaoRepo();
-      final data = await kakaoRepo.getCoordinates(fsc.query);
+      final data = await _kakaoRepo.getCoordinates(query);
+      if (query != _lastQuery || _streamController.isClosed) return; // 더 최신 검색이 시작됨 → 무시
       _streamController.sink.add(data);
     } catch (e) {
-      _streamController.sink.addError(e);
+      // KakaoRepo는 결과 0건도 Exception으로 던짐 → 빈 리스트로 처리(에러 표시 대신)
+      if (query != _lastQuery || _streamController.isClosed) return;
+      _streamController.sink.add([]);
     }
   }
 
@@ -79,7 +90,7 @@ class _MapSearchPageState extends State<MapSearchPage> {
       physics: const BouncingScrollPhysics(),
       elevation: 2.0,
       implicitDuration: const Duration(milliseconds: 100),
-      debounceDelay: const Duration(milliseconds: 200),
+      debounceDelay: const Duration(milliseconds: 350),
       leadingActions: [
         FloatingSearchBarAction.icon(
           showIfClosed: true,
