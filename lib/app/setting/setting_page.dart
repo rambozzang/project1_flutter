@@ -95,6 +95,27 @@ class _SettingPageState extends State<SettingPage> {
                   ],
                 ),
                 SettingsGroup(
+                  settingsGroupTitle: "커뮤니티",
+                  settingsGroupTitleStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 16),
+                  items: [
+                    SettingsItem(
+                      // 라운지 하단탭이 새 앨범 허브(CommunityHubPage)로 바뀌어,
+                      // 기존 라운지(게시판 등 '스카이 라운지')는 설정에서 진입하도록 링크 제공.
+                      onTap: () => Get.toNamed('/AlramPage'),
+                      icons: Icons.groups,
+                      iconStyle: IconStyle(
+                        iconsColor: Colors.white,
+                        withBackground: true,
+                        backgroundColor: Colors.teal[300],
+                      ),
+                      title: '스카이 라운지',
+                      subtitle: "게시판 등 기존 라운지 화면",
+                      titleMaxLine: 1,
+                      subtitleMaxLine: 1,
+                    ),
+                  ],
+                ),
+                SettingsGroup(
                   settingsGroupTitle: "설정",
                   settingsGroupTitleStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 16),
                   items: [

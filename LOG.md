@@ -6,6 +6,21 @@
 
 ## 2026-07-02
 
+### 23:55 | claude | ✅ 완료 (기존 라운지를 설정에 링크)
+**작업**: 라운지 하단탭이 새 앨범 허브로 교체됨 → 기존 라운지(`AlramPage` "스카이 라운지", 게시판 등)를 설정에서 진입하도록 링크 추가
+- `setting_page.dart`: "커뮤니티" 그룹 신설(문의 아래) + '스카이 라운지' 항목(Icons.groups, teal) → `Get.toNamed('/AlramPage')`
+- `alram_page.dart`: AppBar `automaticallyImplyLeading: false`→`true` — 하단탭에서 빠져 이제 푸시로만 진입하므로 뒤로가기 버튼 노출(기존엔 없어 설정/허브서 열면 못 돌아감)
+- 참고: 새 허브의 '알림' 벨 아이콘도 `/AlramPage`를 열고 있음(그대로 둠)
+- 검증: flutter analyze 신규 이슈 0, debug APK 빌드
+
+### 25:30 | claude | ✅ 완료 (1g 업로드·1h 멤버 초대 — 공유앨범 8화면 전체 완료)
+**작업**: 공유앨범 마지막 화면 2종 구현 — 디자인 핸드오프 1a~1h 전체 완료
+- **1g 업로드(`album_upload_page`)**: 1d 올리기 FAB → 촬영/갤러리 시트. 갤러리 다중 선택 → 대상 앨범 칩 + 미디어 그리드(첫 항목 2x2·x 제거·+ 추가) + 캡션 + **날씨·위치 자동 태그 토글**(WeatherGogoCntr 현재 위치·날씨 → BoardSaveWeatherData, OFF면 미첨부) + 'N개 업로드'(기존 goTimerPhotos 재사용). 사진 전용 — 영상은 촬영 플로우
+- **1h 멤버 초대(`album_invite_page`)**: 초대 링크 카드(복사·공유) + **QR 카드(qr_flutter ^4.1.0 신규 의존성)**, 팔로우에서 초대(멤버/초대됨/초대 버튼 상태), 현재 멤버(역할·모두 보기), 대기 중(보낸 초대 + 다시 보내기, 매니저만)
+- **백엔드(819dfd5, 배포·검증)**: GET /community/invited(방장·매니저) — 운영에서 비매니저 거부·방장 실데이터 조회 확인
+- 프론트 6e9e1aa. 검증: analyze 클린, Android 디버그 빌드(qr_flutter 포함) 성공
+- 스코프 노트: 1g 알림 토글은 백엔드가 저장 시 자동 발송이라 생략(끄기 지원하려면 boardSave 파라미터 확장 필요)
+
 ### 23:45 | claude | ✅ 완료 (회원가입 동의 화면 디자인 개선 → 로딩화면 톤)
 **작업**: 회원가입 동의 화면(`agree_page.dart`)을 로딩화면(AuthPage)과 동일한 브랜드 톤으로 재디자인
 - 밋밋한 흰 배경+파랑/초록 → **대각선 3색 그라데이션(#FFCB6B→#FF8F8F→#FF6FA6)** + 흰 구름 로고 + Quicksand "skysnap" + "반가워요! 👋" 헤더

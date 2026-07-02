@@ -117,7 +117,8 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
         elevation: 0,
-        automaticallyImplyLeading: false,
+        // 하단탭에서 빠지고 설정/허브에서 푸시로 진입하므로 뒤로가기 버튼을 노출한다.
+        automaticallyImplyLeading: true,
         titleSpacing: 16,
         title: const Text('스카이 라운지', style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
         centerTitle: false,
