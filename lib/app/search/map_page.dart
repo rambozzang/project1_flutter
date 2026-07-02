@@ -18,7 +18,6 @@ import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/StringUtils.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:project1/widget/custom_indicator_offstage.dart';
 import 'package:text_scroll/text_scroll.dart';
 import 'package:video_player/video_player.dart';
 import 'package:http/http.dart' as http;
@@ -273,7 +272,7 @@ class _MapPageState extends State<MapPage> {
                   ),
                   buildTopButton(),
                   MapSearchPage(onSelectClick: locationUpdate),
-                  CustomIndicatorOffstage(isLoading: !mapCntr.isLoadingList.value, color: const Color(0xFFEA3799), opacity: 0.5),
+                  // 조회 시 전체화면 로딩 오버레이는 제거 — 마커만 조용히 추가/제거(깜빡임 방지)
 
                   // 바텀시트를 Stack의 마지막에 추가하여 최상단에 표시
                   _buildBottomSheet(),
@@ -729,18 +728,14 @@ class _MapPageState extends State<MapPage> {
                       ),
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
-                          if (index < snapshot.data!.length) {
-                            return _buildGridItem(
-                              snapshot.data![index],
-                              Get.find<MapCntr>().southWest.value!,
-                              Get.find<MapCntr>().northEast.value!,
-                              Get.find<MapCntr>().searchDay.value,
-                            );
-                          } else {
-                            return const Center(child: CircularProgressIndicator());
-                          }
+                          return _buildGridItem(
+                            snapshot.data![index],
+                            Get.find<MapCntr>().southWest.value!,
+                            Get.find<MapCntr>().northEast.value!,
+                            Get.find<MapCntr>().searchDay.value,
+                          );
                         },
-                        childCount: snapshot.data!.length + (Get.find<MapCntr>().isLoadingList.value ? 1 : 0),
+                        childCount: snapshot.data!.length,
                       ),
                     );
                   }
