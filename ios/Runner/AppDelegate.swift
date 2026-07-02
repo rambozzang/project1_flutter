@@ -1,5 +1,6 @@
 import Flutter
 import UIKit
+import AVFoundation
 // import NaverThirdPartyLogin
 import flutter_local_notifications
 
@@ -10,6 +11,31 @@ import flutter_local_notifications
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
         GeneratedPluginRegistrant.register(with: self)
+
+        // 카메라 가상 멀티카메라(초광각 포함) 조회 채널 — 0.5x 줌아웃용.
+        // camerawesome은 기본으로 광각 단일 렌즈만 쓰므로, 트리플/듀얼와이드 가상 디바이스의
+        // uniqueID와 렌즈 전환 팩터(switchOver)를 Dart에 넘겨 setSensorType으로 전환하게 한다.
+        if let controller = window?.rootViewController as? FlutterViewController {
+            let lensChannel = FlutterMethodChannel(
+                name: "com.skysnap/camera_lens",
+                binaryMessenger: controller.binaryMessenger)
+            lensChannel.setMethodCallHandler { call, result in
+                guard call.method == "getVirtualBackCamera" else {
+                    result(FlutterMethodNotImplemented)
+                    return
+                }
+                let discovery = AVCaptureDevice.DiscoverySession(
+                    deviceTypes: [.builtInTripleCamera, .builtInDualWideCamera],
+                    mediaType: .video,
+                    position: .back)
+                guard let device = discovery.devices.first else {
+                    result(nil)
+                    return
+                }
+                let switchOvers = device.virtualDeviceSwitchOverVideoZoomFactors.map { Double(truncating: $0) }
+                result(["uid": device.uniqueID, "switchOver": switchOvers])
+            }
+        }
 
         // FCM 설정
         FlutterLocalNotificationsPlugin.setPluginRegistrantCallback { (registry) in

@@ -4,6 +4,18 @@
 
 ---
 
+## 2026-07-02
+
+### 09:50 | claude | ✅ 완료
+**작업**: 카메라 초광각(0.5x) 지원 — 렌즈 전환 대신 줌 배율 방식으로 양 플랫폼 구현
+- 원인: camerawesome 2.5.0의 Android `getBackSensors()`가 미구현(TODO)이라 0.5x 버튼이 Android에서 항상 숨겨짐. iOS는 물리 렌즈 스왑이라 전환이 뚝 끊김.
+- Android: `getMinZoom()`(논리 카메라 minZoomRatio)<1.0이면 0.5x 핀 노출. CameraX 크롭폭 선형 공식으로 0.5x/1x/2x/5x 핀을 실제 배율 위치에 매핑.
+- iOS: AppDelegate에 `com.skysnap/camera_lens` 채널 추가(트리플/듀얼와이드 가상 디바이스 uid+switchOver 조회) → 카메라 시작 시 가상 디바이스로 1회 전환 → 이후 0.5x~5x 전부 videoZoomFactor 램프(렌즈 점프 없음). factor 1.0=0.5x, switchOver[0](보통 2.0)=1x.
+- 전/후면 전환 시 줌 캡 재계산, 전면에선 0.5x 숨김. 핀 하이라이트는 최근접 방식으로 교체.
+- 수정 파일: `lib/app/camera/page/camera_awesome_page.dart`, `ios/Runner/AppDelegate.swift`
+- 검증: flutter analyze 에러/워닝 0, Android 디버그 빌드 성공, iOS 디버그 빌드 진행
+- 실기기 QA 필요: 기기별 `getMinZoom()` 값(로그 `[CAM] zoom caps`), iOS 가상 디바이스 전환 후 프리뷰/녹화 확인
+
 ## 2026-06-24
 
 ### 15:20 | kimi | ✅ 완료

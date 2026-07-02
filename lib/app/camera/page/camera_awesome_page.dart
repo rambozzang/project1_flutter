@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:camerawesome/camerawesome_plugin.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:project1/app/camera/page/photo_reg_page.dart';
 import 'package:project1/app/camera/page/video_reg_page.dart';
@@ -518,56 +519,120 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
   Timer? _timer;
   int _seconds = 0;
 
-  // 렌즈(센서) 정보 — 초광각(0.5x) 지원 감지 및 전환용.
-  SensorDeviceData? _sensors;
-  SensorType _currentLens = SensorType.wideAngle;
+  // ── 줌 배율 캡 — 초광각(0.5x)을 렌즈 전환 없이 "줌아웃"으로 처리 ──
+  // camerawesome 2.5.0의 Android getBackSensors()는 미구현(TODO)이라 물리 렌즈 전환이 불가능.
+  // 대신 두 플랫폼 모두 줌 팩터로 초광각에 도달한다(핀치아웃→0.5x가 끊김 없이 이어짐).
+  // - Android: CameraX 논리 카메라의 minZoomRatio<1.0 이면 linearZoom 0 = 초광각 화각.
+  // - iOS: 가상 멀티카메라(트리플/듀얼와이드)로 1회 전환 후 videoZoomFactor 1.0=0.5x,
+  //        _iosWideFactor(보통 2.0)=표시 1x. 이후 줌은 전부 팩터 램프라 렌즈 점프 없음.
+  static const MethodChannel _lensChannel = MethodChannel('com.skysnap/camera_lens');
+  bool _zoomCapsLoaded = false;
+  bool _zoomCapsLoading = false;
+  double _minRatio = 1.0; // Android 전용: minZoomRatio (0.5면 초광각 포함)
+  double _maxRatio = 1.0; // Android: maxZoomRatio / iOS: max videoZoomFactor(플러그인이 50 상한)
+  double _iosWideFactor = 2.0; // iOS: 초광각→광각 전환 팩터(=표시 1x 기준)
+  bool _hasUltraWide = false; // 0.5x 핀 노출 여부
 
-
-  bool get _hasUltraWide => _sensors?.ultraWideAngle != null;
-  bool get _onUltraWide => _currentLens == SensorType.ultraWideAngle;
+  bool get _isFrontCamera {
+    final sensors = widget.state.sensorConfig.sensors;
+    return sensors.isNotEmpty && sensors.first.position == SensorPosition.front;
+  }
 
   @override
   void initState() {
     super.initState();
     _checkRecordingState();
-    _loadSensors();
+    _loadZoomCaps();
   }
 
-  // 기기의 후면 렌즈 목록을 조회해 초광각 지원 여부를 감지한다.
-  // 카메라 준비 전엔 빈 결과가 올 수 있어, 유효한 값(availableBackSensors>0)일 때만 채택하고
-  // 그전까진 상태 갱신마다 재시도(didUpdateWidget)한다.
-  void _loadSensors() {
+  // 기기의 줌 배율 범위를 조회해 0.5x 지원 여부와 핀 매핑을 계산한다.
+  // 카메라 준비 전엔 실패할 수 있어, 성공할 때까지 상태 갱신마다 재시도(didUpdateWidget)한다.
+  Future<void> _loadZoomCaps() async {
+    if (_zoomCapsLoaded || _zoomCapsLoading) return;
+    if (widget.state is PreparingCameraState) return;
+    _zoomCapsLoading = true;
     try {
-      widget.state.getSensors().then((data) {
-        if (!mounted) return;
-        // 진단: 이 기기가 어떤 후면 렌즈를 보고하는지 (초광각 미노출 원인 파악용)
-        debugPrint('[CAM] backSensors=${data.availableBackSensors} '
-            'ultraWide=${data.ultraWideAngle != null} wide=${data.wideAngle != null} tele=${data.telephoto != null}');
-        if (data.availableBackSensors > 0) {
-          setState(() => _sensors = data);
+      if (Platform.isAndroid) {
+        final double? minZ = await CamerawesomePlugin.getMinZoom();
+        final double? maxZ = await CamerawesomePlugin.getMaxZoom();
+        // 진단: 이 기기의 논리 카메라 줌 범위(초광각 미지원 원인 파악용)
+        debugPrint('[CAM] zoom caps(Android): min=$minZ max=$maxZ');
+        if (minZ == null || maxZ == null || maxZ <= minZ) return;
+        _minRatio = minZ;
+        _maxRatio = maxZ;
+        _hasUltraWide = !_isFrontCamera && minZ < 0.95;
+      } else if (_isFrontCamera) {
+        // 전면 카메라: 초광각 없음, 팩터 항등 매핑(1x=factor 1.0)
+        final double? maxZ = await CamerawesomePlugin.getMaxZoom();
+        if (maxZ == null || maxZ <= 1.0) return;
+        _iosWideFactor = 1.0;
+        _maxRatio = maxZ;
+        _hasUltraWide = false;
+      } else {
+        final Map<dynamic, dynamic>? info =
+            await _lensChannel.invokeMethod<Map<dynamic, dynamic>>('getVirtualBackCamera');
+        debugPrint('[CAM] virtual back camera(iOS): $info');
+        if (info == null) {
+          // 초광각 없는 기기(iPhone SE 등): 1x부터 디지털 줌만
+          final double? maxZ = await CamerawesomePlugin.getMaxZoom();
+          if (maxZ == null || maxZ <= 1.0) return;
+          _iosWideFactor = 1.0;
+          _maxRatio = maxZ;
+          _hasUltraWide = false;
+        } else {
+          final List<dynamic> switchOver = info['switchOver'] as List<dynamic>? ?? const [];
+          _iosWideFactor = switchOver.isNotEmpty ? (switchOver.first as num).toDouble() : 2.0;
+          widget.state.setSensorType(0, SensorType.wideAngle, info['uid'] as String);
+          // 세션 재구성을 기다린 뒤 가상 디바이스 기준 maxZoom을 읽는다.
+          await Future.delayed(const Duration(milliseconds: 400));
+          final double? maxZ = await CamerawesomePlugin.getMaxZoom();
+          _maxRatio = (maxZ == null || maxZ <= 1.0) ? 16.0 : maxZ;
+          _hasUltraWide = true;
         }
-      }).catchError((e) => debugPrint('[CAM] getSensors error: $e'));
+      }
+      _zoomCapsLoaded = true;
+      // 시작 화각을 1x로 고정: iOS 가상 디바이스는 factor 1.0(=0.5x)로 시작하므로 필수,
+      // Android는 ratio 1.0 그대로라 화면 변화 없음(핀 하이라이트 동기화용).
+      widget.state.sensorConfig.setZoom(_zoomValueFor(1.0));
+      if (mounted) setState(() {});
     } catch (e) {
-      debugPrint('[CAM] getSensors throw: $e');
+      debugPrint('[CAM] zoom caps error: $e');
+    } finally {
+      _zoomCapsLoading = false;
     }
   }
 
-  // 광각 ↔ 초광각 물리 렌즈 전환. (디지털 줌과 별개)
-  void _switchLens(SensorType type) {
-    final details = type == SensorType.ultraWideAngle ? _sensors?.ultraWideAngle : _sensors?.wideAngle;
-    if (details == null) return;
-    try {
-      widget.state.setSensorType(0, type, details.uid);
-      if (mounted) setState(() => _currentLens = type);
-    } catch (_) {}
+  // 표시 배율(0.5, 1, 2, 5…) → camerawesome setZoom 값(0~1) 변환.
+  // Android linearZoom은 크롭폭 선형: L = maxZ(R−minZ) / (R(maxZ−minZ))
+  // iOS는 팩터 선형: F = 표시배율 × _iosWideFactor, value = (F−1)/(maxF−1)
+  double _zoomValueFor(double display) {
+    if (Platform.isAndroid) {
+      if (_maxRatio <= _minRatio) return 0.0;
+      final double r = display.clamp(_minRatio, _maxRatio);
+      return ((_maxRatio * (r - _minRatio)) / (r * (_maxRatio - _minRatio))).clamp(0.0, 1.0);
+    } else {
+      if (_maxRatio <= 1.0) return 0.0;
+      final double f = (display * _iosWideFactor).clamp(1.0, _maxRatio);
+      return ((f - 1.0) / (_maxRatio - 1.0)).clamp(0.0, 1.0);
+    }
+  }
+
+  // 전/후면 전환 후 현재 카메라 기준으로 줌 캡을 다시 계산한다.
+  Future<void> _reloadZoomCapsAfterFlip() async {
+    _zoomCapsLoaded = false;
+    _hasUltraWide = false;
+    if (mounted) setState(() {});
+    // 네이티브 세션 전환이 끝난 뒤 조회해야 새 카메라의 값이 나온다.
+    await Future.delayed(const Duration(milliseconds: 350));
+    await _loadZoomCaps();
   }
 
   @override
   void didUpdateWidget(covariant CamerAwesomeBottomActions oldWidget) {
     super.didUpdateWidget(oldWidget);
     _checkRecordingState();
-    // 카메라가 준비되면(상태 갱신) 초광각 렌즈 재감지.
-    if (_sensors == null) _loadSensors();
+    // 카메라가 준비되면(상태 갱신) 줌 캡 재시도.
+    if (!_zoomCapsLoaded) _loadZoomCaps();
   }
 
   void _checkRecordingState() {
@@ -800,19 +865,37 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
             stream: state.sensorConfig.zoom$,
             builder: (context, snapshot) {
               final zoom = snapshot.data ?? 0.0;
+              // 줌 캡 로드 전엔 기존 고정값, 로드 후엔 실제 배율 위치로 매핑.
+              // 0.5x는 기기가 초광각을 지원할 때만 노출(줌아웃으로 도달).
+              final List<MapEntry<String, double>> pills = _zoomCapsLoaded
+                  ? [
+                      if (_hasUltraWide) MapEntry('0.5x', _zoomValueFor(0.5)),
+                      MapEntry('1x', _zoomValueFor(1)),
+                      MapEntry('2x', _zoomValueFor(2)),
+                      MapEntry('5x', _zoomValueFor(5)),
+                    ]
+                  : const [
+                      MapEntry('1x', 0.0),
+                      MapEntry('2x', 0.3),
+                      MapEntry('5x', 0.6),
+                    ];
+              // 현재 줌에 가장 가까운 핀 하나만 활성 표시
+              int activeIdx = 0;
+              double best = double.infinity;
+              for (int i = 0; i < pills.length; i++) {
+                final double d = (pills[i].value - zoom).abs();
+                if (d < best) {
+                  best = d;
+                  activeIdx = i;
+                }
+              }
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // 초광각(0.5x) — 기기에 초광각 렌즈가 있을 때만 노출
-                  if (_hasUltraWide) ...[
-                    _buildUltraWidePill(),
-                    const SizedBox(width: 6),
+                  for (int i = 0; i < pills.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 6),
+                    _buildZoomPill(state, pills[i].key, pills[i].value, i == activeIdx),
                   ],
-                  _buildZoomPill(state, '1x', 0.0, zoom),
-                  const SizedBox(width: 6),
-                  _buildZoomPill(state, '2x', 0.3, zoom),
-                  const SizedBox(width: 6),
-                  _buildZoomPill(state, '5x', 0.6, zoom),
                 ],
               );
             },
@@ -843,45 +926,14 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
     );
   }
 
-  Widget _buildZoomPill(CameraState state, String label, double value, double currentValue) {
-    // 초광각(0.5x)에 있을 땐 디지털 줌 핀은 비활성 표시.
-    final bool isActive = !_onUltraWide && (currentValue - value).abs() < 0.15;
+  Widget _buildZoomPill(CameraState state, String label, double value, bool isActive) {
+    // 0.5x는 라벨이 길어 캡슐형(38px), 나머지는 원형(30px). radius 15로 둘 다 자연스럽다.
+    final double pillWidth = label == '0.5x' ? 38 : 30;
     return GestureDetector(
-      onTap: () {
-        // 초광각 상태에서 1x/2x/5x를 누르면 먼저 광각 렌즈로 복귀 후 줌 적용.
-        if (_onUltraWide) _switchLens(SensorType.wideAngle);
-        state.sensorConfig.setZoom(value);
-      },
+      onTap: () => state.sensorConfig.setZoom(value),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        width: 30,
-        height: 30,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.white.withOpacity(0.12),
-          shape: BoxShape.circle,
-          border: isActive ? null : Border.all(color: Colors.white.withOpacity(0.1), width: 0.5),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isActive ? Colors.black : Colors.white70,
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-
-  // 초광각(0.5x) 렌즈 전환 핀
-  Widget _buildUltraWidePill() {
-    final bool isActive = _onUltraWide;
-    return GestureDetector(
-      onTap: () => _switchLens(SensorType.ultraWideAngle),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 38,
+        width: pillWidth,
         height: 30,
         alignment: Alignment.center,
         decoration: BoxDecoration(
@@ -890,7 +942,7 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
           border: isActive ? null : Border.all(color: Colors.white.withOpacity(0.1), width: 0.5),
         ),
         child: Text(
-          '0.5x',
+          label,
           style: TextStyle(
             color: isActive ? Colors.black : Colors.white70,
             fontSize: 10,
@@ -1001,6 +1053,8 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
     return GestureDetector(
       onTap: () async {
         await state.switchCameraSensor();
+        // 전환된 카메라 기준으로 줌 배율 캡 재계산(iOS는 후면 복귀 시 가상 디바이스 재적용).
+        _reloadZoomCapsAfterFlip();
       },
       child: Container(
         width: 52,
