@@ -1701,24 +1701,9 @@ class _MyPageState extends State<MyPage>
       title: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          InkWell(
-            onTap: () {
-              showModalBottomSheet(
-                  showDragHandle: true,
-                  shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(10.0),
-                          topRight: Radius.circular(10.0))),
-                  context: context,
-                  builder: (context) => Container(
-                        height: 400,
-                      ));
-            },
-            child: Obx(() => Text(
-                  Get.find<AuthCntr>().resLoginData.value.nickNm.toString(),
-                  style: const TextStyle(
-                      fontSize: 25, fontWeight: FontWeight.bold),
-                )),
+          const Text(
+            '내정보',
+            style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
           ),
           IconButton(
             onPressed: () => Get.toNamed('/SettingPage'),
