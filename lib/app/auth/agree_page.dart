@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
@@ -8,6 +10,20 @@ import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
 import 'package:permission_handler/permission_handler.dart';
+
+/// 로딩화면(AuthPage)과 동일한 흰 구름 로고(인라인 SVG).
+const String _logoSvg = '''
+<svg viewBox="0 0 100 100" width="96" height="96">
+  <g fill="#ffffff">
+    <circle cx="38" cy="50" r="19"/>
+    <circle cx="60" cy="45" r="23"/>
+    <circle cx="27" cy="59" r="13"/>
+    <circle cx="74" cy="59" r="14"/>
+    <rect x="25" y="55" width="54" height="20" rx="10"/>
+    <path d="M45 71 L37 90 L56 73 Z"/>
+  </g>
+</svg>
+''';
 
 class AgreePage extends StatefulWidget {
   const AgreePage({super.key});
@@ -220,6 +236,15 @@ class _AgreePageState extends State<AgreePage> with WidgetsBindingObserver {
     // 권한이 거부되었거나 설정 화면으로 이동한 경우, AppLifecycleState.resumed에서 처리될 것임
   }
 
+  // 로딩화면(AuthPage)과 동일한 대각선 3색 그라데이션 + 액센트.
+  static const _gradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFFFCB6B), Color(0xFFFF8F8F), Color(0xFFFF6FA6)],
+    stops: [0.0, 0.5, 1.0],
+  );
+  static const Color _accent = Color(0xFFEA3799);
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -232,126 +257,85 @@ class _AgreePageState extends State<AgreePage> with WidgetsBindingObserver {
       child: Stack(
         children: [
           Scaffold(
-            body: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Stack(
-                      children: [
-                        Positioned(
-                          bottom: 5,
-                          child: Container(
-                            height: 10,
-                            width: 250,
-                            color: const Color.fromARGB(255, 105, 144, 74).withOpacity(0.5),
-                          ),
-                        ),
-                        const Text(
-                          'SkySnap 서비스',
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      '서비스 시작 및 가입을 위해 먼저 가입 및 정보 제공에\n동의해 주세요.',
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 14, color: Colors.black),
-                    ),
-                    const SizedBox(height: 30),
-                    Expanded(
-                      child: ListView(
+            backgroundColor: const Color(0xFFFF8F8F),
+            body: Container(
+              decoration: const BoxDecoration(gradient: _gradient),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 14, 24, 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 6),
+                      // 로고 + 브랜드 (로딩화면과 동일한 흰 구름 + skysnap)
+                      Row(
                         children: [
-                          InkWell(
-                            onTap: toggleAllAgreements,
-                            child: Container(
-                              padding: const EdgeInsets.all(15),
-                              decoration: BoxDecoration(
-                                // color: Colors.indigo[100],
-                                gradient: const LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomRight,
-                                    // colors: [Color.fromARGB(255, 29, 33, 56), Color.fromARGB(255, 45, 52, 91)],
-                                    colors: [Color.fromARGB(255, 59, 114, 197), Color.fromARGB(255, 117, 158, 219)]),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  Icon(
-                                    allChecked ? Icons.check_box : Icons.check_box_outline_blank,
-                                    color: Colors.white,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  const Text(
-                                    '전체동의',
-                                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
-                                  ),
-                                ],
-                              ),
+                          SvgPicture.string(_logoSvg, width: 42, height: 42),
+                          const SizedBox(width: 10),
+                          Text(
+                            'skysnap',
+                            style: GoogleFonts.quicksand(
+                              fontSize: 30,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: -0.5,
                             ),
                           ),
-                          const SizedBox(height: 15),
-                          ...agreements
-                              .map((agreement) => Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 15),
-                                    decoration: BoxDecoration(
-                                      border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        InkWell(
-                                          onTap: () => toggleAgreement(agreement['id']),
-                                          child: Icon(
-                                            agreement['checked'] ? Icons.check_box : Icons.check_box_outline_blank,
-                                            color: Colors.black,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Text(
-                                            agreement['title'],
-                                            style: const TextStyle(fontSize: 14),
-                                          ),
-                                        ),
-                                        agreement['url'] == ''
-                                            ? const SizedBox()
-                                            : InkWell(
-                                                onTap: () {
-                                                  Get.toNamed(agreement['url']);
-                                                },
-                                                child: const Text(
-                                                  '보기',
-                                                  style: TextStyle(fontSize: 13, color: Colors.blue),
-                                                ),
-                                              ),
-                                      ],
-                                    ),
-                                  ))
-                              ,
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: allChecked
-                          ? () {
-                              completed();
-                            }
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: const Color.fromARGB(255, 47, 54, 95),
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                      const SizedBox(height: 26),
+                      Text(
+                        '반가워요! 👋',
+                        style: GoogleFonts.nunito(
+                          fontSize: 24,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
-                      child: const Text('확인', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      Text(
+                        '서비스 시작을 위해\n아래 약관에 동의해 주세요.',
+                        style: GoogleFonts.nunito(
+                          fontSize: 15,
+                          height: 1.4,
+                          color: Colors.white.withValues(alpha: 0.92),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      // 약관 카드 (흰 배경 — 그라데이션 위에서 가독성 확보)
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.10),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              children: [
+                                _allAgreeTile(),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 14),
+                                  child: Divider(height: 1, thickness: 1, color: Color(0xFFEFEFF2)),
+                                ),
+                                ...agreements.map(_agreeTile),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      _confirmButton(),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -367,6 +351,133 @@ class _AgreePageState extends State<AgreePage> with WidgetsBindingObserver {
             },
           )
         ],
+      ),
+    );
+  }
+
+  /// 전체 동의 타일(강조).
+  Widget _allAgreeTile() {
+    return InkWell(
+      onTap: toggleAllAgreements,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        decoration: BoxDecoration(
+          color: allChecked ? _accent.withValues(alpha: 0.08) : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            _checkIcon(allChecked, big: true),
+            const SizedBox(width: 12),
+            Text(
+              '전체 동의',
+              style: GoogleFonts.nunito(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: Colors.black.withValues(alpha: 0.85),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 개별 동의 항목 타일(제목 + 보기 링크).
+  Widget _agreeTile(Map<String, dynamic> agreement) {
+    final bool checked = agreement['checked'] as bool;
+    final String url = agreement['url'] as String;
+    return InkWell(
+      onTap: () => toggleAgreement(agreement['id']),
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        child: Row(
+          children: [
+            _checkIcon(checked, big: false),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                agreement['title'] as String,
+                style: GoogleFonts.nunito(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black.withValues(alpha: 0.78),
+                ),
+              ),
+            ),
+            if (url.isNotEmpty)
+              GestureDetector(
+                onTap: () => Get.toNamed(url),
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        '보기',
+                        style: GoogleFonts.nunito(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: _accent,
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, size: 16, color: _accent),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 원형 체크 아이콘(체크 시 액센트 채움).
+  Widget _checkIcon(bool checked, {required bool big}) {
+    final double size = big ? 26 : 24;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: checked ? _accent : Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: checked ? _accent : const Color(0xFFCBD0D6),
+          width: 2,
+        ),
+      ),
+      child: Icon(
+        Icons.check,
+        size: big ? 17 : 15,
+        color: checked ? Colors.white : Colors.transparent,
+      ),
+    );
+  }
+
+  /// 확인 버튼 — 그라데이션 위에서 도드라지도록 흰 배경 + 액센트 글자.
+  Widget _confirmButton() {
+    final bool enabled = allChecked;
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: ElevatedButton(
+        onPressed: enabled ? () => completed() : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.white,
+          disabledBackgroundColor: Colors.white.withValues(alpha: 0.35),
+          foregroundColor: _accent,
+          disabledForegroundColor: Colors.white.withValues(alpha: 0.75),
+          elevation: enabled ? 6 : 0,
+          shadowColor: Colors.black.withValues(alpha: 0.25),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        child: Text(
+          '동의하고 시작하기',
+          style: GoogleFonts.nunito(fontSize: 17, fontWeight: FontWeight.w800),
+        ),
       ),
     );
   }
