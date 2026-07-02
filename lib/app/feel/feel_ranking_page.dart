@@ -148,8 +148,6 @@ class FeelRankingPage extends StatelessWidget {
             final isSelected = cntr.selectedPeriod.value == p['code'];
             return AnimatedListItem(
               index: index,
-              duration: const Duration(milliseconds: 300),
-              staggerDelay: const Duration(milliseconds: 40),
               child: GestureDetector(
                 onTap: () => cntr.changePeriod(p['code']!),
                 child: AnimatedContainer(
@@ -422,7 +420,6 @@ class _PodiumSection extends StatelessWidget {
 
     return AnimatedListItem(
       index: 0,
-      duration: const Duration(milliseconds: 500),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Row(

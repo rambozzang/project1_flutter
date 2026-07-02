@@ -192,8 +192,6 @@ class AchievementPage extends StatelessWidget {
             final isSelected = cntr.selectedCategory.value == cat['code'];
             return AnimatedListItem(
               index: index,
-              duration: const Duration(milliseconds: 300),
-              staggerDelay: const Duration(milliseconds: 40),
               child: _CategoryChip(
                 label: cat['name']!,
                 isSelected: isSelected,

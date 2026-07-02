@@ -32,6 +32,8 @@ import 'package:project1/app/myinfo/block_page.dart';
 import 'package:project1/app/myinfo/myinfo_page.dart';
 import 'package:project1/app/setting/alram_setting_page.dart';
 import 'package:project1/app/setting/weather_noti_setting_page.dart';
+import 'package:project1/app/shared_album/album_detail_page.dart';
+import 'package:project1/app/shared_album/album_list_page.dart';
 import 'package:project1/app/shared_album/sa_preview_page.dart';
 import 'package:project1/app/setting/maketing_page.dart';
 import 'package:project1/app/favoriteArea/favorite_area_page.dart';
@@ -289,6 +291,18 @@ abstract class AppPages {
       name: '/SaPreviewPage',
       page: () => const SaPreviewPage(),
     ),
+    // 공유앨범 홈(1a 스택 피드)
+    GetPage(
+      name: '/AlbumListPage',
+      page: () => const AlbumListPage(),
+      transition: Transition.rightToLeftWithFade,
+    ),
+    // 공유앨범 상세(1d 갤러리 뷰)
+    GetPage(
+      name: '/AlbumDetailPage',
+      page: () => const AlbumDetailPage(),
+      transition: Transition.rightToLeftWithFade,
+    ),
     GetPage(
       name: '/WeatherComparePage',
       page: () => const WeatherComparePage(),
@@ -387,6 +401,7 @@ abstract class AppPages {
       name: '/ChallengeMainPage',
       page: () => const ChallengeMainPage(),
       transition: Transition.rightToLeftWithFade,
+      transitionDuration: const Duration(milliseconds: 200),
     ),
     GetPage(
       name: '/AttendanceCalendarPage',
@@ -397,11 +412,13 @@ abstract class AppPages {
       name: '/AchievementPage',
       page: () => const AchievementPage(),
       transition: Transition.rightToLeftWithFade,
+      transitionDuration: const Duration(milliseconds: 200),
     ),
     GetPage(
       name: '/FeelRankingPage',
       page: () => const FeelRankingPage(),
       transition: Transition.rightToLeftWithFade,
+      transitionDuration: const Duration(milliseconds: 200),
     ),
     GetPage(
       name: '/SpecialWeatherListPage',
