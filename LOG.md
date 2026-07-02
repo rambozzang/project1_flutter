@@ -6,6 +6,20 @@
 
 ## 2026-07-03
 
+### 01:10 | claude | ✅ 완료 (SNS 공유 ① 범용 공유 시트)
+**작업**: 영상/사진을 틱톡·인스타 등 SNS로 내보내는 기능 1단계 — 범용 OS 공유 시트(외부 등록 불필요)
+- 신규 `lib/utils/sns_share.dart` `SnsShare.shareMedia()`: mp4(우선)/이미지 URL을 임시파일로 다운로드(dio, 진행률 다이얼로그+취소) → `Share.shareXFiles`로 OS 공유 시트 전달. HLS(m3u8)는 SNS가 못 받으므로 mp4 없으면 썸네일 이미지로 폴백. 텍스트만 있으면 텍스트 공유
+- 연결: 피드 영상 상세(`Video_screen_page.share()`)·공유앨범 몰입 뷰(`album_immersive_page` 공유 버튼)의 placeholder 공유(example.com)를 실제 미디어 공유로 교체. typeDtCd V/I로 영상/사진 분기
+- 사용자는 공유 시트에서 틱톡/인스타/카톡 등 선택(인스타는 피드·DM 컴포저). 전용 버튼(인스타 스토리 딥링크·틱톡 Share Kit)은 FB App ID·TikTok key 발급 후 2단계 예정
+- 검증: 3파일 analyze 신규 오류 0, debug APK 빌드
+
+### 00:40 | claude | ✅ 완료 (표지 템플릿 귀여운 무드 재교체 + 하단탭 라벨)
+**작업**: 표지 템플릿 10종을 "밝고 귀엽고 경쾌한 캐릭터(토이)" 무드로 재교체 + 하단탭 라운지→앨범
+- 후보 19장 URL 검증·썸네일 눈검수 → 9종 교체(연애 하트보케 유지): 흰 꽃(결혼)/양철 로봇+오리(동창회)/파스텔 테디+바구니(100일)/젤리(파티)/레고 브릭(망년회)/마카롱(생일)/나무 기차 마을(여행)/나비넥타이 테디(가족)/레고 4인방 횡단보도(친구)
+- 3곳 갱신: 프론트 cover_template.dart(2ce50e4)/백엔드 CommunityCoverTemplates(ea3b7f6, 자동배포)/운영 DB 기존 앨범 2건
+- 하단탭 index3: '라운지'→'앨범', 아이콘 groups→photo_library_rounded
+- 검증: analyze 클린, Android 디버그 빌드, 백엔드 compileJava 성공
+
 ### 00:15 | claude | ✅ 완료 (앨범 만들기 다크 재작성)
 **작업**: 앨범 만들기가 구 라이트 디자인이라 새 다크 홈과 이질적 → `album_create_page`로 재작성
 - 기능 동일 보존: 표지(큰 미리보기 + 템플릿 10종 스트립 + 내 사진 업로드 타일, teal 링), 이름/소개 다크 인풋, 공개 범위·가입 방식(teal 세그먼트 + 힌트 문구), 장소 연결(카카오 검색 400ms 디바운스·선택 칩·해제, Spot 상세 prefill 지원), '앨범 만들기' 그라디언트 CTA

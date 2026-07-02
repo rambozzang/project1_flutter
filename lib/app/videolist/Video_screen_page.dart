@@ -22,7 +22,7 @@ import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:project1/utils/sns_share.dart';
 import 'package:text_scroll/text_scroll.dart';
 
 import 'package:video_player/video_player.dart';
@@ -288,10 +288,15 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   }
 
   Future<void> share() async {
-    final result = await Share.share('check out my website https://example.com');
-
-    if (result.status == ShareResultStatus.success) {
-      print('Thank you for sharing my website!');
+    final d = widget.data;
+    final caption = (d.contents ?? '').trim();
+    final text = caption.isNotEmpty ? '$caption\n- SkySnap' : 'SkySnap에서 공유';
+    if (isPhotoPost) {
+      final img = (d.imageUrls?.isNotEmpty ?? false) ? d.imageUrls!.first : d.thumbnailPath;
+      await SnsShare.shareMedia(context, imageUrl: img, text: text);
+    } else {
+      // mp4 우선, 없으면 썸네일 이미지로 폴백(SNS는 HLS를 못 받음).
+      await SnsShare.shareMedia(context, videoUrl: d.mp4, imageUrl: d.thumbnailPath, text: text);
     }
   }
 

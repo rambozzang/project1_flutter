@@ -15,7 +15,7 @@ import 'package:project1/repo/community/community_repo.dart';
 import 'package:project1/repo/weather/like_repo.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:project1/utils/sns_share.dart';
 import 'package:video_player/video_player.dart';
 
 /// 앨범 상세 — 1e 몰입 뷰(틱톡식 세로 풀스크린).
@@ -439,9 +439,17 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
           color: Colors.white,
           label: '공유',
           onTap: () {
-            final String text = (item.contents ?? '').isNotEmpty ? item.contents! : '$_albumName 앨범의 순간';
-            Share.share('$text\n- SkySnap 공유앨범 [$_albumName]');
+            final String caption = (item.contents ?? '').isNotEmpty ? item.contents! : '$_albumName 앨범의 순간';
+            final String text = '$caption\n- SkySnap 공유앨범 [$_albumName]';
+            if (item.typeDtCd == 'V') {
+              // mp4 우선, 없으면 썸네일로 폴백(SNS는 HLS를 못 받음).
+              SnsShare.shareMedia(context, videoUrl: item.mp4, imageUrl: item.thumbnailPath, text: text);
+            } else {
+              final img = (item.imageUrls?.isNotEmpty ?? false) ? item.imageUrls!.first : item.thumbnailPath;
+              SnsShare.shareMedia(context, imageUrl: img, text: text);
+            }
           },
+
         ),
       ],
     );
