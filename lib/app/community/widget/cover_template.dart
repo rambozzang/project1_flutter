@@ -30,17 +30,18 @@ class CoverTemplate {
 }
 
 /// 표지 템플릿 10종(순서 중요 — 첫 항목이 앨범 생성 시 기본 선택값).
+/// 2026-07-02 전면 교체: 발랄·캐릭터 무드의 무료(Unsplash) 사진으로 통일(눈검수 완료).
 const List<CoverTemplate> kCoverTemplates = [
-  CoverTemplate('wedding', '결혼식', 'https://images.unsplash.com/photo-1519741497674-611481863552'),
-  CoverTemplate('reunion', '동창회', 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac'),
-  CoverTemplate('baby100', '100일 기념', 'https://images.unsplash.com/photo-1511895426328-dc8714191300'),
-  CoverTemplate('party', '파티', 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d'),
-  CoverTemplate('yearend', '망년회', 'https://images.unsplash.com/photo-1467810563316-b5476525c0f9'),
-  CoverTemplate('birthday', '생일', 'https://images.unsplash.com/photo-1464349095431-e9a21285b5f3'),
-  CoverTemplate('travel', '여행', 'https://images.unsplash.com/photo-1501785888041-af3ef285b470'),
-  CoverTemplate('family', '가족모임', 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7'),
-  CoverTemplate('friends', '친구모임', 'https://images.unsplash.com/photo-1543269865-cbf427effbad'),
-  CoverTemplate('couple', '연애', 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1'),
+  CoverTemplate('wedding', '결혼식', 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6'), // 반지 낀 두 손 + 살구빛 부케
+  CoverTemplate('reunion', '동창회', 'https://images.unsplash.com/photo-1527529482837-4698179dc6ce'), // 조명 아래 잔 들어 건배
+  CoverTemplate('baby100', '100일 기념', 'https://images.unsplash.com/photo-1518946222227-364f22132616'), // 레고 유니콘 미니피규어
+  CoverTemplate('party', '파티', 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30'), // 쏟아지는 색종이
+  CoverTemplate('yearend', '망년회', 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819'), // 무지개빛 콘서트 색종이
+  CoverTemplate('birthday', '생일', 'https://images.unsplash.com/photo-1551024601-bec78aea704b'), // 스프링클 도넛 탑
+  CoverTemplate('travel', '여행', 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800'), // 노란 미니밴 로드트립
+  CoverTemplate('family', '가족모임', 'https://images.unsplash.com/photo-1546975490-e8b92a360b24'), // 티피 텐트 속 웰시코기
+  CoverTemplate('friends', '친구모임', 'https://images.unsplash.com/photo-1516633630673-67bbad747022'), // 나무 장난감 요트 함대
+  CoverTemplate('couple', '연애', 'https://images.unsplash.com/photo-1518199266791-5375a83190b7'), // 하트 보케
 ];
 
 /// 갤러리에서 사진을 골라 Cloudflare에 업로드하고 URL을 반환한다.
