@@ -179,6 +179,22 @@ flutter:
      - assets/images/map/
      - assets/lottie/
 
+  # Pretendard: AppTheme.fontFamily가 참조하는 앱 기본 폰트.
+  # (기존엔 선언 없이 이름만 지정돼 시스템 폰트로 폴백되고 있었음 — 2026-07-02 번들 추가)
+  fonts:
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/Pretendard-Regular.otf
+          weight: 400
+        - asset: assets/fonts/Pretendard-Medium.otf
+          weight: 500
+        - asset: assets/fonts/Pretendard-SemiBold.otf
+          weight: 600
+        - asset: assets/fonts/Pretendard-Bold.otf
+          weight: 700
+        - asset: assets/fonts/Pretendard-ExtraBold.otf
+          weight: 800
+
 flutter_native_splash:
   color: "#FF8F8F"
   image:  assets/icon/app_icon_v10_foreground.png

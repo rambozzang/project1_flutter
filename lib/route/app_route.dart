@@ -32,6 +32,7 @@ import 'package:project1/app/myinfo/block_page.dart';
 import 'package:project1/app/myinfo/myinfo_page.dart';
 import 'package:project1/app/setting/alram_setting_page.dart';
 import 'package:project1/app/setting/weather_noti_setting_page.dart';
+import 'package:project1/app/shared_album/sa_preview_page.dart';
 import 'package:project1/app/setting/maketing_page.dart';
 import 'package:project1/app/favoriteArea/favorite_area_page.dart';
 import 'package:project1/app/test/weather_compare_page.dart';
@@ -282,6 +283,11 @@ abstract class AppPages {
     GetPage(
       name: '/WeatherNotiSettingPage',
       page: () => const WeatherNotiSettingPage(),
+    ),
+    // 공유앨범 테마·위젯 미리보기(디버그 검수용)
+    GetPage(
+      name: '/SaPreviewPage',
+      page: () => const SaPreviewPage(),
     ),
     GetPage(
       name: '/WeatherComparePage',

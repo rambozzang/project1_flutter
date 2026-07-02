@@ -228,6 +228,15 @@ class _SettingPageState extends State<SettingPage> {
                         ),
                       ),
                       SettingsItem(
+                        onTap: () => Get.toNamed('/SaPreviewPage'),
+                        icons: CupertinoIcons.photo_on_rectangle,
+                        backgroundColor: Colors.white,
+                        iconStyle: IconStyle(),
+                        title: '공유앨범 위젯 미리보기 (디자인 검수)',
+                        titleMaxLine: 1,
+                        subtitleMaxLine: 1,
+                      ),
+                      SettingsItem(
                         onTap: () => Get.toNamed('/TestDioPage'),
                         icons: CupertinoIcons.link_circle,
                         title: "TestDioPage",

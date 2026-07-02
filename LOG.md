@@ -6,6 +6,32 @@
 
 ## 2026-07-02
 
+### 17:45 | claude | 🟢 시작 (1단계: 테마+공용위젯, 리뷰 대기)
+**작업**: 공유앨범(design_handoff_shared_album) 구현 착수 — 디자인 토큰·공용 위젯
+- 구조: `lib/app/shared_album/` (theme/ 3파일 + widget/ 5파일 + 미리보기 페이지) — 기존 컨벤션(lib/app/기능, widget/ 단수, StatefulWidget+repo) 준수
+- theme: SaColors(다크 토큰+primary 그라디언트), SaWeatherGradients(날씨 8종+byKey), SaText(Pretendard 스케일+Space Mono)
+- widget: SaGlassChip(블러 칩), SaNewBadge(pink pulse 2.4s)+SaNewDot, SaMemberAvatarStack(겹침 아바타+N), SaOverlapImageStack(±7° 겹침 스택+오버레이 슬롯), SaGradientButton(teal→blue pill/FAB glow)
+- **부수 발견·수정**: AppTheme이 fontFamily 'Pretendard'를 지정했지만 pubspec에 폰트 선언이 없어 앱 전체가 시스템 폰트로 폴백 중이었음 → Pretendard OTF 5종(400~800, ~7.9MB) 번들 + pubspec fonts 선언 (전체 앱 폰트 정상화)
+- 리뷰 경로: 설정 > (디버그) '공유앨범 위젯 미리보기' (/SaPreviewPage)
+- 검증: flutter analyze 에러/워닝 0, Android 디버그 빌드 성공
+
+### 16:35 | claude | ✅ 완료
+**작업**: 관심지역 등록 오류 수정(운영 DB) + 페이지 UI 전면 개선
+- **원인**: 운영 DB `tb_cust_tag.addr` 컬럼이 bytea(바이너리) 타입으로 잘못 생성 → INSERT가 "column addr is of type bytea" SQL 오류로 100% 실패. 마지막 등록 성공이 2025-04-17 — **14개월간 깨져 있던 버그** (curl로 재현·확정)
+- **수정**: 백업(tb_cust_tag_bak_20260702) 후 `ALTER TABLE ... ALTER COLUMN addr TYPE varchar(255) USING convert_from(addr,'UTF8')` → 기존 40건 주소 정상 복원 + 저장 재검증 성공(code 00). 코드 배포 불필요, 즉시 복구
+- **UI 개선(favorite_area_page.dart 전면 재작성)**:
+  - 사용자에게 그대로 노출되던 "지도 표시 영역 (현재 주석 처리됨)" 죽은 영역 + 네이버맵 dead code 전부 제거
+  - 별도 페이지로 이동하던 2단계 검색 → 페이지 내 인라인 검색(300ms 디바운스) + 결과에서 바로 [+ 추가], 등록된 곳은 '등록됨' 표시
+  - 나의 관심 지역: 주소 서브텍스트 표시, 탭 시 저장된 좌표로 즉시 날씨 조회(카카오 재지오코딩 제거, 좌표 없는 과거 데이터만 폴백), 삭제 확인 다이얼로그
+  - favorite_area_search_page.dart 삭제(전용 파일, 미사용화)
+- **부수 수정**: cust_repo.saveTag의 잠재 크래시(`lon||lat` 조건 + 강제언랩 + 무검증 parse) → tryParse && 가드로 교정
+- 검증: flutter analyze 에러/워닝 0, Android 디버그 빌드, 운영 API 저장/삭제/조회 curl 검증 완료
+
+### 16:10 | claude | ❌ 롤백
+**작업**: 카메라 동시 촬영(듀얼캠) 시도 → 실기기에서 동작 안 해 커밋 전 제거
+- camerawesome 멀티캠(실험 기능)으로 후면 메인+전면 PiP 구현했으나 실기기 테스트에서 동작 실패
+- 코드 전부 되돌림(git checkout, 커밋된 적 없음). 상세 원인·재시도 조건은 프로젝트 메모리(camera-gestures) 참고
+
 ### 15:20 | claude | ✅ 완료
 **작업**: 날씨 상태바 상시 알림 (Android 전용) 신규 구현
 - WorkManager(workmanager ^0.9.0) 주기 작업(30분/1시간/3시간)이 백그라운드에서 백엔드 날씨 캐시 API를 조회해 ongoing 알림 갱신
