@@ -206,6 +206,100 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     }
   }
 
+  // ── 상단 바 버튼(글래스 스타일 통일) ──────────────────────
+
+  Widget _topGlassButton({required Widget child, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.28),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+        ),
+        child: child,
+      ),
+    );
+  }
+
+  Widget _buildTopFlashButton(CameraState state) {
+    return StreamBuilder<FlashMode>(
+      stream: state.sensorConfig.flashMode$,
+      builder: (context, snapshot) {
+        final flashMode = snapshot.data ?? FlashMode.none;
+        IconData icon;
+        switch (flashMode) {
+          case FlashMode.none:
+            icon = Icons.flash_off_rounded;
+            break;
+          case FlashMode.on:
+            icon = Icons.flash_on_rounded;
+            break;
+          case FlashMode.auto:
+            icon = Icons.flash_auto_rounded;
+            break;
+          case FlashMode.always:
+            icon = Icons.flashlight_on_rounded;
+            break;
+        }
+        final bool active = flashMode != FlashMode.none;
+        return _topGlassButton(
+          onTap: () => state.sensorConfig.setFlashMode(_nextFlashMode(flashMode)),
+          // 꺼짐=흰색, 그 외(켜짐/자동/손전등)=노란색으로 상태를 즉시 인지
+          child: Icon(icon, color: active ? const Color(0xFFFFD54F) : Colors.white, size: 19),
+        );
+      },
+    );
+  }
+
+  Widget _buildTopRatioButton(CameraState state) {
+    return StreamBuilder<CameraAspectRatios>(
+      stream: state.sensorConfig.aspectRatio$,
+      builder: (context, snapshot) {
+        final ratio = snapshot.data ?? CameraAspectRatios.ratio_16_9;
+        final String label = switch (ratio) {
+          CameraAspectRatios.ratio_4_3 => '4:3',
+          CameraAspectRatios.ratio_16_9 => '16:9',
+          CameraAspectRatios.ratio_1_1 => '1:1',
+        };
+        return _topGlassButton(
+          onTap: () => state.sensorConfig.setAspectRatio(_nextRatio(ratio)),
+          child: Text(
+            label,
+            style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w800),
+          ),
+        );
+      },
+    );
+  }
+
+  FlashMode _nextFlashMode(FlashMode current) {
+    switch (current) {
+      case FlashMode.none:
+        return FlashMode.on;
+      case FlashMode.on:
+        return FlashMode.auto;
+      case FlashMode.auto:
+        return FlashMode.always;
+      case FlashMode.always:
+        return FlashMode.none;
+    }
+  }
+
+  CameraAspectRatios _nextRatio(CameraAspectRatios current) {
+    switch (current) {
+      case CameraAspectRatios.ratio_4_3:
+        return CameraAspectRatios.ratio_16_9;
+      case CameraAspectRatios.ratio_16_9:
+        return CameraAspectRatios.ratio_1_1;
+      case CameraAspectRatios.ratio_1_1:
+        return CameraAspectRatios.ratio_4_3;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -245,19 +339,28 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
             ),
             onMediaCaptureEvent: _onMediaCaptureEvent,
             topActionsBuilder: (state) {
+              // 일반 카메라 앱 관례에 맞춰 설정류(플래시·비율)는 상단 우측에 배치.
+              final bool isRecording = state is VideoRecordingCameraState;
               return Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  AwesomeCircleButton(
+                  _topGlassButton(
                     onTap: () => Navigator.of(context).pop(),
-                    child: const Icon(Icons.close_rounded, color: Colors.white, size: 24),
+                    child: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
                   ),
+                  const Spacer(),
+                  if (!isRecording) ...[
+                    _buildTopFlashButton(state),
+                    const SizedBox(width: 8),
+                    _buildTopRatioButton(state),
+                  ],
                   // 사진 모드에서 촬영한 사진이 있으면 "다음" 버튼
-                  if (_photos.isNotEmpty)
+                  if (_photos.isNotEmpty) ...[
+                    const SizedBox(width: 8),
                     GestureDetector(
                       onTap: _goToPhotoRegPage,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        height: 40,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
                         decoration: BoxDecoration(
                           color: const Color(0xFF4C8DFF),
                           borderRadius: BorderRadius.circular(20),
@@ -279,6 +382,7 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
                         ),
                       ),
                     ),
+                  ],
                 ],
               );
             },
@@ -664,30 +768,6 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
     super.dispose();
   }
 
-  FlashMode _getNextFlashMode(FlashMode current) {
-    switch (current) {
-      case FlashMode.none:
-        return FlashMode.on;
-      case FlashMode.on:
-        return FlashMode.auto;
-      case FlashMode.auto:
-        return FlashMode.always;
-      case FlashMode.always:
-        return FlashMode.none;
-    }
-  }
-
-  CameraAspectRatios _getNextRatio(CameraAspectRatios current) {
-    switch (current) {
-      case CameraAspectRatios.ratio_4_3:
-        return CameraAspectRatios.ratio_16_9;
-      case CameraAspectRatios.ratio_16_9:
-        return CameraAspectRatios.ratio_1_1;
-      case CameraAspectRatios.ratio_1_1:
-        return CameraAspectRatios.ratio_4_3;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final isRecording = widget.state is VideoRecordingCameraState;
@@ -781,89 +861,17 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
     );
   }
 
+  // 셔터 위 중앙 = 줌 핀 전용(플래시·비율은 상단 바로 이동 — 일반 카메라 앱 관례)
   Widget _buildQuickSettings(CameraState state) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.28),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.14), width: 0.8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          StreamBuilder<FlashMode>(
-            stream: state.sensorConfig.flashMode$,
-            builder: (context, snapshot) {
-              final flashMode = snapshot.data ?? FlashMode.none;
-              IconData icon;
-              String label;
-              switch (flashMode) {
-                case FlashMode.none:
-                  icon = Icons.flash_off_rounded;
-                  label = '꺼짐';
-                  break;
-                case FlashMode.on:
-                  icon = Icons.flash_on_rounded;
-                  label = '켜짐';
-                  break;
-                case FlashMode.auto:
-                  icon = Icons.flash_auto_rounded;
-                  label = '자동';
-                  break;
-                case FlashMode.always:
-                  icon = Icons.flashlight_on_rounded;
-                  label = '손전등';
-                  break;
-              }
-              return _buildQuickActionButton(
-                icon: icon,
-                label: label,
-                onTap: () {
-                  final nextMode = _getNextFlashMode(flashMode);
-                  state.sensorConfig.setFlashMode(nextMode);
-                },
-              );
-            },
-          ),
-          Container(
-            height: 16,
-            width: 1,
-            color: Colors.white.withOpacity(0.2),
-            margin: const EdgeInsets.symmetric(horizontal: 14),
-          ),
-          StreamBuilder<CameraAspectRatios>(
-            stream: state.sensorConfig.aspectRatio$,
-            builder: (context, snapshot) {
-              final ratio = snapshot.data ?? CameraAspectRatios.ratio_16_9;
-              String label;
-              switch (ratio) {
-                case CameraAspectRatios.ratio_4_3:
-                  label = '4:3';
-                  break;
-                case CameraAspectRatios.ratio_16_9:
-                  label = '16:9';
-                  break;
-                case CameraAspectRatios.ratio_1_1:
-                  label = '1:1';
-                  break;
-              }
-              return _buildQuickActionButton(
-                icon: Icons.aspect_ratio_rounded,
-                label: label,
-                onTap: () {
-                  final nextRatio = _getNextRatio(ratio);
-                  state.sensorConfig.setAspectRatio(nextRatio);
-                },
-              );
-            },
-          ),
-          Container(
-            height: 16,
-            width: 1,
-            color: Colors.white.withOpacity(0.2),
-            margin: const EdgeInsets.symmetric(horizontal: 14),
-          ),
           StreamBuilder<double>(
             stream: state.sensorConfig.zoom$,
             builder: (context, snapshot) {
@@ -902,27 +910,6 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
                 ],
               );
             },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: Colors.white, size: 16),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -983,6 +970,7 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
   }
 
   Widget _buildModeChip(CameraState state, String label, bool isSelected, CaptureMode mode) {
+    final IconData icon = mode == CaptureMode.photo ? Icons.photo_camera_rounded : Icons.videocam_rounded;
     return GestureDetector(
       onTap: () {
         if (isSelected) return;
@@ -990,18 +978,25 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(18),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.black : Colors.white70,
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: isSelected ? Colors.black : Colors.white60),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.black : Colors.white70,
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1016,7 +1011,7 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           isRecording
-              ? const SizedBox(width: 52)
+              ? const SizedBox(width: 48)
               : _buildGalleryButton(),
           Column(
             mainAxisSize: MainAxisSize.min,
@@ -1029,25 +1024,26 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
             ],
           ),
           isRecording
-              ? const SizedBox(width: 52)
+              ? const SizedBox(width: 48)
               : _buildCameraSwitchButton(state),
         ],
       ),
     );
   }
 
+  // 갤러리 = 사진 프레임 느낌의 라운드 사각(원형 셔터·전환과 형태로 구분)
   Widget _buildGalleryButton() {
     return GestureDetector(
       onTap: () => widget.onGalleryTap(widget.state),
       child: Container(
-        width: 52,
-        height: 52,
+        width: 48,
+        height: 48,
         decoration: BoxDecoration(
           color: Colors.black.withOpacity(0.28),
-          shape: BoxShape.circle,
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(color: Colors.white.withOpacity(0.25), width: 1.4),
         ),
-        child: const Icon(Icons.photo_library_outlined, color: Colors.white, size: 22),
+        child: const Icon(Icons.image_rounded, color: Colors.white, size: 22),
       ),
     );
   }
@@ -1060,14 +1056,15 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
         _reloadZoomCapsAfterFlip();
       },
       child: Container(
-        width: 52,
-        height: 52,
+        width: 48,
+        height: 48,
         decoration: BoxDecoration(
           color: Colors.black.withOpacity(0.28),
           shape: BoxShape.circle,
           border: Border.all(color: Colors.white.withOpacity(0.25), width: 1.4),
         ),
-        child: const Icon(Icons.cached_rounded, color: Colors.white, size: 24),
+        // cached(새로고침)보다 카메라 전환 의미가 분명한 아이콘으로 교체
+        child: const Icon(Icons.cameraswitch_rounded, color: Colors.white, size: 22),
       ),
     );
   }
