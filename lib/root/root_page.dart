@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:project1/app/community/community_hub_page.dart';
+import 'package:project1/app/shared_album/album_list_page.dart';
 import 'package:project1/app/camera/page/camera_awesome_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
 import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
@@ -104,9 +104,9 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
       goRecord();
       return;
     }
-    // 스카이라운지(모임 허브)로 이동
+    // 앨범(공유앨범 홈 1a — 구 스카이라운지 허브 대체)으로 이동
     if (index == 3) {
-      mainlist[3] = const CommunityHubPage();
+      mainlist[3] = const AlbumListPage();
     }
     //내정보 페이지로 이동
     if (index == 4) {

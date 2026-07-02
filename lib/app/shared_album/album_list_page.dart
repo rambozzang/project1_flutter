@@ -12,6 +12,7 @@ import 'package:project1/app/shared_album/widget/sa_album_mosaic_card.dart';
 import 'package:project1/app/shared_album/widget/sa_gradient_button.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/community/community_repo.dart';
+import 'package:project1/repo/community/data/community_data.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 
@@ -40,6 +41,10 @@ class _AlbumListPageState extends State<AlbumListPage> {
   bool _loading = true;
   List<SaAlbumCardData> _cards = [];
 
+  // 받은 초대(구 허브 기능 보존) — 수락/거절 진행 중 표시
+  List<CommunityData> _invites = [];
+  final Set<int> _inviteBusy = {};
+
   @override
   void initState() {
     super.initState();
@@ -59,6 +64,10 @@ class _AlbumListPageState extends State<AlbumListPage> {
 
   Future<void> _load() async {
     try {
+      // 받은 초대는 실패해도 홈 로딩을 막지 않도록 별도 처리
+      _repo.getMyInvites().then((list) {
+        if (mounted) setState(() => _invites = list);
+      }).catchError((_) {});
       final communities = await _repo.getMyCommunities();
       final cards = communities.map((c) {
         final card = SaAlbumCardData(community: c);
@@ -140,6 +149,7 @@ class _AlbumListPageState extends State<AlbumListPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(),
+              if (_invites.isNotEmpty) _buildInvitesSection(),
               Expanded(child: _buildBody()),
             ],
           ),
@@ -163,21 +173,35 @@ class _AlbumListPageState extends State<AlbumListPage> {
               ],
             ),
           ),
+          // 앨범 탐색(공개 앨범 검색 + 코드로 참여)
           _circleButton(
             icon: PhosphorIconsBold.magnifyingGlass,
-            onTap: () => BotToast.showText(text: '앨범 검색은 다음 단계에서 연결됩니다.'),
+            onTap: () => Get.toNamed('/AlbumExplorePage')?.then((joined) {
+              if (joined == true) _reload();
+            }),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           // 보기 방식 토글: 1a 스택 피드 ↔ 1c 모자이크 그리드
           _circleButton(
             icon: _mosaic ? PhosphorIconsBold.rows : PhosphorIconsBold.squaresFour,
             onTap: _toggleViewMode,
           ),
-          const SizedBox(width: 10),
-          SaGradientButton(
-            label: '만들기',
-            icon: const PhosphorIcon(PhosphorIconsBold.plus, size: 14, color: SaColors.onAccent),
+          const SizedBox(width: 8),
+          // 알림(구 라운지 허브의 벨 진입점 보존 — 탭3의 유일한 알림 진입점)
+          _circleButton(
+            icon: PhosphorIconsFill.bell,
+            onTap: () => Get.toNamed('/AlramPage'),
+          ),
+          const SizedBox(width: 8),
+          // 앨범 만들기(teal 그라디언트 원형)
+          GestureDetector(
             onTap: () => Get.toNamed('/CommunityCreatePage')?.then((_) => _reload()),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(gradient: SaColors.primaryGradient, shape: BoxShape.circle),
+              child: const PhosphorIcon(PhosphorIconsBold.plus, size: 17, color: SaColors.onAccent),
+            ),
           ),
         ],
       ),
@@ -278,6 +302,97 @@ class _AlbumListPageState extends State<AlbumListPage> {
   void _openDetail(SaAlbumCardData card) {
     Get.toNamed('/AlbumDetailPage',
         arguments: {'communityId': card.community.communityId})?.then((_) => _reload());
+  }
+
+  // ── 받은 초대(구 허브 기능 보존) ──────────────────────────
+
+  Future<void> _acceptInvite(CommunityData c) async {
+    if (_inviteBusy.contains(c.communityId)) return;
+    setState(() => _inviteBusy.add(c.communityId));
+    final (ok, msg) = await _repo.acceptInvite(c.communityId);
+    if (!mounted) return;
+    setState(() => _inviteBusy.remove(c.communityId));
+    BotToast.showText(text: ok ? '[${c.name}] 앨범에 참여했어요!' : (msg.isEmpty ? '수락에 실패했습니다.' : msg));
+    if (ok) _reload();
+  }
+
+  Future<void> _declineInvite(CommunityData c) async {
+    if (_inviteBusy.contains(c.communityId)) return;
+    setState(() => _inviteBusy.add(c.communityId));
+    final (ok, msg) = await _repo.declineInvite(c.communityId);
+    if (!mounted) return;
+    setState(() {
+      _inviteBusy.remove(c.communityId);
+      if (ok) _invites.removeWhere((e) => e.communityId == c.communityId);
+    });
+    if (!ok) BotToast.showText(text: msg.isEmpty ? '거절에 실패했습니다.' : msg);
+  }
+
+  Widget _buildInvitesSection() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const PhosphorIcon(PhosphorIconsFill.envelopeSimple, size: 13, color: SaColors.warn),
+              const SizedBox(width: 6),
+              Text('받은 초대', style: SaText.caption.copyWith(color: SaColors.warn)),
+              const SizedBox(width: 6),
+              Text('${_invites.length}', style: SaText.mono(fontSize: 10, color: SaColors.warn)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          for (final c in _invites) _inviteRow(c),
+        ],
+      ),
+    );
+  }
+
+  Widget _inviteRow(CommunityData c) {
+    final bool busy = _inviteBusy.contains(c.communityId);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: SaColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: SaColors.warn.withOpacity(0.35)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: SaText.bodyMedium.copyWith(fontSize: 13.5)),
+                Text('멤버 ${c.memberCnt}', style: SaText.mono(fontSize: 9.5)),
+              ],
+            ),
+          ),
+          if (busy)
+            const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal))
+          else ...[
+            GestureDetector(
+              onTap: () => _acceptInvite(c),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(color: SaColors.accentTeal, borderRadius: BorderRadius.circular(999)),
+                child: Text('수락',
+                    style: SaText.caption.copyWith(fontSize: 11.5, color: SaColors.onAccent, fontWeight: FontWeight.w800)),
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () => _declineInvite(c),
+              child: Text('거절', style: SaText.caption.copyWith(fontSize: 11.5, color: SaColors.textTertiary)),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   Future<void> _reload() async {

@@ -6,6 +6,15 @@
 
 ## 2026-07-02
 
+### 25:50 | claude | ✅ 완료 (하단탭 라운지 → 공유앨범 홈 교체)
+**작업**: 하단탭 index3을 CommunityHubPage → AlbumListPage(공유앨범 1a)로 교체 + 허브 기능 4종 이관
+- `root_page.dart`: mainlist[3] = AlbumListPage (허브는 라우트로 병존)
+- **알림 벨**: 홈 헤더에 벨 추가(/AlramPage — 구 허브의 유일 알림 진입점 보존)
+- **받은 초대**: 홈 헤더 아래 섹션(warn 톤 카드, 수락=teal/거절, 수락 시 목록 갱신) — getMyInvites/accept/decline 재사용
+- **검색+코드 참여**: 신규 `album_explore_page`(다크) — 공개 앨범 검색(디바운스, 비우면 인기순), 초대 코드 다이얼로그(joinByCode), 결과 카드(멤버 N·승인제/바로참여, 참여/신청/멤버/신청됨 상태), 가입 발생 시 홈 reload
+- 헤더 재구성: [검색][보기 토글][벨][+ 만들기(그라디언트 원형)]
+- 검증: analyze 클린, Android 디버그 빌드 성공. 검수: 하단탭 3번 탭
+
 ### 23:55 | claude | ✅ 완료 (기존 라운지를 설정에 링크)
 **작업**: 라운지 하단탭이 새 앨범 허브로 교체됨 → 기존 라운지(`AlramPage` "스카이 라운지", 게시판 등)를 설정에서 진입하도록 링크 추가
 - `setting_page.dart`: "커뮤니티" 그룹 신설(문의 아래) + '스카이 라운지' 항목(Icons.groups, teal) → `Get.toNamed('/AlramPage')`

@@ -34,6 +34,7 @@ import 'package:project1/app/setting/alram_setting_page.dart';
 import 'package:project1/app/setting/weather_noti_setting_page.dart';
 import 'package:project1/app/shared_album/album_cover_editor_page.dart';
 import 'package:project1/app/shared_album/album_detail_page.dart';
+import 'package:project1/app/shared_album/album_explore_page.dart';
 import 'package:project1/app/shared_album/album_invite_page.dart';
 import 'package:project1/app/shared_album/album_immersive_page.dart';
 import 'package:project1/app/shared_album/album_list_page.dart';
@@ -322,6 +323,12 @@ abstract class AppPages {
     GetPage(
       name: '/AlbumInvitePage',
       page: () => const AlbumInvitePage(),
+      transition: Transition.rightToLeftWithFade,
+    ),
+    // 공유앨범 탐색(공개 앨범 검색 + 코드로 참여 — 구 허브 기능 이관)
+    GetPage(
+      name: '/AlbumExplorePage',
+      page: () => const AlbumExplorePage(),
       transition: Transition.rightToLeftWithFade,
     ),
     GetPage(
