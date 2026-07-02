@@ -112,18 +112,25 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
   final ValueNotifier<bool> _gaugeVN = ValueNotifier<bool>(false);
   Timer? _gaugeHideTimer;
 
+  // 제스처 힌트는 앱 실행당 1번만 노출한다(카메라 재진입 시 생략).
+  static bool _gestureHintShownThisRun = false;
+
   @override
   void initState() {
     super.initState();
-    // 손가락 왕복 스와이프 애니메이션(0→1→0 반복, 부드럽게)
-    _swipeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 950))..repeat(reverse: true);
+    // 손가락 왕복 스와이프 애니메이션(0→1→0 반복, 부드럽게) — 힌트 노출 중에만 구동.
+    _swipeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 950));
     _swipeAnim = CurvedAnimation(parent: _swipeCtrl, curve: Curves.easeInOut);
     // 다음 프레임에 페이드인 → 3.4초 후 페이드아웃(스와이프 왕복이 몇 번 보이도록)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!mounted || _gestureHintShownThisRun) return;
+      _gestureHintShownThisRun = true;
+      _swipeCtrl.repeat(reverse: true);
       setState(() => _showGestureHint = true);
       _hintTimer = Timer(const Duration(milliseconds: 3400), () {
-        if (mounted) setState(() => _showGestureHint = false);
+        if (!mounted) return;
+        setState(() => _showGestureHint = false);
+        _swipeCtrl.stop();
       });
     });
   }
@@ -363,19 +370,23 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
               ),
             ),
           ),
-          // 초기화 시 조작 안내: 좌우(줌)·상하(밝기)를 각각 캡슐로 분리 + 손가락 스와이프 애니메이션.
-          Center(
+          // 초기화 시 조작 안내(앱 실행당 1회): 상하(밝기)=우측 측면, 좌우(줌)=중앙.
+          Positioned.fill(
             child: IgnorePointer(
               child: AnimatedOpacity(
                 opacity: _showGestureHint ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 450),
                 curve: Curves.easeInOut,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                child: Stack(
                   children: [
-                    _buildBrightnessHint(),
-                    const SizedBox(height: 16),
-                    _buildZoomHint(),
+                    Center(child: _buildZoomHint()),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 14),
+                        child: _buildBrightnessHint(),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -393,101 +404,93 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
   // 왕복하는 손가락(흰 점 + 은은한 글로우)
   Widget _swipeDot() {
     return Container(
-      width: 20,
-      height: 20,
+      width: 12,
+      height: 12,
       decoration: BoxDecoration(
         color: Colors.white,
         shape: BoxShape.circle,
         boxShadow: [
-          BoxShadow(color: Colors.white.withOpacity(0.55), blurRadius: 10, spreadRadius: 1),
+          BoxShadow(color: Colors.white.withOpacity(0.55), blurRadius: 6, spreadRadius: 1),
         ],
       ),
     );
   }
 
-  // 상하(밝기): 세로 트랙에서 점이 위↕아래로 움직임
+  // 캡슐 밖에 두는 미니 라벨(트랙을 얇게 유지하기 위해 분리)
+  Widget _hintLabel(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: _hintBg, borderRadius: BorderRadius.circular(10)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white, size: 11),
+          const SizedBox(width: 4),
+          Text(text, style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+
+  // 상하(밝기): 우측 측면의 얇은 세로 캡슐, 점이 위↕아래로 왕복
   Widget _buildBrightnessHint() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(color: _hintBg, borderRadius: BorderRadius.circular(26)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 30,
-            height: 92,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 26,
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          decoration: BoxDecoration(color: _hintBg, borderRadius: BorderRadius.circular(13)),
+          child: SizedBox(
+            height: 96,
             child: Stack(
               alignment: Alignment.center,
               children: [
-                const Align(alignment: Alignment.topCenter, child: Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white70, size: 22)),
-                const Align(alignment: Alignment.bottomCenter, child: Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 22)),
+                const Align(alignment: Alignment.topCenter, child: Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white70, size: 16)),
+                const Align(alignment: Alignment.bottomCenter, child: Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 16)),
                 AnimatedBuilder(
                   animation: _swipeAnim,
-                  builder: (context, child) => Transform.translate(offset: Offset(0, (_swipeAnim.value * 2 - 1) * 22), child: child),
+                  builder: (context, child) => Transform.translate(offset: Offset(0, (_swipeAnim.value * 2 - 1) * 26), child: child),
                   child: _swipeDot(),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.wb_sunny_rounded, color: Colors.white, size: 15),
-                SizedBox(width: 6),
-                Text('밝기', style: TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.w800)),
-              ]),
-              SizedBox(height: 2),
-              Text('위·아래로 밀기', style: TextStyle(color: Colors.white70, fontSize: 11.5, fontWeight: FontWeight.w500)),
-            ],
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 6),
+        _hintLabel(Icons.wb_sunny_rounded, '밝기'),
+      ],
     );
   }
 
-  // 좌우(줌): 가로 트랙에서 점이 왼쪽↔오른쪽으로 움직임
+  // 좌우(줌): 화면 중앙의 얇은 가로 캡슐, 점이 왼쪽↔오른쪽으로 왕복
   Widget _buildZoomHint() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(color: _hintBg, borderRadius: BorderRadius.circular(26)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: const [
-              Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.zoom_in_rounded, color: Colors.white, size: 15),
-                SizedBox(width: 6),
-                Text('줌', style: TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.w800)),
-              ]),
-              SizedBox(height: 2),
-              Text('좌·우로 밀기', style: TextStyle(color: Colors.white70, fontSize: 11.5, fontWeight: FontWeight.w500)),
-            ],
-          ),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 92,
-            height: 30,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          height: 26,
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          decoration: BoxDecoration(color: _hintBg, borderRadius: BorderRadius.circular(13)),
+          child: SizedBox(
+            width: 120,
             child: Stack(
               alignment: Alignment.center,
               children: [
-                const Align(alignment: Alignment.centerLeft, child: Icon(Icons.keyboard_arrow_left_rounded, color: Colors.white70, size: 22)),
-                const Align(alignment: Alignment.centerRight, child: Icon(Icons.keyboard_arrow_right_rounded, color: Colors.white70, size: 22)),
+                const Align(alignment: Alignment.centerLeft, child: Icon(Icons.keyboard_arrow_left_rounded, color: Colors.white70, size: 16)),
+                const Align(alignment: Alignment.centerRight, child: Icon(Icons.keyboard_arrow_right_rounded, color: Colors.white70, size: 16)),
                 AnimatedBuilder(
                   animation: _swipeAnim,
-                  builder: (context, child) => Transform.translate(offset: Offset((_swipeAnim.value * 2 - 1) * 22, 0), child: child),
+                  builder: (context, child) => Transform.translate(offset: Offset((_swipeAnim.value * 2 - 1) * 34, 0), child: child),
                   child: _swipeDot(),
                 ),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 6),
+        _hintLabel(Icons.zoom_in_rounded, '줌'),
+      ],
     );
   }
 }
