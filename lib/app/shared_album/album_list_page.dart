@@ -187,12 +187,6 @@ class _AlbumListPageState extends State<AlbumListPage> {
             onTap: _toggleViewMode,
           ),
           const SizedBox(width: 8),
-          // 알림(구 라운지 허브의 벨 진입점 보존 — 탭3의 유일한 알림 진입점)
-          _circleButton(
-            icon: PhosphorIconsFill.bell,
-            onTap: () => Get.toNamed('/AlramPage'),
-          ),
-          const SizedBox(width: 8),
           // 앨범 만들기(teal 그라디언트 원형)
           GestureDetector(
             onTap: () => Get.toNamed('/AlbumCreatePage')?.then((_) => _reload()),
