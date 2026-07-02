@@ -8,6 +8,7 @@ import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/widget/sa_gradient_button.dart';
 import 'package:project1/app/shared_album/widget/sa_member_avatar_stack.dart';
+import 'package:project1/app/shared_album/widget/sa_new_badge.dart';
 import 'package:project1/app/shared_album/widget/sa_overlap_image_stack.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/community/community_repo.dart';
@@ -36,6 +37,10 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
   late final int _communityId;
   CommunityData? _community;
   List<String> _memberAvatars = [];
+
+  /// 진입 시점의 마지막 열람 시각 — 셀 pink 점(안 본 것) 판단 기준.
+  /// detail 조회로 이전 값을 확보한 뒤 markSeen으로 갱신하므로 이번 세션 동안 점이 유지된다.
+  DateTime? _lastSeen;
 
   final List<BoardWeatherListData> _items = [];
   static const int _pageSize = 30;
@@ -90,6 +95,9 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
         _repo.getMembers(_communityId),
       ]);
       _community = results[0] as CommunityData?;
+      // pink 점 기준: 갱신 전의 마지막 열람 시각 확보 → 이후 열람 처리로 갱신
+      _lastSeen = DateTime.tryParse(_community?.lastSeenDtm ?? '');
+      _repo.markSeen(_communityId); // fire-and-forget — 홈 복귀 시 NEW 뱃지 해소
       final members = results[1] as List;
       _memberAvatars = members
           .map((m) => (m as dynamic).profilePath?.toString() ?? '')
@@ -469,9 +477,17 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
                 color: Colors.white.withOpacity(0.9),
               ),
             ),
+            // 안 본 콘텐츠 pink 점(마지막 열람 이후 올라온 것)
+            if (_isNew(item)) const Positioned(left: 6, top: 6, child: SaNewDot(size: 7)),
           ],
         ),
       ),
     );
+  }
+
+  bool _isNew(BoardWeatherListData item) {
+    if (_lastSeen == null) return false;
+    final dt = DateTime.tryParse(item.crtDtm ?? '');
+    return dt != null && dt.isAfter(_lastSeen!);
   }
 }

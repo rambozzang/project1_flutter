@@ -16,6 +16,8 @@ class CommunityData {
   final bool isManager; // 방장 포함 true — 표지 수정 등 매니저 권한 UI 노출용
   final int videoCnt; // 앨범 내 영상 수(내 목록/상세 응답에서만 계산됨, 그 외 0)
   final int photoCnt; // 앨범 내 사진 수
+  final int newCnt; // 마지막 열람 이후 남이 올린 미디어 수(JOINED 멤버만)
+  final String? lastSeenDtm; // 마지막 열람 시각(1d 셀 pink 점 판단용)
 
   CommunityData({
     required this.communityId,
@@ -34,6 +36,8 @@ class CommunityData {
     this.isManager = false,
     this.videoCnt = 0,
     this.photoCnt = 0,
+    this.newCnt = 0,
+    this.lastSeenDtm,
   });
 
   int get mediaCnt => videoCnt + photoCnt;
@@ -64,6 +68,8 @@ class CommunityData {
       isManager: (map['isManager'] ?? map['manager'] ?? map['owner'] ?? map['isOwner'] ?? false) == true,
       videoCnt: map['videoCnt'] == null ? 0 : (map['videoCnt'] as num).toInt(),
       photoCnt: map['photoCnt'] == null ? 0 : (map['photoCnt'] as num).toInt(),
+      newCnt: map['newCnt'] == null ? 0 : (map['newCnt'] as num).toInt(),
+      lastSeenDtm: map['lastSeenDtm']?.toString(),
     );
   }
 }

@@ -251,6 +251,16 @@ class CommunityRepo {
     }
   }
 
+  /// 앨범 열람 처리 — NEW(안 본 콘텐츠) 집계 기준 시각을 지금으로 갱신 (1d 갤러리 진입 시 호출)
+  Future<void> markSeen(int communityId) async {
+    final dio = await AuthDio.instance.getDio();
+    try {
+      await dio.post('${UrlConfig.baseURL}/community/seen', queryParameters: {'communityId': communityId});
+    } on DioException catch (_) {
+      // 실패해도 UX 영향 없음 — 다음 진입 때 자연 재시도
+    }
+  }
+
   // ───────────────────────── 매니저 지정/해제 · 강퇴 · 태그 ─────────────────────────
 
   /// 매니저 지정/해제 (방장만 가능).

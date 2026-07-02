@@ -64,6 +64,8 @@ class _AlbumListPageState extends State<AlbumListPage> {
         final card = SaAlbumCardData(community: c);
         // 백엔드가 계산해주는 영상+사진 합계(0이면 칩 숨김 유지)
         if (c.mediaCnt > 0) card.mediaCount = c.mediaCnt;
+        // NEW 뱃지: 마지막 열람 이후 남이 올린 미디어 수(0이면 자동 숨김)
+        card.newCount = c.newCnt;
         return card;
       }).toList();
       if (!mounted) return;
