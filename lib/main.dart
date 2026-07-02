@@ -5,6 +5,7 @@ import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 // import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
@@ -27,7 +28,13 @@ import 'package:workmanager/workmanager.dart';
 // import com.kakao.sdk.common.util.Utility
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+
+  // 네이티브 스플래시를 로그인 확인이 끝날 때까지 유지 → 별도 로딩 화면(AuthPage UI) 없이
+  // 스플래시가 그대로 떠 있다가 root/로그인 화면이 준비되면 제거(RootPage/JoinPage initState).
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  // 안전장치: 어떤 경로에서도 제거가 안 되는 상황(로그인 지연/예외) 대비 최대 5초 후 강제 제거.
+  Future.delayed(const Duration(seconds: 5), FlutterNativeSplash.remove);
 
   // 앱 전체 세로 화면 고정(가로 회전 비활성화)
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);

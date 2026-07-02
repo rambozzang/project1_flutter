@@ -5,6 +5,7 @@ import 'package:app_version_update/app_version_update.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/community/community_hub_page.dart';
@@ -65,6 +66,9 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+
+    // 루트 화면 첫 프레임 직후 네이티브 스플래시 제거 → 스플래시에서 홈으로 바로 전환.
+    WidgetsBinding.instance.addPostFrameCallback((_) => FlutterNativeSplash.remove());
 
     Get.put(VideoListCntr());
     checkAppVersion();

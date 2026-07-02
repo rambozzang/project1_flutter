@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
@@ -144,6 +145,9 @@ class _JoinPageState extends State<JoinPage> with SingleTickerProviderStateMixin
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    // 로그아웃 사용자는 회원가입 화면이 첫 도착지 → 첫 프레임 직후 네이티브 스플래시 제거.
+    WidgetsBinding.instance.addPostFrameCallback((_) => FlutterNativeSplash.remove());
     // createConstellations();
 
     _controller = AnimationController(
