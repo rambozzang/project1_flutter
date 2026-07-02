@@ -45,7 +45,7 @@ class _MapPageState extends State<MapPage> {
 
   // ── 마커 증분 관리 ──
   // 지도를 움직일 때 전체 마커를 재생성하지 않고, boardId 기준으로 신규만 추가/이탈만 제거한다.
-  final Map<String, NMarker> _activeMarkers = {}; // 현재 지도에 올라간 마커(boardId → 마커)
+  final Map<String, NClusterableMarker> _activeMarkers = {}; // 현재 지도에 올라간 마커(boardId → 마커)
   final Map<String, NOverlayImage> _iconCache = {}; // 썸네일 URL → 아이콘(다운로드 재사용)
   int _markerSyncToken = 0; // 빠른 연속 이동 시 최신 동기화만 반영
   Timer? _cameraDebounce; // 카메라 멈춘 뒤에만 재조회
@@ -164,7 +164,8 @@ class _MapPageState extends State<MapPage> {
       }
     }
 
-    // 2. 신규 마커만 생성(8개씩 병렬 — 100개 동시 다운로드 스파이크 방지)
+    // 2. 신규 마커만 생성(8개씩 병렬 다운로드 → 배치 단위로 한 번에 addOverlayAll)
+    //    개별 addOverlay(플랫폼 채널 N회) 대신 addOverlayAll(1회)로 채널 왕복을 줄인다.
     final newItems = incoming.entries.where((en) => !_activeMarkers.containsKey(en.key)).map((en) => en.value).toList();
     const batchSize = 8;
     for (var i = 0; i < newItems.length; i += batchSize) {
@@ -172,20 +173,25 @@ class _MapPageState extends State<MapPage> {
       final chunk = newItems.skip(i).take(batchSize).toList();
       final markers = await Future.wait(chunk.map(_createMarker));
       if (token != _markerSyncToken || !mounted) return;
+      final toAdd = <NAddableOverlay>{};
       for (final m in markers) {
         if (m == null) continue;
         final id = m.info.id;
         if (_activeMarkers.containsKey(id)) continue;
         _activeMarkers[id] = m;
+        toAdd.add(m);
+      }
+      if (toAdd.isNotEmpty) {
         try {
-          await mapCntr.mapController.addOverlay(m);
+          await mapCntr.mapController.addOverlayAll(toAdd);
         } catch (_) {}
       }
     }
   }
 
-  // 마커 1개 생성(아이콘은 캐시 우선, 없으면 다운로드해 캐시)
-  Future<NMarker?> _createMarker(BoardWeatherListData element) async {
+  // 마커 1개 생성(아이콘은 캐시 우선, 없으면 다운로드해 캐시).
+  // 대량 마커 대응: NClusterableMarker 로 만들어 줌아웃 시 자동 병합(클러스터링)되게 한다.
+  Future<NClusterableMarker?> _createMarker(BoardWeatherListData element) async {
     try {
       final id = element.boardId.toString();
       final thumb = element.thumbnailPath?.toString() ?? '';
@@ -193,12 +199,13 @@ class _MapPageState extends State<MapPage> {
       if (icon == null && thumb.isNotEmpty) {
         final request = await http.get(Uri.parse(thumb)).timeout(const Duration(seconds: 8));
         if (request.statusCode == 200) {
-          icon = await NOverlayImage.fromByteArray(request.bodyBytes);
+          // cacheKey에 boardId를 주어 재조회·재진입 시 이미지 재디코딩을 피한다.
+          icon = await NOverlayImage.fromByteArray(request.bodyBytes, cacheKey: 'board_$id');
           _iconCache[thumb] = icon;
         }
       }
 
-      final marker = NMarker(
+      final marker = NClusterableMarker(
         id: id,
         position: NLatLng(double.parse(element.lat.toString()), double.parse(element.lon.toString())),
         icon: icon,
@@ -248,6 +255,8 @@ class _MapPageState extends State<MapPage> {
                     right: 0,
                     bottom: MediaQuery.of(context).size.height * 0.1,
                     child: NaverMap(
+                      // 대량 마커 대응: NClusterableMarker 가 줌 레벨에 따라 자동 병합된다.
+                      clusterOptions: const NaverMapClusteringOptions(),
                       options: NaverMapViewOptions(
                         locationButtonEnable: true,
                         initialCameraPosition: NCameraPosition(
