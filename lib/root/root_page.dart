@@ -50,7 +50,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     bottomItem(Icons.cloudy_snowing, 'Feed'),
     // bottomItem(Icons.cloud_queue, '날씨'),
     bottomItem(Icons.add, '추가'),
-    bottomItem(Icons.groups, '라운지'),
+    bottomItem(Icons.photo_library_rounded, '앨범'),
     bottomItem(Icons.person, '내정보'),
   ];
   // body Widget List

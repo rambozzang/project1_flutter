@@ -30,17 +30,17 @@ class CoverTemplate {
 }
 
 /// 표지 템플릿 10종(순서 중요 — 첫 항목이 앨범 생성 시 기본 선택값).
-/// 2026-07-02 전면 교체: 발랄·캐릭터 무드의 무료(Unsplash) 사진으로 통일(눈검수 완료).
+/// 2026-07-03 전면 교체: 밝고 귀여운 캐릭터·토이 무드의 무료(Unsplash) 사진으로 통일(눈검수 완료).
 const List<CoverTemplate> kCoverTemplates = [
-  CoverTemplate('wedding', '결혼식', 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6'), // 반지 낀 두 손 + 살구빛 부케
-  CoverTemplate('reunion', '동창회', 'https://images.unsplash.com/photo-1527529482837-4698179dc6ce'), // 조명 아래 잔 들어 건배
-  CoverTemplate('baby100', '100일 기념', 'https://images.unsplash.com/photo-1518946222227-364f22132616'), // 레고 유니콘 미니피규어
-  CoverTemplate('party', '파티', 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30'), // 쏟아지는 색종이
-  CoverTemplate('yearend', '망년회', 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819'), // 무지개빛 콘서트 색종이
-  CoverTemplate('birthday', '생일', 'https://images.unsplash.com/photo-1551024601-bec78aea704b'), // 스프링클 도넛 탑
-  CoverTemplate('travel', '여행', 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800'), // 노란 미니밴 로드트립
-  CoverTemplate('family', '가족모임', 'https://images.unsplash.com/photo-1546975490-e8b92a360b24'), // 티피 텐트 속 웰시코기
-  CoverTemplate('friends', '친구모임', 'https://images.unsplash.com/photo-1516633630673-67bbad747022'), // 나무 장난감 요트 함대
+  CoverTemplate('wedding', '결혼식', 'https://images.unsplash.com/photo-1530092285049-1c42085fd395'), // 하늘 아래 흰 꽃(부케 무드)
+  CoverTemplate('reunion', '동창회', 'https://images.unsplash.com/photo-1563396983906-b3795482a59a'), // 레트로 양철 로봇과 오리 친구들
+  CoverTemplate('baby100', '100일 기념', 'https://images.unsplash.com/photo-1559454403-b8fb88521f11'), // 파스텔 테디베어 + 아기 바구니
+  CoverTemplate('party', '파티', 'https://images.unsplash.com/photo-1499195333224-3ce974eecb47'), // 알록달록 젤리 파티
+  CoverTemplate('yearend', '망년회', 'https://images.unsplash.com/photo-1587654780291-39c9404d746b'), // 쏟아진 컬러 레고 브릭
+  CoverTemplate('birthday', '생일', 'https://images.unsplash.com/photo-1558326567-98ae2405596b'), // 파스텔 마카롱 탑
+  CoverTemplate('travel', '여행', 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1'), // 나무 기차 장난감 마을
+  CoverTemplate('family', '가족모임', 'https://images.unsplash.com/photo-1602734846297-9299fc2d4703'), // 나비넥타이 테디베어
+  CoverTemplate('friends', '친구모임', 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60'), // 레고 미니피규어 4인방 횡단보도
   CoverTemplate('couple', '연애', 'https://images.unsplash.com/photo-1518199266791-5375a83190b7'), // 하트 보케
 ];
 
