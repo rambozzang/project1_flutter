@@ -18,6 +18,7 @@
 - 미세먼지는 백엔드 미세먼지 배치(403, data.go.kr 키 문제) 복구 후 추가 예정
 - ⚠️ iOS 배포 타깃 13.0→14.0 상향 (workmanager_apple 포드가 iOS 14+ 요구. iOS 13 잔존 기기는 극소수)
 - 검증: flutter analyze 에러 0, Android·iOS 디버그 빌드 모두 성공
+- (추가) 알림 패널 우측에 날씨별 컬러 이모지 largeIcon 표시 — 이모지(☀️⛅☁️🌧️🌨️❄️)를 dart:ui로 128px PNG 렌더링(에셋 불필요, 헤드리스 엔진 루트 isolate라 dart:ui 사용 가능)
 
 ### 10:05 | claude | ✅ 완료
 **작업**: 카메라 제스처 힌트 슬림화 + 위치·노출 정책 변경

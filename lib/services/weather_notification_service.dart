@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -124,7 +125,7 @@ class WeatherNotificationService {
       if (rn1 != null && rn1 != '0' && pty > 0) '강수 ${rn1}mm',
       '${DateFormat('HH:mm').format(DateTime.now())} 갱신',
     ];
-    await _show(title, parts.join(' · '), _iconName(pty, sky));
+    await _show(title, parts.join(' · '), _iconName(pty, sky), await _emojiPng(_emojiFor(pty, sky)));
   }
 
   /// lastKnown → 직전 저장 위치 → 서울시청 순 폴백.
@@ -200,7 +201,35 @@ class WeatherNotificationService {
     return 'ic_stat_w_sunny';
   }
 
-  static Future<void> _show(String title, String body, String icon) async {
+  // 알림 패널 우측에 표시할 컬러 이모지 (상태바 아이콘은 OS 제약상 단색이라 별도)
+  static String _emojiFor(int pty, int sky) {
+    if (pty == 3 || pty == 7) return '❄️';
+    if (pty == 2 || pty == 6) return '🌨️';
+    if (pty > 0) return '🌧️';
+    if (sky == 4) return '☁️';
+    if (sky == 3) return '⛅';
+    return '☀️';
+  }
+
+  /// 이모지를 128x128 PNG로 렌더링(별도 이미지 에셋 불필요).
+  /// workmanager 콜백은 헤드리스 엔진의 루트 isolate라 dart:ui 사용 가능.
+  static Future<Uint8List?> _emojiPng(String emoji) async {
+    try {
+      final recorder = ui.PictureRecorder();
+      final canvas = ui.Canvas(recorder);
+      final pb = ui.ParagraphBuilder(ui.ParagraphStyle(fontSize: 96, textAlign: ui.TextAlign.center))..addText(emoji);
+      final paragraph = pb.build()..layout(const ui.ParagraphConstraints(width: 128));
+      canvas.drawParagraph(paragraph, ui.Offset(0, (128 - paragraph.height) / 2));
+      final image = await recorder.endRecording().toImage(128, 128);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      return bytes?.buffer.asUint8List();
+    } catch (e) {
+      debugPrint('[WeatherNoti] 이모지 렌더링 실패: $e');
+      return null;
+    }
+  }
+
+  static Future<void> _show(String title, String body, String icon, Uint8List? largeIconPng) async {
     final plugin = FlutterLocalNotificationsPlugin();
     // 백그라운드 isolate에서도 안전하도록 매번 초기화(이미 초기화됐어도 무해).
     await plugin.initialize(
@@ -222,6 +251,7 @@ class WeatherNotificationService {
           onlyAlertOnce: true,
           showWhen: false,
           icon: icon,
+          largeIcon: largeIconPng != null ? ByteArrayAndroidBitmap(largeIconPng) : null,
           silent: true,
         ),
       ),
