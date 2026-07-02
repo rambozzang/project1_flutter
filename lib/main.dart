@@ -32,6 +32,15 @@ void main() async {
   // 앱 전체 세로 화면 고정(가로 회전 비활성화)
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
+  // 하단 시스템 내비게이션 바를 불투명 흰색으로(앱 콘텐츠 비침 방지).
+  // Android 14 이하는 이 색상이 그대로 적용되고, Android 15/16(targetSdk 36)에선
+  // OS가 색상을 무시하므로 GetMaterialApp.builder 에서 내비바 뒤에 흰 배경을 직접 깐다.
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    systemNavigationBarColor: Colors.white,
+    systemNavigationBarDividerColor: Colors.white,
+    systemNavigationBarIconBrightness: Brightness.dark,
+  ));
+
   // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   final firebaseService = FirebaseService();
   await firebaseService.initialize();
@@ -83,7 +92,27 @@ class TigerBk extends StatelessWidget {
       title: "SkySnap",
       useInheritedMediaQuery: true,
       debugShowCheckedModeBanner: false,
-      builder: BotToastInit(),
+      builder: (context, child) {
+        // 1) bot_toast 초기화 유지
+        final Widget content = BotToastInit()(context, child);
+        // 2) Android 15/16(targetSdk 36)은 edge-to-edge 강제 + 내비바 색 무시 →
+        //    하단 시스템 내비게이션 바 높이만큼 불투명 흰 배경을 직접 깔아 앱이 비치는 것을 막는다.
+        final double navBarInset = MediaQuery.of(context).viewPadding.bottom;
+        return Stack(
+          textDirection: TextDirection.ltr,
+          children: [
+            Positioned.fill(child: content),
+            if (navBarInset > 0)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: navBarInset,
+                child: const IgnorePointer(child: ColoredBox(color: Colors.white)),
+              ),
+          ],
+        );
+      },
       theme: AppTheme.theme,
       // theme: AppTheme.light,
       // darkTheme: AppTheme.dark,
