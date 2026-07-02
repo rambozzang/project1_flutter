@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:project1/app/community/widget/cover_template.dart' show coverImageUrl;
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/theme/sa_weather_gradients.dart';
@@ -295,7 +296,7 @@ class _AlbumExplorePageState extends State<AlbumExplorePage> {
             ),
             clipBehavior: Clip.antiAlias,
             child: (c.imageUrl ?? '').isNotEmpty
-                ? Image.network(c.imageUrl!, fit: BoxFit.cover,
+                ? Image.network(coverImageUrl(c.imageUrl!, width: 200), fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => const SizedBox.shrink())
                 : null,
           ),

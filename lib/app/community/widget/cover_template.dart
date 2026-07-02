@@ -29,6 +29,15 @@ class CoverTemplate {
   int get hashCode => Object.hash(id, label, imageUrl);
 }
 
+/// Unsplash 원본 URL은 원본 해상도(수 MB)를 내려줘 그대로 쓰면 로딩이 수 초 걸린다.
+/// images.unsplash.com URL에 리사이즈 파라미터를 붙여 표시용 경량 URL로 변환한다.
+/// (다른 호스트나 이미 파라미터가 있는 URL은 그대로 반환 — 안전한 no-op)
+String coverImageUrl(String url, {int width = 800}) {
+  if (!url.contains('images.unsplash.com')) return url;
+  if (url.contains('?')) return url;
+  return '$url?w=$width&q=70&fm=jpg';
+}
+
 /// 표지 템플릿 10종(순서 중요 — 첫 항목이 앨범 생성 시 기본 선택값).
 /// 2026-07-03 전면 교체: 밝고 귀여운 캐릭터·토이 무드의 무료(Unsplash) 사진으로 통일(눈검수 완료).
 const List<CoverTemplate> kCoverTemplates = [

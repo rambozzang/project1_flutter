@@ -63,6 +63,13 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
       _spotLon = lon is double ? lon : double.tryParse(lon?.toString() ?? '');
       if ((_spotName ?? '').isNotEmpty) _spotSearchCtrl.text = _spotName!;
     }
+    // 템플릿 미리보기(w=800)를 미리 받아둬 선택 즉시 전환되게 한다(총 ~1-2MB, 백그라운드).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      for (final t in kCoverTemplates) {
+        precacheImage(CachedNetworkImageProvider(coverImageUrl(t.imageUrl)), context);
+      }
+    });
   }
 
   @override
@@ -274,9 +281,17 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
         children: [
           if ((_previewUrl ?? '').isNotEmpty)
             CachedNetworkImage(
-              imageUrl: _previewUrl!,
+              // 원본 대신 w=800 경량본. 로드되는 동안엔 스트립에서 이미 캐시된
+              // w=200 썸네일을 깔아 선택 즉시 바뀐 것처럼 보이게 한다.
+              imageUrl: coverImageUrl(_previewUrl!),
               fit: BoxFit.cover,
-              placeholder: (_, __) => const ColoredBox(color: SaColors.surfaceElevated),
+              fadeInDuration: const Duration(milliseconds: 120),
+              placeholder: (_, __) => CachedNetworkImage(
+                imageUrl: coverImageUrl(_previewUrl!, width: 200),
+                fit: BoxFit.cover,
+                placeholder: (_, __) => const ColoredBox(color: SaColors.surfaceElevated),
+                errorWidget: (_, __, ___) => const ColoredBox(color: SaColors.surfaceElevated),
+              ),
               errorWidget: (_, __, ___) => const ColoredBox(color: SaColors.surfaceElevated),
             ),
           if (_uploadingCover)
@@ -339,7 +354,7 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
                   fit: StackFit.expand,
                   children: [
                     CachedNetworkImage(
-                      imageUrl: '${t.imageUrl}?w=200&q=60',
+                      imageUrl: coverImageUrl(t.imageUrl, width: 200),
                       fit: BoxFit.cover,
                       placeholder: (_, __) => const ColoredBox(color: SaColors.surfaceElevated),
                       errorWidget: (_, __, ___) => const ColoredBox(color: SaColors.surfaceElevated),

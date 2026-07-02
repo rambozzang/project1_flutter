@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:project1/app/community/widget/cover_template.dart' show coverImageUrl;
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
@@ -50,7 +51,8 @@ class SaAlbumMosaicCard extends StatelessWidget {
                 children: [
                   if (thumb != null && thumb.isNotEmpty)
                     CachedNetworkImage(
-                      imageUrl: thumb,
+                      // Unsplash 표지 폴백은 원본(수 MB)이라 경량본으로 변환(다른 호스트는 no-op)
+                      imageUrl: coverImageUrl(thumb, width: 400),
                       fit: BoxFit.cover,
                       placeholder: (_, __) => DecoratedBox(
                           decoration: BoxDecoration(gradient: SaWeatherGradients.of(_gradientKey(c)))),
