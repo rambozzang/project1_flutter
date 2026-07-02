@@ -95,8 +95,10 @@ class TigerBk extends StatelessWidget {
       builder: (context, child) {
         // 1) bot_toast 초기화 유지
         final Widget content = BotToastInit()(context, child);
-        // 2) Android 15/16(targetSdk 36)은 edge-to-edge 강제 + 내비바 색 무시 →
+        // 2) [Android 전용] Android 15/16(targetSdk 36)은 edge-to-edge 강제 + 내비바 색 무시 →
         //    하단 시스템 내비게이션 바 높이만큼 불투명 흰 배경을 직접 깔아 앱이 비치는 것을 막는다.
+        //    iOS는 홈 인디케이터가 하단 탭바와 겹쳐 문제가 되므로 적용하지 않는다(iOS엔 이 문제 자체가 없음).
+        if (!Platform.isAndroid) return content;
         final double navBarInset = MediaQuery.of(context).viewPadding.bottom;
         return Stack(
           textDirection: TextDirection.ltr,
