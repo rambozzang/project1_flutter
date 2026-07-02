@@ -30,6 +30,9 @@
         android:name="android.permission.FLASHLIGHT"/>
     <uses-permission
         android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- 날씨 상태바 상시 알림 (Android 13+ 알림 권한) -->
+    <uses-permission
+        android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission
         android:name="android.permission.VIBRATE"/>
     <uses-permission

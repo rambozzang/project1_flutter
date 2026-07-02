@@ -31,6 +31,7 @@ import 'package:project1/app/chatting/chat_main_page.dart';
 import 'package:project1/app/myinfo/block_page.dart';
 import 'package:project1/app/myinfo/myinfo_page.dart';
 import 'package:project1/app/setting/alram_setting_page.dart';
+import 'package:project1/app/setting/weather_noti_setting_page.dart';
 import 'package:project1/app/setting/maketing_page.dart';
 import 'package:project1/app/favoriteArea/favorite_area_page.dart';
 import 'package:project1/app/test/weather_compare_page.dart';
@@ -277,6 +278,10 @@ abstract class AppPages {
       name: '/AlramSettingPage',
       page: () => const AlramSettingPage(),
       // transition: Transition.downToUp,
+    ),
+    GetPage(
+      name: '/WeatherNotiSettingPage',
+      page: () => const WeatherNotiSettingPage(),
     ),
     GetPage(
       name: '/WeatherComparePage',

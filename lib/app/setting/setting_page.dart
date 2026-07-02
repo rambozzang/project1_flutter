@@ -1,4 +1,6 @@
 // import 'package:babstrap_settings_screen/babstrap_settings_screen.dart';
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -109,6 +111,21 @@ class _SettingPageState extends State<SettingPage> {
                       titleMaxLine: 1,
                       subtitleMaxLine: 1,
                     ),
+                    // 날씨 상태바 상시 알림은 Android에서만 지원(iOS는 OS 제약으로 불가)
+                    if (Platform.isAndroid)
+                      SettingsItem(
+                        onTap: () => Get.toNamed('/WeatherNotiSettingPage'),
+                        icons: CupertinoIcons.sun_max,
+                        iconStyle: IconStyle(
+                          iconsColor: Colors.white,
+                          withBackground: true,
+                          backgroundColor: Colors.orange[300],
+                        ),
+                        title: '날씨 상태바 알림',
+                        subtitle: "상태바에 현재 날씨를 상시 표시합니다.",
+                        titleMaxLine: 1,
+                        subtitleMaxLine: 1,
+                      ),
                   ],
                 ),
                 ValueListenableBuilder<bool>(

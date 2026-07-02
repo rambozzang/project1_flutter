@@ -6,6 +6,19 @@
 
 ## 2026-07-02
 
+### 15:20 | claude | ✅ 완료
+**작업**: 날씨 상태바 상시 알림 (Android 전용) 신규 구현
+- WorkManager(workmanager ^0.9.0) 주기 작업(30분/1시간/3시간)이 백그라운드에서 백엔드 날씨 캐시 API를 조회해 ongoing 알림 갱신
+- 날씨 API(/weather/current·superfct)는 무인증 공개 엔드포인트라 백그라운드 isolate에서 토큰 없이 호출 (AuthCntr 의존 없음)
+- 위치: lastKnown → 직전 저장 위치 → 서울 폴백 (백그라운드 위치 권한 불필요 — 심사 리스크 회피)
+- 상태바 아이콘 4종(맑음/구름/비/눈, 모노크롬 벡터) + 알림 제목 "23.5° 맑음" 형식
+- 설정 페이지(/WeatherNotiSettingPage): 켜기/끄기·주기 선택·지금 갱신, 알림 권한 배너. 설정 > "날씨 상태바 알림" 메뉴(Android만 노출)
+- 신규: lib/services/weather_notification_service.dart, lib/app/setting/weather_noti_setting_page.dart, drawable ic_stat_w_*.xml 4종
+- 수정: main.dart(Workmanager initialize), setting_page.dart, app_route.dart, AndroidManifest(POST_NOTIFICATIONS), pubspec
+- 미세먼지는 백엔드 미세먼지 배치(403, data.go.kr 키 문제) 복구 후 추가 예정
+- ⚠️ iOS 배포 타깃 13.0→14.0 상향 (workmanager_apple 포드가 iOS 14+ 요구. iOS 13 잔존 기기는 극소수)
+- 검증: flutter analyze 에러 0, Android·iOS 디버그 빌드 모두 성공
+
 ### 10:05 | claude | ✅ 완료
 **작업**: 카메라 제스처 힌트 슬림화 + 위치·노출 정책 변경
 - 캡슐 안 텍스트 블록 제거 → 트랙만 있는 얇은 캡슐(26px) + 캡슐 밖 미니 라벨(밝기/줌)로 분리, 점 20→12px

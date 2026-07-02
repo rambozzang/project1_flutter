@@ -19,6 +19,8 @@ import 'package:project1/firebase/firebase_service.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/route/app_route.dart';
 import 'package:project1/services/deep_link_service.dart';
+import 'package:project1/services/weather_notification_service.dart';
+import 'package:workmanager/workmanager.dart';
 // import 'package:project1/theme/app_theme.dart';
 // import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -42,6 +44,11 @@ void main() async {
 
   // // 광고 init — 시작(첫 화면)을 막지 않도록 백그라운드로. 광고는 피드 진입 시점엔 이미 준비됨.
   unawaited(AdManager.initialize(targetPlatform: Platform.isIOS ? TargetPlatform.iOS : TargetPlatform.android));
+
+  // 날씨 상태바 알림(Android): WorkManager 백그라운드 콜백 등록. 시작을 막지 않도록 비대기.
+  if (Platform.isAndroid) {
+    unawaited(Workmanager().initialize(weatherNotiDispatcher));
+  }
 
   // supabase - 현재 중단 상태이므로 주석처리
   // await Supabase.initialize(url: supabaseOptions.url, anonKey: supabaseOptions.anonKey);

@@ -59,7 +59,8 @@ dependencies:
   kakao_flutter_sdk: ^1.9.6
   flutter_naver_login: ^2.1.1
   flutter_local_notifications: ^17.2.1+2
-  permission_handler: ^11.3.0  
+  workmanager: ^0.9.0  # 날씨 상태바 상시 알림 주기 갱신 (Android 전용)
+  permission_handler: ^11.3.0
   camera: ^0.11.3  # 0.11.3+: enablePersistentRecording(지속 녹화)로 녹화 시작 지연 개선
   camera_android_camerax: ^0.6.14  # CameraX 백엔드(camera 0.11.x 호환). 0.7.x는 AGP 9 필요로 비호환
   camerawesome: ^2.5.0  # 프리즈 개선 테스트용 대체 카메라 엔진
