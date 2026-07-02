@@ -507,48 +507,44 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
                   ),
                   onPressed: () => Get.toNamed('/SearchPage'),
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: TextButton(
-                    style: TextButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 110, 160, 245).withOpacity(0.4),
-                      padding: const EdgeInsets.only(
-                        top: 0,
-                        bottom: 0,
-                        left: 2,
-                      ),
-                      minimumSize: const Size(60, 24),
-                      maximumSize: const Size(62, 24),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(20)),
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.map,
-                          color: Color.fromARGB(255, 219, 164, 2),
-                          size: 12,
-                        ),
-                        Gap(4),
-                        Text(
-                          '지도',
-                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                        ),
-                        Gap(10),
-                        // Icon(
-                        //   Icons.arrow_forward_ios,
-                        //   color: Colors.white,
-                        //   size: 11,
-                        // ),
-                      ],
-                    ),
-                    onPressed: () => Get.toNamed('/MapPage'),
-                  ),
-                ),
+                // 지도 버튼 숨김 처리 (요청) — 필요 시 아래 블록 주석 해제로 복구
+                // Padding(
+                //   padding: const EdgeInsets.only(right: 8.0),
+                //   child: TextButton(
+                //     style: TextButton.styleFrom(
+                //       backgroundColor: const Color.fromARGB(255, 110, 160, 245).withOpacity(0.4),
+                //       padding: const EdgeInsets.only(
+                //         top: 0,
+                //         bottom: 0,
+                //         left: 2,
+                //       ),
+                //       minimumSize: const Size(60, 24),
+                //       maximumSize: const Size(62, 24),
+                //       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                //       shape: const RoundedRectangleBorder(
+                //         borderRadius: BorderRadius.all(Radius.circular(20)),
+                //       ),
+                //     ),
+                //     child: const Row(
+                //       mainAxisAlignment: MainAxisAlignment.center,
+                //       crossAxisAlignment: CrossAxisAlignment.center,
+                //       children: [
+                //         Icon(
+                //           Icons.map,
+                //           color: Color.fromARGB(255, 219, 164, 2),
+                //           size: 12,
+                //         ),
+                //         Gap(4),
+                //         Text(
+                //           '지도',
+                //           style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                //         ),
+                //         Gap(10),
+                //       ],
+                //     ),
+                //     onPressed: () => Get.toNamed('/MapPage'),
+                //   ),
+                // ),
                 // IconButton(
                 //   icon: const Icon(
                 //     Icons.map,
