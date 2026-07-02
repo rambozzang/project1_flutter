@@ -6,6 +6,31 @@
 
 ## 2026-07-02
 
+### 19:35 | claude | ✅ 완료 (1c 모자이크 그리드 추가, 리뷰 대기)
+**작업**: 공유앨범 홈에 1c 모자이크 그리드를 '보기 방식 토글'로 추가
+- 헤더에 토글 버튼(squaresFour↔rows) — 1a 스택 피드 ↔ 1c 2열 스태거드 전환, 선택값 secure storage 유지
+- `widget/sa_album_mosaic_card.dart`: 이미지 tall150/short106 교차(0,3,4,7… tall) + 제목(700/14) + 멤버/미디어 아이콘 스탯, NEW 뱃지 슬롯
+- MasonryGridView(기보유 flutter_staggered_grid_view) 사용, 탭 동작은 1a와 동일(AlbumDetailPage)
+- 검증: analyze 클린, Android 디버그 빌드 성공
+
+### 19:10 | claude | ✅ 완료 (1d 갤러리 + 미디어수 백엔드, 리뷰 대기)
+**작업**: 공유앨범 1d 갤러리 뷰 + 앨범별 미디어 수 백엔드 확장
+- **백엔드(배포됨 a96800c)**: CommunityItem에 videoCnt/photoCnt 추가, countByCommunityIdAndTypeDtCd 쿼리(TYPE_DT_CD V/I, DEL_YN·LOCK_YN N), toItem(withCounts) 오버로드 — my/detail만 계산(검색은 기존대로). 운영 검증: detail 응답에 videoCnt 포함 확인
+- **프론트 1d(`album_detail_page.dart`)**: 원형 back/more 앱바, 커버 스트립(미니 겹침스택 64+멤버 아바타+VIDEO/PHOTO mono 스탯), 필터 칩(전체/영상 N/사진 N, active=teal), 뷰 전환 세그먼트(그리드 active·몰입→기존 COMMUNITY 풀스크린 임시연결), 3열 그리드(1:1.12, gap6, r13, 영상=play/사진=image 아이콘, 무한스크롤), '＋ 올리기' FAB(pendingCommunityId+카메라, 기존 로직 재사용), more 시트(멤버/초대 기존 라우트 연결)
+- CommunityData에 videoCnt/photoCnt/mediaCnt 추가 → 1a 카드 +N 칩 활성화, 1a 카드 탭 → AlbumDetailPage로 교체
+- NEW(안 본 것) pink 점은 열람 추적 백엔드 후 연결(1e까지 완료 후 일괄)
+- 검증: 백엔드 compileJava 성공·운영 API 확인, flutter analyze 클린, Android 디버그 빌드 성공
+
+### 18:15 | claude | ✅ 완료 (1a 홈, 리뷰 대기)
+**작업**: 공유앨범 1a 홈(스택 피드) 화면 구현
+- `lib/app/shared_album/album_list_page.dart` + `widget/sa_album_card.dart`
+- 데이터 조립: 기존 `/community/my` → 앨범별 `feed(3건)`+`members` 병렬 지연 로드(썸네일 3장·아바타 3명·최근 업데이트 timeage)
+- 카드: SaOverlapImageStack(썸네일 없으면 앨범 id 기반 날씨 그라디언트 순환) + 재생 글래스 버튼 + 제목/소개 + 아바타 스택·멤버 수·최근 업데이트
+- 헤더: "우리의 앨범" + N ALBUMS(mono teal) + 검색(다음 단계 연결) + 만들기(기존 CommunityCreatePage)
+- 카드 탭 → 기존 CommunityHomePage (1d 구현 시 교체 예정)
+- **백엔드 확장 대기 항목**: 총 미디어 수 칩(+124)·NEW 뱃지(열람 추적) — 데이터 없어 자동 숨김 처리
+- 검수 경로: 설정 > (디버그) '공유앨범 홈 1a'. analyze 클린, Android 디버그 빌드 성공
+
 ### 17:45 | claude | 🟢 시작 (1단계: 테마+공용위젯, 리뷰 대기)
 **작업**: 공유앨범(design_handoff_shared_album) 구현 착수 — 디자인 토큰·공용 위젯
 - 구조: `lib/app/shared_album/` (theme/ 3파일 + widget/ 5파일 + 미리보기 페이지) — 기존 컨벤션(lib/app/기능, widget/ 단수, StatefulWidget+repo) 준수

@@ -14,6 +14,8 @@ class CommunityData {
   final bool isOwner;
   final String? coverTemplateId;
   final bool isManager; // 방장 포함 true — 표지 수정 등 매니저 권한 UI 노출용
+  final int videoCnt; // 앨범 내 영상 수(내 목록/상세 응답에서만 계산됨, 그 외 0)
+  final int photoCnt; // 앨범 내 사진 수
 
   CommunityData({
     required this.communityId,
@@ -30,7 +32,11 @@ class CommunityData {
     this.myStatus,
     this.isOwner = false,
     this.isManager = false,
+    this.videoCnt = 0,
+    this.photoCnt = 0,
   });
+
+  int get mediaCnt => videoCnt + photoCnt;
 
   bool get isJoined => myStatus == 'JOINED';
   bool get isPending => myStatus == 'PENDING';
@@ -56,6 +62,8 @@ class CommunityData {
       coverTemplateId: map['coverTemplateId']?.toString(),
       // Jackson 은 boolean isManager 를 'manager' 키로 직렬화(isOwner→owner 와 동일 패턴) → manager 키를 fallback 체인에 포함
       isManager: (map['isManager'] ?? map['manager'] ?? map['owner'] ?? map['isOwner'] ?? false) == true,
+      videoCnt: map['videoCnt'] == null ? 0 : (map['videoCnt'] as num).toInt(),
+      photoCnt: map['photoCnt'] == null ? 0 : (map['photoCnt'] as num).toInt(),
     );
   }
 }

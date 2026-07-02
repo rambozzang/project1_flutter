@@ -400,19 +400,19 @@ abstract class AppPages {
     GetPage(
       name: '/ChallengeMainPage',
       page: () => const ChallengeMainPage(),
-      transition: Transition.rightToLeftWithFade,
-      transitionDuration: const Duration(milliseconds: 200),
+      // transition: Transition.rightToLeftWithFade,
+      // transitionDuration: const Duration(milliseconds: 200),
     ),
     GetPage(
       name: '/AttendanceCalendarPage',
       page: () => const AttendanceCalendarPage(),
-      transition: Transition.rightToLeftWithFade,
+      // transition: Transition.rightToLeftWithFade,
     ),
     GetPage(
       name: '/AchievementPage',
       page: () => const AchievementPage(),
-      transition: Transition.rightToLeftWithFade,
-      transitionDuration: const Duration(milliseconds: 200),
+      // transition: Transition.rightToLeftWithFade,
+      // transitionDuration: const Duration(milliseconds: 200),
     ),
     GetPage(
       name: '/FeelRankingPage',
@@ -423,18 +423,18 @@ abstract class AppPages {
     GetPage(
       name: '/SpecialWeatherListPage',
       page: () => const SpecialWeatherListPage(),
-      transition: Transition.rightToLeftWithFade,
+      // transition: Transition.rightToLeftWithFade,
     ),
     GetPage(
       name: '/SpecialWeatherDetailPage',
       page: () => const SpecialWeatherDetailPage(),
-      transition: Transition.rightToLeftWithFade,
+      // transition: Transition.rightToLeftWithFade,
     ),
     // ───────────────────────── 모임(스카이라운지) ─────────────────────────
     GetPage(
       name: '/CommunityHubPage',
       page: () => const CommunityHubPage(),
-      transition: Transition.rightToLeftWithFade,
+      // transition: Transition.rightToLeftWithFade,
     ),
     GetPage(
       name: '/CommunityCreatePage',
@@ -444,22 +444,22 @@ abstract class AppPages {
     GetPage(
       name: '/CommunityHomePage',
       page: () => const CommunityHomePage(),
-      transition: Transition.rightToLeftWithFade,
+      // transition: Transition.rightToLeftWithFade,
     ),
     GetPage(
       name: '/CommunityMembersPage',
       page: () => const CommunityMembersPage(),
-      transition: Transition.rightToLeftWithFade,
+      // transition: Transition.rightToLeftWithFade,
     ),
     GetPage(
       name: '/CommunityInvitePage',
       page: () => const CommunityInvitePage(),
-      transition: Transition.rightToLeftWithFade,
+      // transition: Transition.rightToLeftWithFade,
     ),
     GetPage(
       name: '/AlramPage',
       page: () => const AlramPage(),
-      transition: Transition.rightToLeftWithFade,
+      // transition: Transition.rightToLeftWithFade,
     ),
   ];
 }
