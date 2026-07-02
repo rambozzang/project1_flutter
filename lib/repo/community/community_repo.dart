@@ -128,6 +128,20 @@ class CommunityRepo {
     }
   }
 
+  /// 보낸 초대(INVITED) 목록 — 멤버 초대 화면(1h) '대기 중' 섹션용 (방장/매니저).
+  Future<List<CommunityMemberData>> getInvitedMembers(int communityId) async {
+    try {
+      final dio = await AuthDio.instance.getDio();
+      final res = await dio.get('${UrlConfig.baseURL}/community/invited', queryParameters: {'communityId': communityId});
+      final resData = AuthDio.instance.dioResponse(res);
+      if (resData.code != '00' || resData.data == null) return [];
+      return (resData.data as List).map((e) => CommunityMemberData.fromMap(Map<String, dynamic>.from(e as Map))).toList();
+    } catch (e) {
+      lo.g('CommunityRepo.getInvitedMembers error: $e');
+      return [];
+    }
+  }
+
   /// 승인 대기 목록(방장/매니저).
   Future<List<CommunityMemberData>> getPendingMembers(int communityId) async {
     try {

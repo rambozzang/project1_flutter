@@ -1,9 +1,13 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:project1/app/camera/page/camera_awesome_page.dart';
+import 'package:project1/app/shared_album/album_upload_page.dart';
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/widget/sa_gradient_button.dart';
@@ -166,6 +170,53 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
     }
   }
 
+  /// 갤러리 다중 선택 → 업로드 화면(1g)
+  Future<void> _openGalleryUpload() async {
+    final c = _community;
+    if (c == null) return;
+    final picked = await ImagePicker().pickMultiImage(imageQuality: 90);
+    if (picked.isEmpty || !mounted) return;
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AlbumUploadPage(
+          community: c,
+          photoFiles: picked.map((e) => File(e.path)).toList(),
+        ),
+      ),
+    );
+    if (result == true && mounted) {
+      // 업로드는 백그라운드 진행 → 약간의 지연 후 새로고침
+      await Future.delayed(const Duration(milliseconds: 800));
+      _loadFeed(reset: true);
+    }
+  }
+
+  /// '＋ 올리기' 진입 시트: 촬영 / 갤러리
+  void _showUploadSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: SaColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            _sheetItem(PhosphorIconsFill.camera, '카메라로 촬영', () {
+              Get.back();
+              _openCamera();
+            }),
+            _sheetItem(PhosphorIconsFill.images, '갤러리에서 사진 올리기', () {
+              Get.back();
+              _openGalleryUpload();
+            }),
+            const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showMoreSheet() {
     showModalBottomSheet(
       context: context,
@@ -193,8 +244,12 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
             if (_canPost)
               _sheetItem(PhosphorIconsBold.userPlus, '멤버 초대', () {
                 Get.back();
-                Get.toNamed('/CommunityInvitePage', arguments: {'communityId': _communityId})
-                    ?.then((_) => _load());
+                Get.toNamed('/AlbumInvitePage', arguments: {
+                  'communityId': _communityId,
+                  'albumName': _community?.name ?? '앨범',
+                  'memberCnt': _community?.memberCnt ?? 0,
+                  'isManager': _community?.canEditCover == true,
+                })?.then((_) => _load());
               }),
             const SizedBox(height: 10),
           ],
@@ -227,7 +282,7 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
                 label: '＋ 올리기',
                 height: 50,
                 glow: true,
-                onTap: _openCamera,
+                onTap: _showUploadSheet,
               )
             : null,
         body: SafeArea(

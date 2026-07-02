@@ -34,6 +34,7 @@ import 'package:project1/app/setting/alram_setting_page.dart';
 import 'package:project1/app/setting/weather_noti_setting_page.dart';
 import 'package:project1/app/shared_album/album_cover_editor_page.dart';
 import 'package:project1/app/shared_album/album_detail_page.dart';
+import 'package:project1/app/shared_album/album_invite_page.dart';
 import 'package:project1/app/shared_album/album_immersive_page.dart';
 import 'package:project1/app/shared_album/album_list_page.dart';
 import 'package:project1/app/shared_album/sa_preview_page.dart';
@@ -316,6 +317,12 @@ abstract class AppPages {
       name: '/AlbumCoverEditorPage',
       page: () => const AlbumCoverEditorPage(),
       transition: Transition.downToUp,
+    ),
+    // 공유앨범 멤버 초대(1h)
+    GetPage(
+      name: '/AlbumInvitePage',
+      page: () => const AlbumInvitePage(),
+      transition: Transition.rightToLeftWithFade,
     ),
     GetPage(
       name: '/WeatherComparePage',
