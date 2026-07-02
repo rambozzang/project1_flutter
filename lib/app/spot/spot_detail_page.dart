@@ -85,7 +85,7 @@ class _SpotDetailPageState extends State<SpotDetailPage> {
 
   void _createCommunityForSpot() {
     final s = widget.spot;
-    Get.toNamed('/CommunityCreatePage', arguments: {
+    Get.toNamed('/AlbumCreatePage', arguments: {
       'spotId': s.spotId,
       'spotName': s.name,
       'lat': s.lat,

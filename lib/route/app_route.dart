@@ -33,6 +33,7 @@ import 'package:project1/app/myinfo/myinfo_page.dart';
 import 'package:project1/app/setting/alram_setting_page.dart';
 import 'package:project1/app/setting/weather_noti_setting_page.dart';
 import 'package:project1/app/shared_album/album_cover_editor_page.dart';
+import 'package:project1/app/shared_album/album_create_page.dart';
 import 'package:project1/app/shared_album/album_detail_page.dart';
 import 'package:project1/app/shared_album/album_explore_page.dart';
 import 'package:project1/app/shared_album/album_invite_page.dart';
@@ -299,19 +300,19 @@ abstract class AppPages {
     GetPage(
       name: '/AlbumListPage',
       page: () => const AlbumListPage(),
-      transition: Transition.rightToLeftWithFade,
+      // transition: Transition.rightToLeftWithFade,
     ),
     // 공유앨범 상세(1d 갤러리 뷰)
     GetPage(
       name: '/AlbumDetailPage',
       page: () => const AlbumDetailPage(),
-      transition: Transition.rightToLeftWithFade,
+      // transition: Transition.rightToLeftWithFade,
     ),
     // 공유앨범 몰입 뷰(1e 틱톡식 풀스크린)
     GetPage(
       name: '/AlbumImmersivePage',
       page: () => const AlbumImmersivePage(),
-      transition: Transition.fadeIn,
+      // transition: Transition.fadeIn,
     ),
     // 공유앨범 대문 편집(1f)
     GetPage(
@@ -323,13 +324,19 @@ abstract class AppPages {
     GetPage(
       name: '/AlbumInvitePage',
       page: () => const AlbumInvitePage(),
-      transition: Transition.rightToLeftWithFade,
+      // transition: Transition.rightToLeftWithFade,
     ),
     // 공유앨범 탐색(공개 앨범 검색 + 코드로 참여 — 구 허브 기능 이관)
     GetPage(
       name: '/AlbumExplorePage',
       page: () => const AlbumExplorePage(),
-      transition: Transition.rightToLeftWithFade,
+      // transition: Transition.rightToLeftWithFade,
+    ),
+    // 새 앨범 만들기(다크 — 구 CommunityCreatePage 대체)
+    GetPage(
+      name: '/AlbumCreatePage',
+      page: () => const AlbumCreatePage(),
+      transition: Transition.downToUp,
     ),
     GetPage(
       name: '/WeatherComparePage',
@@ -445,8 +452,8 @@ abstract class AppPages {
     GetPage(
       name: '/FeelRankingPage',
       page: () => const FeelRankingPage(),
-      transition: Transition.rightToLeftWithFade,
-      transitionDuration: const Duration(milliseconds: 200),
+      // transition: Transition.rightToLeftWithFade,
+      // transitionDuration: const Duration(milliseconds: 200),
     ),
     GetPage(
       name: '/SpecialWeatherListPage',

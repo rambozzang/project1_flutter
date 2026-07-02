@@ -195,7 +195,7 @@ class _AlbumListPageState extends State<AlbumListPage> {
           const SizedBox(width: 8),
           // 앨범 만들기(teal 그라디언트 원형)
           GestureDetector(
-            onTap: () => Get.toNamed('/CommunityCreatePage')?.then((_) => _reload()),
+            onTap: () => Get.toNamed('/AlbumCreatePage')?.then((_) => _reload()),
             child: Container(
               width: 40,
               height: 40,
@@ -246,7 +246,7 @@ class _AlbumListPageState extends State<AlbumListPage> {
               label: '첫 앨범 만들기',
               height: 46,
               glow: true,
-              onTap: () => Get.toNamed('/CommunityCreatePage')?.then((_) => _reload()),
+              onTap: () => Get.toNamed('/AlbumCreatePage')?.then((_) => _reload()),
             ),
             const SizedBox(height: 60),
           ],
