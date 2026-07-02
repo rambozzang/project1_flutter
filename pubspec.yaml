@@ -197,7 +197,11 @@ flutter:
           weight: 800
 
 flutter_native_splash:
-  color: "#FF8F8F"
+  # 로딩화면(AuthPage)과 동일한 대각선 그라데이션을 전체 배경으로 사용 → 스플래시가 로딩화면처럼 보임.
+  # (background_image는 iOS·Android 11 이하에서 전체 그라데이션 표시. Android 12+는 OS 제약으로
+  #  단색 color + 중앙 아이콘만 가능하므로 android_12.color를 그라데이션 중간색 #FF8F8F로 맞춰 이질감 최소화.)
+  # ※ color 와 background_image 는 동시 사용 불가(color 우선) → 최상위 color 는 주석 처리해야 그라데이션이 적용됨.
+  background_image: assets/icon/splash_bg.png
   image:  assets/icon/app_icon_v10_foreground.png
   android_12:
     image:   assets/icon/app_icon_v10_foreground.png

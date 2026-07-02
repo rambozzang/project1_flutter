@@ -6,6 +6,22 @@
 
 ## 2026-07-02
 
+### 22:55 | claude | ✅ 완료 (네이티브 스플래시 = 로딩화면 디자인)
+**작업**: 로딩화면(AuthPage) 디자인을 네이티브 스플래시로 재현 — 앞선 preserve/remove(밋밋한 스플래시가 로딩화면을 가림)를 되돌리고 방향 반대로 재작업
+- preserve/remove 원복(main.dart / root_page.dart / join_page.dart) → AuthPage 그라데이션 로딩화면 다시 표시
+- AuthPage와 동일한 대각선 3색 그라데이션(#FFCB6B→#FF8F8F→#FF6FA6) 배경 PNG 생성(PIL, 1290×2796) → `assets/icon/splash_bg.png`
+- pubspec `background_image`로 지정(+구름 로고 image). color·background_image는 병용 불가라 최상위 color 주석 처리
+- `flutter_native_splash:create` 재생성: Android drawable/background.png·iOS LaunchBackground 모두 1290×2796 그라데이션 확인
+- 한계: Android 12+는 OS 제약으로 그라데이션 배경 불가 → android_12.color=#FF8F8F 단색 + 구름(직후 AuthPage가 실제 그라데이션 렌더). iOS·Android11↓는 전체 그라데이션
+- 검증: 3개 dart analyze(에러 0), debug APK 빌드 성공
+
+### 22:50 | claude | ✅ 완료 (표지 템플릿 사진 전면 교체)
+**작업**: 앨범 만들기 표지 템플릿 10종 사진 전면 교체 — "AI 티 난다" 피드백 반영
+- 발랄·캐릭터 무드의 Unsplash 무료 사진으로 교체: 레고 유니콘(100일)·티피 텐트 코기(가족)·장난감 요트(친구)·스프링클 도넛(생일)·색종이(파티)·무지개 콘서트(망년회)·노랑 밴(여행)·건배(동창회)·하트 보케(연애)·반지+부케(결혼)
+- 후보 18장 URL 접근 검증(200) + 썸네일 다운로드해 이미지 내용 전수 눈검수 후 10장 확정
+- 3곳 동시 갱신: 프론트 cover_template.dart(05aa94d) / 백엔드 CommunityCoverTemplates.java(c7ef64a, 자동배포) / 운영 DB 기존 앨범 2건 image_url UPDATE
+- 검증: 프론트 analyze·빌드, 백엔드 compileJava 성공
+
 ### 19:35 | claude | ✅ 완료 (1c 모자이크 그리드 추가, 리뷰 대기)
 **작업**: 공유앨범 홈에 1c 모자이크 그리드를 '보기 방식 토글'로 추가
 - 헤더에 토글 버튼(squaresFour↔rows) — 1a 스택 피드 ↔ 1c 2열 스태거드 전환, 선택값 secure storage 유지
