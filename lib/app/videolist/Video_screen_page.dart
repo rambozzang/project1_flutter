@@ -874,20 +874,22 @@ class VideoScreenPageState extends State<VideoScreenPage> {
             widget.data.viewCnt.toString(),
             style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600),
           ),
-          // IconButton(
-          //     icon: const Icon(Icons.report_gmailerrorred, color: Colors.white),
-          //     onPressed: () => SigoPageSheet().open(context, widget.data.boardId.toString())),
           const Gap(10),
-          // const Text(
-          //   '조회수',
-          //   style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w400),
-          // ),
-
-          // const Gap(40),
-          // IconButton(
-          //   icon: const Icon(Icons.send, color: Colors.white),
-          //   onPressed: () => share(),
-          // ),
+          // SNS 공유(틱톡·인스타 등) — 영상/사진을 내려받아 OS 공유 시트로 전달
+          SizedBox(
+            width: 40,
+            height: 30,
+            child: IconButton(
+              padding: const EdgeInsets.all(0),
+              constraints: const BoxConstraints(),
+              icon: const Icon(Icons.ios_share, color: Colors.white),
+              onPressed: () => share(),
+            ),
+          ),
+          const Text(
+            '공유',
+            style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );
