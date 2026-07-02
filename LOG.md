@@ -6,6 +6,21 @@
 
 ## 2026-07-02
 
+### 25:00 | claude | ✅ 완료 (1f 대문 편집)
+**작업**: 공유앨범 1f 대문 편집 — 실시간 미리보기 + 테마/대표미디어/표시옵션
+- **백엔드(de3c1f2, 배포·운영검증 완료)**: tb_community에 theme_color/cover_media_ids/card_options 3컬럼(ALTER 완료), POST /community/updateFront(방장·매니저만, null=미변경·빈값=해제), my/detail에 3필드 노출. 운영 라운드트립: 방장 저장→반영→해제 원복 ✓, 비매니저 거부 ✓
+- **프론트(c3a8037)**: `album_cover_editor_page` — 취소/저장(teal) 상단바, PREVIEW 카드(teal 링, SaAlbumCard 재사용·편집 즉시 반영), 대표 미디어 스트립(탭 순서=겹침 순서 1~3, teal 링+순번, 재탭 해제), 제목/소개 다크 인풋, 테마 스와치(자동+날씨 8종), 표시 옵션 스위치 4종, 멤버 관리 행
+- 카드 반영: SaAlbumCard·모자이크가 themeColor 우선 그라디언트+cardOptions 존중, 홈 커버는 지정 미디어 순서 우선(부족분 최근순)
+- 진입: 1d more 시트 '대문 편집'(방장·매니저만) → 저장 시 상세 재조회
+- 검증: 백엔드 compileJava·운영 API, 프론트 analyze 클린·Android 디버그 빌드 성공
+
+### 23:35 | claude | ✅ 완료 (카메라 녹화 버튼 빨간 네모 원 밖으로 튀는 문제)
+**작업**: 녹화 중 셔터 버튼의 빨간 사각형 모서리가 흰 원 밖으로 삐져나오던 버그 수정
+- 원인: `_shutterButtonDecoration`가 안쪽을 padding으로 꽉 채워(66×66) borderRadius만 8로 바꿈 → 원(내경 ~67)에 꽉 찬 사각형은 대각선(~93)이 원을 넘어 모서리 4곳이 튀어나옴
+- 수정: padding 제거+중앙 정렬, 안쪽 크기를 상태별로 지정 — 대기 60(원판)/녹화 30(작은 정지 사각형). 대각선 ~42 < 원 지름 67이라 원 안에 안전히 들어옴
+- `camera_awesome_page.dart` (활성 카메라=camerawesome)
+- 검증: flutter analyze 신규 이슈 0, debug APK 빌드
+
 ### 23:25 | claude | ✅ 완료 (내정보 페이지 제목 "닉네임"→"내정보")
 **작업**: 내정보 탭 상단 제목이 로그인 닉네임(예: "스카이")을 표시하던 것을 고정 "내정보"로 변경
 - `myinfo_page.dart` `_appBar()`: 닉네임 Obx Text + 빈 바텀시트를 여는 InkWell(죽은 동작) 제거 → `const Text('내정보')`

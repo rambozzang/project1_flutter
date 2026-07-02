@@ -1150,13 +1150,18 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
     return Container(
       width: 76,
       height: 76,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 4.5),
       ),
-      padding: const EdgeInsets.all(5),
+      // 녹화 시에는 작은 사각형(정지 버튼)을 중앙에 그려 흰 원 안에 들어오게 한다.
+      // (사각형을 원 크기만큼 크게 그리면 모서리가 원 밖으로 삐져나옴)
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        width: isRecording ? 30 : 60,
+        height: isRecording ? 30 : 60,
         decoration: BoxDecoration(
           color: innerColor,
           borderRadius: BorderRadius.circular(isRecording ? 8 : 40),
