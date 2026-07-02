@@ -125,8 +125,11 @@ class CustRepo {
   // Tag 저장
   Future<ResData> saveTag(CustTagData data) async {
     final dio = await AuthDio.instance.getDio(debug: false);
-    if (data.lon != null || data.lat != null) {
-      MapAdapter changeMap = MapAdapter.changeMap(double.parse(data.lon!), double.parse(data.lat!));
+    // 좌표가 둘 다 유효할 때만 KMA 격자(nx/ny) 변환 (기존 || 조건은 한쪽만 null이어도 크래시)
+    final double? lonV = double.tryParse(data.lon ?? '');
+    final double? latV = double.tryParse(data.lat ?? '');
+    if (lonV != null && latV != null) {
+      MapAdapter changeMap = MapAdapter.changeMap(lonV, latV);
       data.nx = changeMap.x.toString();
       data.ny = changeMap.y.toString();
     }
