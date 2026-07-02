@@ -158,9 +158,8 @@ class MapCntr extends GetxController {
       isLoadingList.value = false;
       isFirstCallParamLatLon = false;
 
-      if (list.isEmpty) {
-        Utils.alert('근처에 영상이 없습니다.');
-      }
+      // 빈 결과 알림 제거: 최초 진입/카메라 이동마다 반복 팝업이 뜨던 문제.
+      // 영상이 없으면 지도에 마커가 없고 바텀시트가 '데이터가 없습니다'로 표시하므로 별도 알림 불필요.
       return list;
     } catch (e) {
       lo.g('buildMarker 오류 $e');
