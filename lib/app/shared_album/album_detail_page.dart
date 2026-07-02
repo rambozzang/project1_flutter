@@ -176,6 +176,16 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 8),
+            if (_community?.canEditCover == true)
+              _sheetItem(PhosphorIconsFill.sparkle, '대문 편집', () {
+                Get.back();
+                Get.toNamed('/AlbumCoverEditorPage', arguments: {
+                  'community': _community,
+                  'items': _items,
+                })?.then((saved) {
+                  if (saved == true) _load(); // 저장 시 상세·카운트 재조회
+                });
+              }),
             _sheetItem(PhosphorIconsFill.users, '멤버 보기', () {
               Get.back();
               Get.toNamed('/CommunityMembersPage', arguments: {'communityId': _communityId});

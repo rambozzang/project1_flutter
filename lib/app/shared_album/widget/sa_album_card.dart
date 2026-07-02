@@ -63,7 +63,7 @@ class SaAlbumCard extends StatelessWidget {
                 gradientKey: _gradientKeyFor(c),
                 overlay: Stack(
                   children: [
-                    if (data.mediaCount != null)
+                    if (data.mediaCount != null && c.showOpt('media'))
                       Positioned(
                         right: 10,
                         top: 10,
@@ -82,7 +82,10 @@ class SaAlbumCard extends StatelessWidget {
                             size: 22, color: SaColors.textPrimary),
                       ),
                     ),
-                    Positioned(left: 12, bottom: 12, child: SaNewBadge(count: data.newCount)),
+                    Positioned(
+                        left: 12,
+                        bottom: 12,
+                        child: SaNewBadge(count: c.showOpt('new') ? data.newCount : 0)),
                   ],
                 ),
               ),
@@ -95,12 +98,14 @@ class SaAlbumCard extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  SaMemberAvatarStack(
-                    avatarUrls: data.avatars,
-                    extraCount: (c.memberCnt - data.avatars.length).clamp(0, 999),
-                  ),
-                  const SizedBox(width: 8),
-                  Text('멤버 ${c.memberCnt}', style: SaText.caption),
+                  if (c.showOpt('avatars')) ...[
+                    SaMemberAvatarStack(
+                      avatarUrls: data.avatars,
+                      extraCount: (c.memberCnt - data.avatars.length).clamp(0, 999),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  if (c.showOpt('member')) Text('멤버 ${c.memberCnt}', style: SaText.caption),
                   if (data.lastUpdated != null) ...[
                     _dot(),
                     Text(data.lastUpdated!, style: SaText.mono(fontSize: 10.5)),
@@ -127,9 +132,10 @@ class SaAlbumCard extends StatelessWidget {
     );
   }
 
-  /// 앨범별 무드 그라디언트 키: 커버 템플릿/이미지가 없을 때 앨범 id 기반으로 순환해
-  /// 카드마다 다른 톤이 나오게 한다(디자인의 weather gradient 8종 활용).
+  /// 앨범별 무드 그라디언트 키: 대문 편집(1f)에서 고른 테마 컬러가 있으면 우선,
+  /// 없으면 앨범 id 기반 순환(카드마다 다른 톤).
   String _gradientKeyFor(CommunityData c) {
+    if ((c.themeColor ?? '').isNotEmpty) return c.themeColor!;
     const keys = ['rain', 'sunset', 'storm', 'night', 'aurora', 'golden', 'fog', 'snow'];
     return keys[c.communityId % keys.length];
   }

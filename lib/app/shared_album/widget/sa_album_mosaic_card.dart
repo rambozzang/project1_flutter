@@ -6,6 +6,7 @@ import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/theme/sa_weather_gradients.dart';
 import 'package:project1/app/shared_album/widget/sa_album_card.dart';
 import 'package:project1/app/shared_album/widget/sa_new_badge.dart';
+import 'package:project1/repo/community/data/community_data.dart';
 
 /// 홈(1c) — 모자이크 그리드용 컴팩트 카드.
 /// 이미지(tall 150 / short 106) + 제목(700/14) + 멤버/미디어 아이콘 스탯.
@@ -52,13 +53,13 @@ class SaAlbumMosaicCard extends StatelessWidget {
                       imageUrl: thumb,
                       fit: BoxFit.cover,
                       placeholder: (_, __) => DecoratedBox(
-                          decoration: BoxDecoration(gradient: SaWeatherGradients.of(_gradientKey(c.communityId)))),
+                          decoration: BoxDecoration(gradient: SaWeatherGradients.of(_gradientKey(c)))),
                       errorWidget: (_, __, ___) => DecoratedBox(
-                          decoration: BoxDecoration(gradient: SaWeatherGradients.of(_gradientKey(c.communityId)))),
+                          decoration: BoxDecoration(gradient: SaWeatherGradients.of(_gradientKey(c)))),
                     )
                   else
                     DecoratedBox(
-                        decoration: BoxDecoration(gradient: SaWeatherGradients.of(_gradientKey(c.communityId)))),
+                        decoration: BoxDecoration(gradient: SaWeatherGradients.of(_gradientKey(c)))),
                   if (data.newCount > 0)
                     Positioned(left: 8, top: 8, child: SaNewBadge(count: data.newCount)),
                 ],
@@ -94,8 +95,9 @@ class SaAlbumMosaicCard extends StatelessWidget {
     );
   }
 
-  String _gradientKey(int id) {
+  String _gradientKey(CommunityData c) {
+    if ((c.themeColor ?? '').isNotEmpty) return c.themeColor!;
     const keys = ['rain', 'sunset', 'storm', 'night', 'aurora', 'golden', 'fog', 'snow'];
-    return keys[id % keys.length];
+    return keys[c.communityId % keys.length];
   }
 }

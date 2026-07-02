@@ -87,14 +87,23 @@ class _AlbumListPageState extends State<AlbumListPage> {
   Future<void> _fillCard(SaAlbumCardData card) async {
     final int id = card.community.communityId;
     try {
+      // 대문 편집(1f)에서 대표 미디어를 지정한 앨범은 더 넓게 조회해 지정 순서대로 찾는다
+      final List<int> coverIds = card.community.coverMediaIds;
       final results = await Future.wait([
-        _repo.getFeedRes(id, 0, 3),
+        _repo.getFeedRes(id, 0, coverIds.isEmpty ? 3 : 30),
         _repo.getMembers(id),
       ]);
       final feedRes = results[0] as dynamic;
       if (feedRes.code == '00' && feedRes.data is List) {
         final items = (feedRes.data as List).map((e) => BoardWeatherListData.fromMap(e)).toList();
-        card.thumbs = items
+        List<BoardWeatherListData> ordered = items;
+        if (coverIds.isNotEmpty) {
+          final byId = {for (final it in items) it.boardId: it};
+          final picked = coverIds.map((cid) => byId[cid]).whereType<BoardWeatherListData>().toList();
+          // 지정 미디어 우선 + 부족분은 최근 미디어로 채움
+          ordered = [...picked, ...items.where((it) => !coverIds.contains(it.boardId))];
+        }
+        card.thumbs = ordered
             .map((e) => e.thumbnailPath ?? '')
             .where((p) => p.isNotEmpty)
             .take(3)

@@ -251,6 +251,33 @@ class CommunityRepo {
     }
   }
 
+  /// 대문 편집(1f) 일괄 저장 — null 파라미터는 미변경, 빈 문자열은 해제. 방장/매니저만.
+  Future<(bool, String)> updateFront(
+    int communityId, {
+    String? name,
+    String? description,
+    String? themeColor,
+    String? coverMediaIds,
+    String? cardOptions,
+  }) async {
+    try {
+      final dio = await AuthDio.instance.getDio();
+      final res = await dio.post('${UrlConfig.baseURL}/community/updateFront', queryParameters: {
+        'communityId': communityId,
+        if (name != null) 'name': name,
+        if (description != null) 'description': description,
+        if (themeColor != null) 'themeColor': themeColor,
+        if (coverMediaIds != null) 'coverMediaIds': coverMediaIds,
+        if (cardOptions != null) 'cardOptions': cardOptions,
+      });
+      final data = AuthDio.instance.dioResponse(res);
+      return (data.code == '00', data.msg ?? '');
+    } on DioException catch (e) {
+      final data = AuthDio.instance.dioException(e);
+      return (false, data.msg ?? '저장에 실패했습니다.');
+    }
+  }
+
   /// 앨범 열람 처리 — NEW(안 본 콘텐츠) 집계 기준 시각을 지금으로 갱신 (1d 갤러리 진입 시 호출)
   Future<void> markSeen(int communityId) async {
     final dio = await AuthDio.instance.getDio();
