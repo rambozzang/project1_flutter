@@ -40,9 +40,12 @@ class OtherInfoPage extends StatefulWidget {
   State<OtherInfoPage> createState() => _OtherInfoPageState();
 }
 
-class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveClientMixin {
+class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
   final ValueNotifier<List<String>> urls = ValueNotifier<List<String>>([]);
   final ValueNotifier<String> nickNm = ValueNotifier<String>('');
+
+  late final TabController _tabController;
+  bool _followLoaded = false; // 팔로우 탭은 처음 열릴 때만 로드(최초 진입 네트워크 부담 감소)
 
   @override
   bool get wantKeepAlive => true;
@@ -88,10 +91,26 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
       Get.back();
       return;
     }
+
+    // 스와이프 진입 시 넘어온 닉네임을 즉시 반영 → 상단바가 네트워크 대기 없이 바로 표시.
+    final args = Get.arguments;
+    if (args is Map && (args['nickNm']?.toString().isNotEmpty ?? false)) {
+      nickNm.value = args['nickNm'].toString();
+    }
+
+    _tabController = TabController(length: 2, vsync: this);
+    // 게시물 탭이 기본. 팔로우 탭은 처음 열릴 때만 로드.
+    _tabController.addListener(() {
+      if (_tabController.index == 1 && !_followLoaded) {
+        _followLoaded = true;
+        getFollowBoard(custId!);
+      }
+    });
+
     // getUserData(custId!);
     getCountData(custId!);
     getMyBoard(custId!);
-    getFollowBoard(custId!);
+    // getFollowBoard 는 팔로우 탭 최초 진입 시 지연 로드(위 리스너)
 
     textFocus.addListener(() {
       if (textFocus.hasFocus) {
@@ -266,6 +285,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
 
   @override
   void dispose() {
+    _tabController.dispose();
     myCountCntr.close();
     myVideoListCntr.close();
     followVideoListCntr.close();
@@ -278,43 +298,40 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return DefaultTabController(
-      length: 2,
-      initialIndex: 0,
-      child: Scaffold(
-        resizeToAvoidBottomInset: true,
-        appBar: _appBar(),
-        body: RefreshIndicator.adaptive(
-          notificationPredicate: (notification) {
-            if (notification is OverscrollNotification || Platform.isIOS) {
-              return notification.depth == 2;
-            }
-            return notification.depth == 0;
+    return Scaffold(
+      resizeToAvoidBottomInset: true,
+      appBar: _appBar(),
+      body: RefreshIndicator.adaptive(
+        notificationPredicate: (notification) {
+          if (notification is OverscrollNotification || Platform.isIOS) {
+            return notification.depth == 2;
+          }
+          return notification.depth == 0;
+        },
+        onRefresh: () async {
+          // 3가지 갯수 가져오기
+          getCountData(custId!);
+          getMyBoard(custId!);
+          _followLoaded = true;
+          getFollowBoard(custId!);
+        },
+        child: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return [
+              SliverList(
+                  delegate: SliverChildListDelegate([
+                _info(),
+                _buttons(),
+                //  _buildFavoriteTag()
+              ])),
+            ];
           },
-          onRefresh: () async {
-            // 3가지 갯수 가져오기
-            getCountData(custId!);
-            getMyBoard(custId!);
-            getFollowBoard(custId!);
-          },
-          child: NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) {
-              return [
-                SliverList(
-                    delegate: SliverChildListDelegate([
-                  _info(),
-                  _buttons(),
-                  //  _buildFavoriteTag()
-                ])),
-              ];
-            },
-            body: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _tabs(),
-                _tabBarView(),
-              ],
-            ),
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _tabs(),
+              _tabBarView(),
+            ],
           ),
         ),
       ),
@@ -685,7 +702,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
 
   Widget _tabBarView() {
     return Expanded(
-      child: TabBarView(children: [
+      child: TabBarView(controller: _tabController, children: [
         //_myFeeds(),
         Utils.commonStreamList<BoardWeatherListData>(myVideoListCntr, _myFeeds, getInitMyBoard),
         Utils.commonStreamList<BoardWeatherListData>(followVideoListCntr, _followFeeds, getInitFollowBoard),
@@ -870,7 +887,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
   }
 
   Widget _tabs() {
-    return const TabBar(indicatorColor: Colors.black, indicatorPadding: EdgeInsets.symmetric(horizontal: 50), tabs: [
+    return TabBar(controller: _tabController, indicatorColor: Colors.black, indicatorPadding: const EdgeInsets.symmetric(horizontal: 50), tabs: const [
       Tab(
         // child: Icon(Icons.grid_on),
         child: Row(

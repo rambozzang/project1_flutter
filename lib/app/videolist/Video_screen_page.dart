@@ -343,7 +343,11 @@ class VideoScreenPageState extends State<VideoScreenPage> {
                 onHorizontalDragEnd: (DragEndDetails details) {
                   if (details.primaryVelocity! < 0) {
                     if (widget.data.anonyYn != 'Y') {
-                      Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}');
+                      // 닉네임/프로필을 함께 넘겨 프로필 화면이 네트워크 대기 없이 즉시 상단을 그리게 한다.
+                      Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}', arguments: {
+                        'nickNm': widget.data.nickNm ?? widget.data.custNm ?? '',
+                        'profilePath': widget.data.profilePath ?? '',
+                      });
                     }
                   } else if (details.primaryVelocity! > 0) {
                     // Get.toNamed('/OtherInfoPage/${widget.data.custId.toString()}');
