@@ -19,11 +19,12 @@ class SpotWeatherBody extends StatefulWidget {
 }
 
 class _SpotWeatherBodyState extends State<SpotWeatherBody> {
-  // 앱 전체 디자인 톤(흰색 배경 + 어두운 primary)과 통일한다.
+  // 앱 전체 디자인 톤(흰색 배경 + 밝은 카드)과 통일한다.
+  // 액센트는 스팟 기능 전체(목록 FAB·상세 페이지)와 동일한 브랜드 보라로 통일.
   static const Color _bg = Color(0xFFF8F9FB);
   static const Color _surface = Colors.white;
   static const Color _border = Color(0xFFE8EAED);
-  static const Color _accent = Color(0xFF04101C);
+  static const Color _accent = Color(0xFF8C83DD);
   static const Color _textHi = Colors.black;
   static const Color _textLo = Color(0xFF5F6368);
 

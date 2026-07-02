@@ -20,11 +20,14 @@ class SpotDetailPage extends StatefulWidget {
 }
 
 class _SpotDetailPageState extends State<SpotDetailPage> {
-  static const Color _bg = Color(0xFF11141C);
-  static const Color _surface = Color(0xFF1B1F2A);
-  static const Color _accent = Color(0xFF4A90E2);
-  static const Color _textHi = Color(0xFFEDF1F7);
-  static const Color _textLo = Color(0xFF98A2B3);
+  // 스팟별 날씨(목록) 페이지와 동일한 밝은 디자인 톤으로 통일.
+  static const Color _bg = Color(0xFFF8F9FB);
+  static const Color _surface = Colors.white;
+  static const Color _border = Color(0xFFE8EAED);
+  static const Color _accent = Color(0xFF8C83DD);
+  static const Color _textHi = Colors.black;
+  static const Color _textLo = Color(0xFF5F6368);
+  static const Color _thumbBg = Color(0xFFEEF0F3);
 
   final SpotRepo _repo = SpotRepo();
   final CommunityRepo _communityRepo = CommunityRepo();
@@ -106,7 +109,7 @@ class _SpotDetailPageState extends State<SpotDetailPage> {
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: _bg,
+        backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(icon: const Icon(Icons.arrow_back_ios, color: _textHi, size: 20), onPressed: () => Get.back()),
@@ -144,7 +147,12 @@ class _SpotDetailPageState extends State<SpotDetailPage> {
     return Container(
       margin: const EdgeInsets.fromLTRB(14, 6, 14, 6),
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: _surface, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
       child: Row(
         children: [
           SizedBox(width: 50, height: 50, child: WeatherDataProcessor.instance.getWeatherGogoImage(s.sky ?? '1', s.rain ?? '0')),
@@ -188,7 +196,12 @@ class _SpotDetailPageState extends State<SpotDetailPage> {
     return Container(
       margin: const EdgeInsets.fromLTRB(14, 0, 14, 10),
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: _surface, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -295,13 +308,13 @@ class _SpotDetailPageState extends State<SpotDetailPage> {
           fit: StackFit.expand,
           children: [
             url.isEmpty
-                ? Container(color: _surface)
+                ? Container(color: _thumbBg)
                 : CachedNetworkImage(
                     imageUrl: url,
                     cacheKey: url,
                     fit: BoxFit.cover,
-                    placeholder: (_, __) => Container(color: _surface),
-                    errorWidget: (_, __, ___) => Container(color: _surface, child: const Icon(Icons.broken_image, color: _textLo, size: 20)),
+                    placeholder: (_, __) => Container(color: _thumbBg),
+                    errorWidget: (_, __, ___) => Container(color: _thumbBg, child: const Icon(Icons.broken_image, color: _textLo, size: 20)),
                   ),
             Positioned(
               left: 4,
