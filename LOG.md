@@ -6,6 +6,17 @@
 
 ## 2026-07-02
 
+### 23:40 | claude | ✅ 완료 (1e 몰입 뷰, 리뷰 대기)
+**작업**: 공유앨범 1e 몰입 뷰(틱톡식 세로 풀스크린) 구현
+- `album_immersive_page.dart`: 세로 PageView, 현재 페이지만 VideoPlayer 유지(이전 dispose), hls→mp4→videoPath 순 재생, 사진은 풀스크린 이미지
+- 상단: 글래스 back + 앨범명 칩 + 뷰 세그먼트(몰입 active, 그리드 탭=복귀) / 우상단 진행 표시(≤12개 세로 도트, 초과 시 n/total mono)
+- 우측 액션 레일: 업로더 아바타(OtherInfoPage) → 좋아요(낙관적 토글+LikeRepo, pink) → 댓글(기존 CommentPage().open 재사용) → 공유(share_plus)
+- 좌하단: 업로더명(800/16)+시간(mono)+캡션 2줄+날씨 글래스 칩(city·온도·습도) / 하단: 영상 스크러버+0:09/0:24+"↑ 다음" bob 힌트(4초)
+- 인터랙션: 탭=재생/일시정지, 더블탭=좋아요+하트 스케일 애니, 끝 5개 남으면 다음 페이지 로드
+- 1d 연결: 셀 탭(해당 인덱스)·몰입 세그먼트 → 몰입 뷰(아이템 객체 공유로 좋아요 상태 복귀 반영). 풀스크린 규칙 준수(SafeArea 금지·cover·viewPadding 보정)
+- 부수: LikeRepo.save에 pushYn/alramCd 추가(백엔드 필수 파라미터인데 누락돼 있던 사문 코드 정상화)
+- 검증: analyze 클린, Android 디버그 빌드 성공. 실기기 QA 필수(영상 재생/스크러버/좋아요/댓글)
+
 ### 22:55 | claude | ✅ 완료 (네이티브 스플래시 = 로딩화면 디자인)
 **작업**: 로딩화면(AuthPage) 디자인을 네이티브 스플래시로 재현 — 앞선 preserve/remove(밋밋한 스플래시가 로딩화면을 가림)를 되돌리고 방향 반대로 재작업
 - preserve/remove 원복(main.dart / root_page.dart / join_page.dart) → AuthPage 그라데이션 로딩화면 다시 표시

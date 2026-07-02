@@ -33,6 +33,7 @@ import 'package:project1/app/myinfo/myinfo_page.dart';
 import 'package:project1/app/setting/alram_setting_page.dart';
 import 'package:project1/app/setting/weather_noti_setting_page.dart';
 import 'package:project1/app/shared_album/album_detail_page.dart';
+import 'package:project1/app/shared_album/album_immersive_page.dart';
 import 'package:project1/app/shared_album/album_list_page.dart';
 import 'package:project1/app/shared_album/sa_preview_page.dart';
 import 'package:project1/app/setting/maketing_page.dart';
@@ -302,6 +303,12 @@ abstract class AppPages {
       name: '/AlbumDetailPage',
       page: () => const AlbumDetailPage(),
       transition: Transition.rightToLeftWithFade,
+    ),
+    // 공유앨범 몰입 뷰(1e 틱톡식 풀스크린)
+    GetPage(
+      name: '/AlbumImmersivePage',
+      page: () => const AlbumImmersivePage(),
+      transition: Transition.fadeIn,
     ),
     GetPage(
       name: '/WeatherComparePage',

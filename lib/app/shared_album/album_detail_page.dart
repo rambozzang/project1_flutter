@@ -133,15 +133,17 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
     }
   }
 
-  void _openViewer({BoardWeatherListData? item}) {
-    final target = item ?? (_visibleItems.isNotEmpty ? _visibleItems.first : null);
-    if (target == null) return;
-    Get.toNamed('/VideoMyinfoListPage', arguments: {
-      'datatype': 'COMMUNITY',
-      'custId': '',
-      'boardId': target.boardId.toString(),
-      'searchWord': '',
+  /// 몰입 뷰(1e)로 진입 — 현재 필터 기준 목록과 시작 인덱스를 넘긴다.
+  /// 아이템 객체를 공유하므로 몰입 뷰에서 바뀐 좋아요 상태가 복귀 시 그대로 반영된다.
+  void _openImmersive({int initialIndex = 0}) {
+    if (_visibleItems.isEmpty) return;
+    Get.toNamed('/AlbumImmersivePage', arguments: {
       'communityId': _communityId,
+      'albumName': _community?.name ?? '앨범',
+      'items': _visibleItems,
+      'initialIndex': initialIndex,
+    })?.then((_) {
+      if (mounted) setState(() {});
     });
   }
 
@@ -392,7 +394,7 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
             child: const PhosphorIcon(PhosphorIconsFill.squaresFour, size: 13, color: SaColors.onAccent),
           ),
           GestureDetector(
-            onTap: () => _openViewer(),
+            onTap: () => _openImmersive(),
             child: const Padding(
               padding: EdgeInsets.symmetric(horizontal: 9, vertical: 5),
               child: PhosphorIcon(PhosphorIconsBold.frameCorners, size: 13, color: SaColors.textSecondary),
@@ -433,17 +435,17 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
           childAspectRatio: 1 / 1.12,
         ),
         delegate: SliverChildBuilderDelegate(
-          (context, index) => _gridCell(items[index]),
+          (context, index) => _gridCell(items[index], index),
           childCount: items.length,
         ),
       ),
     );
   }
 
-  Widget _gridCell(BoardWeatherListData item) {
+  Widget _gridCell(BoardWeatherListData item, int index) {
     final bool isVideo = item.typeDtCd == 'V';
     return GestureDetector(
-      onTap: () => _openViewer(item: item),
+      onTap: () => _openImmersive(initialIndex: index),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(13),
         child: Stack(
