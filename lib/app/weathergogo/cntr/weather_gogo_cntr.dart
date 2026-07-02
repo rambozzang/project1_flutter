@@ -300,10 +300,13 @@ class WeatherGogoCntr extends GetxController {
         fetchLocalNameAndMistinfo(location),
         // fetchYesterDayWeather(location)
         // fetchWeatherAlert(location),
-        searchNaverNews(),
       ]);
 
       isLoading.value = false;
+
+      // 뉴스는 날씨 렌더링과 무관하므로 크리티컬 경로에서 분리(로딩 대기시간에서 제외).
+      // 실패해도 날씨엔 영향 없도록 fire-and-forget.
+      unawaited(searchNaverNews());
       lo.e('최종  현재온도 : ${currentWeather.value.temp.toString()}');
       lo.g("=========================================================");
       lo.g("========================================================");
