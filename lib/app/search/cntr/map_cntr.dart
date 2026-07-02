@@ -87,21 +87,20 @@ class MapCntr extends GetxController {
     // await locationUpdate(currentCoord: NLatLng(position.value!.latitude, position.value!.longitude));
   }
 
-  // 화면에서 호출
-  Future<List<BoardWeatherListData>> buildMarker(int sDay) async {
+  // 화면에서 호출.
+  // initial=true(최초 진입)면 파라미터 좌표 기준 반경으로, 이후(기간버튼·카메라 이동)엔 현재 보이는 지도 경계로 조회.
+  Future<List<BoardWeatherListData>> fetchBoards(int sDay, {bool initial = false}) async {
     try {
       isLoadingList.value = true;
       searchDay.value = sDay;
       isLoading.value = true;
 
       LatLng southWest1, northEast1;
-      if (initialLat.value != 0.0 && initialLon.value != 0.0) {
-        lo.g('111111 ');
-        // 파라미터로 전달된 위치를 중심으로 10km 반경의 경계 계산
+      if (initial && initialLat.value != 0.0 && initialLon.value != 0.0) {
+        // 파라미터로 전달된 위치를 중심으로 반경의 경계 계산 (최초 진입에만)
         final center = LatLng(initialLat.value, initialLon.value);
         const distance = Distance();
-        const radius = 3000; // 5km in meters
-        // Calculate southwest and northeast points
+        const radius = 3000; // meters
         southWest1 = distance.offset(center, radius * math.sqrt2, 225);
         northEast1 = distance.offset(center, radius * math.sqrt2, 45);
       } else {

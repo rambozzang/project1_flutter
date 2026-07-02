@@ -189,7 +189,8 @@ class _MapSearchPageState extends State<MapSearchPage> {
                                             fontWeight: FontWeight.w400,
                                             color: Colors.black,
                                           )),
-                                      data['road_address_name'] == null
+                                      (data['road_address_name'] != null &&
+                                              data['road_address_name'].toString().isNotEmpty)
                                           ? Text(data['road_address_name'],
                                               style: GoogleFonts.openSans(
                                                 fontSize: 12,

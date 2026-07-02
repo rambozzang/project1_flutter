@@ -8,14 +8,11 @@ import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
-import 'package:project1/app/search/cctv_page.dart';
 import 'package:project1/app/search/cntr/map_cntr.dart';
 import 'package:project1/app/search/map_search_page.dart';
 import 'package:project1/app/weather/models/geocode.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
-import 'package:project1/repo/cctv/cctv_repo.dart';
-import 'package:project1/repo/cctv/data/cctv_res_data.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/StringUtils.dart';
@@ -46,6 +43,13 @@ class _MapPageState extends State<MapPage> {
   late MapCntr mapCntr;
   double lat = 0;
   double lon = 0;
+
+  // ── 마커 증분 관리 ──
+  // 지도를 움직일 때 전체 마커를 재생성하지 않고, boardId 기준으로 신규만 추가/이탈만 제거한다.
+  final Map<String, NMarker> _activeMarkers = {}; // 현재 지도에 올라간 마커(boardId → 마커)
+  final Map<String, NOverlayImage> _iconCache = {}; // 썸네일 URL → 아이콘(다운로드 재사용)
+  int _markerSyncToken = 0; // 빠른 연속 이동 시 최신 동기화만 반영
+  Timer? _cameraDebounce; // 카메라 멈춘 뒤에만 재조회
   @override
   void initState() {
     super.initState();
@@ -67,6 +71,13 @@ class _MapPageState extends State<MapPage> {
     final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
     final lastModified = _formatHttpDate(sevenDaysAgo);
 
+    // 이전 컨트롤러 정리(마커 연속 탭 시 컨트롤러 누수 방지)
+    if (initialized) {
+      try {
+        await videoCntroller.pause();
+        await videoCntroller.dispose();
+      } catch (_) {}
+    }
     initialized = false;
     videoCntroller = VideoPlayerController.networkUrl(Uri.parse(videoPath.toString()),
         httpHeaders: {
@@ -105,48 +116,117 @@ class _MapPageState extends State<MapPage> {
         '${date.second.toString().padLeft(2, '0')} GMT';
   }
 
-  // 카카오 검색창에서 검색후 클릭시 위치로 이동
+  // 카카오 검색창에서 검색후 클릭시 위치로 이동 → 그 지점 기준으로 재조회
   Future<void> locationUpdate(GeocodeData geocodeData) async {
-    // NLatLng currentCoord = NLatLng(geocodeData.latLng.latitude, geocodeData.latLng.longitude);
-    // await Get.find<MapCntr>().setPositionlocationUpdate(currentCoord: currentCoord);
-    buildMarker(10);
+    final currentCoord = NLatLng(geocodeData.latLng.latitude, geocodeData.latLng.longitude);
+    await mapCntr.setPositionlocationUpdate(currentCoord: currentCoord);
+    // 카메라 이동이 끝나면 onCameraIdle 이 재조회를 트리거하지만,
+    // 검색은 명시적 액션이므로 즉시 한 번 조회해 반응성을 높인다.
+    final list = await mapCntr.fetchBoards(mapCntr.searchDay.value);
+    await _syncMarkers(list);
   }
 
-  // 마커 생성
-  Future<void> buildMarker(int sDay) async {
-    lo.g('buildMarker 호출');
-    List<BoardWeatherListData> list = await Get.find<MapCntr>().buildMarker(sDay);
+  // 기간 버튼(오늘/일주일/한달) 및 최초 진입에서 호출.
+  Future<void> loadBoards(int sDay, {bool initial = false}) async {
+    final list = await mapCntr.fetchBoards(sDay, initial: initial);
+    await _syncMarkers(list);
+  }
 
-    list.forEach((element) async {
-      final request = await http.get(Uri.parse(element.thumbnailPath.toString()));
-      final NOverlayImage icon = await NOverlayImage.fromByteArray(request.bodyBytes);
+  // 카메라가 멈춘 뒤(디바운스) 현재 보이는 영역으로 재조회 → 증분 동기화
+  void _onCameraIdle() {
+    _cameraDebounce?.cancel();
+    _cameraDebounce = Timer(const Duration(milliseconds: 600), () async {
+      if (!mounted) return;
+      final list = await mapCntr.fetchBoards(mapCntr.searchDay.value);
+      if (mounted) await _syncMarkers(list);
+    });
+  }
+
+  // 마커 증분 동기화: 신규 boardId만 생성, 목록에서 빠진 마커만 제거, 기존은 유지(재생성 안 함).
+  Future<void> _syncMarkers(List<BoardWeatherListData> list) async {
+    if (!mounted) return;
+    final token = ++_markerSyncToken;
+
+    // 유효한 항목만 boardId 로 수집
+    final incoming = <String, BoardWeatherListData>{};
+    for (final e in list) {
+      final id = e.boardId?.toString();
+      if (id != null && e.lat != null && e.lon != null) incoming[id] = e;
+    }
+
+    // 1. 더 이상 목록에 없는 마커 제거
+    final toRemove = _activeMarkers.keys.where((id) => !incoming.containsKey(id)).toList();
+    for (final id in toRemove) {
+      final m = _activeMarkers.remove(id);
+      if (m != null) {
+        try {
+          await mapCntr.mapController.deleteOverlay(m.info);
+        } catch (_) {}
+      }
+    }
+
+    // 2. 신규 마커만 생성(8개씩 병렬 — 100개 동시 다운로드 스파이크 방지)
+    final newItems = incoming.entries.where((en) => !_activeMarkers.containsKey(en.key)).map((en) => en.value).toList();
+    const batchSize = 8;
+    for (var i = 0; i < newItems.length; i += batchSize) {
+      if (token != _markerSyncToken || !mounted) return; // 더 최신 동기화 시작됨 → 중단
+      final chunk = newItems.skip(i).take(batchSize).toList();
+      final markers = await Future.wait(chunk.map(_createMarker));
+      if (token != _markerSyncToken || !mounted) return;
+      for (final m in markers) {
+        if (m == null) continue;
+        final id = m.info.id;
+        if (_activeMarkers.containsKey(id)) continue;
+        _activeMarkers[id] = m;
+        try {
+          await mapCntr.mapController.addOverlay(m);
+        } catch (_) {}
+      }
+    }
+  }
+
+  // 마커 1개 생성(아이콘은 캐시 우선, 없으면 다운로드해 캐시)
+  Future<NMarker?> _createMarker(BoardWeatherListData element) async {
+    try {
+      final id = element.boardId.toString();
+      final thumb = element.thumbnailPath?.toString() ?? '';
+      NOverlayImage? icon = _iconCache[thumb];
+      if (icon == null && thumb.isNotEmpty) {
+        final request = await http.get(Uri.parse(thumb)).timeout(const Duration(seconds: 8));
+        if (request.statusCode == 200) {
+          icon = await NOverlayImage.fromByteArray(request.bodyBytes);
+          _iconCache[thumb] = icon;
+        }
+      }
 
       final marker = NMarker(
-        id: element.boardId.toString(),
+        id: id,
         position: NLatLng(double.parse(element.lat.toString()), double.parse(element.lon.toString())),
         icon: icon,
         size: size,
         captionOffset: 1,
         isFlat: true,
         caption: NOverlayCaption(text: Utils.timeage(element.crtDtm.toString()), color: Colors.red),
-        // subCaption: NOverlayCaption(text: Utils.timeage(element.crtDtm.toString()), color: const Color.fromARGB(255, 53, 144, 58)),
-        // caption: NOverlayCaption(text: element.nickNm.toString(), color: Colors.black),
       );
-      Get.find<MapCntr>().mapController.addOverlay(marker);
-      if (!StringUtils.isEmpty(element.contents)) {
-        final onMarkerInfoWindow = NInfoWindow.onMarker(alpha: 1, offsetX: 0, id: marker.info.id, text: "${element.contents}");
-        marker.openInfoWindow(onMarkerInfoWindow);
-      }
-
       marker.setOnTapListener((overlay) async {
+        // 탭한 마커에만 말풍선 표시(모든 마커에 항상 열어두면 지도가 말풍선 범벅이 됨)
+        if (!StringUtils.isEmpty(element.contents)) {
+          final info = NInfoWindow.onMarker(alpha: 1, offsetX: 0, id: marker.info.id, text: "${element.contents}");
+          marker.openInfoWindow(info);
+        }
         videoPlay(element.boardId.toString(), element.videoPath.toString());
         onShowDialog(context, element);
       });
-    });
+      return marker;
+    } catch (err) {
+      lo.g('마커 생성 실패 ${element.boardId}: $err');
+      return null;
+    }
   }
 
   @override
   void dispose() {
+    _cameraDebounce?.cancel();
     if (initialized) {
       videoCntroller.pause();
       videoCntroller.dispose();
@@ -184,14 +264,11 @@ class _MapPageState extends State<MapPage> {
                       onMapReady: (controller) async {
                         mapCntr.mapController = controller;
 
-                        buildMarker(10);
+                        loadBoards(10, initial: true);
                         mapCntr.mapController.setLocationTrackingMode(NLocationTrackingMode.noFollow);
                       },
-                      // onCameraChange: (reason, animated) {
-                      //   if (!animated) {
-                      //     mapCntr.buildMarker(mapCntr.searchDay.value);
-                      //   }
-                      // },
+                      // 카메라가 멈추면(팬/줌 종료) 현재 보이는 영역으로 증분 재조회
+                      onCameraIdle: _onCameraIdle,
                     ),
                   ),
                   buildTopButton(),
@@ -203,135 +280,6 @@ class _MapPageState extends State<MapPage> {
                 ],
               )
             : const Center(child: CircularProgressIndicator()),
-      ),
-    );
-  }
-
-  Widget buildBoard() {
-    return Positioned(
-      bottom: 50,
-      left: 70,
-      right: 10,
-      child: Container(
-        height: 74,
-        decoration: BoxDecoration(
-          // 투명하게 해주세요.
-          color: Colors.white.withOpacity(0.75),
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.5),
-              spreadRadius: 1,
-              blurRadius: 7,
-              offset: const Offset(0, 7), // changes position of shadow
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 상단 앱바
-  Widget buildTop() {
-    return Positioned(
-        // top: topheight,
-        top: MediaQuery.of(context).padding.top + 200,
-        left: 10,
-        right: 10,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  shape: BoxShape.rectangle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.5),
-                      spreadRadius: 1,
-                      blurRadius: 7,
-                      offset: const Offset(0, 7), // changes position of shadow
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    IconButton(
-                      onPressed: () => Get.find<MapCntr>().getLocation(),
-                      icon: const Icon(Icons.location_on, color: Colors.black),
-                    ),
-                    TextScroll(
-                      '${Get.find<WeatherGogoCntr>().currentLocation.value.name.toString()} ',
-                      mode: TextScrollMode.endless,
-                      numberOfReps: 20000,
-                      fadedBorder: true,
-                      delayBefore: const Duration(milliseconds: 4000),
-                      pauseBetween: const Duration(milliseconds: 2000),
-                      velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
-                      style: const TextStyle(fontSize: 15, color: Colors.black, fontWeight: FontWeight.w500),
-                      textAlign: TextAlign.right,
-                      selectable: true,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const Gap(10),
-            ElevatedButton(
-              onPressed: () => Get.back(),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(0),
-                minimumSize: const Size(50, 50),
-                backgroundColor: Colors.white,
-                elevation: 5,
-                shadowColor: Colors.grey,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(5),
-                ),
-              ),
-              child: const Icon(Icons.close, color: Colors.black),
-            ),
-          ],
-        ));
-  }
-
-  Future showPopupMenu(BuildContext context, TapDownDetails tap, List<String> menus,
-      {double buttonHeight = 24, double buttonWidth = 24}) async {
-    var dx = tap.globalPosition.dx - (tap.localPosition.dx - buttonWidth);
-    var dy = tap.globalPosition.dy - (tap.localPosition.dy - buttonHeight);
-    return showMenu(
-        context: context,
-        position: RelativeRect.fromLTRB(dx, dy, dx, dy),
-        items: menus.map((e) => PopupMenuItem<String>(value: e, onTap: () {}, child: Text(e))).toList(),
-        elevation: 8.0);
-  }
-
-  ValueNotifier<double> isSlider = ValueNotifier<double>(0.0);
-
-  Widget buildBottomSearch() {
-    return Positioned(
-      bottom: 65,
-      left: 10,
-      right: 20,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(5),
-                minimumSize: const Size(70, 40),
-                backgroundColor: Colors.white,
-                elevation: 5,
-                shadowColor: Colors.grey,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-            onPressed: () => Get.find<MapCntr>().buildMarker(10),
-            child: const Text("다시조회", style: TextStyle(color: Colors.black, fontSize: 12)),
-          ),
-        ],
       ),
     );
   }
@@ -353,7 +301,7 @@ class _MapPageState extends State<MapPage> {
                   elevation: 5,
                   shadowColor: Colors.grey,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-              onPressed: () => buildMarker(1),
+              onPressed: () => loadBoards(1),
               child: const Text("오늘", style: TextStyle(color: Colors.black, fontSize: 12)),
             ),
             const Gap(10),
@@ -365,7 +313,7 @@ class _MapPageState extends State<MapPage> {
                   elevation: 5,
                   shadowColor: Colors.grey,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-              onPressed: () => buildMarker(7),
+              onPressed: () => loadBoards(7),
               child: const Text("일주일", style: TextStyle(color: Colors.black, fontSize: 12)),
             ),
             const Gap(10),
@@ -377,76 +325,11 @@ class _MapPageState extends State<MapPage> {
                   elevation: 5,
                   shadowColor: Colors.grey,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-              onPressed: () => buildMarker(31),
+              onPressed: () => loadBoards(31),
               child: const Text("한달", style: TextStyle(color: Colors.black, fontSize: 12)),
             ),
           ],
         ));
-  }
-
-  // 지역 및 서울 cctv 마커 생성
-  Future<void> getCctv() async {
-    //
-    Size size = const Size(30, 30);
-    var (southWest, northEast) = await Get.find<MapCntr>().getbounds();
-
-    CctvRepo repo = CctvRepo();
-    List<CctvResData> res = await repo.fetchCctv(
-        southWest, northEast, Get.find<MapCntr>().position.value!.latitude, Get.find<MapCntr>().position.value!.longitude);
-    lo.g('===>${res.toString()}');
-    if (res == []) {
-      //  return;
-    }
-    lo.g(res.length.toString());
-    const NOverlayImage icon = NOverlayImage.fromAssetImage('assets/images/map/cctv2.png');
-
-    int markid = 1;
-    res.forEach((element) async {
-      lo.g('지방 마커 생성 --------------- ${element.cctvname}');
-      final marker = NMarker(
-        id: markid.toString(), // element.coordx.toString(),
-        position: NLatLng(double.parse(element.coordy!), double.parse(element.coordx!)),
-        icon: icon,
-        size: size,
-        captionOffset: 0,
-      );
-      Get.find<MapCntr>().mapController.addOverlay(marker);
-      // final onMarkerInfoWindow = NInfoWindow.onMarker(id: marker.info.id, text: "${element.cctvname}°");
-      // marker.openInfoWindow(onMarkerInfoWindow);
-      marker.setOnTapListener((overlay) async {
-        await CctvPageBottomSheet().open(context, element);
-      });
-      markid++;
-    });
-
-    // 서울 시내 cctv   southWest, northEast, 37.55998, 126.9858296
-    // CctvSeoulReqData req = CctvSeoulReqData();
-    // req.southWestLat = southWest.latitude;
-    // req.southWestLng = southWest.longitude;
-    // req.northEastLat = northEast.latitude;
-    // req.northEastLng = northEast.longitude;
-    // req.lat = Get.find<MapCntr>().position!.latitude;
-    // req.lng = Get.find<MapCntr>().position!.longitude;
-
-    // ResData res2 = await repo.fetchCctvSeoul(req);
-    // List<CctvSeoulResData> list = ((res2.data) as List).map((data) => CctvSeoulResData.fromMap(data)).toList();
-    // list.forEach((element) {
-    //   lo.g('서울 마커 생성 --------------- ${element.cctvname}');
-    //   final marker2 = NMarker(
-    //     id: element.cctvid.toString(),
-    //     position: NLatLng(double.parse(element.ycoord!), double.parse(element.xcoord!)),
-    //     icon: icon,
-    //     size: size,
-    //     captionOffset: 0,
-    //   );
-    //   mapController.addOverlay(marker2);
-    //   final onMarkerInfoWindow = NInfoWindow.onMarker(id: marker2.info.id, text: "${element.cctvname}°");
-    //   marker2.openInfoWindow(onMarkerInfoWindow);
-    //   marker2.setOnTapListener((overlay) async {
-    //     await CctvSeoulPageBottomSheet().open(context, element);
-    //   });
-    //   markid++;
-    // });
   }
 
   // 일반 영상 보기
