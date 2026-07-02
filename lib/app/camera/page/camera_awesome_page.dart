@@ -225,81 +225,6 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     );
   }
 
-  Widget _buildTopFlashButton(CameraState state) {
-    return StreamBuilder<FlashMode>(
-      stream: state.sensorConfig.flashMode$,
-      builder: (context, snapshot) {
-        final flashMode = snapshot.data ?? FlashMode.none;
-        IconData icon;
-        switch (flashMode) {
-          case FlashMode.none:
-            icon = Icons.flash_off_rounded;
-            break;
-          case FlashMode.on:
-            icon = Icons.flash_on_rounded;
-            break;
-          case FlashMode.auto:
-            icon = Icons.flash_auto_rounded;
-            break;
-          case FlashMode.always:
-            icon = Icons.flashlight_on_rounded;
-            break;
-        }
-        final bool active = flashMode != FlashMode.none;
-        return _topGlassButton(
-          onTap: () => state.sensorConfig.setFlashMode(_nextFlashMode(flashMode)),
-          // 꺼짐=흰색, 그 외(켜짐/자동/손전등)=노란색으로 상태를 즉시 인지
-          child: Icon(icon, color: active ? const Color(0xFFFFD54F) : Colors.white, size: 19),
-        );
-      },
-    );
-  }
-
-  Widget _buildTopRatioButton(CameraState state) {
-    return StreamBuilder<CameraAspectRatios>(
-      stream: state.sensorConfig.aspectRatio$,
-      builder: (context, snapshot) {
-        final ratio = snapshot.data ?? CameraAspectRatios.ratio_16_9;
-        final String label = switch (ratio) {
-          CameraAspectRatios.ratio_4_3 => '4:3',
-          CameraAspectRatios.ratio_16_9 => '16:9',
-          CameraAspectRatios.ratio_1_1 => '1:1',
-        };
-        return _topGlassButton(
-          onTap: () => state.sensorConfig.setAspectRatio(_nextRatio(ratio)),
-          child: Text(
-            label,
-            style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w800),
-          ),
-        );
-      },
-    );
-  }
-
-  FlashMode _nextFlashMode(FlashMode current) {
-    switch (current) {
-      case FlashMode.none:
-        return FlashMode.on;
-      case FlashMode.on:
-        return FlashMode.auto;
-      case FlashMode.auto:
-        return FlashMode.always;
-      case FlashMode.always:
-        return FlashMode.none;
-    }
-  }
-
-  CameraAspectRatios _nextRatio(CameraAspectRatios current) {
-    switch (current) {
-      case CameraAspectRatios.ratio_4_3:
-        return CameraAspectRatios.ratio_16_9;
-      case CameraAspectRatios.ratio_16_9:
-        return CameraAspectRatios.ratio_1_1;
-      case CameraAspectRatios.ratio_1_1:
-        return CameraAspectRatios.ratio_4_3;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -339,8 +264,6 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
             ),
             onMediaCaptureEvent: _onMediaCaptureEvent,
             topActionsBuilder: (state) {
-              // 일반 카메라 앱 관례에 맞춰 설정류(플래시·비율)는 상단 우측에 배치.
-              final bool isRecording = state is VideoRecordingCameraState;
               return Row(
                 children: [
                   _topGlassButton(
@@ -348,11 +271,6 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
                     child: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
                   ),
                   const Spacer(),
-                  if (!isRecording) ...[
-                    _buildTopFlashButton(state),
-                    const SizedBox(width: 8),
-                    _buildTopRatioButton(state),
-                  ],
                   // 사진 모드에서 촬영한 사진이 있으면 "다음" 버튼
                   if (_photos.isNotEmpty) ...[
                     const SizedBox(width: 8),
@@ -861,17 +779,83 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
     );
   }
 
-  // 셔터 위 중앙 = 줌 핀 전용(플래시·비율은 상단 바로 이동 — 일반 카메라 앱 관례)
   Widget _buildQuickSettings(CameraState state) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.28),
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.14), width: 0.8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          StreamBuilder<FlashMode>(
+            stream: state.sensorConfig.flashMode$,
+            builder: (context, snapshot) {
+              final flashMode = snapshot.data ?? FlashMode.none;
+              IconData icon;
+              String label;
+              switch (flashMode) {
+                case FlashMode.none:
+                  icon = Icons.flash_off_rounded;
+                  label = '꺼짐';
+                  break;
+                case FlashMode.on:
+                  icon = Icons.flash_on_rounded;
+                  label = '켜짐';
+                  break;
+                case FlashMode.auto:
+                  icon = Icons.flash_auto_rounded;
+                  label = '자동';
+                  break;
+                case FlashMode.always:
+                  icon = Icons.flashlight_on_rounded;
+                  label = '손전등';
+                  break;
+              }
+              final bool active = flashMode != FlashMode.none;
+              return _buildQuickActionButton(
+                icon: icon,
+                label: label,
+                // 꺼짐=흰색, 그 외(켜짐/자동/손전등)=노란색으로 상태 인지
+                color: active ? const Color(0xFFFFD54F) : Colors.white,
+                onTap: () {
+                  state.sensorConfig.setFlashMode(_getNextFlashMode(flashMode));
+                },
+              );
+            },
+          ),
+          Container(
+            height: 16,
+            width: 1,
+            color: Colors.white.withOpacity(0.2),
+            margin: const EdgeInsets.symmetric(horizontal: 14),
+          ),
+          StreamBuilder<CameraAspectRatios>(
+            stream: state.sensorConfig.aspectRatio$,
+            builder: (context, snapshot) {
+              final ratio = snapshot.data ?? CameraAspectRatios.ratio_16_9;
+              final String label = switch (ratio) {
+                CameraAspectRatios.ratio_4_3 => '4:3',
+                CameraAspectRatios.ratio_16_9 => '16:9',
+                CameraAspectRatios.ratio_1_1 => '1:1',
+              };
+              return _buildQuickActionButton(
+                icon: Icons.aspect_ratio_rounded,
+                label: label,
+                onTap: () {
+                  state.sensorConfig.setAspectRatio(_getNextRatio(ratio));
+                },
+              );
+            },
+          ),
+          Container(
+            height: 16,
+            width: 1,
+            color: Colors.white.withOpacity(0.2),
+            margin: const EdgeInsets.symmetric(horizontal: 14),
+          ),
           StreamBuilder<double>(
             stream: state.sensorConfig.zoom$,
             builder: (context, snapshot) {
@@ -914,6 +898,52 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
         ],
       ),
     );
+  }
+
+  Widget _buildQuickActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    Color color = Colors.white,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  FlashMode _getNextFlashMode(FlashMode current) {
+    switch (current) {
+      case FlashMode.none:
+        return FlashMode.on;
+      case FlashMode.on:
+        return FlashMode.auto;
+      case FlashMode.auto:
+        return FlashMode.always;
+      case FlashMode.always:
+        return FlashMode.none;
+    }
+  }
+
+  CameraAspectRatios _getNextRatio(CameraAspectRatios current) {
+    switch (current) {
+      case CameraAspectRatios.ratio_4_3:
+        return CameraAspectRatios.ratio_16_9;
+      case CameraAspectRatios.ratio_16_9:
+        return CameraAspectRatios.ratio_1_1;
+      case CameraAspectRatios.ratio_1_1:
+        return CameraAspectRatios.ratio_4_3;
+    }
   }
 
   Widget _buildZoomPill(CameraState state, String label, double value, bool isActive) {
