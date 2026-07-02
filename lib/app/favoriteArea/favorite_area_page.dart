@@ -15,6 +15,7 @@ import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/cust_tag_data.dart';
+import 'package:project1/repo/kakao/kakao_repo.dart';
 import 'package:project1/repo/secure_storge.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
@@ -50,6 +51,29 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
   StreamController<ResStream<List<String>>> areaStream = StreamController();
 
   List<String> _arealist = [];
+
+  final KakaoRepo _kakaoRepo = KakaoRepo();
+
+  /// 관심지역은 이름만 저장되므로, 클릭 시 카카오 지오코딩으로 실제 좌표를 얻어 날씨를 조회한다.
+  /// (기존에는 LatLng(0,0)을 넘겨 엉뚱한 좌표의 날씨를 조회하던 버그가 있었음)
+  Future<void> _openWeatherByAreaName(String areaName) async {
+    try {
+      final docs = await _kakaoRepo.getCoordinates(areaName);
+      final doc = docs.isEmpty ? null : docs.first;
+      final lat = double.tryParse(doc?['y']?.toString() ?? '');
+      final lon = double.tryParse(doc?['x']?.toString() ?? '');
+      if (lat == null || lon == null) {
+        Utils.alert('[$areaName] 위치를 찾지 못했습니다.');
+        return;
+      }
+      Get.find<WeatherGogoCntr>().searchWeatherKakao(
+          GeocodeData(name: areaName, latLng: LatLng(lat, lon), addr: doc?['address_name']?.toString() ?? ''));
+      Get.back();
+    } catch (e) {
+      lo.g('관심지역 지오코딩 실패: $e');
+      Utils.alert('위치 조회 중 오류가 발생했습니다.');
+    }
+  }
 
   @override
   void initState() {
@@ -424,13 +448,7 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> with SecureStorage 
                             );
                           },
                         ),
-                        onTap: () {
-                          // WeatherGogoCntr.to 대신 Get.find<WeatherGogoCntr>() 사용
-                          // areaName으로 GeocodeData를 임시 생성하여 searchWeatherKakao 호출
-                          final tempGeocodeData = GeocodeData(name: areaName, latLng: const LatLng(0, 0), addr: '');
-                          Get.find<WeatherGogoCntr>().searchWeatherKakao(tempGeocodeData);
-                          Get.back(); // 이전 화면으로 돌아가기 (예시)
-                        },
+                        onTap: () => _openWeatherByAreaName(areaName),
                       ),
                     );
                   },
