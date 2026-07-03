@@ -59,32 +59,26 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
   }
 
   Widget _buildTemperature(String temp) {
+    // 리프레시·관심지역·현재위치 클릭 등으로 새 온도가 들어오면 이전 값에서
+    // 새 값으로 숫자가 카운트되며 올라가는 효과(첫 표시는 0부터 카운트업).
+    final double target = double.tryParse(temp) ?? 0.0;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 500),
-          transitionBuilder: (Widget child, Animation<double> animation) {
-            return FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 0.4),
-                  end: Offset.zero,
-                ).animate(animation),
-                child: child,
-              ),
-            );
-          },
-          child: Text(
-            temp.contains('.') ? temp : '$temp.0',
-            key: ValueKey<String>(temp),
+        TweenAnimationBuilder<double>(
+          tween: Tween<double>(begin: 0, end: target),
+          duration: const Duration(milliseconds: 900),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, child) => Text(
+            value.toStringAsFixed(1),
             style: const TextStyle(
               fontSize: 56,
               height: 1,
               color: Colors.white,
               fontWeight: FontWeight.bold,
+              // 카운트 중 자릿수 폭이 흔들리지 않게 고정폭 숫자 사용.
+              fontFeatures: [FontFeature.tabularFigures()],
             ),
           ),
         ),

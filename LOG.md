@@ -6,6 +6,12 @@
 
 ## 2026-07-03
 
+### 15:45 | claude | ✅ 완료 (날씨 홈 온도 카운트업 애니메이션)
+**작업**: 날씨 홈(header_main_page) 큰 온도 숫자에 새 데이터 로드 시 카운트업 효과
+- 기존 AnimatedSwitcher(페이드+슬라이드)를 `TweenAnimationBuilder<double>`(이전값→새값, easeOutCubic 900ms)로 교체 — 리프레시·관심지역·현재위치 클릭으로 온도 바뀌면 숫자가 굴러 올라감(첫 표시는 0부터)
+- `FontFeature.tabularFigures()`로 카운트 중 자릿수 폭 흔들림 방지, `toStringAsFixed(1)`로 소수1자리 유지
+- 검증: analyze 이슈 0, debug APK 빌드
+
 ### 15:20 | claude | ✅ 완료 (Play 스토어 목록 아이콘 v10로 교체)
 **작업**: 스토어 아이콘 점검·갱신 — 실제로 옛것이던 건 Play 스토어 목록 아이콘 하나뿐
 - **Play 스토어 목록 아이콘**: 옛 보라 "Shy" → v10 코랄 구름. app_icon_v10_square에서 512×512 생성(PIL) → Play Developer API `edits.images`(imageType=icon, ko-KR) 업로드+commit(구글 검토 후 반영). ※ 목록 아이콘은 AAB와 별개 자산
