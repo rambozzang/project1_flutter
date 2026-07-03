@@ -153,9 +153,10 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
 
   Future<void> _openCamera() async {
     // 카메라 진입 전 대상 앨범 지정 → 촬영 후 등록 시 이 앨범에 소속되어 저장됨.
+    // 복귀 시 null 초기화 금지 — 카메라→등록 페이지 전환이 pushReplacement라 이 await가 먼저 풀려
+    // 등록 페이지가 값을 읽기 전에 지워진다. 초기화는 등록 페이지가 소비 직후 수행.
     RootCntr.to.pendingCommunityId = _communityId;
     await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CameraAwesomePage()));
-    RootCntr.to.pendingCommunityId = null; // 복귀 시 초기화(누수 방지)
     if (mounted && _canViewFeed) {
       // 업로드는 백그라운드로 진행되므로 약간의 지연 후 새로고침
       await Future.delayed(const Duration(milliseconds: 800));

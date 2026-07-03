@@ -1,13 +1,9 @@
-import 'dart:io';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:project1/app/camera/page/camera_awesome_page.dart';
-import 'package:project1/app/shared_album/album_upload_page.dart';
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/widget/sa_gradient_button.dart';
@@ -160,61 +156,16 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
   }
 
   Future<void> _openCamera() async {
-    // 카메라 진입 전 대상 앨범 지정 → 촬영 후 등록 시 이 앨범 소속으로 저장
+    // 카메라 진입 전 대상 앨범 지정 → 촬영 후 등록 시 이 앨범 소속으로 저장.
+    // 주의: 여기서 복귀 후 null로 되돌리면 안 된다 — 카메라가 등록 페이지로 pushReplacement 하는 순간
+    // 이 await가 먼저 풀려 등록 페이지가 값을 읽기 전에 지워진다(앨범 자동선택 누락 버그).
+    // 초기화는 등록 페이지(video/photo_reg_page)가 값을 소비한 직후 수행한다.
     RootCntr.to.pendingCommunityId = _communityId;
     await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CameraAwesomePage()));
-    RootCntr.to.pendingCommunityId = null;
     if (mounted) {
       await Future.delayed(const Duration(milliseconds: 800));
       _loadFeed(reset: true);
     }
-  }
-
-  /// 갤러리 다중 선택 → 업로드 화면(1g)
-  Future<void> _openGalleryUpload() async {
-    final c = _community;
-    if (c == null) return;
-    final picked = await ImagePicker().pickMultiImage(imageQuality: 90);
-    if (picked.isEmpty || !mounted) return;
-    final result = await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => AlbumUploadPage(
-          community: c,
-          photoFiles: picked.map((e) => File(e.path)).toList(),
-        ),
-      ),
-    );
-    if (result == true && mounted) {
-      // 업로드는 백그라운드 진행 → 약간의 지연 후 새로고침
-      await Future.delayed(const Duration(milliseconds: 800));
-      _loadFeed(reset: true);
-    }
-  }
-
-  /// '＋ 올리기' 진입 시트: 촬영 / 갤러리
-  void _showUploadSheet() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: SaColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            _sheetItem(PhosphorIconsFill.camera, '카메라로 촬영', () {
-              Get.back();
-              _openCamera();
-            }),
-            _sheetItem(PhosphorIconsFill.images, '갤러리에서 사진 올리기', () {
-              Get.back();
-              _openGalleryUpload();
-            }),
-            const SizedBox(height: 10),
-          ],
-        ),
-      ),
-    );
   }
 
   void _showMoreSheet() {
@@ -282,7 +233,7 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
                 label: '＋ 올리기',
                 height: 50,
                 glow: true,
-                onTap: _showUploadSheet,
+                onTap: _openCamera, // 시트 없이 바로 카메라(촬영)로 — 갤러리 선택 제거(사용자 요청)
               )
             : null,
         body: SafeArea(

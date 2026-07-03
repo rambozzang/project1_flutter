@@ -41,6 +41,14 @@ class _PhotoRegPageState extends State<PhotoRegPage> {
   int? _selectedCommunityId = RootCntr.to.pendingCommunityId;
 
   @override
+  void initState() {
+    super.initState();
+    // 앨범 진입 컨텍스트는 위 필드 초기화에서 이미 소비했으므로 여기서 비워
+    // 이후 일반 카메라 진입에 앨범이 잘못 자동선택되는 누수를 막는다.
+    RootCntr.to.pendingCommunityId = null;
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
     _captionController.dispose();

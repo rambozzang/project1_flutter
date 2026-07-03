@@ -272,10 +272,13 @@ class _CommentsPageState extends State<CommentsPage> {
 
   // 댓글 입력창
   Widget buildBottomWidget() {
+    // 시스템 내비게이션 바(3버튼/제스처) 위로 입력창을 올린다.
+    // 키보드가 열리면 상위 Padding(viewInsets)이 이미 밀어올리므로 그때는 추가 여백 없음.
+    final double navInset = MediaQuery.of(context).viewInsets.bottom > 0 ? 0 : MediaQuery.of(context).viewPadding.bottom;
     return Container(
       color: isDarkTheme ? Colors.grey[900] : Colors.grey[100],
-      height: 64,
-      padding: const EdgeInsets.only(left: 5, right: 5),
+      height: 64 + navInset,
+      padding: EdgeInsets.only(left: 5, right: 5, bottom: navInset),
       child: Row(
         children: [
           Padding(

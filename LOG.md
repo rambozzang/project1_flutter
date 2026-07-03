@@ -6,6 +6,13 @@
 
 ## 2026-07-03
 
+### 09:40 | claude | ✅ 완료 (앨범 업로드·댓글 UX 3종 수정)
+**작업**: 사용자 리포트 3건 수정
+- **① 앨범 자동선택 누락(레이스)**: 앨범에서 카메라 진입 시 `pendingCommunityId`를 세팅하지만, 카메라→등록 페이지 전환이 `pushReplacement`라 `_openCamera`의 await가 등록 페이지 생성 **전에** 풀려 null로 지워지고 있었음. 수정: 진입부(album_detail/community_home)의 복귀 시 null 초기화 제거 + 등록 페이지(video/photo_reg_page)가 값을 **소비한 직후 초기화**(일반 카메라 진입 누수는 기존 root_page/app_route 리셋이 계속 방어)
+- **② 앨범 올리기 = 무조건 카메라**: '＋ 올리기'의 카메라/갤러리 바텀시트 제거 → 바로 촬영 진입. `_showUploadSheet`·`_openGalleryUpload`(1g 갤러리 경로) 삭제
+- **③ 댓글 입력창이 시스템 내비 버튼에 가림**: comment_page 하단 입력창이 키보드(viewInsets)만 보정 → 3버튼 내비게이션(viewPadding.bottom)만큼 입력창 높이 확장(키보드 열리면 추가 여백 0). 앨범 몰입뷰·쇼트 피드 공용이라 둘 다 해결
+- 검증: analyze 에러 0, Android 디버그 빌드 성공
+
 ### 09:25 | claude | ✅ 완료 (Cloudflare Direct Creator Upload 전환 — 앱 자격증명 전면 제거)
 **작업**: 앱에 하드코딩돼 있던 Cloudflare API 토큰/글로벌 키를 제거하고, 백엔드가 발급하는 일회용 업로드 URL 방식으로 전환
 - **백엔드(e053ccf)**: POST `/cloudflare/videoUploadUrl`(Stream 티켓 — uploadUrl+uid 기반 hls/dash/썸네일 서버 조립), `/cloudflare/imageUploadUrl`(Images v2 — deliveryUrl 포함), `/cloudflare/deleteImage`(삭제 프록시). 토큰은 서버 외부설정 `/vdata/jar/skysnap/config/application.yml`에서만 주입(레포에 없음)
