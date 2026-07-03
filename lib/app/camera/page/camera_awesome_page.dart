@@ -100,12 +100,9 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     }
   }
 
-  // 카메라 초기화 시 조작 안내(↕밝기·↔줌)를 잠깐 띄웠다 사라지게 한다.
+  // 카메라 초기화 시 조작 안내를 잠깐 띄웠다 사라지게 한다.
   bool _showGestureHint = false;
   Timer? _hintTimer;
-  // 힌트 캡슐 내부의 손가락(점)이 왕복 스와이프하는 애니메이션(0↔1 반복).
-  late final AnimationController _swipeCtrl;
-  late final Animation<double> _swipeAnim;
 
   // 밝기 게이지: 상하 드래그로 밝기 조절 중에만 잠깐 표시.
   final ValueNotifier<double> _brightnessVN = ValueNotifier<double>(0.5);
@@ -118,19 +115,13 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
   @override
   void initState() {
     super.initState();
-    // 손가락 왕복 스와이프 애니메이션(0→1→0 반복, 부드럽게) — 힌트 노출 중에만 구동.
-    _swipeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 950));
-    _swipeAnim = CurvedAnimation(parent: _swipeCtrl, curve: Curves.easeInOut);
-    // 다음 프레임에 페이드인 → 3.4초 후 페이드아웃(스와이프 왕복이 몇 번 보이도록)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _gestureHintShownThisRun) return;
       _gestureHintShownThisRun = true;
-      _swipeCtrl.repeat(reverse: true);
       setState(() => _showGestureHint = true);
-      _hintTimer = Timer(const Duration(milliseconds: 3400), () {
+      _hintTimer = Timer(const Duration(milliseconds: 2800), () {
         if (!mounted) return;
         setState(() => _showGestureHint = false);
-        _swipeCtrl.stop();
       });
     });
   }
@@ -139,7 +130,6 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
   void dispose() {
     _hintTimer?.cancel();
     _gaugeHideTimer?.cancel();
-    _swipeCtrl.dispose();
     _brightnessVN.dispose();
     _gaugeVN.dispose();
     _zoomSub?.cancel();
@@ -400,25 +390,14 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
               ),
             ),
           ),
-          // 초기화 시 조작 안내(앱 실행당 1회): 상하(밝기)=우측 측면, 좌우(줌)=중앙.
+          // 초기화 시 조작 안내(앱 실행당 1회): 하단 중앙 통합 카드
           Positioned.fill(
             child: IgnorePointer(
               child: AnimatedOpacity(
                 opacity: _showGestureHint ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 450),
+                duration: const Duration(milliseconds: 400),
                 curve: Curves.easeInOut,
-                child: Stack(
-                  children: [
-                    Center(child: _buildZoomHint()),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 14),
-                        child: _buildBrightnessHint(),
-                      ),
-                    ),
-                  ],
-                ),
+                child: Center(child: _buildGestureHintCard()),
               ),
             ),
           ),
@@ -427,9 +406,8 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     );
   }
 
-  // ── 제스처 안내 (좌우=줌 / 상하=밝기) — 프로스티드 글래스 + 코멧 인디케이터 ──
+  // ── 제스처 안내 — 하단 중앙 통합 글래스 카드 ──
 
-  // 반투명 유리 알약(블러 + 은은한 흰 테두리). 검정 불투명 캡슐 대비 훨씬 가볍고 고급스럽다.
   Widget _glassPill({required Widget child, EdgeInsets? padding}) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
@@ -448,86 +426,68 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     );
   }
 
-  // 방향으로 흐르는 코멧(작은 점 + 진행 방향으로 부드럽게 사라지는 꼬리). 화살표+점 조합보다 세련됨.
-  // axis: true=가로, false=세로. t: 0~1 진행도.
-  Widget _comet({required bool horizontal}) {
-    return AnimatedBuilder(
-      animation: _swipeAnim,
-      builder: (context, _) {
-        final double t = _swipeAnim.value; // 0~1 (easeInOut 왕복)
-        final double pos = (t * 2 - 1); // -1~1
-        // 왕복 방향에 따라 꼬리가 반대로 뻗도록 진행속도(미분 부호) 근사
-        final double head = pos * (horizontal ? 40 : 32);
-        return Transform.translate(
-          offset: horizontal ? Offset(head, 0) : Offset(0, head),
-          child: Container(
-            width: 14,
-            height: 14,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(color: Colors.white.withOpacity(0.7), blurRadius: 10, spreadRadius: 1.5),
-              ],
-            ),
+  Widget _buildGestureHintCard() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.55),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.15), width: 0.8),
           ),
-        );
-      },
-    );
-  }
-
-  // 상하(밝기): 우측의 세로 글래스 알약 — 해 아이콘 + 코멧이 위↕아래 왕복.
-  Widget _buildBrightnessHint() {
-    return _glassPill(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.wb_sunny_rounded, color: Colors.white, size: 22),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: 18,
-            height: 92,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // 은은한 트랙
-                Container(width: 3, decoration: BoxDecoration(color: Colors.white.withOpacity(0.25), borderRadius: BorderRadius.circular(2))),
-                _comet(horizontal: false),
-              ],
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 줌
+              _hintRow(
+                icon: Icons.swap_horiz_rounded,
+                text: '좌우 드래그',
+                value: '줌',
+                color: const Color(0xFF4C8DFF),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: SizedBox(width: 160, child: Divider(height: 1, color: Color(0x22FFFFFF))),
+              ),
+              // 밝기
+              _hintRow(
+                icon: Icons.swap_vert_rounded,
+                text: '상하 드래그',
+                value: '밝기',
+                color: const Color(0xFFFFB74D),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
-          const Text('밝기', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.2)),
-        ],
+        ),
       ),
     );
   }
 
-  // 좌우(줌): 중앙의 가로 글래스 알약 — 돋보기 아이콘 + 코멧이 좌↔우 왕복.
-  Widget _buildZoomHint() {
-    return _glassPill(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.zoom_in_rounded, color: Colors.white, size: 22),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 100,
-            height: 18,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(height: 3, decoration: BoxDecoration(color: Colors.white.withOpacity(0.25), borderRadius: BorderRadius.circular(2))),
-                _comet(horizontal: true),
-              ],
-            ),
+  Widget _hintRow({
+    required IconData icon,
+    required String text,
+    required String value,
+    required Color color,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(width: 8),
+        Text(text, style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
+        const SizedBox(width: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(6),
           ),
-          const SizedBox(width: 12),
-          const Text('줌', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.2)),
-        ],
-      ),
+          child: Text(value, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w700)),
+        ),
+      ],
     );
   }
 }
