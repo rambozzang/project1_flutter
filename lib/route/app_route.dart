@@ -35,6 +35,7 @@ import 'package:project1/app/setting/weather_noti_setting_page.dart';
 import 'package:project1/app/shared_album/album_cover_editor_page.dart';
 import 'package:project1/app/shared_album/album_create_page.dart';
 import 'package:project1/app/shared_album/album_detail_page.dart';
+import 'package:project1/app/shared_album/album_shell.dart';
 import 'package:project1/app/shared_album/album_explore_page.dart';
 import 'package:project1/app/shared_album/album_invite_page.dart';
 import 'package:project1/app/shared_album/album_immersive_page.dart';
@@ -302,7 +303,12 @@ abstract class AppPages {
       page: () => const AlbumListPage(),
       // transition: Transition.rightToLeftWithFade,
     ),
-    // 공유앨범 상세(1d 갤러리 뷰)
+    // 앨범 셸(2a 타임라인 + 하단 탭바) — 앨범 진입 기본 화면
+    GetPage(
+      name: '/AlbumShellPage',
+      page: () => const AlbumShellPage(),
+    ),
+    // 공유앨범 상세(구 1d 갤러리 뷰) — 셸로 대체됐으나 롤백/직접 진입용으로 유지
     GetPage(
       name: '/AlbumDetailPage',
       page: () => const AlbumDetailPage(),

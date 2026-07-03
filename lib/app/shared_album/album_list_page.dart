@@ -308,7 +308,8 @@ class _AlbumListPageState extends State<AlbumListPage> {
   }
 
   void _openDetail(SaAlbumCardData card) {
-    Get.toNamed('/AlbumDetailPage',
+    // 앨범 진입 = 셸(2a 타임라인 + 하단 탭바). 구 1d 상세는 /AlbumDetailPage로 남겨둠.
+    Get.toNamed('/AlbumShellPage',
         arguments: {'communityId': card.community.communityId})?.then((_) => _reload());
   }
 
