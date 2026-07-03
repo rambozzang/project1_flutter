@@ -11,6 +11,7 @@ import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/admob/banner_ad_widget.dart';
 import 'package:project1/app/auth/agree_page.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 // import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 import 'package:project1/root/cntr/root_cntr.dart';
@@ -38,6 +39,63 @@ class _SettingPageState extends State<SettingPage> {
     super.initState();
     _loadAd();
     RootCntr.to.bottomBarStreamController.sink.add(true);
+    // 앨범 테마 현재값 표시용(저장값 복원 후 subtitle 갱신)
+    SaColors.loadSavedMode().then((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  String get _albumThemeLabel {
+    switch (SaColors.themeMode) {
+      case SaThemeMode.light:
+        return '라이트';
+      case SaThemeMode.dark:
+        return '다크';
+      case SaThemeMode.system:
+        return '시스템 설정 따름';
+    }
+  }
+
+  void _showAlbumThemeSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(18))),
+      builder: (context) {
+        Widget option(SaThemeMode mode, IconData icon, String label, String desc) {
+          final bool selected = SaColors.themeMode == mode;
+          return ListTile(
+            leading: Icon(icon, color: selected ? Colors.teal : Colors.grey[600]),
+            title: Text(label, style: TextStyle(fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
+            subtitle: Text(desc, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+            trailing: selected ? const Icon(Icons.check, color: Colors.teal) : null,
+            onTap: () async {
+              await SaColors.saveMode(mode);
+              if (mounted) setState(() {});
+              if (context.mounted) Navigator.of(context).pop();
+            },
+          );
+        }
+
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 16, 20, 4),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('앨범 테마', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                ),
+              ),
+              option(SaThemeMode.system, CupertinoIcons.circle_lefthalf_fill, '시스템 설정 따름', '휴대폰 다크모드 설정에 맞춰 자동 전환'),
+              option(SaThemeMode.light, CupertinoIcons.sun_max, '라이트', '앨범 화면을 항상 밝게'),
+              option(SaThemeMode.dark, CupertinoIcons.moon, '다크', '앨범 화면을 항상 어둡게'),
+              const Gap(8),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _loadAd() async {
@@ -147,6 +205,19 @@ class _SettingPageState extends State<SettingPage> {
                         titleMaxLine: 1,
                         subtitleMaxLine: 1,
                       ),
+                    SettingsItem(
+                      onTap: _showAlbumThemeSheet,
+                      icons: CupertinoIcons.moon_stars,
+                      iconStyle: IconStyle(
+                        iconsColor: Colors.white,
+                        withBackground: true,
+                        backgroundColor: Colors.blueGrey[400],
+                      ),
+                      title: '앨범 테마',
+                      subtitle: "현재: $_albumThemeLabel",
+                      titleMaxLine: 1,
+                      subtitleMaxLine: 1,
+                    ),
                   ],
                 ),
                 ValueListenableBuilder<bool>(

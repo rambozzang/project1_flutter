@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+/// 앨범 테마 모드 — 설정에서 사용자가 선택(기본: 시스템 따름).
+enum SaThemeMode { system, light, dark }
 
 /// 공유앨범 디자인 토큰 — 색상. (다크/라이트 2팔레트)
 /// 출처: design_handoff_shared_album/README.md (Design Tokens > Colors)
 ///
 /// 사용법은 기존과 동일하게 `SaColors.bgBase` — 내부에서 현재 모드에 맞는 팔레트를 반환한다.
-/// 모드는 시스템 밝기를 따르며, 각 앨범 페이지 build 최상단에서 `SaColors.syncWith(context)`를
-/// 호출해 동기화한다(플랫폼 밝기를 읽으므로 시스템 테마 변경 시 자동 rebuild).
+/// 모드는 사용자 선택([themeMode], 기본=시스템 밝기 추종)을 따르며, 각 앨범 페이지 build
+/// 최상단에서 `SaColors.syncWith(context)`를 호출해 동기화한다.
 /// 몰입뷰(영상 전체화면)처럼 항상 어두워야 하는 화면은 [SaColorsDark]를 직접 참조한다.
 class SaColors {
   SaColors._();
@@ -13,9 +17,54 @@ class SaColors {
   /// 현재 라이트 모드 여부. 페이지 build에서 [syncWith]로 갱신된다.
   static bool isLight = false;
 
-  /// 시스템 밝기와 동기화 — 앨범 각 페이지 build 최상단에서 호출.
+  /// 사용자가 선택한 테마 모드(설정 > 앨범 테마). 앱 재시작 후에도 유지.
+  static SaThemeMode themeMode = SaThemeMode.system;
+
+  /// 모드 변경 알림 — 탭에 살아있는 앨범 페이지가 구독해 즉시 다시 그린다.
+  static final ValueNotifier<int> themeTick = ValueNotifier<int>(0);
+
+  static const FlutterSecureStorage _storage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
+  static const String _kThemeKey = 'SA_THEME_MODE';
+  static bool _loaded = false;
+
+  /// 저장된 테마 모드 복원(1회만 실제 조회) — 앨범 홈/설정 진입 시 호출.
+  static Future<void> loadSavedMode() async {
+    if (_loaded) return;
+    _loaded = true;
+    final v = await _storage.read(key: _kThemeKey);
+    if (v == 'light') {
+      themeMode = SaThemeMode.light;
+    } else if (v == 'dark') {
+      themeMode = SaThemeMode.dark;
+    } else {
+      themeMode = SaThemeMode.system;
+    }
+    themeTick.value++;
+  }
+
+  /// 테마 모드 변경 + 저장 + 구독 페이지 갱신 통지.
+  static Future<void> saveMode(SaThemeMode mode) async {
+    themeMode = mode;
+    themeTick.value++;
+    await _storage.write(key: _kThemeKey, value: mode.name);
+  }
+
+  /// 현재 모드와 동기화 — 앨범 각 페이지 build 최상단에서 호출.
+  /// (system 모드는 플랫폼 밝기를 읽으므로 시스템 테마 변경 시 자동 rebuild)
   static void syncWith(BuildContext context) {
-    isLight = MediaQuery.platformBrightnessOf(context) == Brightness.light;
+    switch (themeMode) {
+      case SaThemeMode.light:
+        isLight = true;
+        break;
+      case SaThemeMode.dark:
+        isLight = false;
+        break;
+      case SaThemeMode.system:
+        isLight = MediaQuery.platformBrightnessOf(context) == Brightness.light;
+        break;
+    }
   }
 
   // ── 표면 ──────────────────────────────────────────────

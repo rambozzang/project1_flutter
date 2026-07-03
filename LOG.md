@@ -6,6 +6,13 @@
 
 ## 2026-07-03
 
+### 10:35 | claude | ✅ 완료 (앨범 테마 사용자 선택 — 설정 > 앨범 테마)
+**작업**: 시스템 추종만 되던 앨범 테마를 사용자가 직접 선택 가능하게
+- `SaThemeMode`(system/light/dark) + secure storage 영속(`SA_THEME_MODE`) + `themeTick` ValueNotifier(변경 즉시 반영)
+- 설정 페이지 '설정' 그룹에 **앨범 테마** 항목(현재 모드 subtitle 표시) → 바텀시트 3옵션(시스템 따름/라이트/다크)
+- 앨범 홈(album_list_page)이 themeTick 구독 — 설정에서 바꾸면 탭에 살아있는 앨범 홈도 즉시 갱신. 저장값 복원은 앨범 홈·설정 진입 시(1회 캐시)
+- 검증: analyze 에러 0, Android·iOS 디버그 빌드 성공
+
 ### 10:15 | claude | ✅ 완료 (앨범 라이트모드 지원 — 시스템 밝기 추종)
 **작업**: 다크 전용이던 앨범(shared_album) 화면 전체에 라이트모드 추가
 - **구조**: `SaColors`를 static const → 모드 전환 getter로 재작성(참조 문법 `SaColors.x` 유지). 라이트 팔레트 신규(bgBase #F4F7FB, surface white, 딥틸 #00B3A4, 잉크 #17222E 등). `SaText`도 getter화. 다크 원본은 `SaColorsDark`로 분리

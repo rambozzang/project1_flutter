@@ -48,8 +48,21 @@ class _AlbumListPageState extends State<AlbumListPage> {
   @override
   void initState() {
     super.initState();
+    // 저장된 앨범 테마 복원 + 설정에서 바꾸면 즉시 반영(탭에 살아있는 페이지라 직접 구독)
+    SaColors.loadSavedMode();
+    SaColors.themeTick.addListener(_onThemeChanged);
     _restoreViewMode();
     _load();
+  }
+
+  void _onThemeChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    SaColors.themeTick.removeListener(_onThemeChanged);
+    super.dispose();
   }
 
   Future<void> _restoreViewMode() async {
