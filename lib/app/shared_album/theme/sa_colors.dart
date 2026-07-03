@@ -14,11 +14,11 @@ enum SaThemeMode { system, light, dark }
 class SaColors {
   SaColors._();
 
-  /// 현재 라이트 모드 여부. 페이지 build에서 [syncWith]로 갱신된다.
-  static bool isLight = false;
+  /// 현재 라이트 모드 여부. 페이지 build에서 [syncWith]로 갱신된다. 기본=라이트.
+  static bool isLight = true;
 
-  /// 사용자가 선택한 테마 모드(설정 > 앨범 테마). 앱 재시작 후에도 유지.
-  static SaThemeMode themeMode = SaThemeMode.system;
+  /// 사용자가 선택한 테마 모드(설정 > 앨범 테마). 앱 재시작 후에도 유지. 기본=라이트(최초 진입 시 라이트).
+  static SaThemeMode themeMode = SaThemeMode.light;
 
   /// 모드 변경 알림 — 탭에 살아있는 앨범 페이지가 구독해 즉시 다시 그린다.
   static final ValueNotifier<int> themeTick = ValueNotifier<int>(0);
@@ -38,8 +38,10 @@ class SaColors {
       themeMode = SaThemeMode.light;
     } else if (v == 'dark') {
       themeMode = SaThemeMode.dark;
-    } else {
+    } else if (v == 'system') {
       themeMode = SaThemeMode.system;
+    } else {
+      themeMode = SaThemeMode.light; // 저장값 없으면 라이트 기본
     }
     themeTick.value++;
   }
