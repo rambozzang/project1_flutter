@@ -40,6 +40,10 @@ class _MapPageState extends State<MapPage> {
   late MapCntr mapCntr;
   double lat = 0;
   double lon = 0;
+  // 지도 초기화 완료 여부. 전체를 Obx로 감싸면 position.value 변경(카메라 이동마다)에
+  // NaverMap까지 재빌드돼 깜빡이므로, isInit을 1회 플래그로 받아 정적 build 로 전환한다.
+  bool _ready = false;
+  Worker? _initWorker;
 
   // ── 마커 증분 관리 ──
   // 지도를 움직일 때 전체 마커를 재생성하지 않고, boardId 기준으로 신규만 추가/이탈만 제거한다.
@@ -60,6 +64,14 @@ class _MapPageState extends State<MapPage> {
     mapCntr = Get.find<MapCntr>();
     if (lat != 0 && lon != 0) {
       Get.find<MapCntr>().setInitialLocation(lat, lon);
+    }
+
+    // 초기화 완료 시 1회만 setState → 이후 카메라 이동에도 지도 스택은 재빌드되지 않음.
+    _ready = mapCntr.isInit.value;
+    if (!_ready) {
+      _initWorker = ever<bool>(mapCntr.isInit, (v) {
+        if (v && mounted && !_ready) setState(() => _ready = true);
+      });
     }
   }
 
@@ -230,6 +242,7 @@ class _MapPageState extends State<MapPage> {
 
   @override
   void dispose() {
+    _initWorker?.dispose();
     _cameraDebounce?.cancel();
     if (initialized) {
       videoCntroller.pause();
@@ -243,10 +256,10 @@ class _MapPageState extends State<MapPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      body: Obx(
-        () => mapCntr.isInit.value
-            ? Stack(
-                children: [
+      body: !_ready
+          ? const Center(child: CircularProgressIndicator())
+          : Stack(
+              children: [
                   Positioned(
                     top: 0,
                     left: 0,
@@ -284,9 +297,7 @@ class _MapPageState extends State<MapPage> {
                   // 검색바(최상단) — 결과 리스트가 다른 오버레이 위에 뜨도록 마지막에 배치
                   MapSearchPage(onSelectClick: locationUpdate),
                 ],
-              )
-            : const Center(child: CircularProgressIndicator()),
-      ),
+              ),
     );
   }
 

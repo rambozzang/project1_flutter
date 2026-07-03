@@ -6,6 +6,13 @@
 
 ## 2026-07-03
 
+### 16:50 | claude | ✅ 완료 (지도 깜빡임 수정 + 검색창 상단 고정형)
+**작업**: 지도 깜빡임 근본 원인 제거 + 검색창 재디자인
+- **깜빡임 원인**: 화면 전체를 감싼 `Obx`가 `position.value`를 읽는데, 카메라 이동마다 `getbounds()`가 position.value를 갱신 → **NaverMap까지 통째 재빌드**되어 깜빡임. (데이터 조회는 원래 async 정상)
+- **수정**: 전체 Obx 제거 → `isInit` 완료를 `ever`로 1회 구독(`_ready` 플래그)해 정적 build로 전환. 이후 카메라 이동에도 지도 스택 재빌드 안 됨. position.value는 initialCameraPosition에서 비반응형 1회 읽기. 내부 Obx(기간필터·주소칩)·StreamBuilder는 스코프 유지
+- **검색창**: 상태바 아래 떠 보이던 흰 pill → 상단 고정형 바(상태바까지 흰색+그림자, 안쪽 회색 라운드 필드)
+- 검증: analyze 이슈 0, debug APK 빌드
+
 ### 16:30 | claude | ✅ 완료 (지도 페이지 재작업 — 검색창·퍼포먼스·바텀시트)
 **작업**: 지도 페이지 검색창/퍼포먼스/바텀시트 전면 개선 (사용자: 어설픈 구현·성능 불만)
 - **검색창**: 무거운 `material_floating_search_bar_plus`(FloatingSearchBar) → 경량 커스텀(흰 pill + 아래 결과 리스트). 카카오 지오코딩 로직 유지(2글자+·디바운스 350ms·순서보정). `map_search_page.dart` 전면 재작성
