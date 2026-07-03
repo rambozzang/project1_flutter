@@ -6,6 +6,13 @@
 
 ## 2026-07-03
 
+### 21:57 | claude | ✅ 완료 (iOS 빌드 50 심사 취소 → 빌드 51 재제출, altool 키 경로 함정 수정)
+**작업**: 대기 중이던 빌드 50 심사(어제 코드 기준)를 취소하고 오늘 추가된 18개 커밋(앨범 타임라인·미디어상세·QR확대·카메라제스처·지도재작업 등) 전부 포함한 빌드 51로 재제출
+- **취소**: `PATCH /v1/reviewSubmissions/{id}` body `{"attributes":{"canceled":true}}` → WAITING_FOR_REVIEW→CANCELING→COMPLETE. 버전 1.2.0 appStoreState가 DEVELOPER_REJECTED(편집 가능)로 복귀
+- **버전 1.2.0+51** 빌드 → 업로드 1차 시도가 altool "Failed to load AuthKey file (-43)"로 실패 — **altool은 --apiKey 사용 시 .p8을 고정 탐색 경로(`~/.appstoreconnect/private_keys` 등)에서만 찾고, config.env의 임의 경로(ASC_API_KEY_PATH)는 인식 안 함**. 재빌드 없이 키만 표준 경로에 복사 후 업로드 재시도 → 성공(UUID cdf67c18)
+- **`deploy_ios.sh` 영구 수정**: API키 업로드 분기에서 ASC_API_KEY_PATH→`~/.appstoreconnect/private_keys/AuthKey_{ID}.p8` 자동 복사 추가 — 다음 배포부터 이 함정 재발 안 함
+- 심사 재제출은 `appstore_submit.py`로 진행 중(빌드 51 처리 폴링 후 자동)
+
 ### 17:10 | claude | ✅ 완료 (지도 마커 탭 미리보기 시트 재디자인)
 **작업**: 이미지 마커 탭 시 뜨는 바텀시트(`onShowDialog`) 개선 — 옹색한 좌우 배치→세로 미리보기
 - 기존: 영상 350h 왼쪽 + 날씨정보 오른쪽 욱여넣기 + 죽은 주석 대량

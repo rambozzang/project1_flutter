@@ -53,6 +53,13 @@ fi
 
 info "App Store Connect 업로드"
 if [ -n "${ASC_API_KEY_ID:-}" ] && [ -n "${ASC_API_ISSUER_ID:-}" ]; then
+  # altool은 --apiKey 사용 시 .p8을 임의 경로가 아니라 고정 탐색 경로에서만 찾는다.
+  # (~/.appstoreconnect/private_keys, ~/private_keys, ~/.private_keys 등)
+  # ASC_API_KEY_PATH가 그 경로들 밖에 있으면 "Failed to load AuthKey file"로 실패하므로 자동 복사해둔다.
+  if [ -n "${ASC_API_KEY_PATH:-}" ] && [ -f "$ASC_API_KEY_PATH" ]; then
+    mkdir -p "$HOME/.appstoreconnect/private_keys"
+    cp -f "$ASC_API_KEY_PATH" "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_API_KEY_ID}.p8"
+  fi
   xcrun altool --upload-app --type ios --file "$IPA_PATH" \
     --apiKey "$ASC_API_KEY_ID" --apiIssuer "$ASC_API_ISSUER_ID"
 else
