@@ -6,6 +6,14 @@
 
 ## 2026-07-03
 
+### 13:40 | claude | ✅ 완료 (플레이스토어 v1.2.0+49 프로덕션 제출 + 자동배포 스크립트 영구화)
+**작업**: Android 플레이스토어 자동배포 — 업로드까지 원커맨드화
+- **배포 완료**: 1.1.0+48 → **1.2.0+49**(마이너 범프), 서명 AAB(108.7MB) 빌드 → Play Developer API로 업로드 → **production 트랙 심사 제출 완료**(versionCode 49)
+- 서비스계정: doberman 프로젝트의 `play-store-uploader@...`(사용자가 Play Console에서 SkySnap 앱 권한 부여 — 부여 직후 403, 약 90초 후 반영)
+- **영구 스크립트**: `scripts/play_upload.py`(신규, env 파라미터화) + `deploy_android.sh` 개편(빌드 후 자동 업로드, `--no-upload` 옵션, venv 자동 준비 `scripts/.venv-play`, config.env 없어도 기존 key.properties로 빌드 가능)
+- 설정: `config.env`(gitignore)에 PLAY_SERVICE_ACCOUNT_JSON·PLAY_TRACK, 릴리즈 노트는 `scripts/release_notes_ko.txt`(매 배포 전 수정)
+- **다음 배포부터**: `./scripts/deploy.sh android --bump build` 한 줄이면 버전업→빌드→업로드→심사 제출까지 자동
+
 ### 12:05 | claude | ✅ 완료 (앨범 몰입뷰 반응성 — 기본 피드와 동일 구성으로 재작성)
 **작업**: 몰입뷰(1e) 스와이프가 기본 영상 피드보다 확연히 느리던 문제 — 피드와 동일값으로 전환
 - **기존 문제 4가지**: ① 프리로드 없음(스와이프 후에야 영상 초기화 시작 → 매번 로딩 대기) ② 일반 PageView 기본 물리(둔한 스와이프) ③ 스크러버 갱신을 페이지 전체 setState로(매 프레임 잭) ④ Android도 HLS(피드는 DASH)·캐시 헤더 없음

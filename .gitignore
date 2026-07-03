@@ -63,3 +63,4 @@ lib/.omc/
 .claude/worktrees/
 .superpowers/
 .worktrees/
+scripts/.venv-play/
