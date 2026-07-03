@@ -28,17 +28,17 @@ class CommentHeaderWidget extends StatelessWidget {
             width: 40,
             height: 4,
             margin: const EdgeInsets.only(top: 4),
-            decoration: BoxDecoration(color: Colors.white60, borderRadius: BorderRadius.circular(100)),
+            decoration: BoxDecoration(color: textColor.withOpacity(0.4), borderRadius: BorderRadius.circular(100)),
           ),
           Row(
             children: [
-              const Padding(
-                padding: EdgeInsets.only(left: 15),
+              Padding(
+                padding: const EdgeInsets.only(left: 15),
                 child: Text(
                   "댓글",
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: textColor,
                     fontSize: 16,
                   ),
                 ),
@@ -47,9 +47,9 @@ class CommentHeaderWidget extends StatelessWidget {
                 padding: const EdgeInsets.only(left: 6.0),
                 child: Text(
                   listLength.toString(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w400,
-                    color: Colors.white70,
+                    color: textColor.withOpacity(0.7),
                     fontSize: 13,
                   ),
                 ),
@@ -59,10 +59,10 @@ class CommentHeaderWidget extends StatelessWidget {
                 onPressed: () {
                   getData();
                 },
-                icon: const Icon(
+                icon: Icon(
                   Icons.replay,
                   size: 26,
-                  color: Colors.white,
+                  color: textColor,
                 ),
               ),
               Padding(
@@ -71,17 +71,17 @@ class CommentHeaderWidget extends StatelessWidget {
                   onPressed: () {
                     Get.back();
                   },
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.close,
                     size: 26,
-                    color: Colors.white,
+                    color: textColor,
                   ),
                 ),
               ),
             ],
           ),
           Container(
-            color: const Color(0xFF292929),
+            color: isDarkTheme ? const Color(0xFF292929) : const Color(0xFFE4E4E4),
             width: double.infinity,
             height: 1,
           ),

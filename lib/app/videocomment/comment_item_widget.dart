@@ -115,11 +115,11 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
                         widget.boardCommentData.nickNm.toString(),
                         style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: textColorSub),
                       ),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 7.0),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 7.0),
                         child: Text(
                           '·',
-                          style: TextStyle(color: Colors.white, fontSize: 16),
+                          style: TextStyle(color: textColorSub, fontSize: 16),
                         ),
                       ),
                       Text(

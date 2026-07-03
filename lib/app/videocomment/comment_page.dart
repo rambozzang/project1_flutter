@@ -228,12 +228,12 @@ class _CommentsPageState extends State<CommentsPage> {
                             itemCount: list.isEmpty ? 1 : list.length,
                             itemBuilder: (BuildContext context, int index) {
                               return list.isEmpty
-                                  ? const Center(
+                                  ? Center(
                                       child: Padding(
-                                        padding: EdgeInsets.all(68.0),
+                                        padding: const EdgeInsets.all(68.0),
                                         child: Text(
                                           '댓글 없습니다.',
-                                          style: TextStyle(color: Colors.white, fontSize: 13),
+                                          style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black54, fontSize: 13),
                                         ),
                                       ),
                                     )
@@ -361,9 +361,9 @@ class _CommentsPageState extends State<CommentsPage> {
                     child: Opacity(
                       opacity: value ? 0.5 : 1.0,
                       child: !value
-                          ? const Icon(
+                          ? Icon(
                               Icons.send,
-                              color: Colors.white,
+                              color: isDarkTheme ? Colors.white : Colors.black87,
                             )
                           : LoadingAnimationWidget.fourRotatingDots(
                               color: Colors.pink,
