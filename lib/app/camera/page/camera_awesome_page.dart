@@ -457,17 +457,17 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
         final double t = _swipeAnim.value; // 0~1 (easeInOut 왕복)
         final double pos = (t * 2 - 1); // -1~1
         // 왕복 방향에 따라 꼬리가 반대로 뻗도록 진행속도(미분 부호) 근사
-        final double head = pos * (horizontal ? 30 : 24);
+        final double head = pos * (horizontal ? 40 : 32);
         return Transform.translate(
           offset: horizontal ? Offset(head, 0) : Offset(0, head),
           child: Container(
-            width: 10,
-            height: 10,
+            width: 14,
+            height: 14,
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
               boxShadow: [
-                BoxShadow(color: Colors.white.withOpacity(0.7), blurRadius: 8, spreadRadius: 1),
+                BoxShadow(color: Colors.white.withOpacity(0.7), blurRadius: 10, spreadRadius: 1.5),
               ],
             ),
           ),
@@ -479,26 +479,26 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
   // 상하(밝기): 우측의 세로 글래스 알약 — 해 아이콘 + 코멧이 위↕아래 왕복.
   Widget _buildBrightnessHint() {
     return _glassPill(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.wb_sunny_rounded, color: Colors.white, size: 16),
-          const SizedBox(height: 8),
+          const Icon(Icons.wb_sunny_rounded, color: Colors.white, size: 22),
+          const SizedBox(height: 10),
           SizedBox(
-            width: 14,
-            height: 70,
+            width: 18,
+            height: 92,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 // 은은한 트랙
-                Container(width: 2, decoration: BoxDecoration(color: Colors.white.withOpacity(0.25), borderRadius: BorderRadius.circular(1))),
+                Container(width: 3, decoration: BoxDecoration(color: Colors.white.withOpacity(0.25), borderRadius: BorderRadius.circular(2))),
                 _comet(horizontal: false),
               ],
             ),
           ),
-          const SizedBox(height: 8),
-          const Text('밝기', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.2)),
+          const SizedBox(height: 10),
+          const Text('밝기', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.2)),
         ],
       ),
     );
@@ -507,25 +507,25 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
   // 좌우(줌): 중앙의 가로 글래스 알약 — 돋보기 아이콘 + 코멧이 좌↔우 왕복.
   Widget _buildZoomHint() {
     return _glassPill(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.zoom_in_rounded, color: Colors.white, size: 16),
-          const SizedBox(width: 10),
+          const Icon(Icons.zoom_in_rounded, color: Colors.white, size: 22),
+          const SizedBox(width: 12),
           SizedBox(
-            width: 76,
-            height: 14,
+            width: 100,
+            height: 18,
             child: Stack(
               alignment: Alignment.center,
               children: [
-                Container(height: 2, decoration: BoxDecoration(color: Colors.white.withOpacity(0.25), borderRadius: BorderRadius.circular(1))),
+                Container(height: 3, decoration: BoxDecoration(color: Colors.white.withOpacity(0.25), borderRadius: BorderRadius.circular(2))),
                 _comet(horizontal: true),
               ],
             ),
           ),
-          const SizedBox(width: 10),
-          const Text('줌', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.2)),
+          const SizedBox(width: 12),
+          const Text('줌', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.2)),
         ],
       ),
     );
