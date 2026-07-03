@@ -6,6 +6,23 @@
 
 ## 2026-07-03
 
+### 14:00 | claude | ✅ 완료 (iOS v1.2.0+49 App Store Connect 업로드 + 심사 자동제출 스크립트)
+**작업**: iOS 앱스토어 자동배포 — 빌드+업로드 완료, 심사 제출 스크립트 영구화
+- **업로드 완료**: IPA(56.6MB, 자동 서명 team 4682T8VYPH) 빌드 → altool로 App Store Connect 업로드 성공(Delivery UUID 65e7d015…). 도베르만 `ios_build.sh` 참고 — Apple ID `rambozzang@gmail.com`+앱전용암호(동일 개발자 계정)
+- 만료된 로컬 `skysnap.mobileprovision`(2025-07-15)·배포 인증서 없음이지만 CODE_SIGN_STYLE=Automatic이 배포 프로파일 즉석 생성 → 무관. `ITSAppUsesNonExemptEncryption=false` 이미 설정(export compliance 자동)
+- **심사 자동제출 스크립트**: 신규 `scripts/appstore_submit.py`(App Store Connect API — 빌드 처리 폴링→버전 생성→릴리즈노트→빌드 연결→reviewSubmissions 제출) + `deploy_ios.sh --submit` 옵션. venv에 pyjwt/cryptography/requests
+- **남은 것**: Issuer ID(사용자·액세스>통합) 1개 필요 → 받으면 빌드 처리 완료 후 심사 제출 자동 마무리. (.p8 키=B946U72BT4는 확보)
+- config.env(gitignore)에 APPLE_ID/APPLE_APP_PASSWORD/ASC_API_* 저장
+
+### 14:50 | claude | ✅ 완료 (신규 앱 '우리의앨범' 생성 — ~/work/app/flutter/woorialbum)
+**작업**: skysnap 공유앨범 기반 독립 앱 신규 생성(백엔드는 skysnap API 그대로 사용)
+- **스캐폴드**: project=woorialbum, appId=com.codelabtiger.woorialbum (폴더명 한글→영문 변경 완료)
+- **포팅**: shared_album 8화면+테마+위젯 전체, 소셜로그인 4종(auth/join/AuthCntr), community/board/cloudflare repo, 댓글, 멤버관리. RootCntr는 업로드 파이프라인만 슬림 포팅
+- **차별화**: 온보딩 2경로(초대 코드 참여 vs 새로 시작), 자체 딥링크 스킴 `wooram://invite`, 홈=앨범/내정보 2탭, 업로드=갤러리(사진 다중/영상 1개+캡션), 신규 아이콘(폴라로이드 스택+하트)·스플래시(웜 크림)
+- **뺀 것**: 카메라 모듈, 날씨 서브시스템(WeatherForBoard 슬림 대체), 채팅/광고/업적/출석
+- 검증: analyze 에러 0, Android·iOS 디버그 빌드 통과. 첫 커밋 03eb406(로컬 git init, 리모트 미설정)
+- **사용자 작업 필요**: Firebase/카카오/네이버/애플 콘솔에 새 앱(패키지) 등록해야 실기기 소셜로그인 동작 — woorialbum/README.md 표 참고
+
 ### 13:40 | claude | ✅ 완료 (플레이스토어 v1.2.0+49 프로덕션 제출 + 자동배포 스크립트 영구화)
 **작업**: Android 플레이스토어 자동배포 — 업로드까지 원커맨드화
 - **배포 완료**: 1.1.0+48 → **1.2.0+49**(마이너 범프), 서명 AAB(108.7MB) 빌드 → Play Developer API로 업로드 → **production 트랙 심사 제출 완료**(versionCode 49)
