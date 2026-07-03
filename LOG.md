@@ -11,7 +11,7 @@
 - **취소**: `PATCH /v1/reviewSubmissions/{id}` body `{"attributes":{"canceled":true}}` → WAITING_FOR_REVIEW→CANCELING→COMPLETE. 버전 1.2.0 appStoreState가 DEVELOPER_REJECTED(편집 가능)로 복귀
 - **버전 1.2.0+51** 빌드 → 업로드 1차 시도가 altool "Failed to load AuthKey file (-43)"로 실패 — **altool은 --apiKey 사용 시 .p8을 고정 탐색 경로(`~/.appstoreconnect/private_keys` 등)에서만 찾고, config.env의 임의 경로(ASC_API_KEY_PATH)는 인식 안 함**. 재빌드 없이 키만 표준 경로에 복사 후 업로드 재시도 → 성공(UUID cdf67c18)
 - **`deploy_ios.sh` 영구 수정**: API키 업로드 분기에서 ASC_API_KEY_PATH→`~/.appstoreconnect/private_keys/AuthKey_{ID}.p8` 자동 복사 추가 — 다음 배포부터 이 함정 재발 안 함
-- 심사 재제출은 `appstore_submit.py`로 진행 중(빌드 51 처리 폴링 후 자동)
+- **재제출 완료**: `appstore_submit.py`가 빌드 51 처리(VALID) 확인 → 버전 1.2.0(DEVELOPER_REJECTED) 재사용 → 릴리즈노트 갱신 → 빌드 연결 → reviewSubmissions 제출. 최종 확인: 버전 1.2.0 appStoreState=WAITING_FOR_REVIEW, 새 제출 submittedDate=2026-07-03T13:09:02Z
 
 ### 17:10 | claude | ✅ 완료 (지도 마커 탭 미리보기 시트 재디자인)
 **작업**: 이미지 마커 탭 시 뜨는 바텀시트(`onShowDialog`) 개선 — 옹색한 좌우 배치→세로 미리보기
