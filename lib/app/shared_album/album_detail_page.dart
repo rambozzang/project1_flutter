@@ -168,52 +168,75 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
     }
   }
 
-  void _showMoreSheet() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: SaColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            if (_community?.canEditCover == true)
-              _sheetItem(PhosphorIconsFill.sparkle, '대문 편집', () {
-                Get.back();
-                Get.toNamed('/AlbumCoverEditorPage', arguments: {
-                  'community': _community,
-                  'items': _items,
-                })?.then((saved) {
-                  if (saved == true) _load(); // 저장 시 상세·카운트 재조회
-                });
-              }),
-            _sheetItem(PhosphorIconsFill.users, '멤버 보기', () {
-              Get.back();
-              Get.toNamed('/CommunityMembersPage', arguments: {'communityId': _communityId});
-            }),
-            if (_canPost)
-              _sheetItem(PhosphorIconsBold.userPlus, '멤버 초대', () {
-                Get.back();
-                Get.toNamed('/AlbumInvitePage', arguments: {
-                  'communityId': _communityId,
-                  'albumName': _community?.name ?? '앨범',
-                  'memberCnt': _community?.memberCnt ?? 0,
-                  'isManager': _community?.canEditCover == true,
-                })?.then((_) => _load());
-              }),
-            const SizedBox(height: 10),
-          ],
-        ),
-      ),
+  final GlobalKey _moreBtnKey = GlobalKey();
+
+  // ⋯ 버튼 위치에 뜨는 팝업 메뉴(바텀시트 대신) — 버튼 바로 아래 우측 정렬.
+  void _showMorePopup() {
+    final ctx = _moreBtnKey.currentContext;
+    if (ctx == null) return;
+    final RenderBox box = ctx.findRenderObject() as RenderBox;
+    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final Offset btnBottomRight = box.localToGlobal(box.size.bottomRight(Offset.zero), ancestor: overlay);
+    final position = RelativeRect.fromLTRB(
+      overlay.size.width, // 좌측은 넉넉히 밀어 우측 정렬 유도
+      btnBottomRight.dy + 6,
+      overlay.size.width - btnBottomRight.dx,
+      0,
     );
+
+    final List<PopupMenuEntry<String>> items = [
+      if (_community?.canEditCover == true) _popupItem('cover', PhosphorIconsFill.sparkle, '대문 편집'),
+      _popupItem('members', PhosphorIconsFill.users, '멤버 보기'),
+      if (_canPost) _popupItem('invite', PhosphorIconsBold.userPlus, '멤버 초대'),
+    ];
+
+    showMenu<String>(
+      context: context,
+      position: position,
+      color: SaColors.surface,
+      elevation: 8,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: SaColors.border),
+      ),
+      items: items,
+    ).then((value) {
+      if (value == null || !mounted) return;
+      switch (value) {
+        case 'cover':
+          Get.toNamed('/AlbumCoverEditorPage', arguments: {
+            'community': _community,
+            'items': _items,
+          })?.then((saved) {
+            if (saved == true) _load();
+          });
+          break;
+        case 'members':
+          Get.toNamed('/CommunityMembersPage', arguments: {'communityId': _communityId});
+          break;
+        case 'invite':
+          Get.toNamed('/AlbumInvitePage', arguments: {
+            'communityId': _communityId,
+            'albumName': _community?.name ?? '앨범',
+            'memberCnt': _community?.memberCnt ?? 0,
+            'isManager': _community?.canEditCover == true,
+          })?.then((_) => _load());
+          break;
+      }
+    });
   }
 
-  Widget _sheetItem(IconData icon, String label, VoidCallback onTap) {
-    return ListTile(
-      leading: PhosphorIcon(icon, size: 20, color: SaColors.textPrimary),
-      title: Text(label, style: SaText.bodyMedium),
-      onTap: onTap,
+  PopupMenuItem<String> _popupItem(String value, IconData icon, String label) {
+    return PopupMenuItem<String>(
+      value: value,
+      height: 46,
+      child: Row(
+        children: [
+          PhosphorIcon(icon, size: 18, color: SaColors.textPrimary),
+          const SizedBox(width: 12),
+          Text(label, style: SaText.bodyMedium),
+        ],
+      ),
     );
   }
 
@@ -280,14 +303,15 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
                   maxLines: 1, overflow: TextOverflow.ellipsis, style: SaText.titleS),
             ),
           ),
-          _circleButton(PhosphorIconsBold.dotsThree, _showMoreSheet),
+          _circleButton(PhosphorIconsBold.dotsThree, _showMorePopup, btnKey: _moreBtnKey),
         ],
       ),
     );
   }
 
-  Widget _circleButton(IconData icon, VoidCallback onTap) {
+  Widget _circleButton(IconData icon, VoidCallback onTap, {Key? btnKey}) {
     return GestureDetector(
+      key: btnKey,
       onTap: onTap,
       child: Container(
         width: 38,
