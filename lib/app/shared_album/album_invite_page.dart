@@ -7,6 +7,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
+import 'package:project1/app/shared_album/widget/sa_gradient_button.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/community/community_repo.dart';
@@ -124,12 +125,32 @@ class _AlbumInvitePageState extends State<AlbumInvitePage> {
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
                         children: [
                           _buildInviteCards(),
+                          const SizedBox(height: 12),
+                          // 가장 확실한 초대 수단을 1순위 CTA로 — 팔로우가 없어도 누구나 초대 가능
+                          SaGradientButton(
+                            label: '카카오톡·문자로 초대장 보내기',
+                            height: 50,
+                            glow: true,
+                            expand: true,
+                            onTap: () => Share.share(_invite?.shareText ?? _inviteLink),
+                          ),
                           const SizedBox(height: 24),
                           _sectionHeader('팔로우에서 초대', _people.length),
                           const SizedBox(height: 8),
                           if (_people.isEmpty)
-                            Text('팔로우한 사람이 여기에 표시됩니다.\n링크나 QR로도 초대할 수 있어요.',
-                                style: SaText.body.copyWith(fontSize: 12.5))
+                            Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: SaColors.surface,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: SaColors.border),
+                              ),
+                              child: Text(
+                                '나를 팔로우하거나 내가 팔로우한 친구가 여기에 표시돼요.\n'
+                                '아직 없다면 위의 초대장 보내기나 QR로 초대해보세요 — 앱이 없어도 초대 코드로 참여할 수 있어요.',
+                                style: SaText.body.copyWith(fontSize: 12.5),
+                              ),
+                            )
                           else
                             for (final p in _people.take(20)) _personRow(p),
                           const SizedBox(height: 24),
