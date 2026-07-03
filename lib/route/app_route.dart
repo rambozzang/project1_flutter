@@ -36,6 +36,7 @@ import 'package:project1/app/shared_album/album_cover_editor_page.dart';
 import 'package:project1/app/shared_album/album_create_page.dart';
 import 'package:project1/app/shared_album/album_detail_page.dart';
 import 'package:project1/app/shared_album/album_shell.dart';
+import 'package:project1/app/shared_album/media_detail_page.dart';
 import 'package:project1/app/shared_album/album_explore_page.dart';
 import 'package:project1/app/shared_album/album_invite_page.dart';
 import 'package:project1/app/shared_album/album_immersive_page.dart';
@@ -307,6 +308,11 @@ abstract class AppPages {
     GetPage(
       name: '/AlbumShellPage',
       page: () => const AlbumShellPage(),
+    ),
+    // 2b 미디어 상세(댓글·반응·관람이력)
+    GetPage(
+      name: '/MediaDetailPage',
+      page: () => const MediaDetailPage(),
     ),
     // 공유앨범 상세(구 1d 갤러리 뷰) — 셸로 대체됐으나 롤백/직접 진입용으로 유지
     GetPage(

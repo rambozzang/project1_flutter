@@ -108,11 +108,13 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
   }
 
   void _openMedia(int feedIndex) {
-    Get.toNamed('/AlbumImmersivePage', arguments: {
+    // 타일 탭 → 2b 미디어 상세(댓글·반응·관람이력). 영상 재생은 상세에서 몰입뷰로 이어짐.
+    Get.toNamed('/MediaDetailPage', arguments: {
+      'item': _items[feedIndex],
+      'items': _items,
+      'index': feedIndex,
       'communityId': _communityId,
       'albumName': _community?.name ?? '앨범',
-      'items': _items,
-      'initialIndex': feedIndex,
     })?.then((_) {
       if (mounted) setState(() {});
     });
