@@ -7,6 +7,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:project1/app/camera/page/camera_awesome_page.dart';
 import 'package:project1/app/shared_album/activity_view.dart';
 import 'package:project1/app/shared_album/album_timeline_page.dart';
+import 'package:project1/app/shared_album/recap_view.dart';
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/widget/sa_gradient_button.dart';
@@ -121,6 +122,17 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
     });
   }
 
+  /// 회고 컬렉션(테마별 큐레이션 목록)을 몰입뷰로 순차 재생.
+  void _playCollection(List<BoardWeatherListData> collection, int index) {
+    if (collection.isEmpty) return;
+    Get.toNamed('/AlbumImmersivePage', arguments: {
+      'communityId': _communityId,
+      'albumName': _community?.name ?? '앨범',
+      'items': collection,
+      'initialIndex': index,
+    });
+  }
+
   Future<void> _openUpload() async {
     if (!_canPost) {
       Utils.alert('앨범 멤버만 올릴 수 있어요.');
@@ -200,7 +212,12 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
           onLoadMore: () => _loadFeed(),
         );
       case 1:
-        return _placeholder(PhosphorIconsFill.sparkle, '회고 영상', '모은 영상을 1초씩 이어붙인\n자동 회고를 준비하고 있어요.');
+        return RecapView(
+          items: _items,
+          communityId: _communityId,
+          albumName: _community?.name ?? '앨범',
+          onPlay: _playCollection,
+        );
       case 2:
         return ActivityView(
           communityId: _communityId,
