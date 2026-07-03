@@ -6,6 +6,12 @@
 
 ## 2026-07-03
 
+### 14:35 | claude | ✅ 완료 (iOS ITMS-90683 위치 목적문자열 누락 수정 → 빌드 50 재업로드)
+**작업**: 빌드 49 업로드 후 Apple 경고 ITMS-90683 — `NSLocationAlwaysAndWhenInUseUsageDescription` 목적문자열 누락(geolocator가 Always 위치 API 참조 → 미사용이라도 필수)
+- Info.plist에 해당 키 추가(기존 WhenInUse/Always 문자열과 동일: "…가장 정확한 날씨를 보여드립니다"). plutil lint OK
+- 빌드 1.2.0+49 → **+50** 상향 후 재빌드·재업로드
+- 점검: 카메라/마이크/사진 목적문자열은 이미 있음. PhotoLibraryAdd·UserTracking은 미참조(이전 심사 통과 이력)라 미추가(ATT 문자열은 프롬프트 없이 넣으면 반려 위험)
+
 ### 14:00 | claude | ✅ 완료 (iOS v1.2.0+49 App Store Connect 업로드 + 심사 자동제출 스크립트)
 **작업**: iOS 앱스토어 자동배포 — 빌드+업로드 완료, 심사 제출 스크립트 영구화
 - **업로드 완료**: IPA(56.6MB, 자동 서명 team 4682T8VYPH) 빌드 → altool로 App Store Connect 업로드 성공(Delivery UUID 65e7d015…). 도베르만 `ios_build.sh` 참고 — Apple ID `rambozzang@gmail.com`+앱전용암호(동일 개발자 계정)
