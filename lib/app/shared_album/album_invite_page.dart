@@ -308,8 +308,10 @@ class _AlbumInvitePageState extends State<AlbumInvitePage> {
 
   // 초대 링크 카드 + QR 카드 나란히
   Widget _buildInviteCards() {
-    // ListView(무한 높이) 안에서 Row(stretch)는 '무한 높이 강제' 크래시 → IntrinsicHeight로 높이 확정.
-    return IntrinsicHeight(
+    // ListView(무한 높이) 안에서 Row(stretch)는 '무한 높이 강제' 크래시.
+    // IntrinsicHeight는 QR(QrImageView 내부 LayoutBuilder)와 충돌 → 고정 높이 SizedBox로 확정.
+    return SizedBox(
+      height: 156,
       child: Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
