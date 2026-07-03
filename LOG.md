@@ -6,6 +6,14 @@
 
 ## 2026-07-03
 
+### 15:00 | claude | ✅ 완료 (iOS App Store 심사 제출 완료 — 양 플랫폼 배포 끝)
+**작업**: iOS 1.2.0(build 50) App Store 심사 제출 성공 → appStoreState=WAITING_FOR_REVIEW
+- **인증 키 확보**: 사용자 제공 Issuer(팀키) `ceada1e5-…`. 로컬 B946U72BT4/ZW2URW52TY는 401(타 계정)이라, 도베르만 store-connect 키 `99F8S6JJ6F`가 인증됨(200, skysnap 접근). 이후 사용자가 SkySnap 전용 키 `S22L9CZ69B`(.p8=프로젝트 루트) 제공 → config.env를 이 키로 정리
+- **제출 자동완료**(appstore_submit.py): 빌드 처리 폴링→VALID→버전 1.2.0 생성→ko 릴리즈노트→빌드 연결→reviewSubmissions 제출. 확인: reviewSubmission state=WAITING_FOR_REVIEW(제출 14:56 KST)
+- **업로드 트러블**: 1차 build 50 altool 업로드가 "PART 4 checksum mismatch" 33회 무한재시도(네트워크 일시) → 중단 후 재빌드 없이 IPA만 재업로드하니 정상(UUID 2a89b264)
+- **보안**: `*.p8`/`AuthKey_*.p8` .gitignore 추가(프로젝트 루트에 놓인 키 커밋 방지). config.env는 원래 gitignore
+- **결과**: Android(Play production 49 completed) + iOS(App Store 50 WAITING_FOR_REVIEW) 둘 다 제출 완료
+
 ### 14:35 | claude | ✅ 완료 (iOS ITMS-90683 위치 목적문자열 누락 수정 → 빌드 50 재업로드)
 **작업**: 빌드 49 업로드 후 Apple 경고 ITMS-90683 — `NSLocationAlwaysAndWhenInUseUsageDescription` 목적문자열 누락(geolocator가 Always 위치 API 참조 → 미사용이라도 필수)
 - Info.plist에 해당 키 추가(기존 WhenInUse/Always 문자열과 동일: "…가장 정확한 날씨를 보여드립니다"). plutil lint OK
