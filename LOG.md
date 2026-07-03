@@ -6,6 +6,13 @@
 
 ## 2026-07-03
 
+### 15:20 | claude | ✅ 완료 (Play 스토어 목록 아이콘 v10로 교체)
+**작업**: 스토어 아이콘 점검·갱신 — 실제로 옛것이던 건 Play 스토어 목록 아이콘 하나뿐
+- **Play 스토어 목록 아이콘**: 옛 보라 "Shy" → v10 코랄 구름. app_icon_v10_square에서 512×512 생성(PIL) → Play Developer API `edits.images`(imageType=icon, ko-KR) 업로드+commit(구글 검토 후 반영). ※ 목록 아이콘은 AAB와 별개 자산
+- **iOS 스토어 아이콘**: 바이너리(1024 마케팅 아이콘)에서 옴 → 빌드 50에 이미 v10, 출시되면 자동 반영(사용자 확인)
+- **Android 기기 런처 아이콘**: 이미 v10 — 적응형 xml이 `@color/ic_launcher_background(#FF8F8F)`+`@drawable/ic_launcher_foreground(6/27 흰구름)` 참조. `mipmap/ic_launcher_adaptive_fore.png`(옛 구름+해)는 미사용 잔재라 무관
+- 코드 변경 없음(API 작업). 512 아이콘은 /tmp 생성
+
 ### 15:00 | claude | ✅ 완료 (iOS App Store 심사 제출 완료 — 양 플랫폼 배포 끝)
 **작업**: iOS 1.2.0(build 50) App Store 심사 제출 성공 → appStoreState=WAITING_FOR_REVIEW
 - **인증 키 확보**: 사용자 제공 Issuer(팀키) `ceada1e5-…`. 로컬 B946U72BT4/ZW2URW52TY는 401(타 계정)이라, 도베르만 store-connect 키 `99F8S6JJ6F`가 인증됨(200, skysnap 접근). 이후 사용자가 SkySnap 전용 키 `S22L9CZ69B`(.p8=프로젝트 루트) 제공 → config.env를 이 키로 정리
