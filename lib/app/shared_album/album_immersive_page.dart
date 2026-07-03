@@ -1,15 +1,18 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:preload_page_view/preload_page_view.dart' hide PageScrollPhysics;
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/theme/sa_weather_gradients.dart';
 import 'package:project1/app/shared_album/widget/sa_glass_chip.dart';
 import 'package:project1/app/videocomment/comment_page.dart';
+import 'package:project1/app/videolist/video_list_page.dart' show FastPageScrollPhysics;
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/community/community_repo.dart';
 import 'package:project1/repo/weather/like_repo.dart';
@@ -17,11 +20,16 @@ import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/utils/sns_share.dart';
 import 'package:video_player/video_player.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 /// 앨범 상세 — 1e 몰입 뷰(틱톡식 세로 풀스크린).
 /// 세로 PageView로 미디어 전환, 탭=재생/일시정지, 더블탭=좋아요(하트 애니메이션).
 /// 우측 액션 레일(아바타/좋아요/댓글/공유) + 좌하단 정보(업로더·캡션·날씨 칩) + 영상 스크러버.
 /// 주의: 풀스크린 미디어 규칙 — SafeArea 금지, cover 표시, 오버레이만 viewPadding 보정.
+///
+/// 반응성은 기본 피드(video_list_page)와 동일 구성:
+/// PreloadPageView(preloadPagesCount=5, 인접 영상 미리 초기화·버퍼링) + FastPageScrollPhysics(민감 스와이프)
+/// + 페이지별 자체 플레이어 + VisibilityDetector 재생/정지 + Android=DASH·캐시 헤더.
 class AlbumImmersivePage extends StatefulWidget {
   const AlbumImmersivePage({super.key});
 
@@ -35,7 +43,7 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
 
   late final int _communityId;
   late final String _albumName;
-  late final PageController _pageCtrl;
+  late final PreloadPageController _pageCtrl;
 
   List<BoardWeatherListData> _items = [];
   int _index = 0;
@@ -44,9 +52,11 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
   bool _hasMore = true;
   bool _loadingMore = false;
 
-  // 현재 페이지 영상 플레이어(현재 인덱스만 유지 — 이전/다음은 dispose)
-  VideoPlayerController? _video;
-  int _videoIndex = -1;
+  // 기본 피드와 동일한 프리로드 페이지 수(video_list_cntr.preLoadingCount)
+  static const int _preloadCount = 5;
+
+  // 현재 화면에 보이는 페이지의 플레이어(스크러버 표시용) — 각 페이지가 자기 플레이어를 소유한다
+  final ValueNotifier<VideoPlayerController?> _activeVideo = ValueNotifier<VideoPlayerController?>(null);
 
   // 더블탭 하트 애니메이션
   late final AnimationController _heartCtrl;
@@ -64,15 +74,13 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
     _index = (args['initialIndex'] as num?)?.toInt() ?? 0;
     if (_index >= _items.length) _index = 0;
     _pageNum = (_items.length / _pageSize).ceil().clamp(1, 999);
-    _pageCtrl = PageController(initialPage: _index);
+    _pageCtrl = PreloadPageController(initialPage: _index);
     _heartCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
     _heartCtrl.addStatusListener((s) {
       if (s == AnimationStatus.completed) _heartCtrl.reset();
     });
     if (_items.isEmpty) {
       _loadMore(first: true);
-    } else {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _preparePage(_index));
     }
     Timer(const Duration(seconds: 4), () {
       if (mounted) setState(() => _showSwipeHint = false);
@@ -81,7 +89,7 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
 
   @override
   void dispose() {
-    _video?.dispose();
+    _activeVideo.dispose();
     _pageCtrl.dispose();
     _heartCtrl.dispose();
     super.dispose();
@@ -97,9 +105,6 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
         _items.addAll(list);
         _hasMore = list.length >= _pageSize;
         _pageNum++;
-        if (first && _items.isNotEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) => _preparePage(_index));
-        }
       } else {
         _hasMore = false;
       }
@@ -112,50 +117,10 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
     }
   }
 
-  // 페이지 전환 시 영상 준비: 현재 인덱스만 플레이어 유지, 나머지는 해제
-  Future<void> _preparePage(int index) async {
-    if (index >= _items.length) return;
-    final item = _items[index];
-    final old = _video;
-    _video = null;
-    _videoIndex = -1;
-    await old?.dispose();
-
-    if (item.typeDtCd == 'V') {
-      final String url = (item.hls?.isNotEmpty == true)
-          ? item.hls!
-          : (item.mp4?.isNotEmpty == true ? item.mp4! : (item.videoPath ?? ''));
-      if (url.isEmpty) return;
-      try {
-        final ctrl = VideoPlayerController.networkUrl(Uri.parse(url));
-        await ctrl.initialize();
-        ctrl
-          ..setLooping(true)
-          ..play();
-        if (!mounted) {
-          ctrl.dispose();
-          return;
-        }
-        setState(() {
-          _video = ctrl;
-          _videoIndex = index;
-        });
-        // 스크러버 갱신용
-        ctrl.addListener(() {
-          if (mounted && _videoIndex == index) setState(() {});
-        });
-      } catch (e) {
-        lo.g('몰입뷰 영상 초기화 실패($url): $e');
-      }
-    } else {
-      if (mounted) setState(() {});
-    }
-  }
-
   void _onPageChanged(int index) {
     setState(() => _index = index);
-    _preparePage(index);
-    if (index >= _items.length - 5) _loadMore();
+    // 기본 피드와 동일 시점에 다음 페이지 로드(프리로드 수 + 1 남았을 때)
+    if (index >= _items.length - (_preloadCount + 1)) _loadMore();
   }
 
   Future<void> _toggleLike(BoardWeatherListData item) async {
@@ -180,12 +145,6 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
   void _onDoubleTap(BoardWeatherListData item) {
     if (item.likeYn != 'Y') _toggleLike(item);
     _heartCtrl.forward(from: 0);
-  }
-
-  void _onTapMedia() {
-    final v = _video;
-    if (v == null) return;
-    setState(() => v.value.isPlaying ? v.pause() : v.play());
   }
 
   String _fmtCount(int? n) {
@@ -221,13 +180,25 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
             ? Center(child: CircularProgressIndicator(strokeWidth: 2, color: SaColorsDark.accentTeal))
             : Stack(
                 children: [
-                  // 풀스크린 미디어(세로 스와이프) — SafeArea 없이 화면 전체
-                  PageView.builder(
+                  // 풀스크린 미디어(세로 스와이프) — SafeArea 없이 화면 전체.
+                  // 기본 피드와 동일: 인접 페이지 미리 빌드(영상 미리 버퍼링) + 민감한 페이지 물리
+                  PreloadPageView.builder(
                     controller: _pageCtrl,
                     scrollDirection: Axis.vertical,
+                    physics: const FastPageScrollPhysics(),
+                    preloadPagesCount: _preloadCount,
                     onPageChanged: _onPageChanged,
                     itemCount: _items.length,
-                    itemBuilder: (context, index) => _buildMedia(_items[index], index),
+                    itemBuilder: (context, index) => _ImmersiveMediaItem(
+                      key: ValueKey('sa_immersive_${_items[index].boardId}'),
+                      item: _items[index],
+                      gradientKey: _gradientKey(),
+                      onDoubleTap: () => _onDoubleTap(_items[index]),
+                      onVisibleVideo: (ctrl) => _activeVideo.value = ctrl,
+                      onHiddenVideo: (ctrl) {
+                        if (_activeVideo.value == ctrl) _activeVideo.value = null;
+                      },
+                    ),
                   ),
                   // 상/하 스크림
                   _scrim(top: true),
@@ -246,39 +217,6 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
                   Positioned(left: 16, right: 16, bottom: pad.bottom + 20, child: _buildBottomBar()),
                 ],
               ),
-      ),
-    );
-  }
-
-  Widget _buildMedia(BoardWeatherListData item, int index) {
-    final bool isVideo = item.typeDtCd == 'V';
-    final bool videoReady = isVideo && _videoIndex == index && _video?.value.isInitialized == true;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: _onTapMedia,
-      onDoubleTap: () => _onDoubleTap(item),
-      child: Container(
-        decoration: BoxDecoration(gradient: SaWeatherGradients.of(_gradientKey())),
-        child: videoReady
-            ? SizedBox.expand(
-                child: FittedBox(
-                  fit: BoxFit.cover,
-                  clipBehavior: Clip.hardEdge,
-                  child: SizedBox(
-                    width: _video!.value.size.width,
-                    height: _video!.value.size.height,
-                    child: VideoPlayer(_video!),
-                  ),
-                ),
-              )
-            : (item.thumbnailPath ?? '').isNotEmpty
-                ? CachedNetworkImage(
-                    imageUrl: item.thumbnailPath!,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                  )
-                : const SizedBox.expand(),
       ),
     );
   }
@@ -449,7 +387,6 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
               SnsShare.shareMedia(context, imageUrl: img, text: text);
             }
           },
-
         ),
       ],
     );
@@ -509,36 +446,241 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
     );
   }
 
+  // 스크러버는 현재 페이지 플레이어(ValueNotifier)만 구독 — 페이지 전체 rebuild 없음(기본 피드 방식)
   Widget _buildBottomBar() {
-    final v = _video;
-    final bool videoReady = v != null && v.value.isInitialized && _videoIndex == _index;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        if (videoReady) ...[
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: LinearProgressIndicator(
-                value: v.value.duration.inMilliseconds == 0
-                    ? 0
-                    : v.value.position.inMilliseconds / v.value.duration.inMilliseconds,
-                minHeight: 3,
-                backgroundColor: Colors.white.withOpacity(0.18),
-                valueColor: AlwaysStoppedAnimation<Color>(SaColorsDark.accentTeal),
+    return ValueListenableBuilder<VideoPlayerController?>(
+      valueListenable: _activeVideo,
+      builder: (context, v, _) {
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if (v != null && v.value.isInitialized) ...[
+              Expanded(
+                child: ValueListenableBuilder<VideoPlayerValue>(
+                  valueListenable: v,
+                  builder: (context, val, __) {
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: val.duration.inMilliseconds == 0 ? 0 : val.position.inMilliseconds / val.duration.inMilliseconds,
+                        minHeight: 3,
+                        backgroundColor: Colors.white.withOpacity(0.18),
+                        valueColor: AlwaysStoppedAnimation<Color>(SaColorsDark.accentTeal),
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text('${_fmtDuration(v.value.position)} / ${_fmtDuration(v.value.duration)}',
-              style: SaText.mono(fontSize: 10, color: Colors.white70)),
-        ] else
-          const Spacer(),
-        if (_showSwipeHint) ...[
-          const SizedBox(width: 10),
-          _SwipeHint(),
-        ],
-      ],
+              const SizedBox(width: 10),
+              ValueListenableBuilder<VideoPlayerValue>(
+                valueListenable: v,
+                builder: (context, val, __) => Text('${_fmtDuration(val.position)} / ${_fmtDuration(val.duration)}',
+                    style: SaText.mono(fontSize: 10, color: Colors.white70)),
+              ),
+            ] else
+              const Spacer(),
+            if (_showSwipeHint) ...[
+              const SizedBox(width: 10),
+              _SwipeHint(),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// 몰입뷰 미디어 1페이지 — 기본 피드(VideoScreenPage)와 동일하게 페이지가 자기 플레이어를 소유한다.
+/// PreloadPageView가 인접 페이지를 미리 빌드하므로 initState에서 초기화(버퍼링)가 미리 진행되고,
+/// VisibilityDetector가 화면에 보일 때만 재생/숨으면 정지+처음으로 되감기 한다.
+class _ImmersiveMediaItem extends StatefulWidget {
+  const _ImmersiveMediaItem({
+    super.key,
+    required this.item,
+    required this.gradientKey,
+    required this.onDoubleTap,
+    required this.onVisibleVideo,
+    required this.onHiddenVideo,
+  });
+
+  final BoardWeatherListData item;
+  final String gradientKey;
+  final VoidCallback onDoubleTap;
+  final ValueChanged<VideoPlayerController?> onVisibleVideo;
+  final ValueChanged<VideoPlayerController?> onHiddenVideo;
+
+  @override
+  State<_ImmersiveMediaItem> createState() => _ImmersiveMediaItemState();
+}
+
+class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
+  VideoPlayerController? _controller;
+  final ValueNotifier<bool> _initialized = ValueNotifier<bool>(false);
+
+  bool get _isVideo => widget.item.typeDtCd == 'V';
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isVideo) _initVideo();
+  }
+
+  /// 기본 피드(VideoScreenPage.initiliazeVideo)와 동일 구성:
+  /// Android=DASH(.mpd)+formatHint / iOS=HLS, 캐시 헤더, mixWithOthers.
+  Future<void> _initVideo() async {
+    final item = widget.item;
+    String url = (item.hls?.isNotEmpty == true) ? item.hls! : (item.videoPath ?? '');
+    if (url.isEmpty) {
+      url = item.mp4 ?? '';
+      if (url.isEmpty) return;
+    }
+    VideoFormat? format;
+    if (url.contains('.m3u8')) {
+      if (Platform.isAndroid) {
+        url = url.replaceAll('.m3u8', '.mpd');
+        format = VideoFormat.dash;
+      } else {
+        format = VideoFormat.hls;
+      }
+    }
+    try {
+      final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
+      final lastModified = _formatHttpDate(sevenDaysAgo);
+      final ctrl = VideoPlayerController.networkUrl(
+        Uri.parse(url),
+        httpHeaders: {
+          'Connection': 'keep-alive',
+          'Cache-Control': 'max-age=3600, stale-while-revalidate=86400',
+          'Etg': item.boardId.toString(),
+          'Last-Modified': lastModified,
+          'If-None-Match': item.boardId.toString(),
+          'If-Modified-Since': lastModified,
+          'Vary': 'Accept-Encoding, User-Agent',
+        },
+        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true, allowBackgroundPlayback: false),
+        formatHint: format,
+      );
+      _controller = ctrl;
+      await ctrl.initialize();
+      if (!mounted) {
+        ctrl.dispose();
+        return;
+      }
+      ctrl
+        ..setLooping(true)
+        ..pause(); // 재생은 VisibilityDetector가 보일 때 시작
+      _initialized.value = true;
+    } catch (e) {
+      lo.g('몰입뷰 영상 초기화 실패($url): $e');
+    }
+  }
+
+  String _formatHttpDate(DateTime date) {
+    const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final weekDay = weekDays[date.weekday - 1];
+    final month = months[date.month - 1];
+    return '$weekDay, ${date.day.toString().padLeft(2, '0')} $month ${date.year} '
+        '${date.hour.toString().padLeft(2, '0')}:'
+        '${date.minute.toString().padLeft(2, '0')}:'
+        '${date.second.toString().padLeft(2, '0')} GMT';
+  }
+
+  @override
+  void dispose() {
+    final ctrl = _controller;
+    if (ctrl != null) {
+      widget.onHiddenVideo(ctrl);
+      ctrl.dispose();
+    }
+    _initialized.dispose();
+    super.dispose();
+  }
+
+  void _onTap() {
+    final v = _controller;
+    if (v == null || !_initialized.value) return;
+    v.value.isPlaying ? v.pause() : v.play();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _onTap,
+      onDoubleTap: widget.onDoubleTap,
+      child: Container(
+        decoration: BoxDecoration(gradient: SaWeatherGradients.of(widget.gradientKey)),
+        child: _isVideo ? _buildVideo() : _buildPhoto(),
+      ),
+    );
+  }
+
+  Widget _buildVideo() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _initialized,
+      builder: (context, ready, _) {
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          child: ready
+              ? VisibilityDetector(
+                  key: ValueKey('sa_vis_${widget.item.boardId}'),
+                  onVisibilityChanged: (info) {
+                    final ctrl = _controller;
+                    if (ctrl == null || !mounted) return;
+                    if (info.visibleFraction > 0.1) {
+                      ctrl.play();
+                      widget.onVisibleVideo(ctrl);
+                    } else if (info.visibleFraction < 0.3) {
+                      ctrl.pause();
+                      ctrl.seekTo(Duration.zero);
+                      widget.onHiddenVideo(ctrl);
+                    }
+                  },
+                  child: SizedBox.expand(
+                    child: FittedBox(
+                      fit: BoxFit.cover,
+                      clipBehavior: Clip.hardEdge,
+                      child: SizedBox(
+                        width: _controller!.value.size.width,
+                        height: _controller!.value.size.height,
+                        child: VideoPlayer(_controller!),
+                      ),
+                    ),
+                  ),
+                )
+              : _thumbnail(key: ValueKey('sa_thumb_${widget.item.boardId}')),
+        );
+      },
+    );
+  }
+
+  Widget _buildPhoto() {
+    final item = widget.item;
+    final String img = (item.imageUrls?.isNotEmpty ?? false) ? item.imageUrls!.first : (item.thumbnailPath ?? '');
+    if (img.isEmpty) return const SizedBox.expand();
+    return CachedNetworkImage(
+      imageUrl: img,
+      cacheKey: img,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+    );
+  }
+
+  // 영상 버퍼링 동안 정지 썸네일(jpg)을 즉시 표시 — 기본 피드와 동일한 체감 속도 확보
+  Widget _thumbnail({required Key key}) {
+    final item = widget.item;
+    String img = item.thumbnailPath ?? '';
+    // 애니메이션 gif 썸네일이면 정지 jpg로 변환(로딩 가볍게, 기본 피드와 동일)
+    if (img.endsWith('thumbnail.gif')) img = img.replaceAll('thumbnail.gif', 'thumbnail.jpg');
+    if (img.isEmpty && (item.videoPath ?? '').contains('/manifest/')) {
+      img = item.videoPath!.replaceAll('/manifest/video.m3u8', '/thumbnails/thumbnail.jpg');
+    }
+    if (img.isEmpty) return SizedBox.expand(key: key);
+    return SizedBox.expand(
+      key: key,
+      child: CachedNetworkImage(imageUrl: img, cacheKey: img, fit: BoxFit.cover),
     );
   }
 }

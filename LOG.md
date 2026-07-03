@@ -6,6 +6,13 @@
 
 ## 2026-07-03
 
+### 12:05 | claude | ✅ 완료 (앨범 몰입뷰 반응성 — 기본 피드와 동일 구성으로 재작성)
+**작업**: 몰입뷰(1e) 스와이프가 기본 영상 피드보다 확연히 느리던 문제 — 피드와 동일값으로 전환
+- **기존 문제 4가지**: ① 프리로드 없음(스와이프 후에야 영상 초기화 시작 → 매번 로딩 대기) ② 일반 PageView 기본 물리(둔한 스와이프) ③ 스크러버 갱신을 페이지 전체 setState로(매 프레임 잭) ④ Android도 HLS(피드는 DASH)·캐시 헤더 없음
+- **재작성(기본 피드 VideoScreenPage/video_list_page와 동일 구성)**: `PreloadPageView(preloadPagesCount:5)` — 인접 영상 미리 초기화·버퍼링 / `FastPageScrollPhysics`(살짝 튕겨도 전환) / 페이지별 `_ImmersiveMediaItem`이 자기 플레이어 소유 + `VisibilityDetector`(보이면 재생, 숨으면 정지+되감기) / Android=DASH(.mpd)+formatHint, 동일 캐시 헤더, mixWithOthers / 버퍼링 동안 정지 jpg 썸네일 즉시 표시(gif→jpg 변환) / 스크러버는 ValueListenableBuilder로 현재 플레이어만 구독
+- 페이지네이션 트리거도 피드와 동일(프리로드수+1 남았을 때)
+- 검증: analyze 에러 0, Android·iOS 디버그 빌드 성공. 실기기 스와이프 체감 확인 필요
+
 ### 11:30 | claude | ✅ 완료 (업로드 인디케이터 전역 승격 — 앨범 화면에서도 표시)
 **작업**: Uploading 상태 표시가 앨범 상세/몰입 등에서 안 보이던 문제
 - **원인**: 인디케이터가 root_page Stack 안(Positioned top:100 right:20)에 있어, 루트 위에 `Navigator.push`로 쌓인 화면(앨범 상세·몰입·업로드 등)에서는 루트째 가려짐 — 구조적 한계 아님
