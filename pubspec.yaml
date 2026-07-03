@@ -72,8 +72,9 @@ dependencies:
   dio_cache_interceptor: ^3.5.0
   geolocator: ^12.0.0
   flutter_svg: ^2.0.10+1
-  text_scroll: ^0.2.0  
+  text_scroll: ^0.2.0
   video_compress: ^3.1.2
+  exif: ^3.3.0  # 사진 EXIF 촬영일(2a 타임라인 그룹핑) — 순수 Dart, 네이티브 무관
   hashtagable_v3: ^3.0.1
   like_button: ^2.0.5
   cached_network_image: ^3.3.1

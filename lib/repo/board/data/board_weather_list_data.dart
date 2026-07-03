@@ -57,6 +57,7 @@ class BoardWeatherListData {
   List<String>? imageUrls; // 사진(다중) URL — typeDtCd='I'일 때 가로 캐러셀로 표시
   int? depthNo;
   String? crtDtm;
+  String? capturedAt; // 촬영일시(EXIF) — 2a 타임라인 그룹핑용. 없으면 crtDtm
   int? replyCnt;
   int? likeCnt;
   int? viewCnt;
@@ -104,6 +105,7 @@ class BoardWeatherListData {
     this.imageUrls,
     this.depthNo,
     this.crtDtm,
+    this.capturedAt,
     this.replyCnt,
     this.likeCnt,
     this.viewCnt,
@@ -303,6 +305,7 @@ class BoardWeatherListData {
       imageUrls: parseImageUrls(map['imageUrls']),
       depthNo: map['depthNo'] != null ? map['depthNo'] as int : null,
       crtDtm: map['crtDtm'] != null ? map['crtDtm'] as String : null,
+      capturedAt: map['capturedAt'] != null ? map['capturedAt'].toString() : null,
       replyCnt: map['replyCnt'] != null ? map['replyCnt'] as int : null,
       likeCnt: map['likeCnt'] != null ? map['likeCnt'] as int : null,
       viewCnt: map['viewCnt'] != null ? map['viewCnt'] as int : null,

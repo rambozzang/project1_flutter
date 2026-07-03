@@ -19,6 +19,7 @@ import 'package:project1/repo/cloudflare/data/cloudflare_req_save_data.dart';
 import 'package:project1/repo/cloudflare/direct_upload_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/utils/log_utils.dart';
+import 'package:project1/utils/exif_util.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:video_compress/video_compress.dart';
 import 'package:http/http.dart' as http;
@@ -325,6 +326,9 @@ class RootCntr extends GetxController {
         imageUrls.add(res.url);
         imageIds.add(res.id);
       }
+
+      // 사진 EXIF 촬영일 → 게시물 대표 촬영일(capturedAt). 2a 타임라인이 이 값으로 그룹핑(없으면 서버가 업로드일 폴백).
+      boardSaveData.boardMastInVo?.capturedAt = await ExifUtil.earliestCapturedAt(photoFiles);
 
       // 병렬 수집한 날씨를 합쳐 게시.
       final BoardSaveWeatherData weatherVo = await weatherFuture;

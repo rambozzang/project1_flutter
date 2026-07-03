@@ -12,6 +12,7 @@ class BoardSaveMainData {
   String? anonyYn;
   String? hideYn;
   int? communityId; // 소속 모임ID (없으면 일반 게시물)
+  String? capturedAt; // 촬영일시(EXIF, ISO 문자열) — 2a 타임라인 그룹핑용
   BoardSaveMainData({
     this.typeCd,
     this.typeDtCd,
@@ -23,6 +24,7 @@ class BoardSaveMainData {
     this.anonyYn,
     this.hideYn,
     this.communityId,
+    this.capturedAt,
   });
 
   BoardSaveMainData copyWith({
@@ -61,6 +63,7 @@ class BoardSaveMainData {
       'anonyYn': anonyYn,
       'hideYn': hideYn,
       'communityId': communityId,
+      'capturedAt': capturedAt,
     };
   }
 

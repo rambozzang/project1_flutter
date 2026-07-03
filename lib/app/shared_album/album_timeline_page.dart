@@ -221,7 +221,8 @@ class AlbumTimelineView extends StatelessWidget {
     final Map<String, _DayGroup> map = {};
     for (int i = 0; i < items.length; i++) {
       final item = items[i];
-      final DateTime? dt = _parse(item.crtDtm);
+      // 촬영일(EXIF) 우선, 없으면 업로드일 — "예전 사진 몰아 올려도 찍은 날로 묶임"
+      final DateTime? dt = _parse(item.capturedAt) ?? _parse(item.crtDtm);
       if (dt == null) continue;
       final String key = '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
       final g = map.putIfAbsent(key, () => _DayGroup(dt));
@@ -233,6 +234,7 @@ class AlbumTimelineView extends StatelessWidget {
 
   bool _isNew(BoardWeatherListData item) {
     if (lastSeen == null) return false;
+    // NEW 판정은 "업로드 시각" 기준(내가 마지막 본 뒤 올라온 것) — 촬영일 아님
     final dt = _parse(item.crtDtm);
     if (dt == null) return false;
     return dt.isAfter(lastSeen!);
