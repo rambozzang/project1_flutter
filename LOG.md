@@ -4,7 +4,14 @@
 
 ---
 
-## 2026-07-03
+## 2026-07-04
+
+### 00:45 | claude | ✅ 완료 (v1.2.0+52 양 스토어 재배포 — Supabase 삭제 등 반영)
+**작업**: Supabase/채팅 전면삭제(0ce39d5) 등 최신 커밋 포함해 Android+iOS 재배포
+- 릴리즈노트 갱신(앨범 테마·댓글 가독성·안정성 개선 문구 추가), 버전 1.2.0+51→+52
+- **Android**: `deploy_android.sh` 1차 AAB 업로드가 93%에서 네트워크 타임아웃(TimeoutError) → 재빌드 없이 `play_upload.py`로 업로드만 재시도 → 성공. **production 트랙 versionCode 52, status=completed** 확정
+- **iOS**: `deploy_ios.sh --submit`으로 빌드 52 업로드 성공(UUID 6e144c56). 심사 제출 시도 시 버전 1.2.0이 **어제 제출한 빌드 51 심사가 아직 WAITING_FOR_REVIEW라 편집 불가**로 1차 실패 → 그 제출을 취소(PATCH canceled:true, WAITING_FOR_REVIEW→CANCELING→COMPLETE) 후 빌드 52로 재제출 → 성공. **최종 확인: 버전 1.2.0 appStoreState=WAITING_FOR_REVIEW, 새 제출 submittedDate=2026-07-03T15:55:38Z**
+- **결과**: Android(production versionCode 52 completed) + iOS(App Store build 52 WAITING_FOR_REVIEW) 양 스토어 재배포 완료
 
 ### 22:52 | claude | ✅ 완료 (Supabase/채팅 코드 전면 삭제)
 **작업**: "Supabase 코드 다 지운 거 아니냐" 질문 계기로 전수 조사 → 실제로는 여전히 초기화·실행 중이었음 → 사용자 확인 후 전면 삭제
