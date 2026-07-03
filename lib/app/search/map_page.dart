@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart'; // 임시 주석 처리
-import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/search/cntr/map_cntr.dart';
@@ -352,268 +351,180 @@ class _MapPageState extends State<MapPage> {
 
   // 일반 영상 보기
   void onShowDialog(context, BoardWeatherListData data) {
+    final mist = Get.find<WeatherGogoCntr>().mistData.value;
+    void openViewer() {
+      Get.toNamed('/VideoMyinfoListPage', arguments: {
+        'datatype': 'ONE',
+        'custId': Get.find<AuthCntr>().resLoginData.value.custId.toString(),
+        'boardId': data.boardId.toString(),
+      });
+    }
+
+    Widget overlayBtn(IconData icon) => Container(
+          padding: const EdgeInsets.all(5),
+          decoration: const BoxDecoration(color: Colors.black38, shape: BoxShape.circle),
+          child: Icon(icon, color: Colors.white, size: 18),
+        );
+
     showModalBottomSheet(
       isScrollControlled: true,
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(15.0),
-        ),
-      ),
-      backgroundColor: Colors.black, //
+      backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
         return Container(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          height: 500,
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
           decoration: const BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.only(topLeft: Radius.circular(10.0), topRight: Radius.circular(10.0)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
+          child: SafeArea(
+            top: false,
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 40,
+                  width: 42,
                   height: 4,
-                  margin: const EdgeInsets.only(top: 4, bottom: 10),
-                  decoration: BoxDecoration(color: Colors.grey, borderRadius: BorderRadius.circular(100)),
+                  margin: const EdgeInsets.only(top: 10, bottom: 8),
+                  decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(100)),
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      height: 350,
-                      alignment: Alignment.center,
-                      color: Colors.grey[200],
-                      child: GestureDetector(
-                        onTap: () {
-                          Get.toNamed(
-                            '/VideoMyinfoListPage',
-                            arguments: {
-                              'datatype': 'ONE',
-                              'custId': Get.find<AuthCntr>().resLoginData.value.custId.toString(),
-                              'boardId': data.boardId.toString()
-                            },
-                          );
-                        },
-                        child: AspectRatio(
-                          aspectRatio: 9 / 16,
-                          child: Stack(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(15),
-                                child: VideoPlayer(videoCntroller),
-                              ),
-                              Positioned(
-                                bottom: 6,
-                                right: 6,
-                                child: Obx(
-                                  () => IconButton(
-                                    onPressed: () {
-                                      Get.find<MapCntr>().soundOn.value ? videoCntroller.setVolume(0) : videoCntroller.setVolume(1);
-                                      Get.find<MapCntr>().soundOn.value = !Get.find<MapCntr>().soundOn.value;
-                                    },
-                                    icon: Get.find<MapCntr>().soundOn.value
-                                        ? const Icon(Icons.volume_up_outlined, color: Colors.white)
-                                        : const Icon(Icons.volume_off_outlined, color: Colors.white),
-                                  ),
-                                ),
-                              )
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const Gap(1),
-                    Expanded(
-                      child: Container(
-                        alignment: Alignment.topLeft,
-                        // height: 300,
-                        // width: MediaQuery.of(context).size.width * 0.5 - 50,
-                        // alignment: Alignment.center,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(15),
-                          // color: Colors.purple[50],
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 위치 + 시간
+                        Row(
                           children: [
-                            // Row(
-                            //   children: [
-                            //     SizedBox(
-                            //       width: 25,
-                            //       child: CircleAvatar(
-                            //         radius: 16,
-                            //         backgroundColor: Colors.grey[100],
-                            //         child: ClipOval(
-                            //           child: CachedNetworkImage(
-                            //             cacheKey: data.custId.toString(),
-                            //             imageUrl: data.profilePath.toString(), //  'https://picsum.photos/200/300',
-                            //             width: 23,
-                            //             height: 23,
-                            //             fit: BoxFit.cover,
-                            //           ),
-                            //         ),
-                            //       ),
-                            //     ),
-                            //     const Gap(5),
-                            //     Flexible(
-                            //       child: Text(data.nickNm.toString(),
-                            //           overflow: TextOverflow.clip,
-                            //           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)),
-                            //     ),
-                            //   ],
-                            // ),
-                            Text(
-                              '${data.crtDtm.toString().split(':')[0].replaceAll('-', '/')}:${data.crtDtm.toString().split(':')[1]}',
-                              style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600),
-                            ),
-                            const Gap(10),
-                            const Divider(
-                              color: Colors.grey,
-                            ),
                             Container(
                               padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.green.withOpacity(0.9),
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                      child: const Icon(Icons.location_on, color: Colors.white, size: 14)),
-                                  const SizedBox(width: 5),
-                                  Flexible(
-                                    child: Text(data.location.toString(),
-                                        overflow: TextOverflow.clip,
-                                        style: const TextStyle(fontSize: 12, color: Colors.black, fontWeight: FontWeight.bold)),
-                                  ),
-                                ],
+                              decoration: BoxDecoration(color: const Color(0xFF34C759), borderRadius: BorderRadius.circular(6)),
+                              child: const Icon(Icons.location_on, color: Colors.white, size: 14),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                data.location?.toString() ?? '',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87),
                               ),
                             ),
-                            const Gap(15),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisAlignment: MainAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          data.currentTemp.toString(),
-                                          style: const TextStyle(fontSize: 22, height: 1, fontWeight: FontWeight.bold, color: Colors.black),
-                                        ),
-                                        const Text(
-                                          '°C',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.black,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        )
-                                      ],
-                                    ),
-                                    Text(
-                                      data.weatherInfo.toString(),
-                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black),
-                                      overflow: TextOverflow.clip,
-                                    ),
-                                  ],
-                                ),
-                                const Gap(15),
-                                SizedBox(
-                                    height: 35,
-                                    width: 35,
-                                    child: WeatherDataProcessor.instance.getWeatherGogoImage(data.sky.toString(), data.rain.toString())
-                                    // child: Lottie.asset(
-                                    //   WeatherDataProcessor.instance.getWeatherGogoImage(data.sky.toString(), data.rain.toString()),
-                                    //   height: 138.0,
-                                    //   width: 138.0,
-                                    // ),
-                                    ),
-                              ],
+                            const SizedBox(width: 8),
+                            Text(
+                              Utils.timeage(data.crtDtm.toString()),
+                              style: const TextStyle(fontSize: 12, color: Colors.black45, fontWeight: FontWeight.w500),
                             ),
-
-                            const Gap(15),
-                            Get.find<WeatherGogoCntr>().mistData.value.mist10Grade.toString() == 'null'
-                                ? const SizedBox()
-                                : RichText(
-                                    text: TextSpan(
-                                      text: '미세',
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                      children: <TextSpan>[
-                                        buildTextMist(Get.find<WeatherGogoCntr>().mistData.value.mist10Grade.toString()),
-                                        const TextSpan(
-                                          text: ' 초미세',
-                                          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: Colors.black),
-                                        ),
-                                        buildTextMist(Get.find<WeatherGogoCntr>().mistData.value.mist25Grade.toString()),
-                                      ],
-                                    ),
-                                  ),
-                            // Row(
-                            //   mainAxisAlignment: MainAxisAlignment.start,
-                            //   children: [
-                            //     const Text(
-                            //       '미세    :',
-                            //       style: TextStyle(fontSize: 15, color: Colors.black87),
-                            //     ),
-                            //     const Gap(10),
-                            //     Text(Get.find<WeatherGogoCntr>().mistViewData.value!.mist10Grade!.toString(),
-                            //         style: const TextStyle(fontSize: 15, color: Colors.black)),
-                            //   ],
-                            // ),
-                            // Row(
-                            //   mainAxisAlignment: MainAxisAlignment.start,
-                            //   children: [
-                            //     const Text('초미세 :', style: TextStyle(fontSize: 15, color: Colors.black87)),
-                            //     const Gap(10),
-                            //     Text(Get.find<WeatherGogoCntr>().mistViewData.value!.mist25Grade!.toString(),
-                            //         style: const TextStyle(fontSize: 15, color: Colors.black)),
-                            //   ],
-                            // ),
                           ],
                         ),
-                      ),
+                        const SizedBox(height: 14),
+                        // 세로 영상 프리뷰 — 탭 시 전체보기
+                        Center(
+                          child: GestureDetector(
+                            onTap: openViewer,
+                            child: SizedBox(
+                              height: 350,
+                              child: AspectRatio(
+                                aspectRatio: 9 / 16,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      Container(color: Colors.black),
+                                      VideoPlayer(videoCntroller),
+                                      Positioned(
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        child: Container(
+                                          height: 60,
+                                          decoration: const BoxDecoration(
+                                            gradient: LinearGradient(
+                                                begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Colors.black54, Colors.transparent]),
+                                          ),
+                                        ),
+                                      ),
+                                      Positioned(top: 8, right: 8, child: overlayBtn(Icons.fullscreen)),
+                                      Positioned(
+                                        bottom: 8,
+                                        right: 8,
+                                        child: Obx(() {
+                                          final on = Get.find<MapCntr>().soundOn.value;
+                                          return GestureDetector(
+                                            onTap: () {
+                                              on ? videoCntroller.setVolume(0) : videoCntroller.setVolume(1);
+                                              Get.find<MapCntr>().soundOn.value = !on;
+                                            },
+                                            child: overlayBtn(on ? Icons.volume_up_rounded : Icons.volume_off_rounded),
+                                          );
+                                        }),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        // 날씨
+                        Row(
+                          children: [
+                            Text(data.currentTemp?.toString() ?? '-',
+                                style: const TextStyle(fontSize: 30, height: 1, fontWeight: FontWeight.w800, color: Colors.black)),
+                            const Padding(
+                              padding: EdgeInsets.only(top: 3, left: 1),
+                              child: Text('°C', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black54)),
+                            ),
+                            const SizedBox(width: 8),
+                            SizedBox(width: 40, height: 40, child: WeatherDataProcessor.instance.getWeatherGogoImage(data.sky.toString(), data.rain.toString())),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(data.weatherInfo?.toString() ?? '',
+                                  maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.black87)),
+                            ),
+                          ],
+                        ),
+                        if (mist.mist10Grade != null && mist.mist10Grade.toString() != 'null') ...[
+                          const SizedBox(height: 10),
+                          RichText(
+                            text: TextSpan(
+                              text: '미세 ',
+                              style: const TextStyle(fontSize: 13, color: Colors.black, fontWeight: FontWeight.w500),
+                              children: <TextSpan>[
+                                buildTextMist(mist.mist10Grade.toString()),
+                                const TextSpan(text: '   초미세 ', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: Colors.black)),
+                                buildTextMist(mist.mist25Grade.toString()),
+                              ],
+                            ),
+                          ),
+                        ],
+                        if ((data.contents?.toString() ?? '').isNotEmpty && data.contents.toString() != 'null') ...[
+                          const SizedBox(height: 14),
+                          Text(data.contents.toString(), style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.4)),
+                        ],
+                      ],
                     ),
-                  ],
-                ),
-                const Gap(10),
-                Container(
-                  height: 100,
-                  padding: const EdgeInsets.only(top: 5),
-                  alignment: Alignment.topLeft,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(5),
-                    border: Border.all(color: Colors.grey.withOpacity(0.1)),
-                    // color: ,
                   ),
-                  child: SingleChildScrollView(
-                    child: Text(
-                      //'2phpasidhfakjshfsdf asdhf alksdf va sdflasdhf. askldfhalsdhjf asd faskdf vajdsf 2phpasidhfakjshfsdf asdhf alksdf va sdflasdhf. askldfhalsdhjf asd faskdf vajdsf 2phpasidhfakjshfsdf asdhf alksdf va sdflasdhf. askldfhalsdhjf asd faskdf vajdsf 2phpasidhfakjshfsdf asdhf alksdf va sdflasdhf. askldfhalsdhjf asd faskdf vajdsf 2phpasidhfakjshfsdf asdhf alksdf va sdflasdhf. askldfhalsdhjf asd faskdf vajdsf 2phpasidhfakjshfsdf asdhf alksdf va sdflasdhf. askldfhalsdhjf asd faskdf vajdsf 2phpasidhfakjshfsdf asdhf alksdf va sdflasdhf. askldfhalsdhjf asd faskdf vajdsf asdkjfhalsdhfalksdhfa lsdfkh. asldkfhalsdf alsdf 2phpasidhfakjshfsdf asdhf alksdf va sdflasdhf. askldfhalsdhjf asd faskdf vajdsf asdkjfhalsdhfalksdhfa lsdfkh. asldkfhalsdf alsdf ',
-                      data.contents.toString(),
-                      style: const TextStyle(fontSize: 15, color: Colors.black),
-                      overflow: TextOverflow.clip,
+                ),
+                // 전체보기 CTA
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: openViewer,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4A90E2),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      icon: const Icon(Icons.play_circle_fill_rounded, size: 20),
+                      label: const Text('영상 전체보기', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ),
@@ -626,7 +537,6 @@ class _MapPageState extends State<MapPage> {
       videoCntroller.pause();
       videoCntroller.seekTo(const Duration(seconds: 0));
       initialized = false;
-      // videoCntroller.dispose();
     });
   }
 
