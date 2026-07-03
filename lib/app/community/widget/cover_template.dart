@@ -1,9 +1,8 @@
 import 'dart:io';
 
-import 'package:cloudflare/cloudflare.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:project1/repo/cloudflare/cloudflare_repo.dart';
+import 'package:project1/repo/cloudflare/direct_upload_repo.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 
@@ -63,16 +62,13 @@ Future<String?> pickAndUploadCoverPhoto() async {
     if (pickedFile == null) return null;
 
     final File file = File(pickedFile.path);
-    final CloudflareRepo cloudflare = CloudflareRepo();
-    await cloudflare.init();
-    final CloudflareHTTPResponse<CloudflareImage?>? res = await cloudflare.imageFileUpload(file);
-    if (res?.isSuccessful != true) {
-      // 실패 alert는 CloudflareRepo.imageFileUpload가 이미 표시하므로 여기선 조용히 null만 반환(중복 알림 방지).
-      lo.g('표지 사진 업로드 실패');
+    final ImageUploadResult? res = await DirectUploadRepo().uploadImageFile(file);
+    if (res == null) {
+      Utils.alert('표지 사진 업로드에 실패했습니다.');
       return null;
     }
-    lo.g('표지 사진 업로드 성공: ${res?.body?.toString()}');
-    return res!.body!.variants[0].toString();
+    lo.g('표지 사진 업로드 성공: ${res.url}');
+    return res.url;
   } catch (e) {
     // picker 권한거부·업로드 네트워크 예외 등이 호출부로 전파되지 않도록 여기서 처리(doc 주석의 "에러는 Utils.alert로 표시" 약속 유지).
     Utils.alert(e.toString());

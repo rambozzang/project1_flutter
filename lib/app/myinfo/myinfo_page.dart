@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloudflare/cloudflare.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:gap/gap.dart';
@@ -19,7 +18,7 @@ import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/board/data/cust_count_data.dart';
 import 'package:project1/repo/chatting/chat_repo.dart';
 import 'package:project1/repo/chatting/data/update_data.dart';
-import 'package:project1/repo/cloudflare/cloudflare_repo.dart';
+import 'package:project1/repo/cloudflare/direct_upload_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
@@ -382,16 +381,13 @@ class _MyPageState extends State<MyPage>
   // 이미지 서버에 저장
   Future<String> uploadImage(File uploadFile) async {
     // 썸네일 업로드
-    CloudflareRepo cloudflare = CloudflareRepo();
-    await cloudflare.init();
-    CloudflareHTTPResponse<CloudflareImage?>? resthumbnail =
-        await cloudflare.imageFileUpload(uploadFile);
-    if (resthumbnail?.isSuccessful == false) {
+    final ImageUploadResult? res = await DirectUploadRepo().uploadImageFile(uploadFile);
+    if (res == null) {
       Utils.alert('썸네일 업로드에 실패했습니다.');
       return Future.error('썸네일 업로드에 실패했습니다.');
     }
-    Lo.g('썸네일 : ${resthumbnail?.body.toString()}');
-    return resthumbnail!.body!.variants[0].toString();
+    Lo.g('썸네일 : ${res.url}');
+    return res.url;
   }
 
   Future<void> share() async {

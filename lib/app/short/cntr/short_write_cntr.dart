@@ -1,13 +1,12 @@
 import 'dart:io';
 
-import 'package:cloudflare/cloudflare.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:project1/repo/bbs/bbs_repo.dart';
 import 'package:project1/repo/bbs/data/bbs_register_req_data.dart';
 import 'package:project1/repo/bbs/data/bbs_file_req_data.dart';
-import 'package:project1/repo/cloudflare/cloudflare_repo.dart';
+import 'package:project1/repo/cloudflare/direct_upload_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
@@ -25,7 +24,7 @@ class ShortWriteController extends GetxController {
   final FocusNode titleFocus = FocusNode();
   final FocusNode contentsFocus = FocusNode();
 
-  CloudflareRepo cloudflare = CloudflareRepo();
+  final DirectUploadRepo cloudflare = DirectUploadRepo();
 
   // 이미지 정보 리스트 (선택된 이미지와 업로드된 이미지 정보를 함께 관리)
   final RxList<ImageData> imageList = <ImageData>[].obs;
@@ -33,16 +32,6 @@ class ShortWriteController extends GetxController {
 
   String typeCd = 'LOCA';
   String typeDtCd = 'SHRT';
-
-  @override
-  void onInit() async {
-    super.onInit();
-    init();
-  }
-
-  Future<void> init() async {
-    await cloudflare.init();
-  }
 
   // 업로드되지 않은 이미지 목록 가
   List<ImageData> get notUploadedImages => imageList.where((image) => !image.isUploaded).toList();
@@ -97,7 +86,7 @@ class ShortWriteController extends GetxController {
     // 병렬로 모든 이미지 삭제 처리
     await Future.wait(imagesToRemove.map((image) async {
       if (image.imageKey.isNotEmpty) {
-        bool result = await cloudflare.imageDelete(image.imageKey);
+        bool result = await cloudflare.deleteImage(image.imageKey);
         if (!result) {
           Utils.alert('이미지 삭제에 실패했습니다: ${image.fileName}');
           image.isDeleting = false;
@@ -119,7 +108,7 @@ class ShortWriteController extends GetxController {
     imageList.refresh();
 
     if (image.imageKey.isNotEmpty) {
-      bool result = await cloudflare.imageDelete(image.imageKey);
+      bool result = await cloudflare.deleteImage(image.imageKey);
       if (!result) {
         Utils.alert('이미지 삭제에 실패했습니다.');
         image.isDeleting = false;
@@ -135,18 +124,18 @@ class ShortWriteController extends GetxController {
   Future<void> uploadImage(ImageData image) async {
     File uploadFile = File(image.file!.path);
 
-    CloudflareHTTPResponse<CloudflareImage?>? resthumbnail = await cloudflare.imageFileUpload(uploadFile);
-    if (resthumbnail?.isSuccessful == false) {
+    final ImageUploadResult? res = await cloudflare.uploadImageFile(uploadFile);
+    if (res == null) {
       Utils.alert('이미지 업로드에 실패했습니다.');
       return;
     }
-    Lo.g('file 업로드 : ${resthumbnail?.body.toString()}');
+    Lo.g('file 업로드 : ${res.url}');
 
     int index = imageList.indexOf(image);
     imageList[index] = ImageData(
-      imageKey: resthumbnail!.body!.id,
+      imageKey: res.id,
       fileName: image.fileName,
-      imageUrl: resthumbnail.body!.variants[0].toString(),
+      imageUrl: res.url,
     );
     imageList.refresh(); // 리스트 갱신을 강제로 트리거
   }

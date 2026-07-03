@@ -5,7 +5,7 @@ import 'package:get/get.dart';
 import 'package:project1/repo/bbs/bbs_repo.dart';
 import 'package:project1/repo/bbs/data/bbs_list_data.dart';
 import 'package:project1/repo/board/board_repo.dart';
-import 'package:project1/repo/cloudflare/cloudflare_repo.dart';
+import 'package:project1/repo/cloudflare/direct_upload_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/utils/log_utils.dart';
@@ -33,19 +33,9 @@ class BbsViewController extends GetxController {
 
   late final commentsController;
 
-  CloudflareRepo cloudflare = CloudflareRepo();
+  final DirectUploadRepo cloudflare = DirectUploadRepo();
 
   RxBool isLoading = false.obs;
-
-  @override
-  void onInit() {
-    super.onInit();
-    init();
-  }
-
-  Future<void> init() async {
-    await cloudflare.init();
-  }
 
   Future<void> fetchDataInit(String boardId) async {
     fetchData(boardId);
@@ -128,7 +118,7 @@ class BbsViewController extends GetxController {
       isLoading.value = true;
       // 병렬로 모든 이미지 삭제 처리
       await Future.wait(bbsViewData.fileList!.map((image) async {
-        bool result = await cloudflare.imageDelete(image.fileKey!);
+        bool result = await cloudflare.deleteImage(image.fileKey!);
         lo.g('@@@ cloudflare delete image result : $result');
       }));
 

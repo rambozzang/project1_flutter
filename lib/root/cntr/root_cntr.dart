@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:cloudflare/cloudflare.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:flutter/material.dart';
@@ -15,9 +14,9 @@ import 'package:project1/repo/board/data/board_save_weather_data.dart';
 import 'package:project1/repo/board/weather_for_board.dart';
 import 'package:project1/repo/challenge/challenge_repo.dart';
 import 'package:project1/repo/challenge/data/challenge_complete_data.dart';
-import 'package:project1/repo/cloudflare/R2_repo.dart';
 import 'package:project1/repo/cloudflare/cloudflare_repo.dart';
 import 'package:project1/repo/cloudflare/data/cloudflare_req_save_data.dart';
+import 'package:project1/repo/cloudflare/direct_upload_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
@@ -101,9 +100,6 @@ class RootCntr extends GetxController {
   // RxDouble isVisible = 1.0.obs;
   RxBool isVisible = true.obs;
 
-  late Cloudflare cloudflare;
-  String? cloudflareInitMessage;
-
   @override
   void onInit() {
     hideButtonController1.addListener(() => changeScrollListner(hideButtonController1));
@@ -150,96 +146,7 @@ class RootCntr extends GetxController {
     onWillPop();
   }
 
-  late MediaInfo? pickedFile;
-  late String? thumbnailFile;
-
-  late File uploadVideoFile;
-  late File uploadThumbnailFile;
-
-  void compressClose() async {
-    Utils.alert('비디오 압축에 실패했습니다.');
-    isFileUploading.value = UploadingType.FAIL;
-    // VideoCompress.deleteAllCache();
-    // VideoCompress.cancelCompression();
-  }
-
-  void uploadR2Storage2(File videoFile, BoardSaveData boardSaveData) async {
-    isFileUploading.value = UploadingType.UPLOADING;
-
-    try {
-      // 비디오 파일 압축
-      MediaInfo? pickedFile = await VideoCompress.compressVideo(
-        videoFile.path,
-        quality: VideoQuality.HighestQuality,
-        deleteOrigin: false,
-        includeAudio: true,
-      );
-      // 썸네일 생성
-      File? thumbnailFile = await VideoCompress.getFileThumbnail(videoFile.path, quality: 50);
-      if (pickedFile == null) {
-        compressClose();
-        return;
-      }
-
-      // 비디오 파일 업로드
-      BucketUpload bucketUpload = BucketUpload('p1-video', 'us-east-1', videoFile);
-      R2Repo r2Repo = R2Repo();
-      ResData resVideoData = await r2Repo.uploadFile(bucketUpload);
-      Lo.g('비디오 : ${resVideoData.code.toString()}');
-      Lo.g('비디오 : ${resVideoData.msg.toString()}');
-      Lo.g('비디오 : ${resVideoData.data.toString()}');
-
-      // 썸네일 업로드
-      CloudflareRepo cloudflare = CloudflareRepo();
-      await cloudflare.init();
-      CloudflareHTTPResponse<CloudflareImage?>? resthumbnail = await cloudflare.imageFileUpload(thumbnailFile);
-      if (resthumbnail?.isSuccessful == false) {
-        Utils.alert('썸네일 업로드에 실패했습니다.');
-        compressClose();
-        return;
-      }
-
-      // 저장
-      BoardRepo boardRepo = BoardRepo();
-      boardSaveData.boardWeatherVo?.thumbnailPath = resthumbnail!.body?.variants[0].toString();
-      boardSaveData.boardWeatherVo?.thumbnailId = resthumbnail!.body?.id.toString();
-      boardSaveData.boardWeatherVo?.videoPath = resVideoData.data.toString();
-      boardSaveData.boardWeatherVo?.videoId = '';
-      ResData resData = await boardRepo.save(boardSaveData);
-
-      if (resData.code != '00') {
-        Utils.alert(resData.msg.toString());
-        isFileUploading.value = UploadingType.FAIL;
-        File(pickedFile.path.toString()).delete();
-        File(thumbnailFile.toString()).delete();
-        File(videoFile.path.toString()).delete();
-
-        // VideoCompress.deleteAllCache();
-        // VideoCompress.cancelCompression();
-        return;
-      }
-      isFileUploading.value = UploadingType.SUCCESS;
-
-      // 챌린지 완료 처리 (비동기, 업로드 흐름 차단 안 함)
-      _completeTodayChallengeAfterUpload();
-
-      // Utils.alert('정상 등록되었습니다!');
-      Future.delayed(const Duration(milliseconds: 1000), () {
-        isFileUploading.value = UploadingType.NONE;
-        File(pickedFile.path.toString()).delete();
-        File(thumbnailFile.toString()).delete();
-        File(videoFile.path.toString()).delete();
-
-        // VideoCompress.deleteAllCache();
-        // VideoCompress.cancelCompression();
-      });
-    } catch (e) {
-      lo.g("ERRRRRRR=> $e");
-      compressClose();
-    }
-  }
-
-  // Cloudflare  STREAM 파일 업로드
+  // Cloudflare STREAM 파일 업로드 (Direct Creator Upload — 앱은 백엔드가 발급한 일회용 URL로만 업로드)
   void uploadCloudflare(File videoFile, BoardSaveData boardSaveData) async {
     isFileUploading.value = UploadingType.UPLOADING;
 
@@ -248,8 +155,8 @@ class RootCntr extends GetxController {
     // 느린 파일 업로드가 진행되는 동안 현위치 날씨를 받아 저장 직전에 합친다.
     final Future<BoardSaveWeatherData> weatherFuture = WeatherForBoard.fetch();
 
-    CloudflareRepo cloudflare = CloudflareRepo();
-    await cloudflare.init();
+    final DirectUploadRepo directUpload = DirectUploadRepo();
+    final CloudflareRepo cloudflare = CloudflareRepo();
 
     try {
       bool needsCompression = await shouldCompressVideo(videoFile.path);
@@ -281,11 +188,10 @@ class RootCntr extends GetxController {
       Lo.g('비디오 압축 결과 : ${pickedFile!.toJson()}');
 
       File uploadVideoFile = File(pickedFile.path.toString());
-      CloudflareHTTPResponse<CloudflareStreamVideo?>? videoRes = await cloudflare.videoStreamUpload(uploadVideoFile);
-      CloudflareStreamVideo? video = videoRes?.body;
+      // 백엔드에서 일회용 업로드 URL 발급 → 해당 URL로 직접 업로드 (앱에 Cloudflare 토큰 없음)
+      final VideoUploadTicket? ticket = await directUpload.uploadVideoFile(uploadVideoFile);
 
-      if (videoRes?.isSuccessful == false) {
-        // if (videoRes?.isSuccessful == false || thumbnailres?.isSuccessful == false) {
+      if (ticket == null) {
         Utils.alert('파일 업로드에 실패했습니다.');
         isFileUploading.value = UploadingType.FAIL;
         if (needsCompression) {
@@ -295,16 +201,14 @@ class RootCntr extends GetxController {
         return;
       }
       CloudflareReqSaveData cloudSaveData = CloudflareReqSaveData();
-      cloudSaveData.uid = video!.id;
-      cloudSaveData.preview = video.preview;
-      cloudSaveData.size = video.size;
-      cloudSaveData.thumbnail = video.animatedThumbnail;
-
-      // cloudSaveData.thumbnail = video.thumbnail;
-      cloudSaveData.dash = video.playback!.dash.toString();
-      cloudSaveData.hls = video.playback!.hls.toString();
-      cloudSaveData.mp4 = ''; //resMp4['result']['default']['url'];
-      cloudSaveData.range = pickedFile.duration!.toInt() ?? 0;
+      cloudSaveData.uid = ticket.uid;
+      cloudSaveData.preview = ticket.preview;
+      cloudSaveData.size = pickedFile.filesize;
+      cloudSaveData.thumbnail = ticket.animatedThumbnail;
+      cloudSaveData.dash = ticket.dash;
+      cloudSaveData.hls = ticket.hls;
+      cloudSaveData.mp4 = '';
+      cloudSaveData.range = pickedFile.duration?.toInt() ?? 0;
       cloudSaveData.total = 0;
 
       ResData resCloudData = await cloudflare.save(cloudSaveData);
@@ -312,7 +216,6 @@ class RootCntr extends GetxController {
         Utils.alert(resCloudData.msg.toString());
         isFileUploading.value = UploadingType.FAIL;
         File(pickedFile.path.toString()).delete();
-        File(thumbnailFile!.toString()).delete();
         File(videoFile.path.toString()).delete();
         if (needsCompression) {
           // VideoCompress.deleteAllCache();
@@ -325,10 +228,10 @@ class RootCntr extends GetxController {
       BoardRepo boardRepo = BoardRepo();
       // 업로드가 진행되는 동안 이미 날씨를 받아두었으므로 거의 즉시 반환된다.
       final BoardSaveWeatherData weatherVo = await weatherFuture;
-      weatherVo.thumbnailPath = video.animatedThumbnail;
-      weatherVo.thumbnailId = video.thumbnail;
-      weatherVo.videoPath = video.playback!.hls.toString();
-      weatherVo.videoId = video.id;
+      weatherVo.thumbnailPath = ticket.animatedThumbnail;
+      weatherVo.thumbnailId = ticket.thumbnail;
+      weatherVo.videoPath = ticket.hls;
+      weatherVo.videoId = ticket.uid;
       // 사용자가 선택한 체감 날씨 태그는 백그라운드 자동수집엔 없으므로 보존
       weatherVo.feelCd = boardSaveData.boardWeatherVo?.feelCd;
       boardSaveData.boardWeatherVo = weatherVo;
@@ -343,7 +246,6 @@ class RootCntr extends GetxController {
         Utils.alert(resData.msg.toString());
         isFileUploading.value = UploadingType.FAIL;
         File(pickedFile.path.toString()).delete();
-        File(thumbnailFile!.toString()).delete();
         File(videoFile.path.toString()).delete();
         if (needsCompression) {
           // VideoCompress.deleteAllCache();
@@ -356,7 +258,6 @@ class RootCntr extends GetxController {
       Future.delayed(const Duration(milliseconds: 2000), () {
         isFileUploading.value = UploadingType.NONE;
         File(pickedFile!.path.toString()).delete();
-        // File(thumbnailFile!.toString()).delete();
         File(videoFile.path.toString()).delete();
         if (needsCompression) {
           // VideoCompress.deleteAllCache();
@@ -407,23 +308,22 @@ class RootCntr extends GetxController {
 
     final Future<BoardSaveWeatherData> weatherFuture = WeatherForBoard.fetch();
 
-    CloudflareRepo cloudflare = CloudflareRepo();
-    await cloudflare.init();
+    final DirectUploadRepo directUpload = DirectUploadRepo();
 
     try {
       final List<String> imageUrls = [];
       final List<String> imageIds = [];
 
-      // 각 사진을 순차 업로드(안정성 우선). variants[0]=delivery URL, id=이미지 ID.
+      // 각 사진을 순차 업로드(안정성 우선). 백엔드가 발급한 일회용 URL로 직접 업로드.
       for (final File f in photoFiles) {
-        final res = await cloudflare.imageFileUpload(f);
-        if (res?.body == null) {
+        final ImageUploadResult? res = await directUpload.uploadImageFile(f);
+        if (res == null) {
           Utils.alert('사진 업로드에 실패했습니다.');
           isFileUploading.value = UploadingType.FAIL;
           return;
         }
-        imageUrls.add(res!.body!.variants[0].toString());
-        imageIds.add(res.body!.id.toString());
+        imageUrls.add(res.url);
+        imageIds.add(res.id);
       }
 
       // 병렬 수집한 날씨를 합쳐 게시.

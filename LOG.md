@@ -6,6 +6,15 @@
 
 ## 2026-07-03
 
+### 09:25 | claude | ✅ 완료 (Cloudflare Direct Creator Upload 전환 — 앱 자격증명 전면 제거)
+**작업**: 앱에 하드코딩돼 있던 Cloudflare API 토큰/글로벌 키를 제거하고, 백엔드가 발급하는 일회용 업로드 URL 방식으로 전환
+- **백엔드(e053ccf)**: POST `/cloudflare/videoUploadUrl`(Stream 티켓 — uploadUrl+uid 기반 hls/dash/썸네일 서버 조립), `/cloudflare/imageUploadUrl`(Images v2 — deliveryUrl 포함), `/cloudflare/deleteImage`(삭제 프록시). 토큰은 서버 외부설정 `/vdata/jar/skysnap/config/application.yml`에서만 주입(레포에 없음)
+- **프론트**: 신규 `direct_upload_repo.dart`(티켓 발급→일회용 URL로 dio 멀티파트 업로드, HEIF→png 변환 유지, 30분 sendTimeout). `cloudflare_repo.dart`는 save()만 남기고 자격증명·SDK 전부 삭제
+- **호출처 10곳 교체**: root_cntr(영상 uploadCloudflare·사진 uploadPhotos), cover_template, myinfo_page, short_write/modify/comments_cntr, bbs_write/modify/view/comments_cntr, test_dio_page(비활성화)
+- **데드코드 삭제**: uploadR2Storage2+compressClose, R2_repo/aa.dart/aws_s3/·cloudflare_res_data, pubspec에서 cloudflare·aws_s3_upload_lite·aws_signature_v4·aws_common 제거. uploadCloudflare 실패경로의 `thumbnailFile!` 미초기화(LateInitializationError 잠복 버그)도 함께 제거
+- **키**: 사용자 결정으로 기존 키 유지(재발급 안 함) — 서버 설정에 이미 반영돼 있어 무중단
+- 검증: analyze 에러 0, Android 디버그 빌드 성공, 운영에서 3개 API 실검증(이미지/영상 티켓 발급 code 00 + 테스트 이미지 삭제 data:true)
+
 ### 08:20 | claude | ✅ 완료 (플래시·비율 하단 복귀 — 사용자 피드백)
 **작업**: 상단으로 옮겼던 플래시·비율 버튼이 불편하다는 피드백 → 하단 퀵세팅 캡슐(플래시|비율|줌핀)로 원위치
 - 유지된 개선: close 글래스 원형, 모드 토글 아이콘, 갤러리 라운드사각+image, 전환 cameraswitch(48), 플래시 활성 시 노란색(하단에서도 적용)

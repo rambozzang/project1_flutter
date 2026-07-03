@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:cloudflare/cloudflare.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -18,7 +17,7 @@ import 'package:project1/repo/bbs/data/bbs_list_res_data.dart';
 import 'package:project1/repo/bbs/data/bbs_search_req_data.dart';
 import 'package:project1/repo/board/data/board_comment_data.dart';
 import 'package:project1/repo/board/data/board_comment_update_req_data.dart';
-import 'package:project1/repo/cloudflare/cloudflare_repo.dart';
+import 'package:project1/repo/cloudflare/direct_upload_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/utils/StringUtils.dart';
@@ -36,7 +35,7 @@ class ShortCommentsBinding extends Bindings {
 
 class ShortCommentsController extends GetxController {
   // 댓글 관련 변수명 변경
-  CloudflareRepo cloudflare = CloudflareRepo();
+  final DirectUploadRepo cloudflare = DirectUploadRepo();
 
   // 코멘트 리스트 스크롤
   final ScrollController replayListScrollController = ScrollController();
@@ -97,16 +96,11 @@ class ShortCommentsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    init();
     replyTextController.clear();
     isFirstLoad.value = true;
     // replayListScrollController.addListener(() => handlereplayListScroll(replayListScrollController));
 
     replyTextController.addListener(onTextChanged);
-  }
-
-  Future<void> init() async {
-    await cloudflare.init();
   }
 
   void setInitData(BbsListData bbsListData) {
@@ -289,14 +283,14 @@ class ShortCommentsController extends GetxController {
         ];
       } else if (hasOriginalImage && hasImage && hasNewImage) {
         // 2.원본있고 - 수정    hasOriginalImage && hasNewImage
-        await cloudflare.imageDelete(originalComment.fileList!.first.fileKey.toString());
+        await cloudflare.deleteImage(originalComment.fileList!.first.fileKey.toString());
         ImageData? newImageData = await uploadImage(commentImage.value!);
         replyData.fileListData = [
           BbsFileData(fileKey: newImageData!.imageKey, fileNm: newImageData.fileName, filePath: newImageData.imageUrl, fileType: 'image')
         ];
       } else if (hasOriginalImage && !hasImage) {
         //  3.원본있고 - 삭제    hasOriginalImage && !hasImage
-        await cloudflare.imageDelete(originalComment.fileList!.first.fileKey.toString());
+        await cloudflare.deleteImage(originalComment.fileList!.first.fileKey.toString());
         replyData.fileListData = [];
       } else if (!hasOriginalImage && hasImage) {
         // 4.원본없고 - 추가    !hasOriginalImage && hasImage
@@ -342,7 +336,7 @@ class ShortCommentsController extends GetxController {
       if (modifyData.fileList!.isNotEmpty) {
         String fileKey = modifyData.fileList!.first.fileKey.toString();
         if (!StringUtils.isEmpty(fileKey)) {
-          bool isComplete = await cloudflare.imageDelete(fileKey);
+          bool isComplete = await cloudflare.deleteImage(fileKey);
           lo.g('Cloudflare 파일 삭제 : $isComplete');
           if (isComplete) {}
         }
@@ -435,16 +429,16 @@ class ShortCommentsController extends GetxController {
     //   Utils.alert('heic, heif 파일은 업로드 할 수 없습니다.');
     //   return null;
     // }
-    CloudflareHTTPResponse<CloudflareImage?>? resthumbnail = await cloudflare.imageFileUpload(uploadFile);
-    if (resthumbnail?.isSuccessful == false) {
+    final ImageUploadResult? res = await cloudflare.uploadImageFile(uploadFile);
+    if (res == null) {
       Utils.alert('이미지 업로드에 실패했습니다.');
       return null;
     }
-    Lo.g('file 업로드 : ${resthumbnail?.body.toString()}');
+    Lo.g('file 업로드 : ${res.url}');
     return ImageData(
-      imageKey: resthumbnail!.body!.id,
+      imageKey: res.id,
       fileName: image.name,
-      imageUrl: resthumbnail.body!.variants[0].toString(),
+      imageUrl: res.url,
     );
   }
 
