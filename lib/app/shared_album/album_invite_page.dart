@@ -58,13 +58,15 @@ class _AlbumInvitePageState extends State<AlbumInvitePage> {
   Future<void> _load() async {
     final String myCustId = AuthCntr.to.resLoginData.value.custId.toString();
     try {
-      // 하나가 실패해도 나머지(QR·링크·멤버)는 반드시 표시되도록 개별 예외 흡수
+      // 하나가 실패/지연돼도 나머지(QR·링크·멤버)는 반드시 표시되도록
+      // 개별 예외 흡수 + 8초 타임아웃(무한대기로 스피너가 멈추는 것 방지).
+      const t = Duration(seconds: 8);
       final results = await Future.wait<dynamic>([
-        _repo.getInviteInfo(_communityId).catchError((_) => null),
-        _boardRepo.getFollowList(1, myCustId).catchError((_) => ResData()..code = '99'),
-        _boardRepo.getFollowList(2, myCustId).catchError((_) => ResData()..code = '99'),
-        _repo.getMembers(_communityId).catchError((_) => <CommunityMemberData>[]),
-        if (_isManager) _repo.getInvitedMembers(_communityId).catchError((_) => <CommunityMemberData>[]),
+        _repo.getInviteInfo(_communityId).timeout(t, onTimeout: () => null).catchError((_) => null),
+        _boardRepo.getFollowList(1, myCustId).timeout(t, onTimeout: () => ResData()..code = '99').catchError((_) => ResData()..code = '99'),
+        _boardRepo.getFollowList(2, myCustId).timeout(t, onTimeout: () => ResData()..code = '99').catchError((_) => ResData()..code = '99'),
+        _repo.getMembers(_communityId).timeout(t, onTimeout: () => <CommunityMemberData>[]).catchError((_) => <CommunityMemberData>[]),
+        if (_isManager) _repo.getInvitedMembers(_communityId).timeout(t, onTimeout: () => <CommunityMemberData>[]).catchError((_) => <CommunityMemberData>[]),
       ]);
       _invite = results[0] as CommunityInviteInfoData?;
       // 팔로워(1)+팔로잉(2) 합쳐 custId 기준 중복 제거(기존 초대 화면과 동일 규칙)
