@@ -354,37 +354,45 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
                     return AnimatedOpacity(
                       opacity: visible ? 1.0 : 0.0,
                       duration: const Duration(milliseconds: 250),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.wb_sunny_rounded, color: Colors.white, size: 18),
-                          const SizedBox(height: 8),
-                          Container(
-                            width: 6,
-                            height: 170,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.25),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                            child: ValueListenableBuilder<double>(
-                              valueListenable: _brightnessVN,
-                              builder: (context, b, __) {
-                                return Align(
-                                  alignment: Alignment.bottomCenter,
-                                  child: FractionallySizedBox(
-                                    heightFactor: b.clamp(0.02, 1.0),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(3),
+                      child: _glassPill(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.wb_sunny_rounded, color: Color(0xFFFFD54F), size: 18),
+                            const SizedBox(height: 10),
+                            Container(
+                              width: 6,
+                              height: 150,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.22),
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                              child: ValueListenableBuilder<double>(
+                                valueListenable: _brightnessVN,
+                                builder: (context, b, __) {
+                                  return Align(
+                                    alignment: Alignment.bottomCenter,
+                                    child: FractionallySizedBox(
+                                      heightFactor: b.clamp(0.02, 1.0),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          gradient: const LinearGradient(
+                                            begin: Alignment.bottomCenter,
+                                            end: Alignment.topCenter,
+                                            colors: [Color(0xFFFF9A3C), Color(0xFFFFD54F), Colors.white],
+                                          ),
+                                          borderRadius: BorderRadius.circular(3),
+                                          boxShadow: [BoxShadow(color: const Color(0xFFFFD54F).withOpacity(0.5), blurRadius: 6)],
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                );
-                              },
+                                  );
+                                },
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -419,100 +427,107 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     );
   }
 
-  // ── 제스처 안내 캡슐 (좌우=줌 / 상하=밝기) + 손가락 스와이프 애니메이션 ──
+  // ── 제스처 안내 (좌우=줌 / 상하=밝기) — 프로스티드 글래스 + 코멧 인디케이터 ──
 
-  static const Color _hintBg = Color(0xCC000000); // 검정 80%
+  // 반투명 유리 알약(블러 + 은은한 흰 테두리). 검정 불투명 캡슐 대비 훨씬 가볍고 고급스럽다.
+  Widget _glassPill({required Widget child, EdgeInsets? padding}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          padding: padding ?? const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.14),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white.withOpacity(0.28), width: 0.8),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
 
-  // 왕복하는 손가락(흰 점 + 은은한 글로우)
-  Widget _swipeDot() {
-    return Container(
-      width: 12,
-      height: 12,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(color: Colors.white.withOpacity(0.55), blurRadius: 6, spreadRadius: 1),
+  // 방향으로 흐르는 코멧(작은 점 + 진행 방향으로 부드럽게 사라지는 꼬리). 화살표+점 조합보다 세련됨.
+  // axis: true=가로, false=세로. t: 0~1 진행도.
+  Widget _comet({required bool horizontal}) {
+    return AnimatedBuilder(
+      animation: _swipeAnim,
+      builder: (context, _) {
+        final double t = _swipeAnim.value; // 0~1 (easeInOut 왕복)
+        final double pos = (t * 2 - 1); // -1~1
+        // 왕복 방향에 따라 꼬리가 반대로 뻗도록 진행속도(미분 부호) 근사
+        final double head = pos * (horizontal ? 30 : 24);
+        return Transform.translate(
+          offset: horizontal ? Offset(head, 0) : Offset(0, head),
+          child: Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(color: Colors.white.withOpacity(0.7), blurRadius: 8, spreadRadius: 1),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // 상하(밝기): 우측의 세로 글래스 알약 — 해 아이콘 + 코멧이 위↕아래 왕복.
+  Widget _buildBrightnessHint() {
+    return _glassPill(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.wb_sunny_rounded, color: Colors.white, size: 16),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: 14,
+            height: 70,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // 은은한 트랙
+                Container(width: 2, decoration: BoxDecoration(color: Colors.white.withOpacity(0.25), borderRadius: BorderRadius.circular(1))),
+                _comet(horizontal: false),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text('밝기', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.2)),
         ],
       ),
     );
   }
 
-  // 캡슐 밖에 두는 미니 라벨(트랙을 얇게 유지하기 위해 분리)
-  Widget _hintLabel(IconData icon, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: _hintBg, borderRadius: BorderRadius.circular(10)),
+  // 좌우(줌): 중앙의 가로 글래스 알약 — 돋보기 아이콘 + 코멧이 좌↔우 왕복.
+  Widget _buildZoomHint() {
+    return _glassPill(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Colors.white, size: 11),
-          const SizedBox(width: 4),
-          Text(text, style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700)),
+          const Icon(Icons.zoom_in_rounded, color: Colors.white, size: 16),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 76,
+            height: 14,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(height: 2, decoration: BoxDecoration(color: Colors.white.withOpacity(0.25), borderRadius: BorderRadius.circular(1))),
+                _comet(horizontal: true),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Text('줌', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.2)),
         ],
       ),
-    );
-  }
-
-  // 상하(밝기): 우측 측면의 얇은 세로 캡슐, 점이 위↕아래로 왕복
-  Widget _buildBrightnessHint() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 26,
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          decoration: BoxDecoration(color: _hintBg, borderRadius: BorderRadius.circular(13)),
-          child: SizedBox(
-            height: 96,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                const Align(alignment: Alignment.topCenter, child: Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white70, size: 16)),
-                const Align(alignment: Alignment.bottomCenter, child: Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 16)),
-                AnimatedBuilder(
-                  animation: _swipeAnim,
-                  builder: (context, child) => Transform.translate(offset: Offset(0, (_swipeAnim.value * 2 - 1) * 26), child: child),
-                  child: _swipeDot(),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        _hintLabel(Icons.wb_sunny_rounded, '밝기'),
-      ],
-    );
-  }
-
-  // 좌우(줌): 화면 중앙의 얇은 가로 캡슐, 점이 왼쪽↔오른쪽으로 왕복
-  Widget _buildZoomHint() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          height: 26,
-          padding: const EdgeInsets.symmetric(horizontal: 6),
-          decoration: BoxDecoration(color: _hintBg, borderRadius: BorderRadius.circular(13)),
-          child: SizedBox(
-            width: 120,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                const Align(alignment: Alignment.centerLeft, child: Icon(Icons.keyboard_arrow_left_rounded, color: Colors.white70, size: 16)),
-                const Align(alignment: Alignment.centerRight, child: Icon(Icons.keyboard_arrow_right_rounded, color: Colors.white70, size: 16)),
-                AnimatedBuilder(
-                  animation: _swipeAnim,
-                  builder: (context, child) => Transform.translate(offset: Offset((_swipeAnim.value * 2 - 1) * 34, 0), child: child),
-                  child: _swipeDot(),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        _hintLabel(Icons.zoom_in_rounded, '줌'),
-      ],
     );
   }
 }
