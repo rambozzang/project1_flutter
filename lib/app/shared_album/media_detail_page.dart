@@ -104,7 +104,8 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
   }
 
   void _openComments() {
-    CommentPage().open(context, (_item.boardId ?? 0).toString(), isDark: !SaColors.isLight);
+    // 전역과 동일한 다크 댓글 바텀시트 사용(앨범 라이트여도 댓글창은 기존 그대로).
+    CommentPage().open(context, (_item.boardId ?? 0).toString());
   }
 
   String _capturedLabel() {
