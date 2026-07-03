@@ -43,38 +43,42 @@ class _GlobalUploadIndicatorState extends State<GlobalUploadIndicator> {
   @override
   Widget build(BuildContext context) {
     if (!Get.isRegistered<RootCntr>()) return const SizedBox.shrink();
-    return IgnorePointer(
-      child: Obx(() {
-        final status = RootCntr.to.isFileUploading.value;
-        if (status == UploadingType.UPLOADING) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Utils.progressUpload(size: 25),
-              const Gap(5),
-              Container(
-                color: Colors.black,
-                padding: const EdgeInsets.all(3),
-                child: const Text(
-                  "Uploading..",
-                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+    // Navigator 밖(전역 Stack)이라 Material 조상이 없음 — 없으면 Text가 노란 이중 밑줄로 그려진다.
+    return Material(
+      type: MaterialType.transparency,
+      child: IgnorePointer(
+        child: Obx(() {
+          final status = RootCntr.to.isFileUploading.value;
+          if (status == UploadingType.UPLOADING) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Utils.progressUpload(size: 25),
+                const Gap(5),
+                Container(
+                  color: Colors.black,
+                  padding: const EdgeInsets.all(3),
+                  child: const Text(
+                    "Uploading..",
+                    style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
                 ),
+              ],
+            );
+          }
+          if (status == UploadingType.SUCCESS) {
+            return Container(
+              color: Colors.black,
+              padding: const EdgeInsets.all(5),
+              child: const Text(
+                "게시물이 정상 게시 되었습니다.",
+                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
               ),
-            ],
-          );
-        }
-        if (status == UploadingType.SUCCESS) {
-          return Container(
-            color: Colors.black,
-            padding: const EdgeInsets.all(5),
-            child: const Text(
-              "게시물이 정상 게시 되었습니다.",
-              style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-          );
-        }
-        return const SizedBox.shrink();
-      }),
+            );
+          }
+          return const SizedBox.shrink();
+        }),
+      ),
     );
   }
 }
