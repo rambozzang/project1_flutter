@@ -6,6 +6,15 @@
 
 ## 2026-07-03
 
+### 09:55 | claude | ✅ 완료 (카카오톡 인앱 브라우저에서 초대장 버튼 미동작 수정 — 백엔드 4c32af9)
+**작업**: 카톡으로 초대 링크 공유 시 인앱 브라우저(WebView)가 커스텀 스킴(skysnap://)·스토어 이동을 차단해 '앱에서 참여하기'가 무반응이던 문제
+- **카카오톡**: 진입 즉시 `kakaotalk://web/openExternal?url=` 스킴으로 기본 브라우저로 자동 이동(+ CTA가 재시도 버튼 역할). 기본 브라우저에서는 모든 버튼 정상
+- **라인**: `openExternalBrowser=1` 파라미터로 외부 브라우저 열기
+- **인스타/페북 등 탈출 스킴 없는 인앱**: '메뉴 → 다른 브라우저로 열기' 안내 배너 표시
+- **일반 Android 브라우저 개선**: CTA를 `intent://` 스킴으로 — 앱 설치 시 실행, 미설치 시 Play 스토어 자동 폴백
+- 주의: 앱 자체 경로는 `/invite/{code}`가 아니라 `/api/invite/{code}`(context-path) — nginx가 `/invite/*`를 매핑. 직접 검증 시 경로 주의
+- 검증: 운영 `https://skysnap.co.kr/invite/{code}`에서 신규 스크립트 4종 마커 서빙 확인
+
 ### 09:40 | claude | ✅ 완료 (앨범 업로드·댓글 UX 3종 수정)
 **작업**: 사용자 리포트 3건 수정
 - **① 앨범 자동선택 누락(레이스)**: 앨범에서 카메라 진입 시 `pendingCommunityId`를 세팅하지만, 카메라→등록 페이지 전환이 `pushReplacement`라 `_openCamera`의 await가 등록 페이지 생성 **전에** 풀려 null로 지워지고 있었음. 수정: 진입부(album_detail/community_home)의 복귀 시 null 초기화 제거 + 등록 페이지(video/photo_reg_page)가 값을 **소비한 직후 초기화**(일반 카메라 진입 누수는 기존 root_page/app_route 리셋이 계속 방어)
