@@ -6,6 +6,13 @@
 
 ## 2026-07-03
 
+### 11:30 | claude | ✅ 완료 (업로드 인디케이터 전역 승격 — 앨범 화면에서도 표시)
+**작업**: Uploading 상태 표시가 앨범 상세/몰입 등에서 안 보이던 문제
+- **원인**: 인디케이터가 root_page Stack 안(Positioned top:100 right:20)에 있어, 루트 위에 `Navigator.push`로 쌓인 화면(앨범 상세·몰입·업로드 등)에서는 루트째 가려짐 — 구조적 한계 아님
+- **수정**: `GlobalUploadIndicator` 위젯으로 추출 → `GetMaterialApp.builder`의 전역 Stack(Navigator보다 위)에 배치 — 모든 라우트 위에 표시. root_page의 기존 블록 제거(중복 방지)
+- 세부: RootCntr가 lazyPut이라 등록 전(스플래시)엔 숨김 + 등록 대기 타이머(builder는 라우트 전환 시 rebuild 안 되는 함정 대응). IgnorePointer로 터치 방해 없음. iOS도 이제 전역 Stack 경유(기존 Android만 Stack)
+- 검증: analyze 에러 0, Android·iOS 디버그 빌드 성공
+
 ### 10:35 | claude | ✅ 완료 (앨범 테마 사용자 선택 — 설정 > 앨범 테마)
 **작업**: 시스템 추종만 되던 앨범 테마를 사용자가 직접 선택 가능하게
 - `SaThemeMode`(system/light/dark) + secure storage 영속(`SA_THEME_MODE`) + `themeTick` ValueNotifier(변경 즉시 반영)

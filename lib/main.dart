@@ -20,6 +20,7 @@ import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/route/app_route.dart';
 import 'package:project1/services/deep_link_service.dart';
 import 'package:project1/services/weather_notification_service.dart';
+import 'package:project1/widget/global_upload_indicator.dart';
 import 'package:workmanager/workmanager.dart';
 // import 'package:project1/theme/app_theme.dart';
 // import 'package:supabase_flutter/supabase_flutter.dart';
@@ -98,8 +99,7 @@ class TigerBk extends StatelessWidget {
         // 2) [Android 전용] Android 15/16(targetSdk 36)은 edge-to-edge 강제 + 내비바 색 무시 →
         //    하단 시스템 내비게이션 바 높이만큼 불투명 흰 배경을 직접 깔아 앱이 비치는 것을 막는다.
         //    iOS는 홈 인디케이터가 하단 탭바와 겹쳐 문제가 되므로 적용하지 않는다(iOS엔 이 문제 자체가 없음).
-        if (!Platform.isAndroid) return content;
-        final double navBarInset = MediaQuery.of(context).viewPadding.bottom;
+        final double navBarInset = Platform.isAndroid ? MediaQuery.of(context).viewPadding.bottom : 0;
         return Stack(
           textDirection: TextDirection.ltr,
           children: [
@@ -112,6 +112,9 @@ class TigerBk extends StatelessWidget {
                 height: navBarInset,
                 child: const IgnorePointer(child: ColoredBox(color: Colors.white)),
               ),
+            // 3) 업로드 전역 인디케이터 — 루트 위에 푸시된 화면(앨범 상세/몰입 등)에서도 보이도록
+            //    Navigator보다 위(모든 라우트 위)에 얹는다. (기존 root_page Stack 위치에서 승격)
+            const Positioned(top: 100, right: 20, child: GlobalUploadIndicator()),
           ],
         );
       },

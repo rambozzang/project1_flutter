@@ -5,7 +5,6 @@ import 'package:app_version_update/app_version_update.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/shared_album/album_list_page.dart';
 import 'package:project1/app/camera/page/camera_awesome_page.dart';
@@ -180,57 +179,8 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
                     children: mainlist)),
               ),
               // ),
-              Positioned(
-                top: 100,
-                right: 20,
-                child: Obx(() => Column(
-                      children: [
-                        if (RootCntr.to.isFileUploading.value == UploadingType.UPLOADING) ...[
-                          Column(
-                            children: [
-                              Utils.progressUpload(size: 25),
-                              const Gap(5),
-                              Container(
-                                color: Colors.black,
-                                padding: const EdgeInsets.all(3),
-                                child: const Center(
-                                  child: Row(
-                                    children: [
-                                      // Icon(Icons.check, color: Colors.yellow, size: 20),
-                                      Text(
-                                        "Uploading..",
-                                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              )
-                            ],
-                          )
-                        ],
-                        if (RootCntr.to.isFileUploading.value == UploadingType.SUCCESS) ...[
-                          Container(
-                            color: Colors.black,
-                            padding: const EdgeInsets.all(5),
-                            child: const Center(
-                              child: Row(
-                                children: [
-                                  // Icon(Icons.check, color: Colors.yellow, size: 20),
-                                  Text(
-                                    "게시물이 정상 게시 되었습니다.",
-                                    style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
-                        ],
-                        if (RootCntr.to.isFileUploading.value == UploadingType.FAIL) ...[
-                          const SizedBox(),
-                        ]
-                      ],
-                    )),
-              ),
+              // 업로드 상태 인디케이터는 GetMaterialApp.builder(main.dart)의 전역 Stack으로 승격 —
+              // 루트 위에 푸시된 화면(앨범 상세/몰입 등)에서도 보이도록 (GlobalUploadIndicator)
               // Positioned(
               //   top: 150,
               //   right: 10,
