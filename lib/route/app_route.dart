@@ -26,8 +26,6 @@ import 'package:project1/app/short/short_write_page.dart';
 import 'package:project1/app/join/join_page.dart';
 import 'package:project1/app/auth/agree_page.dart';
 import 'package:project1/app/auth/auth_page.dart';
-import 'package:project1/app/chatting/repo/suba_test_page.dart';
-import 'package:project1/app/chatting/chat_main_page.dart';
 import 'package:project1/app/myinfo/block_page.dart';
 import 'package:project1/app/myinfo/myinfo_page.dart';
 import 'package:project1/app/setting/alram_setting_page.dart';
@@ -269,16 +267,6 @@ abstract class AppPages {
     //   ),
     // ),
 
-    GetPage(
-      name: '/SupaTestPage',
-      page: () => const SupaTestPage(),
-      // transition: Transition.downToUp,
-    ),
-    GetPage(
-      name: '/ChatMainApp',
-      page: () => ChatMainApp(scrollController: ScrollController()),
-      // transition: Transition.downToUp,
-    ),
     GetPage(
       name: '/FavoriteAreaPage',
       page: () => const FavoriteAreaPage(),

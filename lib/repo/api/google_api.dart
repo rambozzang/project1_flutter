@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:project1/repo/api/chat_api.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/google_join_data.dart';
@@ -54,11 +53,6 @@ class GoogleApi with SecureStorage {
 
       // 채팅서버 회원가입
       // googleJoinData.chatId = await chatSignUp(googleJoinData);
-      // 채팅서버 회원가입
-      ChatApi chatApi = ChatApi();
-      googleJoinData.chatId = await chatApi.chatSignUp(
-          googleJoinData.email ?? '', googleJoinData.uid.toString(), googleJoinData.displayName ?? '', googleJoinData.photoURL ?? '');
-
       // deviceID 생성
       googleJoinData.deviceId = const Uuid().v4();
       saveDeviceId(googleJoinData.deviceId.toString());

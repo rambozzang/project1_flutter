@@ -1,16 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
-import 'package:get/get.dart';
-import 'package:project1/app/chatting/chat_room_page.dart';
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
 import 'package:project1/firebase_options.dart';
 import 'package:project1/route/app_route.dart';
 import 'package:project1/utils/StringUtils.dart';
@@ -56,19 +51,6 @@ void _processMessageData(Map<String, dynamic> messageData) async {
   if (messageData["alramCd"] == '30') {
     Future.delayed(const Duration(milliseconds: 300), () => AppPages.goRoute('30', '', null, reportId: reportId));
     return;
-  }
-
-  // 대화하기인 경우
-  if (messageData["alramCd"] == '07') {
-    types.User otherUser = types.User(
-      id: messageData["senderCustId"].toString(),
-      firstName: messageData["senderNickNm"].toString(),
-      imageUrl: messageData["senderProfilePath"].toString(),
-    );
-
-    final room = await SupabaseChatCore.instance.createRoom(otherUser);
-
-    Future.delayed(const Duration(milliseconds: 300), () async => Get.to(ChatPage(room: room)));
   }
 
   if (boardId == "" || boardId == null || boardId == 'null') {
@@ -188,11 +170,6 @@ class FirebaseService {
     Lo.g("onMessage body 1");
 
     String alramCd = message.data["alramCd"] ?? '99';
-    // 채팅중인 경우는 노티를 띄우지 않는다. - 보낸사람과 채팅중일때로 수정이 필요함.
-    // #### 07번일때는 senderCustId 는 chatId 로 넘어온다. ####
-    if (alramCd == '07' && Get.currentRoute == '/ChatPage' && message.data["senderCustId"] == AuthCntr.to.currentChatId) {
-      return;
-    }
     Lo.g("onMessage body 2");
 
     // 포그라운드에서 알람 07 일때 채널명을 완전 썡뚱맞는걸로 하니 노티가 안뜨고 상태바에서만 들어옴.
@@ -255,19 +232,6 @@ class FirebaseService {
         return;
       }
 
-      // 대화하기인 경우
-      // 대화하기인 경우
-      if (message.data["alramCd"] == '07') {
-        types.User otherUser = types.User(
-          id: message.data["senderCustId"].toString(),
-          firstName: message.data["senderNickNm"].toString(),
-          imageUrl: message.data["senderProfilePath"].toString(),
-        );
-
-        final room = await SupabaseChatCore.instance.createRoom(otherUser);
-        Get.to(ChatPage(room: room));
-      }
-
       if (boardId == "" || boardId == null || boardId == 'null') {
         return;
       }
@@ -297,20 +261,6 @@ class FirebaseService {
     if (message.data["alramCd"] == '30') {
       Future.delayed(const Duration(milliseconds: 1500), () => AppPages.goRoute('30', '', null, reportId: reportId));
       return;
-    }
-
-    // 대화하기인 경우
-    // 대화하기인 경우
-    if (message.data["alramCd"] == '07') {
-      types.User otherUser = types.User(
-        id: message.data["senderCustId"].toString(),
-        firstName: message.data["senderNickNm"].toString(),
-        imageUrl: message.data["senderProfilePath"].toString(),
-      );
-
-      final room = await SupabaseChatCore.instance.createRoom(otherUser);
-
-      Future.delayed(const Duration(milliseconds: 3000), () async => Get.to(ChatPage(room: room)));
     }
 
     if (boardId == "" || boardId == null || boardId == 'null') {

@@ -355,15 +355,6 @@ class _SettingPageState extends State<SettingPage> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SettingsItem(
-                        onTap: () => Get.toNamed('/SupaTestPage'),
-                        icons: CupertinoIcons.link_circle,
-                        title: "SupaTestPage",
-                        titleStyle: const TextStyle(
-                          color: Colors.red,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
                       //
                     ]
                   ],

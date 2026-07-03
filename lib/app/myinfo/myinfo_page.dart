@@ -16,8 +16,6 @@ import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/board/data/cust_count_data.dart';
-import 'package:project1/repo/chatting/chat_repo.dart';
-import 'package:project1/repo/chatting/data/update_data.dart';
 import 'package:project1/repo/cloudflare/direct_upload_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
@@ -368,14 +366,6 @@ class _MyPageState extends State<MyPage>
 
     Utils.alert('프로필 사진이 변경되었습니다.');
     getCountData();
-
-    // chatting 서버 이미지도 변경한다.
-    ChatRepo chatRepo = ChatRepo();
-    ChatUpdateData chatUpdateData = ChatUpdateData();
-    chatUpdateData.firstName = AuthCntr.to.resLoginData.value.nickNm;
-    chatUpdateData.uid = AuthCntr.to.resLoginData.value.chatId.toString();
-    chatUpdateData.imageUrl = resthumbnail;
-    chatRepo.updateUserino(chatUpdateData);
   }
 
   // 이미지 서버에 저장

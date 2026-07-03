@@ -7,8 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:project1/app/chatting/chat_room_page.dart';
-import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/app/weather/widgets/customShimmer.dart';
 import 'package:project1/repo/board/board_repo.dart';
@@ -25,7 +23,6 @@ import 'package:project1/utils/utils.dart';
 import 'package:image_picker/image_picker.dart';
 // import 'package:flutter_image_compress/flutter_image_compress.dart';
 
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:project1/widget/custom_button.dart';
 
 import 'package:rxdart/rxdart.dart';
@@ -372,42 +369,6 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                       onPressed: () => followyn == 'Y' ? cancleFollow(data.custId.toString()) : addFollow(data.custId.toString()),
                     ),
                   ),
-                  const Gap(15),
-                  ValueListenableBuilder<bool>(
-                      valueListenable: isBlocked,
-                      builder: (context, value, snapshot) {
-                        if (value) {
-                          return const SizedBox.shrink();
-                        }
-                        return SizedBox(
-                          width: 90,
-                          child: CustomButton(
-                            text: '대화하기',
-                            type: 'S',
-                            heightValue: 40,
-                            isEnable: true,
-                            onPressed: () async {
-                              types.User otherUser = types.User(
-                                  id: data.chatId.toString(), firstName: data.nickNm.toString(), imageUrl: data.profilePath.toString());
-
-                              final room = await SupabaseChatCore.instance.createRoom(otherUser);
-                              Get.to(ChatPage(room: room));
-                            },
-                            suffixIcon: Padding(
-                              padding: const EdgeInsets.only(left: 3.0),
-                              child: Icon(
-                                value ? Icons.warning : Icons.arrow_circle_right_outlined,
-                                color: Colors.white,
-                                size: 19,
-                              ),
-                            ),
-                            listColors: const [
-                              Colors.indigo,
-                              Colors.indigo,
-                            ],
-                          ),
-                        );
-                      }),
                   const Gap(15),
                   ValueListenableBuilder<bool>(
                       valueListenable: isBlocked,

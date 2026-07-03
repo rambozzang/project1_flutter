@@ -6,6 +6,15 @@
 
 ## 2026-07-03
 
+### 22:52 | claude | ✅ 완료 (Supabase/채팅 코드 전면 삭제)
+**작업**: "Supabase 코드 다 지운 거 아니냐" 질문 계기로 전수 조사 → 실제로는 여전히 초기화·실행 중이었음 → 사용자 확인 후 전면 삭제
+- **발견한 실제 문제**: `root_page.dart`가 앱 켤 때마다 3.5초 후 `Supabase.initialize()`를 무조건 호출 → 대상 프로젝트(`tnxglgjtuhrxxokpxphr.supabase.co`)가 DNS조차 안 되는 죽은 프로젝트라 `AuthRetryableFetchException`이 **잡히지 않는 예외**로 계속 발생(로그의 WARNING/ERROR 재현 원인)
+- **살아있던 진입점 2곳** (죽은 기능인데도 실제 실행됨): 다른 사용자 프로필의 "대화하기" 버튼(otherinfo_page), 푸시 알림 alramCd=07 핸들러(firebase_service, 4곳) — 둘 다 `SupabaseChatCore.createRoom()` 호출 시도
+- **삭제**: `lib/app/chatting/`·`lib/repo/chatting/` 폴더 전체, `chat_api.dart`, pubspec의 `supabase_flutter`·`flutter_chat_ui`. 39개 파일·5,050줄 제거
+- **수정한 파일**: root_page(초기화+initSetting), app_route(라우트 2개+import), auth_cntr(죽은 주석블록 5개+currentChatId 필드), myinfo_page/myinfo_modify_page(ChatRepo 호출), otherinfo_page("대화하기" 버튼), firebase_service(alramCd=07 블록 4곳+가드), apple/google/kakao/naver_api(ChatApi 호출 4곳), setting_page(SupaTestPage 디버그메뉴), main.dart(죽은 주석)
+- 부수: root_page의 `UserOnlineStateObserver`(챗팅폴더 소속 래퍼)도 unwrap 처리
+- 검증: flutter analyze lib/ 에러 0, Android debug APK 빌드 성공, iOS debug 빌드 확인 중
+
 ### 21:57 | claude | ✅ 완료 (iOS 빌드 50 심사 취소 → 빌드 51 재제출, altool 키 경로 함정 수정)
 **작업**: 대기 중이던 빌드 50 심사(어제 코드 기준)를 취소하고 오늘 추가된 18개 커밋(앨범 타임라인·미디어상세·QR확대·카메라제스처·지도재작업 등) 전부 포함한 빌드 51로 재제출
 - **취소**: `PATCH /v1/reviewSubmissions/{id}` body `{"attributes":{"canceled":true}}` → WAITING_FOR_REVIEW→CANCELING→COMPLETE. 버전 1.2.0 appStoreState가 DEVELOPER_REJECTED(편집 가능)로 복귀

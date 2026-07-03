@@ -5,8 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
-import 'package:project1/repo/chatting/chat_repo.dart';
-import 'package:project1/repo/chatting/data/update_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
@@ -95,14 +93,6 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
         return;
       }
       Utils.alert('수정되었습니다.');
-
-      // chatting 서버 이미지도 변경한다.
-      ChatRepo chatRepo = ChatRepo();
-      ChatUpdateData chatUpdateData = ChatUpdateData();
-      chatUpdateData.firstName = nickNmController.text;
-      chatUpdateData.uid = AuthCntr.to.resLoginData.value.chatId.toString();
-      chatUpdateData.imageUrl = AuthCntr.to.resLoginData.value.profilePath;
-      chatRepo.updateUserino(chatUpdateData);
 
       Get.find<AuthCntr>().upDateNickNmAndCustName(nickNmController.text, custNmController.text);
 

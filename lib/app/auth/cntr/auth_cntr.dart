@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/auth/privacy_policy_dialog.dart';
-// import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
 import 'package:project1/repo/api/google_api.dart';
 import 'package:project1/repo/api/kakao_api.dart';
 import 'package:project1/repo/api/naver_api.dart';
@@ -17,9 +16,6 @@ import 'package:project1/repo/secure_storge.dart';
 import 'package:project1/utils/StringUtils.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
-// import 'package:supabase_flutter/supabase_flutter.dart';
-// import 'package:gotrue/gotrue.dart' as supa;
-// import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 
 class AuthBinding implements Bindings {
   @override
@@ -37,7 +33,6 @@ class AuthCntr extends GetxController with SecureStorage {
   final RxString custId = "".obs;
   late String fcmId = "";
   String deviceId = "";
-  String currentChatId = "";
 
   //개인정보 처리 동의
   RxBool privacyPolicyAgreed = false.obs;
@@ -102,9 +97,6 @@ class AuthCntr extends GetxController with SecureStorage {
 
       // 앱 실행 시 출석 체크 (비동기, 로그인 흐름 차단 안 함)
       _checkAttendanceAfterLogin();
-
-      // SUPABASE 중단됨 - Supabase 초기화 주석처리
-      // await _initializeSupabaseIfNeeded();
     } catch (e) {
       Lo.g("로그인 에러: $e");
       isLogged.value = false;
@@ -134,15 +126,6 @@ class AuthCntr extends GetxController with SecureStorage {
     }
     return fcmId;
   }
-
-  // SUPABASE 중단됨 - 전체 함수 주석처리
-  /*
-  Future<void> _initializeSupabaseIfNeeded() async {
-    if (resLoginData.value.chatId == '' || resLoginData.value.chatId == null) {
-      await initSupaBaseSession();
-    }
-  }
-  */
 
   Future<bool> showPrivacyPolicyDialog() async {
     bool? result = await Get.dialog<bool>(
@@ -205,85 +188,6 @@ class AuthCntr extends GetxController with SecureStorage {
     });
   }
 
-  // SUPABASE 중단됨 - 전체 함수 주석처리
-  /*
-  Future<void> initSupaBaseSession() async {
-    try {
-      supa.User? supaUser = Supabase.instance.client.auth.currentUser;
-
-      if (supaUser != null) {
-        await updateUserInfo(supaUser.id);
-        return;
-      }
-
-      supaUser = await _trySupabaseLogin();
-
-      supaUser ??= await signUp();
-
-      await updateUserInfo(supaUser.id);
-    } catch (e) {
-      Lo.g('initSupaBaseSession() error: $e');
-      await signUp();
-    }
-  }
-  */
-
-  // SUPABASE 중단됨 - 전체 함수 주석처리
-  /*
-  Future<supa.User?> _trySupabaseLogin() async {
-    try {
-      AuthResponse authRes = await Supabase.instance.client.auth.signInWithPassword(
-        email: resLoginData.value.email,
-        password: resLoginData.value.custId!,
-      );
-      return authRes.session?.user;
-    } catch (e) {
-      Lo.g('Supabase 로그인 실패: $e');
-      return null;
-    }
-  }
-  */
-
-  // SUPABASE 중단됨 - 전체 함수 주석처리
-  /*
-  Future<supa.User> signUp() async {
-    Lo.g("Supabase 회원 가입 시도");
-    try {
-      final response = await Supabase.instance.client.auth.signUp(
-        email: resLoginData.value.email,
-        password: resLoginData.value.custId!,
-      );
-      return response.user!;
-    } catch (e) {
-      Lo.g('Supabase 회원가입 실패: $e');
-      return (await _trySupabaseLogin())!;
-    }
-  }
-  */
-
-  // SUPABASE 중단됨 - 전체 함수 주석처리
-  /*
-  Future<void> updateUserInfo(String chatUid) async {
-    try {
-      String name = resLoginData.value.nickNm ?? resLoginData.value.custNm ?? '';
-      Map<String, dynamic> metadata = {
-        'email': resLoginData.value.email ?? '',
-        'custId': resLoginData.value.custId ?? '',
-        'nickNm': resLoginData.value.nickNm ?? '',
-        'custNm': resLoginData.value.custNm ?? '',
-        'selfId': resLoginData.value.custData?.selfId ?? '',
-      };
-
-      await SupabaseChatCore.instance
-          .updateUser(types.User(id: chatUid, firstName: name, lastName: "", imageUrl: resLoginData.value.profilePath, metadata: metadata));
-
-      await _custRepo.updateChatId(resLoginData.value.custId!, chatUid);
-    } catch (e) {
-      Lo.g('updateUserInfo() error: $e');
-    }
-  }
-  */
-
   Future<void> leave() async {
     try {
       // 진행 상황을 사용자에게 알림
@@ -296,29 +200,7 @@ class AuthCntr extends GetxController with SecureStorage {
         lo.g('Failed to delete customer data');
       }
 
-      // 2. Supabase 사용자 삭제 - 중단됨 주석처리
-      /*
-      final user = SupabaseChatCore.instance.client.auth.currentUser;
-
-      if (user != null) {
-        try {
-          // 잠시보류 대화이력이 있는 사람이 탈퇴를 해서 auth user를 삭제 하면 상대방 rooms 를 못가져오는 오류로 일단 로그오프만 시킴.
-          // Auth Users 먼저 삭제
-          // 모든 방에서 나가기
-          await SupabaseChatCore.instance.leaveAllRooms();
-          final FunctionResponse data = await SupabaseChatCore.instance.client.functions.invoke('delete-user');
-          if (data.status != 200) {
-            lo.g('Failed to delete user: ${data.data}');
-            lo.g('Failed to delete user: ${data.status}');
-          }
-          await SupabaseChatCore.instance.client.auth.signOut();
-        } catch (e) {
-          await SupabaseChatCore.instance.client.auth.signOut();
-        }
-      }
-      */
-
-      // 3. 소셜 로그인 연결 해제 (병렬 처리)
+      // 2. 소셜 로그인 연결 해제 (병렬 처리)
 
       switch (resLoginData.value.provider) {
         case 'KAKAO':

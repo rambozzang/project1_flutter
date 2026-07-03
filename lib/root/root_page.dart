@@ -9,8 +9,6 @@ import 'package:get/get.dart';
 import 'package:project1/app/shared_album/album_list_page.dart';
 import 'package:project1/app/camera/page/camera_awesome_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
-import 'package:project1/app/chatting/lib/flutter_supabase_chat_core.dart';
-import 'package:project1/app/chatting/supabase_options.dart';
 import 'package:project1/app/myinfo/myinfo_page.dart';
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/app/videolist/video_list_page.dart';
@@ -21,7 +19,6 @@ import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/fade_stack.dart';
 import 'package:project1/widget/hide_bottombar.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 // ignore: must_be_immutable
 class RootPage extends StatefulWidget {
@@ -70,15 +67,6 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
 
     // 카메라 목록을 미리 열거해 두어 첫 촬영 화면 진입을 빠르게 한다(비동기).
     CameraUtils.warmUp();
-
-    initSetting();
-  }
-
-  void initSetting() {
-    Future.delayed(const Duration(milliseconds: 3500), () {
-      // 광고 초기화는 main.dart에서 한 번만 수행한다. 여기서는 supabase만 초기화한다.
-      Supabase.initialize(url: supabaseOptions.url, anonKey: supabaseOptions.anonKey);
-    });
   }
 
   Future<void> checkAppVersion() async {
@@ -156,8 +144,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
 
         onGoBack(didPop);
       },
-      child: UserOnlineStateObserver(
-        child: Scaffold(
+      child: Scaffold(
           backgroundColor: Colors.black,
           extendBodyBehindAppBar: true,
           resizeToAvoidBottomInset: false,
@@ -214,9 +201,9 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
           // bottomNavigationBar: Obx(() => HideBottomBar(children: makeBottomItem())),
           // ),
         ),
-      ),
     );
   }
+
 
   void goRecord() {
     // 일반 카메라 진입: 모임 대상 초기화(모임 홈이 아닌 곳에서 올린 글이 모임에 섞이지 않도록).

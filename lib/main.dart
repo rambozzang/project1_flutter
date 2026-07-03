@@ -13,7 +13,6 @@ import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/app/achievement/service/achievement_service.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
-// import 'package:project1/app/chatting/supabase_options.dart';
 import 'package:project1/config/app_theme.dart';
 import 'package:project1/firebase/firebase_service.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
@@ -23,7 +22,6 @@ import 'package:project1/services/weather_notification_service.dart';
 import 'package:project1/widget/global_upload_indicator.dart';
 import 'package:workmanager/workmanager.dart';
 // import 'package:project1/theme/app_theme.dart';
-// import 'package:supabase_flutter/supabase_flutter.dart';
 
 // import com.kakao.sdk.common.util.Utility
 
@@ -59,9 +57,6 @@ void main() async {
   if (Platform.isAndroid) {
     unawaited(Workmanager().initialize(weatherNotiDispatcher));
   }
-
-  // supabase - 현재 중단 상태이므로 주석처리
-  // await Supabase.initialize(url: supabaseOptions.url, anonKey: supabaseOptions.anonKey);
 
   /// flutter run --dart-define=apiKey='Your Api Key'
 //  Gemini.init(  apiKey: const String.fromEnvironment('apiKey'), enableDebugging: true);

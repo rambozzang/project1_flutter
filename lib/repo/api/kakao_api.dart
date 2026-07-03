@@ -1,6 +1,5 @@
 import 'package:flutter/services.dart';
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
-import 'package:project1/repo/api/chat_api.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/kakao_join_data.dart' as Join;
@@ -104,10 +103,6 @@ class KakaoApi with SecureStorage {
       kakaoJoinData.kakaoAccount = kakaoAccount;
       // deviceID 생성
       kakaoJoinData.deviceId = const Uuid().v4();
-      // 채팅서버 회원가입
-      ChatApi chatApi = ChatApi();
-      kakaoJoinData.chatId = await chatApi.chatSignUp(
-          kakaoAccount.email ?? '', kakaoJoinData.id.toString(), profile.nickname ?? '', profile.profileImageUrl ?? '');
       resData.data = kakaoJoinData.id.toString();
 
       res = await repo.createKakaoCust(kakaoJoinData);

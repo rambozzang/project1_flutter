@@ -1,7 +1,6 @@
 import 'package:flutter_naver_login/flutter_naver_login.dart';
 import 'package:flutter_naver_login/interface/types/naver_login_result.dart';
 import 'package:flutter_naver_login/interface/types/naver_login_status.dart';
-import 'package:project1/repo/api/chat_api.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/naver_join_data.dart';
@@ -60,11 +59,6 @@ class NaverApi with SecureStorage {
       // naverJoinData.account =   naverAccount;
       // naverJoinData.deviceId = const Uuid().v4();
       // naverJoinData.chatId = await chatSignUp(result);
-      // 채팅서버 회원가입
-      ChatApi chatApi = ChatApi();
-      naverJoinData.chatId = await chatApi.chatSignUp(
-          naverAccount.email ?? '', naverAccount.id.toString(), naverAccount.nickname ?? '', naverAccount.profileImage ?? '');
-
       ResData res = await repo.createNaverCust(naverJoinData);
 
       if (res.code != "00") {

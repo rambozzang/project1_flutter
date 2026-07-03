@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:project1/repo/api/chat_api.dart';
 import 'package:project1/repo/cust/data/apple_join_data.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -67,11 +66,6 @@ class AppleApi with SecureStorage {
       saveDeviceId(appleJoinData.deviceId.toString());
 
       // appleJoinData.chatId = await chatSignUp(appleJoinData);
-      // 채팅서버 회원가입
-      ChatApi chatApi = ChatApi();
-      appleJoinData.chatId =
-          await chatApi.chatSignUp(appleJoinData.email ?? '', appleJoinData.uid.toString(), appleJoinData.displayName ?? '', '');
-
       CustRepo repo = CustRepo();
       ResData res = await repo.createAppleCust(appleJoinData);
       if (res.code != "00") {
