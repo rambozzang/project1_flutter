@@ -382,4 +382,18 @@ class CommunityRepo {
       return (false, '표지 변경 중 오류가 발생했습니다: $e');
     }
   }
+
+  /// 닉네임으로 사용자 검색(앨범 초대용) — [{custId, nickNm, profilePath}]
+  Future<List<Map<String, dynamic>>> searchUsersByNick(String keyword) async {
+    try {
+      final dio = await AuthDio.instance.getDio();
+      final res = await dio.get('${UrlConfig.baseURL}/cust/searchNick', queryParameters: {'keyword': keyword});
+      final data = AuthDio.instance.dioResponse(res);
+      if (data.code != '00' || data.data is! List) return [];
+      return (data.data as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (e) {
+      lo.g('searchUsersByNick error: $e');
+      return [];
+    }
+  }
 }

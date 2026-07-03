@@ -10,6 +10,7 @@ import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/widget/sa_gradient_button.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
+import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/community/community_repo.dart';
 import 'package:project1/repo/community/data/community_invite_info_data.dart';
 import 'package:project1/repo/community/data/community_member_data.dart';
@@ -57,12 +58,13 @@ class _AlbumInvitePageState extends State<AlbumInvitePage> {
   Future<void> _load() async {
     final String myCustId = AuthCntr.to.resLoginData.value.custId.toString();
     try {
-      final results = await Future.wait([
-        _repo.getInviteInfo(_communityId),
-        _boardRepo.getFollowList(1, myCustId),
-        _boardRepo.getFollowList(2, myCustId),
-        _repo.getMembers(_communityId),
-        if (_isManager) _repo.getInvitedMembers(_communityId),
+      // 하나가 실패해도 나머지(QR·링크·멤버)는 반드시 표시되도록 개별 예외 흡수
+      final results = await Future.wait<dynamic>([
+        _repo.getInviteInfo(_communityId).catchError((_) => null),
+        _boardRepo.getFollowList(1, myCustId).catchError((_) => ResData()..code = '99'),
+        _boardRepo.getFollowList(2, myCustId).catchError((_) => ResData()..code = '99'),
+        _repo.getMembers(_communityId).catchError((_) => <CommunityMemberData>[]),
+        if (_isManager) _repo.getInvitedMembers(_communityId).catchError((_) => <CommunityMemberData>[]),
       ]);
       _invite = results[0] as CommunityInviteInfoData?;
       // 팔로워(1)+팔로잉(2) 합쳐 custId 기준 중복 제거(기존 초대 화면과 동일 규칙)
@@ -89,6 +91,32 @@ class _AlbumInvitePageState extends State<AlbumInvitePage> {
 
   bool _isMember(String custId) => _members.any((m) => m.custId == custId);
   bool _isInvited(String custId) => _pendingInvites.any((m) => m.custId == custId);
+
+  // ── 내부 사용자 닉네임 검색(팔로우 없어도 초대 가능) ──
+  final TextEditingController _searchCtrl = TextEditingController();
+  List<BoardWeatherListData> _searchResults = [];
+  bool _searching = false;
+  bool _searched = false;
+
+  Future<void> _runSearch() async {
+    final kw = _searchCtrl.text.trim();
+    if (kw.length < 2) {
+      BotToast.showText(text: '닉네임을 2자 이상 입력해주세요.');
+      return;
+    }
+    setState(() => _searching = true);
+    final list = await _repo.searchUsersByNick(kw);
+    if (!mounted) return;
+    final String myCustId = AuthCntr.to.resLoginData.value.custId.toString();
+    setState(() {
+      _searched = true;
+      _searching = false;
+      _searchResults = list
+          .where((m) => m['custId']?.toString() != myCustId)
+          .map((m) => BoardWeatherListData.fromMap(m))
+          .toList();
+    });
+  }
 
   Future<void> _invitePerson(String custId, {bool resend = false}) async {
     if (_sending.contains(custId)) return;
@@ -135,8 +163,70 @@ class _AlbumInvitePageState extends State<AlbumInvitePage> {
                             onTap: () => Share.share(_invite?.shareText ?? _inviteLink),
                           ),
                           const SizedBox(height: 24),
-                          _sectionHeader('팔로우에서 초대', _people.length),
+                          _sectionHeader('친구 찾아 초대', _searched ? _searchResults.length : _people.length),
                           const SizedBox(height: 8),
+                          // 닉네임 검색 — 팔로우가 없어도 앱 사용자를 직접 찾아 초대
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _searchCtrl,
+                                  onSubmitted: (_) => _runSearch(),
+                                  textInputAction: TextInputAction.search,
+                                  style: SaText.bodyMedium,
+                                  decoration: InputDecoration(
+                                    hintText: '닉네임으로 검색 (2자 이상)',
+                                    hintStyle: SaText.caption,
+                                    isDense: true,
+                                    filled: true,
+                                    fillColor: SaColors.surface,
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                                    enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(color: SaColors.border)),
+                                    focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(color: SaColors.accentTeal)),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: _runSearch,
+                                child: Container(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    gradient: SaColors.primaryGradient,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: _searching
+                                      ? const Padding(
+                                          padding: EdgeInsets.all(12),
+                                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                      : PhosphorIcon(PhosphorIconsBold.magnifyingGlass, size: 18, color: SaColors.onAccent),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          if (_searched) ...[
+                            if (_searchResults.isEmpty)
+                              Text('검색 결과가 없어요. 닉네임을 다시 확인해주세요.', style: SaText.body.copyWith(fontSize: 12.5))
+                            else
+                              for (final p in _searchResults) _personRow(p),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton(
+                                onPressed: () => setState(() {
+                                  _searched = false;
+                                  _searchResults = [];
+                                  _searchCtrl.clear();
+                                }),
+                                child: Text('검색 지우고 팔로우 목록 보기', style: SaText.caption),
+                              ),
+                            ),
+                          ] else ...[
                           if (_people.isEmpty)
                             Container(
                               padding: const EdgeInsets.all(14),
@@ -153,6 +243,7 @@ class _AlbumInvitePageState extends State<AlbumInvitePage> {
                             )
                           else
                             for (final p in _people.take(20)) _personRow(p),
+                          ],
                           const SizedBox(height: 24),
                           _sectionHeader('현재 멤버', _members.length),
                           const SizedBox(height: 8),
