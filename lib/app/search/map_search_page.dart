@@ -79,62 +79,74 @@ class _MapSearchPageState extends State<MapSearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    final double top = MediaQuery.of(context).padding.top + 10;
+    final double topInset = MediaQuery.of(context).padding.top;
     return Positioned(
-      top: top,
-      left: 12,
-      right: 12,
+      top: 0,
+      left: 0,
+      right: 0,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 검색 pill
-          Material(
-            elevation: 3,
-            borderRadius: BorderRadius.circular(14),
-            shadowColor: Colors.black26,
-            child: Container(
-              height: 48,
-              padding: const EdgeInsets.only(left: 2, right: 8),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: Colors.black87),
-                    onPressed: () => Get.back(),
-                  ),
-                  Expanded(
-                    child: TextField(
-                      controller: _ctrl,
-                      focusNode: _focus,
-                      onChanged: _onChanged,
-                      textInputAction: TextInputAction.search,
-                      onSubmitted: (q) => _search(q.trim()),
-                      style: const TextStyle(fontSize: 15, color: Colors.black),
-                      decoration: const InputDecoration(
-                        hintText: '장소·주소 검색',
-                        hintStyle: TextStyle(color: Colors.black38, fontSize: 15),
-                        border: InputBorder.none,
-                        isCollapsed: true,
-                      ),
+          // 상단 고정 검색 바 — 상태바 영역까지 흰색으로 채워 지도 위에 '붕 뜬' 느낌 제거.
+          Container(
+            padding: EdgeInsets.only(top: topInset + 6, bottom: 8, left: 4, right: 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, 2))],
+            ),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: Colors.black87),
+                  onPressed: () => Get.back(),
+                ),
+                Expanded(
+                  child: Container(
+                    height: 42,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F3F6),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.search_rounded, color: Colors.black45, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _ctrl,
+                            focusNode: _focus,
+                            onChanged: _onChanged,
+                            textInputAction: TextInputAction.search,
+                            onSubmitted: (q) => _search(q.trim()),
+                            style: const TextStyle(fontSize: 15, color: Colors.black),
+                            decoration: const InputDecoration(
+                              hintText: '장소·주소 검색',
+                              hintStyle: TextStyle(color: Colors.black38, fontSize: 15),
+                              border: InputBorder.none,
+                              isCollapsed: true,
+                            ),
+                          ),
+                        ),
+                        if (_ctrl.text.isNotEmpty)
+                          GestureDetector(
+                            onTap: () {
+                              _ctrl.clear();
+                              setState(() => _results = []);
+                            },
+                            child: const Icon(Icons.close_rounded, size: 18, color: Colors.black45),
+                          ),
+                      ],
                     ),
                   ),
-                  _ctrl.text.isEmpty
-                      ? const Icon(Icons.search_rounded, color: Colors.black45)
-                      : IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 20, color: Colors.black45),
-                          onPressed: () {
-                            _ctrl.clear();
-                            setState(() => _results = []);
-                          },
-                        ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           // 검색 결과
           if (_results.isNotEmpty)
             Container(
-              margin: const EdgeInsets.only(top: 6),
+              margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
               constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.42),
               decoration: BoxDecoration(
                 color: Colors.white,
