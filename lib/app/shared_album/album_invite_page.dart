@@ -306,6 +306,50 @@ class _AlbumInvitePageState extends State<AlbumInvitePage> {
     );
   }
 
+  // QR 크게 보기 — 상대가 카메라로 스캔하기 쉽게 확대
+  void _showBigQr() {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.7),
+      builder: (context) => GestureDetector(
+        onTap: () => Navigator.of(context).pop(),
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.all(32),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(_albumName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: SaText.titleS.copyWith(color: const Color(0xFF17222E))),
+                const SizedBox(height: 4),
+                Text('QR을 스캔해 앨범에 참여하세요',
+                    style: SaText.mono(fontSize: 10, color: const Color(0xFF5C6C7E))),
+                const SizedBox(height: 20),
+                QrImageView(
+                  data: _inviteLink,
+                  version: QrVersions.auto,
+                  size: 240,
+                  padding: EdgeInsets.zero,
+                  backgroundColor: Colors.white,
+                ),
+                const SizedBox(height: 18),
+                Text(_invite?.inviteCode ?? '',
+                    style: SaText.mono(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF17222E), letterSpacingEm: 0.18)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   // 초대 링크 카드 + QR 카드 나란히
   Widget _buildInviteCards() {
     // ListView(무한 높이) 안에서 Row(stretch)는 '무한 높이 강제' 크래시.
@@ -354,29 +398,32 @@ class _AlbumInvitePageState extends State<AlbumInvitePage> {
           ),
         ),
         const SizedBox(width: 10),
-        // QR 카드 — 스캔 대비를 위해 흰 배경
+        // QR 카드 — 스캔 대비를 위해 흰 배경. 탭 시 크게 보기
         Expanded(
           flex: 2,
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                QrImageView(
-                  data: _inviteLink,
-                  version: QrVersions.auto,
-                  size: 92,
-                  padding: EdgeInsets.zero,
-                  backgroundColor: Colors.white,
-                ),
-                const SizedBox(height: 6),
-                Text('QR로 초대',
-                    style: SaText.mono(fontSize: 9, color: const Color(0xFF04121A))),
-              ],
+          child: GestureDetector(
+            onTap: _showBigQr,
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  QrImageView(
+                    data: _inviteLink,
+                    version: QrVersions.auto,
+                    size: 92,
+                    padding: EdgeInsets.zero,
+                    backgroundColor: Colors.white,
+                  ),
+                  const SizedBox(height: 6),
+                  Text('QR 크게 보기',
+                      style: SaText.mono(fontSize: 9, color: const Color(0xFF04121A))),
+                ],
+              ),
             ),
           ),
         ),
