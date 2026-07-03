@@ -33,9 +33,10 @@ class SaGlassChip extends StatelessWidget {
         child: Container(
           padding: padding,
           decoration: BoxDecoration(
+            // 사진 위 다크 글래스 — 라이트 모드와 무관하게 흰 텍스트/화이트 보더 고정
             color: Colors.black.withOpacity(0.28),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: SaColors.borderStrong, width: 1),
+            border: Border.all(color: SaColorsDark.borderStrong, width: 1),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -47,8 +48,8 @@ class SaGlassChip extends StatelessWidget {
               Text(
                 label,
                 style: mono
-                    ? SaText.mono(fontSize: 11, color: SaColors.textPrimary)
-                    : SaText.caption.copyWith(color: SaColors.textPrimary, fontSize: 12),
+                    ? SaText.mono(fontSize: 11, color: Colors.white)
+                    : SaText.caption.copyWith(color: Colors.white, fontSize: 12),
               ),
             ],
           ),

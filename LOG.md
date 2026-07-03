@@ -6,6 +6,15 @@
 
 ## 2026-07-03
 
+### 10:15 | claude | ✅ 완료 (앨범 라이트모드 지원 — 시스템 밝기 추종)
+**작업**: 다크 전용이던 앨범(shared_album) 화면 전체에 라이트모드 추가
+- **구조**: `SaColors`를 static const → 모드 전환 getter로 재작성(참조 문법 `SaColors.x` 유지). 라이트 팔레트 신규(bgBase #F4F7FB, surface white, 딥틸 #00B3A4, 잉크 #17222E 등). `SaText`도 getter화. 다크 원본은 `SaColorsDark`로 분리
+- **모드 소스**: 시스템 밝기 추종 — 각 페이지 build 최상단 `SaColors.syncWith(context)`(platformBrightness 구독이라 시스템 테마 변경 시 자동 rebuild). 상태바 아이콘도 모드별 전환
+- **몰입뷰(1e)는 다크 고정**: SaColorsDark 직접 참조로 핀 — 영상 전체화면은 라이트에서도 어둡게(업계 관례)
+- **사진 위 오버레이는 모드 무관 고정**: 글래스 칩 텍스트/보더, 카드 재생 버튼 → 흰색 고정. 라이트에서 안 보이던 divider 2곳 → SaColors.border
+- const 컨텍스트 79곳 해제(스크립트 자동), 아바타 스택 ringColor 기본값 nullable화
+- 검증: analyze 에러 0, Android 디버그 빌드 성공. **실기기에서 시스템 라이트/다크 전환하며 화면별 육안 확인 필요**
+
 ### 09:55 | claude | ✅ 완료 (카카오톡 인앱 브라우저에서 초대장 버튼 미동작 수정 — 백엔드 4c32af9)
 **작업**: 카톡으로 초대 링크 공유 시 인앱 브라우저(WebView)가 커스텀 스킴(skysnap://)·스토어 이동을 차단해 '앱에서 참여하기'가 무반응이던 문제
 - **카카오톡**: 진입 즉시 `kakaotalk://web/openExternal?url=` 스킴으로 기본 브라우저로 자동 이동(+ CTA가 재시도 버튼 역할). 기본 브라우저에서는 모든 버튼 정상

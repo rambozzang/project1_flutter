@@ -216,9 +216,9 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
         statusBarBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: SaColors.bgBase,
+        backgroundColor: SaColorsDark.bgBase,
         body: _items.isEmpty
-            ? const Center(child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal))
+            ? Center(child: CircularProgressIndicator(strokeWidth: 2, color: SaColorsDark.accentTeal))
             : Stack(
                 children: [
                   // 풀스크린 미디어(세로 스와이프) — SafeArea 없이 화면 전체
@@ -316,7 +316,7 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
           opacity: opacity.clamp(0.0, 1.0),
           child: Transform.scale(
             scale: scale,
-            child: const PhosphorIcon(PhosphorIconsFill.heart, size: 96, color: SaColors.accentPink),
+            child: PhosphorIcon(PhosphorIconsFill.heart, size: 96, color: SaColorsDark.accentPink),
           ),
         );
       },
@@ -336,21 +336,21 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
           decoration: BoxDecoration(
             color: Colors.black.withOpacity(0.28),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: SaColors.borderStrong),
+            border: Border.all(color: SaColorsDark.borderStrong),
           ),
           child: Row(
             children: [
               GestureDetector(
                 onTap: () => Get.back(),
-                child: const Padding(
+                child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                  child: PhosphorIcon(PhosphorIconsBold.squaresFour, size: 13, color: SaColors.textSecondary),
+                  child: PhosphorIcon(PhosphorIconsBold.squaresFour, size: 13, color: SaColorsDark.textSecondary),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                decoration: BoxDecoration(color: SaColors.accentTeal, borderRadius: BorderRadius.circular(999)),
-                child: const PhosphorIcon(PhosphorIconsBold.frameCorners, size: 13, color: SaColors.onAccent),
+                decoration: BoxDecoration(color: SaColorsDark.accentTeal, borderRadius: BorderRadius.circular(999)),
+                child: PhosphorIcon(PhosphorIconsBold.frameCorners, size: 13, color: SaColorsDark.onAccent),
               ),
             ],
           ),
@@ -368,9 +368,9 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
         decoration: BoxDecoration(
           color: Colors.black.withOpacity(0.28),
           shape: BoxShape.circle,
-          border: Border.all(color: SaColors.borderStrong),
+          border: Border.all(color: SaColorsDark.borderStrong),
         ),
-        child: PhosphorIcon(icon, size: 16, color: SaColors.textPrimary),
+        child: PhosphorIcon(icon, size: 16, color: SaColorsDark.textPrimary),
       ),
     );
   }
@@ -388,7 +388,7 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
             height: i == _index ? 6 : 4,
             margin: const EdgeInsets.symmetric(vertical: 2.5),
             decoration: BoxDecoration(
-              color: i == _index ? SaColors.accentTeal : Colors.white.withOpacity(0.35),
+              color: i == _index ? SaColorsDark.accentTeal : Colors.white.withOpacity(0.35),
               shape: BoxShape.circle,
             ),
           ),
@@ -413,16 +413,16 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
             child: ClipOval(
               child: (item.profilePath ?? '').isNotEmpty
                   ? CachedNetworkImage(imageUrl: item.profilePath!, fit: BoxFit.cover)
-                  : const ColoredBox(
-                      color: SaColors.surfaceElevated,
-                      child: Icon(Icons.person, size: 22, color: SaColors.textTertiary)),
+                  : ColoredBox(
+                      color: SaColorsDark.surfaceElevated,
+                      child: Icon(Icons.person, size: 22, color: SaColorsDark.textTertiary)),
             ),
           ),
         ),
         const SizedBox(height: 18),
         _railButton(
           icon: PhosphorIconsFill.heart,
-          color: liked ? SaColors.accentPink : Colors.white,
+          color: liked ? SaColorsDark.accentPink : Colors.white,
           label: _fmtCount(item.likeCnt),
           onTap: () => _toggleLike(item),
         ),
@@ -483,7 +483,8 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
               child: Text(item.nickNm ?? item.custNm ?? '',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: SaText.titleS.copyWith(fontSize: 16, fontWeight: FontWeight.w800)),
+                  // 몰입뷰는 항상 다크 — 모드 무관 흰색 고정(영상 위 텍스트)
+                  style: SaText.titleS.copyWith(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
             ),
             const SizedBox(width: 8),
             if ((item.crtDtm ?? '').isNotEmpty)
@@ -501,7 +502,7 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
           const SizedBox(height: 10),
           SaGlassChip(
             label: weatherParts.join(' · '),
-            icon: const PhosphorIcon(PhosphorIconsFill.cloudRain, size: 12, color: SaColors.textPrimary),
+            icon: PhosphorIcon(PhosphorIconsFill.cloudRain, size: 12, color: SaColorsDark.textPrimary),
           ),
         ],
       ],
@@ -524,7 +525,7 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
                     : v.value.position.inMilliseconds / v.value.duration.inMilliseconds,
                 minHeight: 3,
                 backgroundColor: Colors.white.withOpacity(0.18),
-                valueColor: const AlwaysStoppedAnimation<Color>(SaColors.accentTeal),
+                valueColor: AlwaysStoppedAnimation<Color>(SaColorsDark.accentTeal),
               ),
             ),
           ),

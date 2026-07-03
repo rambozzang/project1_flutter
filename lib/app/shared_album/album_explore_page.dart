@@ -103,11 +103,11 @@ class _AlbumExplorePageState extends State<AlbumExplorePage> {
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: SaColors.borderStrong),
+                  borderSide: BorderSide(color: SaColors.borderStrong),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: SaColors.accentTeal),
+                  borderSide: BorderSide(color: SaColors.accentTeal),
                 ),
               ),
             ),
@@ -138,11 +138,12 @@ class _AlbumExplorePageState extends State<AlbumExplorePage> {
 
   @override
   Widget build(BuildContext context) {
+    SaColors.syncWith(context); // 시스템 밝기에 맞춰 다크/라이트 팔레트 동기화
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
+        statusBarIconBrightness: SaColors.isLight ? Brightness.dark : Brightness.light,
+        statusBarBrightness: SaColors.isLight ? Brightness.light : Brightness.dark,
       ),
       child: PopScope(
         canPop: false,
@@ -181,7 +182,7 @@ class _AlbumExplorePageState extends State<AlbumExplorePage> {
                 shape: BoxShape.circle,
                 border: Border.all(color: SaColors.borderStrong),
               ),
-              child: const PhosphorIcon(PhosphorIconsBold.caretLeft, size: 16, color: SaColors.textPrimary),
+              child: PhosphorIcon(PhosphorIconsBold.caretLeft, size: 16, color: SaColors.textPrimary),
             ),
           ),
           const SizedBox(width: 12),
@@ -202,7 +203,7 @@ class _AlbumExplorePageState extends State<AlbumExplorePage> {
         decoration: InputDecoration(
           hintText: '앨범 이름으로 검색 (비우면 인기순 추천)',
           hintStyle: SaText.body.copyWith(fontSize: 13, color: SaColors.textTertiary),
-          prefixIcon: const Padding(
+          prefixIcon: Padding(
             padding: EdgeInsets.all(12),
             child: PhosphorIcon(PhosphorIconsBold.magnifyingGlass, size: 16, color: SaColors.textSecondary),
           ),
@@ -212,11 +213,11 @@ class _AlbumExplorePageState extends State<AlbumExplorePage> {
           contentPadding: const EdgeInsets.symmetric(vertical: 12),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(13),
-            borderSide: const BorderSide(color: SaColors.borderStrong),
+            borderSide: BorderSide(color: SaColors.borderStrong),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(13),
-            borderSide: const BorderSide(color: SaColors.accentTeal),
+            borderSide: BorderSide(color: SaColors.accentTeal),
           ),
         ),
       ),
@@ -237,11 +238,11 @@ class _AlbumExplorePageState extends State<AlbumExplorePage> {
           ),
           child: Row(
             children: [
-              const PhosphorIcon(PhosphorIconsBold.keyhole, size: 15, color: SaColors.accentTeal),
+              PhosphorIcon(PhosphorIconsBold.keyhole, size: 15, color: SaColors.accentTeal),
               const SizedBox(width: 10),
               Text('초대 코드로 참여하기', style: SaText.bodyMedium.copyWith(fontSize: 13)),
               const Spacer(),
-              const PhosphorIcon(PhosphorIconsBold.caretRight, size: 13, color: SaColors.textTertiary),
+              PhosphorIcon(PhosphorIconsBold.caretRight, size: 13, color: SaColors.textTertiary),
             ],
           ),
         ),
@@ -251,14 +252,14 @@ class _AlbumExplorePageState extends State<AlbumExplorePage> {
 
   Widget _buildResults() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal));
+      return Center(child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal));
     }
     if (_results.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const PhosphorIcon(PhosphorIconsBold.magnifyingGlass, size: 40, color: SaColors.textTertiary),
+            PhosphorIcon(PhosphorIconsBold.magnifyingGlass, size: 40, color: SaColors.textTertiary),
             const SizedBox(height: 12),
             Text('검색 결과가 없어요', style: SaText.titleS.copyWith(fontSize: 14.5)),
             const SizedBox(height: 4),
@@ -322,7 +323,7 @@ class _AlbumExplorePageState extends State<AlbumExplorePage> {
 
   Widget _joinButton(CommunityData c, bool busy) {
     if (busy) {
-      return const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal));
+      return SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal));
     }
     if (c.isJoined) return Text('멤버', style: SaText.mono(fontSize: 10));
     if (c.isPending) return Text('신청됨', style: SaText.mono(fontSize: 10, color: SaColors.warn));

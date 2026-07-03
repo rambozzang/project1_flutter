@@ -219,11 +219,12 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    SaColors.syncWith(context); // 시스템 밝기에 맞춰 다크/라이트 팔레트 동기화
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
+        statusBarIconBrightness: SaColors.isLight ? Brightness.dark : Brightness.light,
+        statusBarBrightness: SaColors.isLight ? Brightness.light : Brightness.dark,
       ),
       child: Scaffold(
         backgroundColor: SaColors.bgBase,
@@ -239,7 +240,7 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
         body: SafeArea(
           bottom: false,
           child: _loading
-              ? const Center(child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal))
+              ? Center(child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal))
               : Column(
                   children: [
                     _buildAppBar(),
@@ -415,11 +416,11 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
               color: SaColors.accentTeal,
               borderRadius: BorderRadius.circular(999),
             ),
-            child: const PhosphorIcon(PhosphorIconsFill.squaresFour, size: 13, color: SaColors.onAccent),
+            child: PhosphorIcon(PhosphorIconsFill.squaresFour, size: 13, color: SaColors.onAccent),
           ),
           GestureDetector(
             onTap: () => _openImmersive(),
-            child: const Padding(
+            child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 9, vertical: 5),
               child: PhosphorIcon(PhosphorIconsBold.frameCorners, size: 13, color: SaColors.textSecondary),
             ),
@@ -437,7 +438,7 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
           padding: const EdgeInsets.only(top: 60),
           child: Column(
             children: [
-              const PhosphorIcon(PhosphorIconsFill.images, size: 40, color: SaColors.textTertiary),
+              PhosphorIcon(PhosphorIconsFill.images, size: 40, color: SaColors.textTertiary),
               const SizedBox(height: 12),
               Text(
                 _canPost ? '아직 미디어가 없어요.\n첫 순간을 올려보세요!' : '아직 미디어가 없어요.',
@@ -479,11 +480,11 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
               CachedNetworkImage(
                 imageUrl: item.thumbnailPath!,
                 fit: BoxFit.cover,
-                placeholder: (_, __) => const ColoredBox(color: SaColors.surfaceElevated),
-                errorWidget: (_, __, ___) => const ColoredBox(color: SaColors.surfaceElevated),
+                placeholder: (_, __) => ColoredBox(color: SaColors.surfaceElevated),
+                errorWidget: (_, __, ___) => ColoredBox(color: SaColors.surfaceElevated),
               )
             else
-              const ColoredBox(color: SaColors.surfaceElevated),
+              ColoredBox(color: SaColors.surfaceElevated),
             Positioned(
               right: 6,
               bottom: 6,

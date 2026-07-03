@@ -135,11 +135,12 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
 
   @override
   Widget build(BuildContext context) {
+    SaColors.syncWith(context); // 시스템 밝기에 맞춰 다크/라이트 팔레트 동기화
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
+        statusBarIconBrightness: SaColors.isLight ? Brightness.dark : Brightness.light,
+        statusBarBrightness: SaColors.isLight ? Brightness.light : Brightness.dark,
       ),
       child: Scaffold(
         backgroundColor: SaColors.bgBase,
@@ -201,7 +202,7 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
           TextButton(
             onPressed: _saving ? null : _save,
             child: _saving
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal))
+                ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal))
                 : Text('저장', style: SaText.bodyMedium.copyWith(color: SaColors.accentTeal, fontWeight: FontWeight.w800)),
           ),
         ],
@@ -250,10 +251,10 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
                       ? CachedNetworkImage(
                           imageUrl: item.thumbnailPath!,
                           fit: BoxFit.cover,
-                          placeholder: (_, __) => const ColoredBox(color: SaColors.surfaceElevated),
-                          errorWidget: (_, __, ___) => const ColoredBox(color: SaColors.surfaceElevated),
+                          placeholder: (_, __) => ColoredBox(color: SaColors.surfaceElevated),
+                          errorWidget: (_, __, ___) => ColoredBox(color: SaColors.surfaceElevated),
                         )
-                      : const ColoredBox(color: SaColors.surfaceElevated),
+                      : ColoredBox(color: SaColors.surfaceElevated),
                 ),
                 if (selected)
                   Positioned(
@@ -263,7 +264,7 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
                       width: 20,
                       height: 20,
                       alignment: Alignment.center,
-                      decoration: const BoxDecoration(color: SaColors.accentTeal, shape: BoxShape.circle),
+                      decoration: BoxDecoration(color: SaColors.accentTeal, shape: BoxShape.circle),
                       child: Text('${order + 1}',
                           style: SaText.mono(fontSize: 10, fontWeight: FontWeight.w800, color: SaColors.onAccent)),
                     ),
@@ -290,11 +291,11 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(13),
-          borderSide: const BorderSide(color: SaColors.borderStrong),
+          borderSide: BorderSide(color: SaColors.borderStrong),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(13),
-          borderSide: const BorderSide(color: SaColors.accentTeal),
+          borderSide: BorderSide(color: SaColors.accentTeal),
         ),
       ),
     );
@@ -336,7 +337,7 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
                 ),
               ),
               child: gradient == null
-                  ? const Icon(Icons.auto_awesome, size: 16, color: SaColors.textSecondary)
+                  ? Icon(Icons.auto_awesome, size: 16, color: SaColors.textSecondary)
                   : null,
             ),
             const SizedBox(height: 5),
@@ -357,7 +358,7 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
       child: Column(
         children: [
           for (int i = 0; i < _optKeys.length; i++) ...[
-            if (i > 0) Divider(height: 1, color: Colors.white.withOpacity(0.05)),
+            if (i > 0) Divider(height: 1, color: SaColors.border),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               child: Row(
@@ -390,14 +391,14 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
         border: Border.all(color: SaColors.border),
       ),
       child: ListTile(
-        leading: const PhosphorIcon(PhosphorIconsFill.usersThree, size: 20, color: SaColors.textPrimary),
+        leading: PhosphorIcon(PhosphorIconsFill.usersThree, size: 20, color: SaColors.textPrimary),
         title: Text('멤버 관리', style: SaText.bodyMedium.copyWith(fontSize: 13.5)),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text('${_origin.memberCnt}명', style: SaText.mono(fontSize: 11)),
             const SizedBox(width: 6),
-            const PhosphorIcon(PhosphorIconsBold.caretRight, size: 13, color: SaColors.textTertiary),
+            PhosphorIcon(PhosphorIconsBold.caretRight, size: 13, color: SaColors.textTertiary),
           ],
         ),
         onTap: () => Get.toNamed('/CommunityMembersPage', arguments: {'communityId': _origin.communityId}),

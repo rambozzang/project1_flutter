@@ -79,11 +79,11 @@ class SaAlbumMosaicCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const PhosphorIcon(PhosphorIconsFill.users, size: 12, color: SaColors.textTertiary),
+                      PhosphorIcon(PhosphorIconsFill.users, size: 12, color: SaColors.textTertiary),
                       const SizedBox(width: 4),
                       Text('${c.memberCnt}', style: SaText.mono(fontSize: 10)),
                       const SizedBox(width: 10),
-                      const PhosphorIcon(PhosphorIconsFill.play, size: 11, color: SaColors.textTertiary),
+                      PhosphorIcon(PhosphorIconsFill.play, size: 11, color: SaColors.textTertiary),
                       const SizedBox(width: 4),
                       Text('${c.mediaCnt}', style: SaText.mono(fontSize: 10)),
                     ],

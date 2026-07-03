@@ -12,7 +12,7 @@ class SaMemberAvatarStack extends StatelessWidget {
     this.extraCount = 0,
     this.size = 28,
     this.overlap = 10,
-    this.ringColor = SaColors.surface,
+    this.ringColor,
   });
 
   final List<String> avatarUrls;
@@ -20,8 +20,8 @@ class SaMemberAvatarStack extends StatelessWidget {
   final double size;
   final double overlap;
 
-  /// 아바타 테두리(겹침 구분) 색 — 올려지는 배경(surface/카드)과 맞춘다.
-  final Color ringColor;
+  /// 아바타 테두리(겹침 구분) 색 — 올려지는 배경(surface/카드)과 맞춘다. null이면 현재 모드의 surface.
+  final Color? ringColor;
 
   @override
   Widget build(BuildContext context) {
@@ -43,8 +43,8 @@ class SaMemberAvatarStack extends StatelessWidget {
                     width: size - 4,
                     height: size - 4,
                     fit: BoxFit.cover,
-                    placeholder: (_, __) => const ColoredBox(color: SaColors.surfaceElevated),
-                    errorWidget: (_, __, ___) => const ColoredBox(
+                    placeholder: (_, __) => ColoredBox(color: SaColors.surfaceElevated),
+                    errorWidget: (_, __, ___) => ColoredBox(
                       color: SaColors.surfaceElevated,
                       child: Icon(Icons.person, size: 14, color: SaColors.textTertiary),
                     ),
@@ -79,7 +79,7 @@ class SaMemberAvatarStack extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: ringColor),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: ringColor ?? SaColors.surface),
       alignment: Alignment.center,
       child: child,
     );

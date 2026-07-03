@@ -76,10 +76,11 @@ class SaAlbumCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.16),
                           shape: BoxShape.circle,
-                          border: Border.all(color: SaColors.borderStrong),
+                          // 사진 위 오버레이 — 라이트 모드와 무관하게 흰 계열 고정
+                          border: Border.all(color: SaColorsDark.borderStrong),
                         ),
                         child: const PhosphorIcon(PhosphorIconsFill.play,
-                            size: 22, color: SaColors.textPrimary),
+                            size: 22, color: Colors.white),
                       ),
                     ),
                     Positioned(
@@ -111,7 +112,7 @@ class SaAlbumCard extends StatelessWidget {
                     Text(data.lastUpdated!, style: SaText.mono(fontSize: 10.5)),
                   ],
                   const Spacer(),
-                  const PhosphorIcon(PhosphorIconsBold.caretRight, size: 14, color: SaColors.textTertiary),
+                  PhosphorIcon(PhosphorIconsBold.caretRight, size: 14, color: SaColors.textTertiary),
                 ],
               ),
             ],
@@ -127,7 +128,7 @@ class SaAlbumCard extends StatelessWidget {
       child: Container(
         width: 3,
         height: 3,
-        decoration: const BoxDecoration(color: SaColors.textTertiary, shape: BoxShape.circle),
+        decoration: BoxDecoration(color: SaColors.textTertiary, shape: BoxShape.circle),
       ),
     );
   }

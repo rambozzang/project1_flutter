@@ -114,11 +114,12 @@ class _AlbumUploadPageState extends State<AlbumUploadPage> {
 
   @override
   Widget build(BuildContext context) {
+    SaColors.syncWith(context); // 시스템 밝기에 맞춰 다크/라이트 팔레트 동기화
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
+        statusBarIconBrightness: SaColors.isLight ? Brightness.dark : Brightness.light,
+        statusBarBrightness: SaColors.isLight ? Brightness.light : Brightness.dark,
       ),
       child: Scaffold(
         backgroundColor: SaColors.bgBase,
@@ -148,11 +149,11 @@ class _AlbumUploadPageState extends State<AlbumUploadPage> {
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(13),
-                          borderSide: const BorderSide(color: SaColors.borderStrong),
+                          borderSide: BorderSide(color: SaColors.borderStrong),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(13),
-                          borderSide: const BorderSide(color: SaColors.accentTeal),
+                          borderSide: BorderSide(color: SaColors.accentTeal),
                         ),
                       ),
                     ),
@@ -207,7 +208,7 @@ class _AlbumUploadPageState extends State<AlbumUploadPage> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const PhosphorIcon(PhosphorIconsFill.images, size: 13, color: SaColors.accentTeal),
+              PhosphorIcon(PhosphorIconsFill.images, size: 13, color: SaColors.accentTeal),
               const SizedBox(width: 6),
               Text(widget.community.name,
                   style: SaText.caption.copyWith(color: SaColors.textPrimary)),
@@ -244,7 +245,7 @@ class _AlbumUploadPageState extends State<AlbumUploadPage> {
                 border: Border.all(color: SaColors.borderStrong),
                 color: SaColors.surface,
               ),
-              child: const Center(
+              child: Center(
                 child: PhosphorIcon(PhosphorIconsBold.plus, size: 20, color: SaColors.textSecondary),
               ),
             ),
@@ -297,7 +298,7 @@ class _AlbumUploadPageState extends State<AlbumUploadPage> {
       ),
       child: Row(
         children: [
-          const PhosphorIcon(PhosphorIconsFill.mapPin, size: 16, color: SaColors.accentTeal),
+          PhosphorIcon(PhosphorIconsFill.mapPin, size: 16, color: SaColors.accentTeal),
           const SizedBox(width: 10),
           Expanded(
             child: Column(

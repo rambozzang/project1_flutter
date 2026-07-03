@@ -135,11 +135,12 @@ class _AlbumListPageState extends State<AlbumListPage> {
 
   @override
   Widget build(BuildContext context) {
+    SaColors.syncWith(context); // 시스템 밝기에 맞춰 다크/라이트 팔레트 동기화
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
+        statusBarIconBrightness: SaColors.isLight ? Brightness.dark : Brightness.light,
+        statusBarBrightness: SaColors.isLight ? Brightness.light : Brightness.dark,
       ),
       child: Scaffold(
         backgroundColor: SaColors.bgBase,
@@ -193,8 +194,8 @@ class _AlbumListPageState extends State<AlbumListPage> {
             child: Container(
               width: 40,
               height: 40,
-              decoration: const BoxDecoration(gradient: SaColors.primaryGradient, shape: BoxShape.circle),
-              child: const PhosphorIcon(PhosphorIconsBold.plus, size: 17, color: SaColors.onAccent),
+              decoration: BoxDecoration(gradient: SaColors.primaryGradient, shape: BoxShape.circle),
+              child: PhosphorIcon(PhosphorIconsBold.plus, size: 17, color: SaColors.onAccent),
             ),
           ),
         ],
@@ -220,7 +221,7 @@ class _AlbumListPageState extends State<AlbumListPage> {
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(
+      return Center(
         child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal),
       );
     }
@@ -229,7 +230,7 @@ class _AlbumListPageState extends State<AlbumListPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const PhosphorIcon(PhosphorIconsFill.images, size: 44, color: SaColors.textTertiary),
+            PhosphorIcon(PhosphorIconsFill.images, size: 44, color: SaColors.textTertiary),
             const SizedBox(height: 14),
             Text('아직 함께 모으는 앨범이 없어요', style: SaText.titleS),
             const SizedBox(height: 6),
@@ -330,7 +331,7 @@ class _AlbumListPageState extends State<AlbumListPage> {
         children: [
           Row(
             children: [
-              const PhosphorIcon(PhosphorIconsFill.envelopeSimple, size: 13, color: SaColors.warn),
+              PhosphorIcon(PhosphorIconsFill.envelopeSimple, size: 13, color: SaColors.warn),
               const SizedBox(width: 6),
               Text('받은 초대', style: SaText.caption.copyWith(color: SaColors.warn)),
               const SizedBox(width: 6),
@@ -367,7 +368,7 @@ class _AlbumListPageState extends State<AlbumListPage> {
             ),
           ),
           if (busy)
-            const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal))
+            SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal))
           else ...[
             GestureDetector(
               onTap: () => _acceptInvite(c),

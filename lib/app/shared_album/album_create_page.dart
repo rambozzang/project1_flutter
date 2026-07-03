@@ -184,12 +184,13 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
 
   @override
   Widget build(BuildContext context) {
+    SaColors.syncWith(context); // 시스템 밝기에 맞춰 다크/라이트 팔레트 동기화
     final bool spotSelected = _spotLat != null && _spotLon != null;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
+        statusBarIconBrightness: SaColors.isLight ? Brightness.dark : Brightness.light,
+        statusBarBrightness: SaColors.isLight ? Brightness.light : Brightness.dark,
       ),
       child: Scaffold(
         backgroundColor: SaColors.bgBase,
@@ -222,7 +223,7 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
                 child: _saving
-                    ? const Center(
+                    ? Center(
                         child: SizedBox(
                             width: 26, height: 26, child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal)))
                     : SaGradientButton(label: '앨범 만들기', height: 52, glow: true, expand: true, onTap: _submit),
@@ -249,7 +250,7 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
                 shape: BoxShape.circle,
                 border: Border.all(color: SaColors.borderStrong),
               ),
-              child: const PhosphorIcon(PhosphorIconsBold.caretLeft, size: 16, color: SaColors.textPrimary),
+              child: PhosphorIcon(PhosphorIconsBold.caretLeft, size: 16, color: SaColors.textPrimary),
             ),
           ),
           const SizedBox(width: 12),
@@ -289,15 +290,15 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
               placeholder: (_, __) => CachedNetworkImage(
                 imageUrl: coverImageUrl(_previewUrl!, width: 200),
                 fit: BoxFit.cover,
-                placeholder: (_, __) => const ColoredBox(color: SaColors.surfaceElevated),
-                errorWidget: (_, __, ___) => const ColoredBox(color: SaColors.surfaceElevated),
+                placeholder: (_, __) => ColoredBox(color: SaColors.surfaceElevated),
+                errorWidget: (_, __, ___) => ColoredBox(color: SaColors.surfaceElevated),
               ),
-              errorWidget: (_, __, ___) => const ColoredBox(color: SaColors.surfaceElevated),
+              errorWidget: (_, __, ___) => ColoredBox(color: SaColors.surfaceElevated),
             ),
           if (_uploadingCover)
             Container(
               color: Colors.black45,
-              child: const Center(
+              child: Center(
                   child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal))),
             ),
         ],
@@ -329,7 +330,7 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const PhosphorIcon(PhosphorIconsFill.camera, size: 18, color: SaColors.textSecondary),
+                  PhosphorIcon(PhosphorIconsFill.camera, size: 18, color: SaColors.textSecondary),
                   const SizedBox(height: 4),
                   Text('내 사진', style: SaText.mono(fontSize: 8.5)),
                 ],
@@ -356,8 +357,8 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
                     CachedNetworkImage(
                       imageUrl: coverImageUrl(t.imageUrl, width: 200),
                       fit: BoxFit.cover,
-                      placeholder: (_, __) => const ColoredBox(color: SaColors.surfaceElevated),
-                      errorWidget: (_, __, ___) => const ColoredBox(color: SaColors.surfaceElevated),
+                      placeholder: (_, __) => ColoredBox(color: SaColors.surfaceElevated),
+                      errorWidget: (_, __, ___) => ColoredBox(color: SaColors.surfaceElevated),
                     ),
                     Positioned(
                       left: 0,
@@ -394,11 +395,11 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(13),
-          borderSide: const BorderSide(color: SaColors.borderStrong),
+          borderSide: BorderSide(color: SaColors.borderStrong),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(13),
-          borderSide: const BorderSide(color: SaColors.accentTeal),
+          borderSide: BorderSide(color: SaColors.accentTeal),
         ),
       ),
     );
@@ -498,12 +499,12 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
           decoration: InputDecoration(
             hintText: '장소·명소 검색 (예: 남산타워)',
             hintStyle: SaText.body.copyWith(fontSize: 13, color: SaColors.textTertiary),
-            prefixIcon: const Padding(
+            prefixIcon: Padding(
               padding: EdgeInsets.all(12),
               child: PhosphorIcon(PhosphorIconsFill.mapPin, size: 15, color: SaColors.textSecondary),
             ),
             suffixIcon: _spotSearching
-                ? const Padding(
+                ? Padding(
                     padding: EdgeInsets.all(12),
                     child: SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal)),
                   )
@@ -514,11 +515,11 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
             contentPadding: const EdgeInsets.symmetric(vertical: 12),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(13),
-              borderSide: const BorderSide(color: SaColors.borderStrong),
+              borderSide: BorderSide(color: SaColors.borderStrong),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(13),
-              borderSide: const BorderSide(color: SaColors.accentTeal),
+              borderSide: BorderSide(color: SaColors.accentTeal),
             ),
           ),
         ),
@@ -534,7 +535,7 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
             child: ListView.separated(
               shrinkWrap: true,
               itemCount: _spotResults.length,
-              separatorBuilder: (_, __) => Divider(height: 1, color: Colors.white.withOpacity(0.05)),
+              separatorBuilder: (_, __) => Divider(height: 1, color: SaColors.border),
               itemBuilder: (context, i) {
                 final doc = _spotResults[i];
                 return ListTile(
@@ -562,7 +563,7 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
       ),
       child: Row(
         children: [
-          const PhosphorIcon(PhosphorIconsFill.mapPin, size: 15, color: SaColors.accentTeal),
+          PhosphorIcon(PhosphorIconsFill.mapPin, size: 15, color: SaColors.accentTeal),
           const SizedBox(width: 10),
           Expanded(
             child: Text(_spotName ?? '선택된 장소',
@@ -570,7 +571,7 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
           ),
           GestureDetector(
             onTap: _clearSpot,
-            child: const PhosphorIcon(PhosphorIconsBold.x, size: 14, color: SaColors.textTertiary),
+            child: PhosphorIcon(PhosphorIconsBold.x, size: 14, color: SaColors.textTertiary),
           ),
         ],
       ),

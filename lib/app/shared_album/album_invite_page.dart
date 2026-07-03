@@ -104,11 +104,12 @@ class _AlbumInvitePageState extends State<AlbumInvitePage> {
 
   @override
   Widget build(BuildContext context) {
+    SaColors.syncWith(context); // 시스템 밝기에 맞춰 다크/라이트 팔레트 동기화
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
+        statusBarIconBrightness: SaColors.isLight ? Brightness.dark : Brightness.light,
+        statusBarBrightness: SaColors.isLight ? Brightness.light : Brightness.dark,
       ),
       child: Scaffold(
         backgroundColor: SaColors.bgBase,
@@ -118,7 +119,7 @@ class _AlbumInvitePageState extends State<AlbumInvitePage> {
               _buildAppBar(),
               Expanded(
                 child: _loading
-                    ? const Center(child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal))
+                    ? Center(child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal))
                     : ListView(
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
                         children: [
@@ -173,7 +174,7 @@ class _AlbumInvitePageState extends State<AlbumInvitePage> {
                 shape: BoxShape.circle,
                 border: Border.all(color: SaColors.borderStrong),
               ),
-              child: const PhosphorIcon(PhosphorIconsBold.caretLeft, size: 16, color: SaColors.textPrimary),
+              child: PhosphorIcon(PhosphorIconsBold.caretLeft, size: 16, color: SaColors.textPrimary),
             ),
           ),
           const SizedBox(width: 12),
@@ -305,7 +306,7 @@ class _AlbumInvitePageState extends State<AlbumInvitePage> {
           : SizedBox(
               width: size - 4,
               height: size - 4,
-              child: const ColoredBox(
+              child: ColoredBox(
                   color: SaColors.surfaceElevated,
                   child: Icon(Icons.person, size: 18, color: SaColors.textTertiary)),
             ),
@@ -345,7 +346,7 @@ class _AlbumInvitePageState extends State<AlbumInvitePage> {
           else if (invited)
             Text('초대됨', style: SaText.mono(fontSize: 10, color: SaColors.warn))
           else if (sending)
-            const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal))
+            SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal))
           else
             GestureDetector(
               onTap: () => _invitePerson(id),
@@ -402,7 +403,7 @@ class _AlbumInvitePageState extends State<AlbumInvitePage> {
             ),
           ),
           sending
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal))
+              ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal))
               : GestureDetector(
                   onTap: () => _invitePerson(id, resend: true),
                   child: Text('다시 보내기',

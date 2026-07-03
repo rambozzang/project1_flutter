@@ -16,12 +16,13 @@ class SaPreviewPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    SaColors.syncWith(context); // 시스템 밝기에 맞춰 다크/라이트 팔레트 동기화
     return Scaffold(
       backgroundColor: SaColors.bgBase,
       appBar: AppBar(
         backgroundColor: SaColors.bgBase,
         elevation: 0,
-        iconTheme: const IconThemeData(color: SaColors.textPrimary),
+        iconTheme: IconThemeData(color: SaColors.textPrimary),
         title: Text('공유앨범 위젯 미리보기', style: SaText.titleS),
       ),
       body: ListView(
@@ -89,7 +90,7 @@ class SaPreviewPage extends StatelessWidget {
                       shape: BoxShape.circle,
                       border: Border.all(color: SaColors.borderStrong),
                     ),
-                    child: const PhosphorIcon(PhosphorIconsFill.play, size: 22, color: SaColors.textPrimary),
+                    child: PhosphorIcon(PhosphorIconsFill.play, size: 22, color: SaColors.textPrimary),
                   ),
                 ),
                 const Positioned(left: 12, bottom: 12, child: SaNewBadge(count: 6)),
@@ -120,7 +121,7 @@ class SaPreviewPage extends StatelessWidget {
             children: [
               SaGradientButton(
                 label: '앨범 만들기',
-                icon: const PhosphorIcon(PhosphorIconsBold.plus, size: 15, color: SaColors.onAccent),
+                icon: PhosphorIcon(PhosphorIconsBold.plus, size: 15, color: SaColors.onAccent),
                 onTap: () {},
               ),
               const SizedBox(width: 12),
