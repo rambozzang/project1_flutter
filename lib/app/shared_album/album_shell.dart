@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:project1/app/camera/page/camera_awesome_page.dart';
+import 'package:project1/app/shared_album/activity_view.dart';
 import 'package:project1/app/shared_album/album_timeline_page.dart';
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
@@ -201,7 +202,13 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
       case 1:
         return _placeholder(PhosphorIconsFill.sparkle, '회고 영상', '모은 영상을 1초씩 이어붙인\n자동 회고를 준비하고 있어요.');
       case 2:
-        return _placeholder(PhosphorIconsFill.bell, '활동', '업로드·댓글·좋아요 소식을\n한곳에 모아 곧 보여드릴게요.');
+        return ActivityView(
+          communityId: _communityId,
+          onOpenBoard: (boardId) {
+            final idx = _items.indexWhere((e) => e.boardId == boardId);
+            if (idx >= 0) _openMedia(idx);
+          },
+        );
       case 3:
         return _buildFamily();
       default:
