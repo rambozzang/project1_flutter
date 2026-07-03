@@ -6,6 +6,14 @@
 
 ## 2026-07-03
 
+### 16:30 | claude | ✅ 완료 (지도 페이지 재작업 — 검색창·퍼포먼스·바텀시트)
+**작업**: 지도 페이지 검색창/퍼포먼스/바텀시트 전면 개선 (사용자: 어설픈 구현·성능 불만)
+- **검색창**: 무거운 `material_floating_search_bar_plus`(FloatingSearchBar) → 경량 커스텀(흰 pill + 아래 결과 리스트). 카카오 지오코딩 로직 유지(2글자+·디바운스 350ms·순서보정). `map_search_page.dart` 전면 재작성
+- **바텀시트**: 무거운 `DraggableScrollableSheet`(2열 그리드 + **셀마다 무한 마퀴 TextScroll numberOfReps 20000**) → **가벼운 가로 스트립**(Positioned 오버레이, 가로 지연로딩 ListView, 정적 텍스트, 지역명·개수 칩). 사용자 선택
+- **퍼포먼스**: 계속 돌던 무한 마퀴 애니메이션 제거가 핵심. 지도 전체화면화(bottom 0). 죽은 코드 대량 삭제(`_buildGridItem`·`_SliverAppBarDelegate`·주석 블록)
+- **기간 필터**: 흩어진 흰 버튼 3개 → 검색바 아래 세그먼트 pill(선택 하이라이트). 마커 증분동기화·영상 탭 다이얼로그는 유지
+- 검증: 2파일 analyze 이슈 0, debug APK 빌드. map_page 939→805줄
+
 ### 15:45 | claude | ✅ 완료 (날씨 홈 온도 카운트업 애니메이션)
 **작업**: 날씨 홈(header_main_page) 큰 온도 숫자에 새 데이터 로드 시 카운트업 효과
 - 기존 AnimatedSwitcher(페이드+슬라이드)를 `TweenAnimationBuilder<double>`(이전값→새값, easeOutCubic 900ms)로 교체 — 리프레시·관심지역·현재위치 클릭으로 온도 바뀌면 숫자가 굴러 올라감(첫 표시는 0부터)

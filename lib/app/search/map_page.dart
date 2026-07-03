@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart'; // 임시 주석 처리
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/search/cntr/map_cntr.dart';
 import 'package:project1/app/search/map_search_page.dart';
@@ -18,7 +17,6 @@ import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/StringUtils.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:text_scroll/text_scroll.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
@@ -253,7 +251,7 @@ class _MapPageState extends State<MapPage> {
                     top: 0,
                     left: 0,
                     right: 0,
-                    bottom: MediaQuery.of(context).size.height * 0.1,
+                    bottom: 0,
                     child: NaverMap(
                       // 대량 마커 대응: NClusterableMarker 가 줌 레벨에 따라 자동 병합된다.
                       clusterOptions: const NaverMapClusteringOptions(),
@@ -279,12 +277,12 @@ class _MapPageState extends State<MapPage> {
                       onCameraIdle: _onCameraIdle,
                     ),
                   ),
+                  // 하단 가로 스트립(지역 영상 목록) — 지도 위 오버레이
+                  _buildBottomStrip(),
+                  // 기간 필터(오늘/일주일/한달)
                   buildTopButton(),
+                  // 검색바(최상단) — 결과 리스트가 다른 오버레이 위에 뜨도록 마지막에 배치
                   MapSearchPage(onSelectClick: locationUpdate),
-                  // 조회 시 전체화면 로딩 오버레이는 제거 — 마커만 조용히 추가/제거(깜빡임 방지)
-
-                  // 바텀시트를 Stack의 마지막에 추가하여 최상단에 표시
-                  _buildBottomSheet(),
                 ],
               )
             : const Center(child: CircularProgressIndicator()),
@@ -292,52 +290,53 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  // 우측 상단 조회 버튼
+  // 검색바 아래 기간 필터(오늘/일주일/한달) — 세그먼트 pill
   Widget buildTopButton() {
     return Positioned(
-        top: Platform.isIOS ? MediaQuery.of(context).padding.top + 50 : MediaQuery.of(context).padding.top + 60,
-        right: 16,
-        left: 0,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(5),
-                  minimumSize: const Size(55, 25),
-                  backgroundColor: Colors.white,
-                  elevation: 5,
-                  shadowColor: Colors.grey,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-              onPressed: () => loadBoards(1),
-              child: const Text("오늘", style: TextStyle(color: Colors.black, fontSize: 12)),
-            ),
-            const Gap(10),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(5),
-                  minimumSize: const Size(55, 25),
-                  backgroundColor: Colors.white,
-                  elevation: 5,
-                  shadowColor: Colors.grey,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-              onPressed: () => loadBoards(7),
-              child: const Text("일주일", style: TextStyle(color: Colors.black, fontSize: 12)),
-            ),
-            const Gap(10),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(5),
-                  minimumSize: const Size(55, 25),
-                  backgroundColor: Colors.white,
-                  elevation: 5,
-                  shadowColor: Colors.grey,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-              onPressed: () => loadBoards(31),
-              child: const Text("한달", style: TextStyle(color: Colors.black, fontSize: 12)),
-            ),
-          ],
-        ));
+      top: MediaQuery.of(context).padding.top + 66,
+      right: 12,
+      child: Obx(() {
+        final int sel = mapCntr.searchDay.value;
+        return Container(
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 6, offset: const Offset(0, 2))],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _dayChip('오늘', 1, sel == 1),
+              _dayChip('일주일', 7, sel == 7),
+              _dayChip('한달', 31, sel == 31),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _dayChip(String label, int day, bool selected) {
+    return GestureDetector(
+      onTap: () => loadBoards(day),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF4A90E2) : Colors.transparent,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : Colors.black54,
+            fontSize: 12,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
   }
 
   // 일반 영상 보기
@@ -645,295 +644,162 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  Widget _buildBottomSheet() {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.1,
-      minChildSize: 0.1,
-      maxChildSize: (MediaQuery.of(context).size.height -
-              (Platform.isIOS ? MediaQuery.of(context).padding.top + 50 : MediaQuery.of(context).padding.top + 60)) /
-          MediaQuery.of(context).size.height,
-      builder: (BuildContext context, ScrollController scrollController) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.5),
-                spreadRadius: 5,
-                blurRadius: 7,
-                offset: const Offset(0, 3),
+  // ── 하단 가로 스트립: 현재 지도 영역의 영상 목록 ──
+  // 기존 무거운 DraggableScrollableSheet(2열 그리드 + 셀마다 무한 마퀴)를 대체.
+  // 가로 지연로딩 리스트 + 정적 텍스트로 경량화(항상 보이는 카드만 렌더).
+  Widget _buildBottomStrip() {
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: StreamBuilder<List<BoardWeatherListData>>(
+        stream: mapCntr.listItemsController.stream,
+        builder: (context, snapshot) {
+          final items = snapshot.data ?? const <BoardWeatherListData>[];
+          if (items.isEmpty) return const SizedBox.shrink();
+          return Container(
+            padding: EdgeInsets.only(top: 10, bottom: MediaQuery.of(context).padding.bottom + 10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [Colors.black.withValues(alpha: 0.30), Colors.transparent],
               ),
-            ],
-          ),
-          child: CustomScrollView(
-            controller: scrollController,
-            slivers: [
-              SliverPersistentHeader(
-                delegate: _SliverAppBarDelegate(
-                  minHeight: 60,
-                  maxHeight: 70,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        height: 4,
-                        width: 40,
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                        ),
-                      ),
-                      SizedBox(
-                        height: 30,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '${Get.find<MapCntr>().addr1.value} ${Get.find<MapCntr>().addr2.value}',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                height: 1.0,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            Text(
-                              '총 ${Get.find<MapCntr>().listItems.length}개',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                height: 1.0,
-                                color: Colors.black54,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              StreamBuilder<List<BoardWeatherListData>>(
-                stream: Get.find<MapCntr>().listItemsController.stream,
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return SliverFillRemaining(
-                      child: Center(child: Text('Error: ${snapshot.error}')),
-                    );
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const SliverFillRemaining(
-                      child: Center(child: Text('데이터가 없습니다.')),
-                    );
-                  } else {
-                    return SliverGrid(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 0.5,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 0,
-                      ),
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          return _buildGridItem(
-                            snapshot.data![index],
-                            Get.find<MapCntr>().southWest.value!,
-                            Get.find<MapCntr>().northEast.value!,
-                            Get.find<MapCntr>().searchDay.value,
-                          );
-                        },
-                        childCount: snapshot.data!.length,
-                      ),
-                    );
-                  }
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  // 아래 바텅시트 리스트
-  Widget _buildGridItem(BoardWeatherListData item, LatLng southWest, LatLng northEast, int searchDay) {
-    return GestureDetector(
-      onTap: () async {
-        // var (southWest, northEast) = await getbounds();
-        Get.toNamed('/VideoMyinfoListPage', arguments: {
-          'datatype': 'LOCAL',
-          'custId': Get.find<AuthCntr>().resLoginData.value.custId.toString(),
-          'boardId': item.boardId.toString(),
-          'southWest': southWest,
-          'northEast': northEast,
-          'searchDay': searchDay,
-        });
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              AspectRatio(
-                  aspectRatio: 0.68,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(10.0),
-                      image: DecorationImage(
-                        image: CachedNetworkImageProvider(cacheKey: item.thumbnailPath, item.thumbnailPath!),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  )
-                  // child: CachedNetworkImage(
-                  //   key: Key(item.boardId.toString()),
-                  //   imageUrl: item.thumbnailPath!,
-                  //   fit: BoxFit.cover,
-                  // ),
-                  ),
-              Positioned(
-                bottom: 5,
-                left: 5,
-                child: Row(
-                  children: [
-                    const Icon(Icons.favorite, color: Colors.white, size: 15),
-                    Text(' ${item.likeCnt.toString()}',
-                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w400)),
-                  ],
-                ),
-              ),
-              Positioned(
-                bottom: 5,
-                right: 5,
-                child: Text('조회수 ${item.viewCnt.toString()}',
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w400)),
-              ),
-              item.hideYn == 'Y'
-                  ? const Positioned(
-                      top: 10,
-                      left: 10,
-                      child: Icon(Icons.lock, color: Colors.red, size: 20),
-                    )
-                  : const SizedBox.shrink(),
-            ],
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            ),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(1),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: const Icon(Icons.location_on, color: Colors.white, size: 15),
-                      ),
-                      const SizedBox(width: 5),
-                      SizedBox(
-                        width: 100,
-                        child: TextScroll(
-                          item.location.toString(),
-                          mode: TextScrollMode.endless,
-                          numberOfReps: 20000,
-                          fadedBorder: true,
-                          delayBefore: const Duration(milliseconds: 4000),
-                          pauseBetween: const Duration(milliseconds: 2000),
-                          velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
-                          style: const TextStyle(fontSize: 13, color: Colors.black, fontWeight: FontWeight.w500),
-                          textAlign: TextAlign.right,
-                          selectable: true,
-                        ),
-                      ),
+                      Obx(() {
+                        final name = '${mapCntr.addr1.value} ${mapCntr.addr2.value}'.trim();
+                        return _chip(name.isEmpty ? '이 지역' : name);
+                      }),
+                      const SizedBox(width: 6),
+                      _chip('영상 ${items.length}개'),
                     ],
                   ),
                 ),
-                Row(
-                  children: [
-                    // SizedBox(
-                    //   height: 20,
-                    //   child: TextButton(
-                    //     style: TextButton.styleFrom(
-                    //       padding: EdgeInsets.zero,
-                    //       minimumSize: Size.zero,
-                    //     ),
-                    //     onPressed: () => Get.toNamed('/OtherInfoPage/${item.custId.toString()}'),
-                    //     child: Text(
-                    //       '@${item.nickNm == null ? item.custNm.toString() : item.nickNm.toString()}',
-                    //       style: const TextStyle(
-                    //         fontWeight: FontWeight.bold,
-                    //         fontSize: 12.0,
-                    //         color: Colors.black87,
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ),
-                    // const Padding(
-                    //   padding: EdgeInsets.symmetric(horizontal: 6.0),
-                    //   child: Text(
-                    //     '·',
-                    //     style: TextStyle(color: Colors.black87, fontSize: 12),
-                    //   ),
-                    // ),
-                    Text(
-                      Utils.timeage(item.crtDtm.toString()),
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w400, color: Colors.black),
-                    ),
-                  ],
-                ),
-                Text(
-                  item.contents.toString() == 'null' ? '' : item.contents.toString(),
-                  // 'asdjfjkasdf as;dkfj asdkja s;dfja;skljfa;skdjfa;skljf;asjf asdklfj asf asdkfa sdfa askdfa sdkfas;kdjfas',
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.justify,
-                  maxLines: 2,
-                  softWrap: true,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: Colors.black),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 150,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    itemCount: items.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (context, i) => _buildStripCard(items[i]),
+                  ),
                 ),
               ],
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
-}
 
-class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
-  _SliverAppBarDelegate({
-    required this.minHeight,
-    required this.maxHeight,
-    required this.child,
-  });
-  final double minHeight;
-  final double maxHeight;
-  final Widget child;
-
-  @override
-  double get minExtent => minHeight;
-  @override
-  double get maxExtent => maxHeight;
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return SizedBox.expand(child: child);
+  Widget _chip(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 6)],
+      ),
+      child: Text(text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.black87)),
+    );
   }
 
-  @override
-  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
-    return maxHeight != oldDelegate.maxHeight || minHeight != oldDelegate.minHeight || child != oldDelegate.child;
+  Widget _buildStripCard(BoardWeatherListData item) {
+    final thumb = item.thumbnailPath?.toString() ?? '';
+    return GestureDetector(
+      onTap: () => Get.toNamed('/VideoMyinfoListPage', arguments: {
+        'datatype': 'LOCAL',
+        'custId': Get.find<AuthCntr>().resLoginData.value.custId.toString(),
+        'boardId': item.boardId.toString(),
+        'southWest': mapCntr.southWest.value,
+        'northEast': mapCntr.northEast.value,
+        'searchDay': mapCntr.searchDay.value,
+      }),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          width: 104,
+          height: 150,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              thumb.isEmpty
+                  ? Container(color: Colors.grey.shade300)
+                  : CachedNetworkImage(
+                      imageUrl: thumb,
+                      cacheKey: thumb,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => Container(color: Colors.grey.shade300),
+                      errorWidget: (_, __, ___) => Container(color: Colors.grey.shade300),
+                    ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  height: 62,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [Colors.black.withValues(alpha: 0.72), Colors.transparent],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 6,
+                right: 6,
+                bottom: 6,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.location?.toString() ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        const Icon(Icons.favorite, color: Colors.white, size: 11),
+                        Text(' ${item.likeCnt ?? 0}', style: const TextStyle(color: Colors.white, fontSize: 10)),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            Utils.timeage(item.crtDtm.toString()),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.white70, fontSize: 10),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              if (item.hideYn == 'Y')
+                const Positioned(top: 6, left: 6, child: Icon(Icons.lock, color: Colors.redAccent, size: 16)),
+            ],
+          ),
+        ),
+      ),
+    );
   }
+
 }

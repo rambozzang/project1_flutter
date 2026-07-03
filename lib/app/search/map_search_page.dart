@@ -1,17 +1,14 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
-
-import 'package:material_floating_search_bar_plus/material_floating_search_bar_plus.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:project1/app/weather/models/geocode.dart';
 import 'package:project1/app/weather/theme/colors.dart';
 import 'package:project1/repo/kakao/kakao_repo.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 
+/// 지도 상단 검색바 — 경량 커스텀(기존 material_floating_search_bar_plus 대체).
+/// 흰 pill + 결과는 바로 아래 리스트로 표시. 카카오 지오코딩(2글자+·디바운스·순서보정).
 class MapSearchPage extends StatefulWidget {
   const MapSearchPage({super.key, required this.onSelectClick});
   final Function(GeocodeData) onSelectClick;
@@ -21,206 +18,170 @@ class MapSearchPage extends StatefulWidget {
 }
 
 class _MapSearchPageState extends State<MapSearchPage> {
-  FloatingSearchBarController fsc = FloatingSearchBarController();
-
-  final StreamController<List<Map<String, dynamic>>> _streamController = StreamController<List<Map<String, dynamic>>>();
+  final TextEditingController _ctrl = TextEditingController();
+  final FocusNode _focus = FocusNode();
   final KakaoRepo _kakaoRepo = KakaoRepo();
-  String _lastQuery = ''; // 마지막으로 요청한 검색어(응답 순서 뒤바뀜 방지)
+  Timer? _debounce;
+  String _lastQuery = '';
+  List<Map<String, dynamic>> _results = [];
 
   @override
   void initState() {
     super.initState();
+    _focus.addListener(() {
+      // 검색 중엔 루트 하단바 숨김(기존 동작 유지)
+      RootCntr.to.bottomBarStreamController.sink.add(!_focus.hasFocus);
+    });
   }
 
-  void _search() async {
-    final query = fsc.query.trim();
-    // 1~2글자 검색은 결과가 과하고 호출만 늘어남 → 2글자 이상부터 조회.
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _ctrl.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  void _onChanged(String q) {
+    setState(() {}); // clear 아이콘 토글
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 350), () => _search(q.trim()));
+  }
+
+  Future<void> _search(String query) async {
     if (query.length < 2) {
-      if (!_streamController.isClosed) _streamController.sink.add([]);
+      if (mounted) setState(() => _results = []);
       return;
     }
     _lastQuery = query;
     try {
       final data = await _kakaoRepo.getCoordinates(query);
-      if (query != _lastQuery || _streamController.isClosed) return; // 더 최신 검색이 시작됨 → 무시
-      _streamController.sink.add(data);
-    } catch (e) {
-      // KakaoRepo는 결과 0건도 Exception으로 던짐 → 빈 리스트로 처리(에러 표시 대신)
-      if (query != _lastQuery || _streamController.isClosed) return;
-      _streamController.sink.add([]);
+      if (!mounted || query != _lastQuery) return; // 더 최신 검색이 시작됨 → 무시
+      setState(() => _results = data);
+    } catch (_) {
+      // KakaoRepo는 결과 0건도 Exception → 빈 리스트로 처리
+      if (!mounted || query != _lastQuery) return;
+      setState(() => _results = []);
     }
   }
 
-  _selectClick(Map<String, dynamic> data) async {
-    late GeocodeData geocodeData = GeocodeData(
-      name: data['place_name'],
-      addr: data['address_name'],
-      latLng: LatLng(double.parse(data['y'] ?? 0.0), double.parse(data['x'] ?? 0.0)),
+  void _select(Map<String, dynamic> d) {
+    final g = GeocodeData(
+      name: d['place_name'],
+      addr: d['address_name'],
+      latLng: LatLng(double.parse(d['y'] ?? '0.0'), double.parse(d['x'] ?? '0.0')),
     );
-    widget.onSelectClick(geocodeData);
-  }
-
-  @override
-  void dispose() {
-    _streamController.sink.close();
-    _streamController.close();
-
-    super.dispose();
+    _ctrl.text = d['place_name'] ?? '';
+    _focus.unfocus();
+    setState(() => _results = []);
+    widget.onSelectClick(g);
   }
 
   @override
   Widget build(BuildContext context) {
-    return FloatingSearchBar(
-      // backgroundColor: Colors.grey.shade400,
-      controller: fsc,
-      hint: '통합 검색...',
-      clearQueryOnClose: false,
-      scrollPadding: const EdgeInsets.only(top: 3.0, bottom: 56.0, left: 2.0, right: 2.0),
-      margins: EdgeInsets.only(
-          left: 12.0,
-          right: 12,
-          top: Platform.isIOS ? MediaQuery.of(context).padding.top : MediaQuery.of(context).padding.top + 10,
-          bottom: 0),
-      transitionDuration: const Duration(milliseconds: 300),
-      borderRadius: BorderRadius.circular(14.0),
-      transitionCurve: Curves.easeInOut,
-      accentColor: primaryBlue,
-      hintStyle: const TextStyle(color: Colors.black, decorationThickness: 0), //regularText,
-      queryStyle: const TextStyle(color: Colors.black, decorationThickness: 0), //regularText,
-      physics: const BouncingScrollPhysics(),
-      elevation: 2.0,
-      implicitDuration: const Duration(milliseconds: 100),
-      debounceDelay: const Duration(milliseconds: 350),
-      leadingActions: [
-        FloatingSearchBarAction.icon(
-          showIfClosed: true,
-          showIfOpened: false,
-          icon: const Icon(
-            Icons.arrow_back_ios,
-            color: Colors.black,
-            size: 27,
-          ),
-          // icon: const PhosphorIcon(
-          //   PhosphorIconsBold.arrowLeft,
-          //   color: primaryBlue,
-          // ),
-          onTap: () {
-            Get.back();
-          },
-        ),
-      ],
-
-      onFocusChanged: (isFocused) {
-        // if (!isFocused) {
-        //   fsc.clear();
-        // }
-        RootCntr.to.bottomBarStreamController.sink.add(false);
-      },
-      onQueryChanged: (query) {
-        _search();
-      },
-      onSubmitted: (query) async {
-        fsc.close();
-        _search();
-      },
-      transition: CircularFloatingSearchBarTransition(),
-      automaticallyImplyBackButton: false,
-      actions: [
-        const FloatingSearchBarAction(
-          showIfOpened: false,
-          child: PhosphorIcon(
-            PhosphorIconsBold.magnifyingGlass,
-            color: Colors.black,
-          ),
-        ),
-        FloatingSearchBarAction.icon(
-          showIfClosed: false,
-          showIfOpened: true,
-          icon: const PhosphorIcon(
-            PhosphorIconsBold.x,
-            color: primaryBlue,
-          ),
-          onTap: () {
-            if (fsc.query.isEmpty) {
-              fsc.close();
-            } else {
-              fsc.clear();
-            }
-          },
-        ),
-      ],
-      builder: (context, transition) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(4.0),
-          child: Material(
-            color: Colors.white,
-            // elevation: 1.0,
-            child: StreamBuilder<List<Map<String, dynamic>>>(
-                stream: _streamController.stream,
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const SizedBox.shrink();
-                  }
-                  return ListView.separated(
-                      shrinkWrap: true,
-                      physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.zero,
-                      itemCount: snapshot.data!.length,
-                      separatorBuilder: (context, index) => const Divider(
-                            thickness: 1.0,
-                            height: 0.0,
-                          ),
-                      itemBuilder: (context, index) {
-                        final data = snapshot.data![index];
-                        return InkWell(
-                          onTap: () {
-                            _selectClick(data);
-                            fsc.query = data['place_name'];
-                            fsc.close();
+    final double top = MediaQuery.of(context).padding.top + 10;
+    return Positioned(
+      top: top,
+      left: 12,
+      right: 12,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 검색 pill
+          Material(
+            elevation: 3,
+            borderRadius: BorderRadius.circular(14),
+            shadowColor: Colors.black26,
+            child: Container(
+              height: 48,
+              padding: const EdgeInsets.only(left: 2, right: 8),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: Colors.black87),
+                    onPressed: () => Get.back(),
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _ctrl,
+                      focusNode: _focus,
+                      onChanged: _onChanged,
+                      textInputAction: TextInputAction.search,
+                      onSubmitted: (q) => _search(q.trim()),
+                      style: const TextStyle(fontSize: 15, color: Colors.black),
+                      decoration: const InputDecoration(
+                        hintText: '장소·주소 검색',
+                        hintStyle: TextStyle(color: Colors.black38, fontSize: 15),
+                        border: InputBorder.none,
+                        isCollapsed: true,
+                      ),
+                    ),
+                  ),
+                  _ctrl.text.isEmpty
+                      ? const Icon(Icons.search_rounded, color: Colors.black45)
+                      : IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 20, color: Colors.black45),
+                          onPressed: () {
+                            _ctrl.clear();
+                            setState(() => _results = []);
                           },
-                          child: Container(
-                            padding: const EdgeInsets.all(12.0),
-                            child: Row(
+                        ),
+                ],
+              ),
+            ),
+          ),
+          // 검색 결과
+          if (_results.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 6),
+              constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.42),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 10, offset: const Offset(0, 4))],
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                itemCount: _results.length,
+                separatorBuilder: (_, __) => const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F3)),
+                itemBuilder: (context, i) {
+                  final d = _results[i];
+                  final road = (d['road_address_name'] ?? '').toString();
+                  return InkWell(
+                    onTap: () => _select(d),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.location_on, color: primaryBlue, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const PhosphorIcon(PhosphorIconsFill.mapPin),
-                                const SizedBox(width: 15.0),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(data['place_name'],
-                                          style: GoogleFonts.openSans(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black,
-                                          )),
-                                      Text(data['address_name'],
-                                          style: GoogleFonts.openSans(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w400,
-                                            color: Colors.black,
-                                          )),
-                                      (data['road_address_name'] != null &&
-                                              data['road_address_name'].toString().isNotEmpty)
-                                          ? Text(data['road_address_name'],
-                                              style: GoogleFonts.openSans(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w400,
-                                                color: Colors.black,
-                                              ))
-                                          : const SizedBox.shrink(),
-                                    ],
-                                  ),
-                                ),
+                                Text(d['place_name'] ?? '',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black)),
+                                Text(road.isNotEmpty ? road : (d['address_name'] ?? ''),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 12, color: Colors.black54)),
                               ],
                             ),
                           ),
-                        );
-                      });
-                }),
-          ),
-        );
-      },
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
