@@ -104,7 +104,7 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
   }
 
   void _openComments() {
-    CommentPage().open(context, (_item.boardId ?? 0).toString());
+    CommentPage().open(context, (_item.boardId ?? 0).toString(), isDark: !SaColors.isLight);
   }
 
   String _capturedLabel() {
@@ -198,6 +198,11 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
                 ),
               ),
             ),
+          ),
+
+          // 상단 미디어 어디를 눌러도 재생/열람(중앙 버튼 외 전체 영역)
+          Positioned.fill(
+            child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: _openImmersive),
           ),
 
           // 영상 재생 버튼

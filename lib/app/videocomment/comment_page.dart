@@ -22,8 +22,9 @@ import 'package:project1/widget/error_page.dart';
 class CommentPage {
   Future<dynamic> open(
     BuildContext context,
-    String boardId,
-  ) async {
+    String boardId, {
+    bool isDark = true, // 앨범 라이트모드에서 밝게 표시(기본=다크, 쇼츠 피드 등 영상 위는 다크 유지)
+  }) async {
     showModalBottomSheet(
       isScrollControlled: true,
       context: context,
@@ -32,18 +33,19 @@ class CommentPage {
           top: Radius.circular(15.0),
         ),
       ),
-      backgroundColor: Colors.black, //.withOpacity(0.8),
+      backgroundColor: isDark ? Colors.black : Colors.white,
       builder: (BuildContext context) {
-        return SizedBox(height: MediaQuery.of(context).size.height * 0.65, child: CommentsPage(contextParent: context, boardId: boardId));
+        return SizedBox(height: MediaQuery.of(context).size.height * 0.65, child: CommentsPage(contextParent: context, boardId: boardId, isDark: isDark));
       },
     );
   }
 }
 
 class CommentsPage extends StatefulWidget {
-  const CommentsPage({super.key, required this.contextParent, required this.boardId});
+  const CommentsPage({super.key, required this.contextParent, required this.boardId, this.isDark = true});
   final BuildContext contextParent;
   final String boardId;
+  final bool isDark;
 
   @override
   State<CommentsPage> createState() => _CommentsPageState();
@@ -70,6 +72,7 @@ class _CommentsPageState extends State<CommentsPage> {
 
   @override
   void initState() {
+    isDarkTheme = widget.isDark;
     replyController.clear();
     super.initState();
     // 루트페이지 바텀바 숨김
