@@ -210,6 +210,7 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
           lastSeen: _lastSeen,
           onTapItem: _openMedia,
           onLoadMore: () => _loadFeed(),
+          onRefresh: () => _loadFeed(reset: true), // 당겨서 새로고침
         );
       case 1:
         return RecapView(

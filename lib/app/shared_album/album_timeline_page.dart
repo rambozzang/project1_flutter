@@ -17,6 +17,7 @@ class AlbumTimelineView extends StatelessWidget {
     required this.lastSeen,
     required this.onTapItem,
     this.onLoadMore,
+    this.onRefresh,
   });
 
   final List<BoardWeatherListData> items;
@@ -24,52 +25,65 @@ class AlbumTimelineView extends StatelessWidget {
   final DateTime? lastSeen;
   final void Function(int index) onTapItem;
   final VoidCallback? onLoadMore;
+  // 당겨서 새로고침 — 앨범 피드/메타 다시 로드
+  final Future<void> Function()? onRefresh;
 
   @override
   Widget build(BuildContext context) {
     final days = _groupByDay();
-    if (days.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(40),
-          child: Text('아직 담긴 순간이 없어요.\n＋ 로 첫 사진·영상을 올려보세요.',
-              textAlign: TextAlign.center, style: SaText.body),
-        ),
-      );
-    }
-
-    return NotificationListener<ScrollNotification>(
-      onNotification: (n) {
-        if (onLoadMore != null &&
-            n.metrics.pixels > n.metrics.maxScrollExtent - 600 &&
-            n.metrics.axisDirection == AxisDirection.down) {
-          onLoadMore!();
-        }
-        return false;
-      },
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
-        itemCount: days.length,
-        itemBuilder: (context, i) {
-          final day = days[i];
-          final bool showMonth = i == 0 || days[i - 1].month != day.month;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    // 빈 상태도 스크롤 가능한 리스트로 감싸 '당겨서 새로고침'이 동작하게 한다.
+    final Widget content = days.isEmpty
+        ? ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             children: [
-              if (showMonth)
-                Padding(
-                  padding: const EdgeInsets.only(top: 14, bottom: 6),
-                  child: Text(day.monthLabel,
-                      style: SaText.titleM.copyWith(fontSize: 18, fontWeight: FontWeight.w800)),
-                ),
-              _dayHeader(day),
-              const SizedBox(height: 8),
-              _dayGrid(day),
-              const SizedBox(height: 14),
+              SizedBox(height: MediaQuery.of(context).size.height * 0.28),
+              Padding(
+                padding: const EdgeInsets.all(40),
+                child: Text('아직 담긴 순간이 없어요.\n＋ 로 첫 사진·영상을 올려보세요.',
+                    textAlign: TextAlign.center, style: SaText.body),
+              ),
             ],
+          )
+        : NotificationListener<ScrollNotification>(
+            onNotification: (n) {
+              if (onLoadMore != null &&
+                  n.metrics.pixels > n.metrics.maxScrollExtent - 600 &&
+                  n.metrics.axisDirection == AxisDirection.down) {
+                onLoadMore!();
+              }
+              return false;
+            },
+            child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+              itemCount: days.length,
+              itemBuilder: (context, i) {
+                final day = days[i];
+                final bool showMonth = i == 0 || days[i - 1].month != day.month;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (showMonth)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 14, bottom: 6),
+                        child: Text(day.monthLabel,
+                            style: SaText.titleM.copyWith(fontSize: 18, fontWeight: FontWeight.w800)),
+                      ),
+                    _dayHeader(day),
+                    const SizedBox(height: 8),
+                    _dayGrid(day),
+                    const SizedBox(height: 14),
+                  ],
+                );
+              },
+            ),
           );
-        },
-      ),
+
+    if (onRefresh == null) return content;
+    return RefreshIndicator(
+      color: SaColors.accentTeal,
+      onRefresh: onRefresh!,
+      child: content,
     );
   }
 
