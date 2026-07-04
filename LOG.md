@@ -11,7 +11,16 @@
 - **거절 사유①(5.1.1 Privacy)**: "카메라 권한 '허용 안 함' 후 앱이 설정 앱으로 리다이렉트" — 코드 전수조사 결과 우리 Dart/camerawesome 패키지 어디에도 자동 리다이렉트 로직은 없었으나(구버전 camera_page.dart는 죽은 코드), `camera_awesome_page.dart`에 **권한 상태를 명시적으로 다루는 코드 자체가 없어** 권한 거부 시 검은 화면 위에 동작 안 하는 셔터만 보이던 상태(리뷰어 스크린샷과 일치)
 - **수정**: 카메라 화면 진입 시 `Permission.camera` 상태를 먼저 확인하는 게이트 추가. 거부 상태면 설명 문구 + 버튼 UI로 전환 — **일반 거부**: "카메라 권한 허용" 버튼(재요청), **영구 거부**: "설정에서 허용하기" 버튼(그제서야 openAppSettings, 절대 자동 호출 안 함). WidgetsBindingObserver로 설정 앱에서 돌아오면 자동 재확인
 - **거절 사유②(2.3.6 연령등급)**: 사용자 제작 콘텐츠 앱인데 연령등급의 "User-Generated Content"가 "예"로 설정 안 됨 — **코드 무관, App Store Connect 콘솔 설정**이라 사용자 직접 처리 필요(안내함)
-- 검증: analyze 에러 0, Android+iOS debug 빌드 성공. 다음 단계: 버전 올려 재제출
+- 검증: analyze 에러 0, Android+iOS debug 빌드 성공
+
+### 13:33 | claude | ✅ 완료 (v1.2.0+53 iOS 재제출 완료 + 운영 날씨배치 장애 긴급수정)
+**작업**: 카메라 권한 수정 담은 빌드 53 재제출 + 별건으로 발견한 운영 날씨배치 10시간 정지 장애 수정
+- **iOS 재제출**: 연령등급 "User-Generated Content=예" 확인 후 버전 1.2.0+53 빌드→업로드(UUID b8c7d04e) 성공. 심사 제출 API가 옛 거절 제출(86d0aa0c, UNRESOLVED_ISSUES)에 물린 버전 리소스 때문에 409 반복(DELETE도 "이미 심사완료된 항목이라 불가") → API 자동화 포기, **사용자가 App Store Connect 콘솔에서 직접 "심사에 제출" 클릭**으로 해결. 최종 확인: 버전 1.2.0 WAITING_FOR_REVIEW, 제출 2026-07-04T04:33:10Z(빌드 53)
+- **운영 날씨배치 장애(별건, 사용자 문의로 발견)**: 캐시 전 타입이 7시간째 100% 만료, 배치 로그 전무 → jstack으로 원인 특정: 스프링 기본 스케줄러 스레드 1개(`scheduling-1`)가 `WeatherWarnSvc.fetchAndSaveWarnings()`의 타임아웃 없는 `Mono.block()`에서 무한대기(오늘 02:45 이후) → 이 스레드 하나가 앱의 모든 `@Scheduled` 작업(날씨 캐시 배치 포함)을 담당해 전체 정지
+  - 즉시조치: 운영 서비스 재시작(배치 즉시 복구)
+  - 근본수정(백엔드 `e71982f`, Jenkins 자동배포): `.block()` 앞에 `timeout(10s)` 추가, `application-prod.yml`에 `spring.task.scheduling.pool.size=8` 추가(스레드 1개 공유 구조 자체 개선)
+  - 배포 후 검증: 스케줄러 스레드 8개로 확인, 13:25 특보 배치 정상 실행+FCM 발송 성공
+- **결과**: Android(1.2.0/vc52 completed) + iOS(1.2.0/build53 WAITING_FOR_REVIEW) 모두 정상, 운영 날씨배치 정상화
 
 ### 00:45 | claude | ✅ 완료 (v1.2.0+52 양 스토어 재배포 — Supabase 삭제 등 반영)
 **작업**: Supabase/채팅 전면삭제(0ce39d5) 등 최신 커밋 포함해 Android+iOS 재배포
