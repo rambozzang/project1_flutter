@@ -24,6 +24,7 @@ class CommentPage {
     BuildContext context,
     String boardId, {
     bool isDark = true, // 앨범 라이트모드에서 밝게 표시(기본=다크, 쇼츠 피드 등 영상 위는 다크 유지)
+    bool autoFocus = false, // 앨범 상세 등 '입력창'을 눌러 열 때: 열자마자 키보드 포커스(재탭 제거)
   }) async {
     showModalBottomSheet(
       isScrollControlled: true,
@@ -35,17 +36,18 @@ class CommentPage {
       ),
       backgroundColor: isDark ? Colors.black : Colors.white,
       builder: (BuildContext context) {
-        return SizedBox(height: MediaQuery.of(context).size.height * 0.65, child: CommentsPage(contextParent: context, boardId: boardId, isDark: isDark));
+        return SizedBox(height: MediaQuery.of(context).size.height * 0.65, child: CommentsPage(contextParent: context, boardId: boardId, isDark: isDark, autoFocus: autoFocus));
       },
     );
   }
 }
 
 class CommentsPage extends StatefulWidget {
-  const CommentsPage({super.key, required this.contextParent, required this.boardId, this.isDark = true});
+  const CommentsPage({super.key, required this.contextParent, required this.boardId, this.isDark = true, this.autoFocus = false});
   final BuildContext contextParent;
   final String boardId;
   final bool isDark;
+  final bool autoFocus;
 
   @override
   State<CommentsPage> createState() => _CommentsPageState();
@@ -78,6 +80,15 @@ class _CommentsPageState extends State<CommentsPage> {
     // 루트페이지 바텀바 숨김
     RootCntr.to.bottomBarStreamController.sink.add(false);
     getData(widget.boardId);
+    // 앨범 상세의 '댓글 입력창'을 눌러 열었을 때: 시트가 뜨자마자 입력창에 포커스를 줘
+    // 사용자가 한 번 더 입력창을 탭하지 않고 바로 작성할 수 있게 한다.
+    if (widget.autoFocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(milliseconds: 250), () {
+          if (mounted) replyFocusNode.requestFocus();
+        });
+      });
+    }
   }
 
   Future<void> getFakeData() async {

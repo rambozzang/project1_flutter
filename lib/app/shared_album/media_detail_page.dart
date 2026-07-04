@@ -105,7 +105,8 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
 
   void _openComments() {
     // 전역과 동일한 다크 댓글 바텀시트 사용(앨범 라이트여도 댓글창은 기존 그대로).
-    CommentPage().open(context, (_item.boardId ?? 0).toString());
+    // autoFocus: 입력창을 눌러 열었으므로 키보드를 바로 띄워 곧장 작성하게 한다.
+    CommentPage().open(context, (_item.boardId ?? 0).toString(), autoFocus: true);
   }
 
   String _capturedLabel() {
@@ -437,26 +438,41 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
   }
 
   Widget _buildCommentBar(double bottomPad) {
-    return GestureDetector(
-      onTap: _openComments,
-      child: Container(
-        padding: EdgeInsets.fromLTRB(16, 10, 16, 10 + bottomPad),
-        decoration: BoxDecoration(
-          color: SaColors.surface,
-          border: Border(top: BorderSide(color: SaColors.border)),
-        ),
-        child: Row(
-          children: [
-            PhosphorIcon(PhosphorIconsFill.chatCircle, size: 18, color: SaColors.textSecondary),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                (_item.replyCnt ?? 0) > 0 ? '댓글 ${_item.replyCnt}개 보기' : '따뜻한 댓글을 남겨보세요…',
-                style: SaText.body.copyWith(fontSize: 13.5),
+    final int cnt = _item.replyCnt ?? 0;
+    // 입력창처럼 보이는 컴포저 바 — 탭하면 댓글 시트가 '키보드가 올라온 채' 열려
+    // 곧바로 입력할 수 있다(중간에 입력창을 한 번 더 누르는 단계 제거).
+    return Container(
+      padding: EdgeInsets.fromLTRB(16, 10, 16, 10 + bottomPad),
+      decoration: BoxDecoration(
+        color: SaColors.surface,
+        border: Border(top: BorderSide(color: SaColors.border)),
+      ),
+      child: GestureDetector(
+        onTap: _openComments,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: SaColors.surfaceElevated,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: SaColors.border),
+          ),
+          child: Row(
+            children: [
+              PhosphorIcon(PhosphorIconsFill.chatCircle, size: 18, color: SaColors.textSecondary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  cnt > 0 ? '댓글 $cnt개 · 댓글 남기기' : '따뜻한 댓글을 남겨보세요…',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: SaText.body.copyWith(fontSize: 13.5, color: SaColors.textTertiary),
+                ),
               ),
-            ),
-            PhosphorIcon(PhosphorIconsBold.caretRight, size: 14, color: SaColors.textTertiary),
-          ],
+              PhosphorIcon(PhosphorIconsFill.paperPlaneTilt, size: 18, color: SaColors.accentTeal),
+            ],
+          ),
         ),
       ),
     );
