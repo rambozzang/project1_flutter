@@ -19,8 +19,8 @@ import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 
-/// 앨범 진입 셸 — 하단 탭바(타임라인 · 회고 · ＋ · 활동 · 가족)로 개별 화면을 묶는다.
-/// v1: 타임라인(2a) 완성 + 회고/활동 준비중 플레이스홀더 + 가족(멤버/초대 재사용).
+/// 앨범 진입 셸 — 하단 탭바(타임라인 · 회고 · ＋ · 활동 · 멤버)로 개별 화면을 묶는다.
+/// v1: 타임라인(2a) 완성 + 회고/활동 준비중 플레이스홀더 + 멤버(멤버 관리/초대 재사용).
 class AlbumShellPage extends StatefulWidget {
   const AlbumShellPage({super.key});
 
@@ -43,7 +43,7 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
   bool _loadingMore = false;
   bool _hasMore = true;
 
-  int _tab = 0; // 0 타임라인 / 1 회고 / 2 활동 / 3 가족
+  int _tab = 0; // 0 타임라인 / 1 회고 / 2 활동 / 3 멤버
 
   bool get _canPost {
     final c = _community;
@@ -253,7 +253,7 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 110),
       children: [
-        Text('가족', style: SaText.titleL),
+        Text('멤버', style: SaText.titleL),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(18),
@@ -349,7 +349,7 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
               _tabItem(1, PhosphorIconsFill.sparkle, PhosphorIconsBold.sparkle, '회고'),
               _centerButton(),
               _tabItem(2, PhosphorIconsFill.bell, PhosphorIconsBold.bell, '활동'),
-              _tabItem(3, PhosphorIconsFill.usersThree, PhosphorIconsBold.usersThree, '가족'),
+              _tabItem(3, PhosphorIconsFill.usersThree, PhosphorIconsBold.usersThree, '멤버'),
             ],
           ),
         ),

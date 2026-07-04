@@ -45,7 +45,7 @@ class _ActivityViewState extends State<ActivityView> {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(40),
-          child: Text('아직 소식이 없어요.\n가족이 사진을 올리거나 반응하면 여기에 모여요.',
+          child: Text('아직 소식이 없어요.\n멤버가 사진을 올리거나 반응하면 여기에 모여요.',
               textAlign: TextAlign.center, style: SaText.body),
         ),
       );

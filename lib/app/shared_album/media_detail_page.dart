@@ -363,7 +363,7 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
             if (n > 0) _viewerAvatars(),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(n == 0 ? '아직 아무도 안 봤어요' : '가족 $n명이 봤어요',
+              child: Text(n == 0 ? '아직 아무도 안 봤어요' : '멤버 $n명이 봤어요',
                   style: SaText.bodyMedium.copyWith(fontSize: 13)),
             ),
             if (n > 0) PhosphorIcon(PhosphorIconsBold.caretRight, size: 14, color: SaColors.textTertiary),
