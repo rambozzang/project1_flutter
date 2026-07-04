@@ -6,8 +6,12 @@ import 'package:camerawesome/camerawesome_plugin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:project1/app/camera/page/photo_reg_page.dart';
 import 'package:project1/app/camera/page/video_reg_page.dart';
+
+/// 카메라 권한 화면 상태.
+enum _CamPermState { checking, granted, denied, permanentlyDenied }
 
 class CameraAwesomePage extends StatefulWidget {
   const CameraAwesomePage({super.key});
@@ -16,9 +20,14 @@ class CameraAwesomePage extends StatefulWidget {
   State<CameraAwesomePage> createState() => _CameraAwesomePageState();
 }
 
-class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTickerProviderStateMixin {
+class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   bool _navigated = false;
   final List<File> _photos = [];
+
+  // ── 카메라 권한 게이트 ──
+  // Apple 심사 가이드라인 5.1.1: 권한 거부("허용 안 함") 시 앱이 자동으로
+  // 설정 앱으로 리다이렉트해서는 안 됨. 사용자가 명시적으로 탭해야만 이동한다.
+  _CamPermState _permState = _CamPermState.checking;
 
   /// Camera brightness correction (0.0 ~ 1.0). 0.5 is the neutral value
   /// and can be used to compensate the auto exposure.
@@ -118,6 +127,8 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _checkCameraPermission();
     // 손가락 왕복 스와이프 애니메이션(0→1→0 반복, 부드럽게) — 힌트 노출 중에만 구동.
     _swipeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 950));
     _swipeAnim = CurvedAnimation(parent: _swipeCtrl, curve: Curves.easeInOut);
@@ -137,6 +148,7 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _hintTimer?.cancel();
     _gaugeHideTimer?.cancel();
     _swipeCtrl.dispose();
@@ -144,6 +156,94 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     _gaugeVN.dispose();
     _zoomSub?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // 설정 앱에서 권한을 바꾸고 돌아왔을 때 자동으로 다시 확인(사용자가 직접 재요청할 필요 없게).
+    if (state == AppLifecycleState.resumed && _permState != _CamPermState.granted) {
+      _checkCameraPermission();
+    }
+  }
+
+  // 카메라 권한 상태만 확인한다(마이크는 녹화 버튼을 누를 때 camerawesome이 자체 요청).
+  // 이미 결정된 상태(허용/거부)는 조용히 조회만 하고, 아직 결정 전(notDetermined)일 때만
+  // 시스템 권한 다이얼로그를 1회 띄운다 — 화면 진입만으로 반복 요청하지 않기 위함.
+  Future<void> _checkCameraPermission() async {
+    var status = await Permission.camera.status;
+    if (status.isDenied) {
+      status = await Permission.camera.request();
+    }
+    if (!mounted) return;
+    setState(() {
+      _permState = status.isGranted
+          ? _CamPermState.granted
+          : status.isPermanentlyDenied
+              ? _CamPermState.permanentlyDenied
+              : _CamPermState.denied;
+    });
+  }
+
+  // 카메라 접근 안내 화면 — "허용 안 함" 후에도 절대 자동으로 설정 앱을 열지 않는다.
+  // 사용자가 버튼을 직접 탭해야만(명시적 동작) 재요청하거나 설정으로 이동한다.
+  Widget _buildPermissionGate() {
+    final bool permanentlyDenied = _permState == _CamPermState.permanentlyDenied;
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Positioned(
+              top: 8,
+              left: 8,
+              child: _topGlassButton(
+                onTap: () => Navigator.of(context).pop(),
+                child: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+              ),
+            ),
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.camera_alt_rounded, color: Colors.white54, size: 56),
+                    const SizedBox(height: 20),
+                    const Text(
+                      '카메라 접근 권한이 필요합니다',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      permanentlyDenied
+                          ? '사진·영상 촬영을 위해 카메라 접근이 필요해요.\n설정에서 카메라 권한을 허용해주세요.'
+                          : '사진과 영상을 촬영하려면 카메라 접근을\n허용해주세요.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
+                    ),
+                    const SizedBox(height: 28),
+                    ElevatedButton(
+                      onPressed: permanentlyDenied ? openAppSettings : _checkCameraPermission,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4C8DFF),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                      ),
+                      child: Text(
+                        permanentlyDenied ? '설정에서 허용하기' : '카메라 권한 허용',
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _onMediaCaptureEvent(MediaCapture? mediaCapture) {
@@ -227,6 +327,15 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
+    if (_permState == _CamPermState.checking) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator(color: Colors.white54)),
+      );
+    }
+    if (_permState != _CamPermState.granted) {
+      return _buildPermissionGate();
+    }
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
