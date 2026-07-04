@@ -181,6 +181,7 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
           if (_mainImage.isNotEmpty)
             CachedNetworkImage(
               imageUrl: _mainImage,
+              memCacheWidth: 1080,
               fit: BoxFit.cover,
               placeholder: (_, __) => DecoratedBox(decoration: BoxDecoration(gradient: SaWeatherGradients.of('night'))),
               errorWidget: (_, __, ___) => DecoratedBox(decoration: BoxDecoration(gradient: SaWeatherGradients.of('night'))),

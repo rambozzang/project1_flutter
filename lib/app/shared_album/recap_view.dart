@@ -136,7 +136,7 @@ class RecapView extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (cover.isNotEmpty) CachedNetworkImage(imageUrl: cover, fit: BoxFit.cover),
+            if (cover.isNotEmpty) CachedNetworkImage(imageUrl: cover, memCacheWidth: 800, fit: BoxFit.cover),
             const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(

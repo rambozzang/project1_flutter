@@ -147,6 +147,7 @@ class AlbumTimelineView extends StatelessWidget {
               CachedNetworkImage(
                 imageUrl: thumb,
                 cacheKey: thumb,
+                memCacheWidth: 400,
                 fit: BoxFit.cover,
                 placeholder: (_, __) => DecoratedBox(
                     decoration: BoxDecoration(gradient: SaWeatherGradients.of(_gradientKey(item)))),

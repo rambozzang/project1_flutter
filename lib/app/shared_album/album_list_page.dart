@@ -96,8 +96,13 @@ class _AlbumListPageState extends State<AlbumListPage> {
         _loading = false;
       });
       // 카드별 부가 데이터(썸네일 3장·멤버 아바타·최근 업데이트)는 병렬로 지연 로드.
-      await Future.wait(cards.map(_fillCard));
-      if (mounted) setState(() {});
+      // 4개씩 나눠 처리 — 앨범이 많을 때 요청이 몰려(연결 경합) 전체가 느려지는 것을 막고,
+      // 배치마다 화면을 갱신해 썸네일이 순차적으로 채워지게 한다.
+      const int batch = 4;
+      for (int i = 0; i < cards.length; i += batch) {
+        await Future.wait(cards.skip(i).take(batch).map(_fillCard));
+        if (mounted) setState(() {});
+      }
     } catch (e) {
       lo.g('앨범 목록 조회 실패: $e');
       if (!mounted) return;

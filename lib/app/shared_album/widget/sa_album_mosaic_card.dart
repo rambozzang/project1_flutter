@@ -53,6 +53,7 @@ class SaAlbumMosaicCard extends StatelessWidget {
                     CachedNetworkImage(
                       // Unsplash 표지 폴백은 원본(수 MB)이라 경량본으로 변환(다른 호스트는 no-op)
                       imageUrl: coverImageUrl(thumb, width: 400),
+                      memCacheWidth: 500,
                       fit: BoxFit.cover,
                       placeholder: (_, __) => DecoratedBox(
                           decoration: BoxDecoration(gradient: SaWeatherGradients.of(_gradientKey(c)))),
