@@ -448,35 +448,28 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     );
   }
 
-  // 방향으로 흐르는 코멧(작은 점 + 진행 방향으로 부드럽게 사라지는 꼬리). 화살표+점 조합보다 세련됨.
-  // axis: true=가로, false=세로. t: 0~1 진행도.
-  Widget _comet({required bool horizontal}) {
+  // 손가락 아이콘이 좌우/상하로 스와이프하는 애니메이션. 정적인 점(코멧) 대신
+  // 실제 제스처처럼 보이는 손가락 + 양쪽 화살표로 "스와이프"임을 명확히 전달한다.
+  Widget _swipeFinger({required bool horizontal, IconData? fingerIcon}) {
     return AnimatedBuilder(
       animation: _swipeAnim,
       builder: (context, _) {
-        final double t = _swipeAnim.value; // 0~1 (easeInOut 왕복)
+        final double t = _swipeAnim.value; // 0~1 easeInOut 왕복
         final double pos = (t * 2 - 1); // -1~1
-        // 왕복 방향에 따라 꼬리가 반대로 뻗도록 진행속도(미분 부호) 근사
-        final double head = pos * (horizontal ? 40 : 32);
+        final double head = pos * (horizontal ? 36 : 28);
         return Transform.translate(
           offset: horizontal ? Offset(head, 0) : Offset(0, head),
-          child: Container(
-            width: 14,
-            height: 14,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(color: Colors.white.withOpacity(0.7), blurRadius: 10, spreadRadius: 1.5),
-              ],
-            ),
+          child: Icon(
+            fingerIcon ?? Icons.touch_app_rounded,
+            color: Colors.white,
+            size: horizontal ? 22 : 20,
           ),
         );
       },
     );
   }
 
-  // 상하(밝기): 우측의 세로 글래스 알약 — 해 아이콘 + 코멧이 위↕아래 왕복.
+  // 상하(밝기): 우측의 세로 글래스 알약 — 해 아이콘 + 위/아래 화살표 + 손가락 왕복.
   Widget _buildBrightnessHint() {
     return _glassPill(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
@@ -486,25 +479,30 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
           const Icon(Icons.wb_sunny_rounded, color: Colors.white, size: 22),
           const SizedBox(height: 10),
           SizedBox(
-            width: 18,
+            width: 28,
             height: 92,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 // 은은한 트랙
                 Container(width: 3, decoration: BoxDecoration(color: Colors.white.withOpacity(0.25), borderRadius: BorderRadius.circular(2))),
-                _comet(horizontal: false),
+                // 위/아래 화살표
+                const Positioned(top: 0, child: Icon(Icons.arrow_upward_rounded, color: Colors.white54, size: 14)),
+                const Positioned(bottom: 0, child: Icon(Icons.arrow_downward_rounded, color: Colors.white54, size: 14)),
+                _swipeFinger(horizontal: false),
               ],
             ),
           ),
           const SizedBox(height: 10),
           const Text('밝기', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.2)),
+          const SizedBox(height: 2),
+          Text('스와이프', style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 10, fontWeight: FontWeight.w500)),
         ],
       ),
     );
   }
 
-  // 좌우(줌): 중앙의 가로 글래스 알약 — 돋보기 아이콘 + 코멧이 좌↔우 왕복.
+  // 좌우(줌): 중앙의 가로 글래스 알약 — 돋보기 아이콘 + 좌/우 화살표 + 손가락 왕복.
   Widget _buildZoomHint() {
     return _glassPill(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
@@ -515,17 +513,21 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
           const SizedBox(width: 12),
           SizedBox(
             width: 100,
-            height: 18,
+            height: 28,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 Container(height: 3, decoration: BoxDecoration(color: Colors.white.withOpacity(0.25), borderRadius: BorderRadius.circular(2))),
-                _comet(horizontal: true),
+                const Positioned(left: 0, child: Icon(Icons.arrow_back_rounded, color: Colors.white54, size: 14)),
+                const Positioned(right: 0, child: Icon(Icons.arrow_forward_rounded, color: Colors.white54, size: 14)),
+                _swipeFinger(horizontal: true),
               ],
             ),
           ),
           const SizedBox(width: 12),
           const Text('줌', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.2)),
+          const SizedBox(width: 2),
+          Text('스와이프', style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 10, fontWeight: FontWeight.w500)),
         ],
       ),
     );
