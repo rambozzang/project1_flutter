@@ -152,4 +152,13 @@ class BbsListController extends GetxController {
       lo.g('error searchRecomWord : $e');
     }
   }
+
+  @override
+  void onClose() {
+    // 페이지 재진입 시 같은 단일구독 스트림을 다시 listen 하다 나는
+    // "Stream has already been listened to" 오류 방지 — 컨트롤러 삭제 시 정리.
+    debounceTimer?.cancel();
+    if (!listCtrl.isClosed) listCtrl.close();
+    super.onClose();
+  }
 }

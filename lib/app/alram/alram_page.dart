@@ -46,6 +46,9 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
   void dispose() {
     tabController.dispose();
     bbsListScrollController.dispose();
+    // 재진입 시 컨트롤러(단일구독 listCtrl)를 새로 생성하도록 정리.
+    // (미삭제 시 GetX가 기존 인스턴스를 재사용 → 같은 스트림 재listen "already listened" 오류)
+    Get.delete<BbsListController>();
     super.dispose();
   }
 
