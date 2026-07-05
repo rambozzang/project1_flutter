@@ -19,20 +19,20 @@ class PermissionHandler {
   }
 
   Future<bool> handleLocationPermission() async {
-    lo.g("permission_page.dart > handleLocationPermission()");
+    lo.g("PermissionHandler > handleLocationPermission()");
     LocationPermission locationPermission = await Geolocator.checkPermission();
     lo.g(locationPermission.toString());
 
+    // 위치 권한은 선택 사항이다.
+    // 아직 결정 전(denied)일 때만 OS 권한 요청을 1회 띄우고,
+    // 영구 거부(deniedForever)여도 설정 앱으로 유도하지 않고 미허용으로 처리한다.
+    // (Apple 5.1.1: 권한 요청 전/거부 후 설정 앱 리디렉트 금지)
     if (locationPermission == LocationPermission.denied) {
       locationPermission = await Geolocator.requestPermission();
-      if (locationPermission == LocationPermission.denied) {
-        return await showLocationExplanationDialog();
-      }
-    } else if (locationPermission == LocationPermission.deniedForever) {
-      return await showOpenSettingsDialog('위치');
     }
 
-    return locationPermission == LocationPermission.always || locationPermission == LocationPermission.whileInUse;
+    return locationPermission == LocationPermission.always ||
+        locationPermission == LocationPermission.whileInUse;
   }
 
   Future<bool> handleMicrophonePermission() async {

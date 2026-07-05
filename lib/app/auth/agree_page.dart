@@ -218,22 +218,13 @@ class _AgreePageState extends State<AgreePage> with WidgetsBindingObserver {
   }
 
   Future<void> completed() async {
-    // bool locationPermissionGranted = await requestLocationPermission();
-
-    lo.e('completed() 1 ');
+    // 위치 권한은 선택 사항이다. 알림/위치 권한을 1회 요청(OS 다이얼로그)하되,
+    // 허용 여부와 관계없이 가입을 계속 진행한다.
+    // (Apple 5.1.5: 위치 없이도 앱이 동작 / 5.1.1: 거부 후 설정 앱 유도 금지)
     PermissionHandler handler = PermissionHandler();
-    lo.e('completed() 2 ');
-    bool locationPermissionGranted = await handler.completed();
-    lo.e('completed() 3 : $locationPermissionGranted');
-
-    if (locationPermissionGranted) {
-      _needToCheckPermission = false;
-      await _proceedWithSignUp();
-    } else {
-      _checkLocationPermission();
-    }
-
-    // 권한이 거부되었거나 설정 화면으로 이동한 경우, AppLifecycleState.resumed에서 처리될 것임
+    await handler.completed();
+    _needToCheckPermission = false;
+    await _proceedWithSignUp();
   }
 
   // 로딩화면(AuthPage)과 동일한 대각선 3색 그라데이션 + 액센트.

@@ -6,7 +6,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/weathergogo/theme/sky_gradient.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/weather/models/geocode.dart';
 import 'package:project1/repo/common/code_data.dart';
@@ -170,40 +169,33 @@ class WeatherGogoCntr extends GetxController {
     await getWeatherDataByLatLng(currentLocation.value.latLng, isAllSearch);
   }
 
+  // 서울시청 좌표 — 위치 권한/서비스가 없을 때의 기본 위치.
+  static const LatLng _defaultLatLng = LatLng(37.5665, 126.9780);
+
   // Auth_page.dart 에서 호출한다.
   // 1 위치 권한 확인 및 요청
   Future<Position> requestLocation() async {
+    // 위치 서비스/권한은 선택 사항이다. 사용할 수 없으면 기본 위치(서울)로 폴백하고
+    // 앱은 계속 동작한다. 화면을 막거나(BackButtonBehavior.none) 설정 앱으로 유도하지 않는다.
+    // (Apple 5.1.5: 위치 없이도 완전히 동작 / 5.1.1: 설정 앱 리디렉트 금지)
     isLocationserviceEnabled.value = await Geolocator.isLocationServiceEnabled();
-    if (!isLocationserviceEnabled.value) {
-      Utils.showNoConfirmDialog('GPS가 꺼져 있습니다.', 'GPS 설정을 변경 해주세요!', BackButtonBehavior.none, confirm: () async {
-        Geolocator.openLocationSettings();
-      }, backgroundReturn: () async {
-        Geolocator.openLocationSettings();
-      });
-      return Future.error('Location permissions are disabled.');
+
+    if (isLocationserviceEnabled.value) {
+      locationPermission = await Geolocator.checkPermission();
+      lo.g(locationPermission.toString());
+      // 아직 결정 전(denied)일 때만 OS 권한 요청을 1회 띄운다(영구 거부면 재요청/설정유도 안 함).
+      if (locationPermission == LocationPermission.denied) {
+        locationPermission = await Geolocator.requestPermission();
+      }
     }
 
-    locationPermission = await Geolocator.checkPermission();
-    lo.g(locationPermission.toString());
+    final bool granted = isLocationserviceEnabled.value &&
+        (locationPermission == LocationPermission.always ||
+            locationPermission == LocationPermission.whileInUse);
 
-    if (locationPermission == LocationPermission.denied || locationPermission == LocationPermission.deniedForever) {
-      locationPermission = await Geolocator.requestPermission();
-      if (locationPermission == LocationPermission.denied || locationPermission == LocationPermission.deniedForever) {
-        await Geolocator.requestPermission();
-      }
-      if (locationPermission == LocationPermission.denied || locationPermission == LocationPermission.deniedForever) {
-        // Utils.alert('Location permissions are denied');
-
-        Utils.showNoConfirmDialog('위치 권한이 없어 사용할수 없습니다.', '위치 설정을 변경 해주세요!', BackButtonBehavior.none, confirm: () async {
-          await openAppSettings();
-          lo.g('openAppSettings()');
-        }, backgroundReturn: () async {
-          lo.g('backgroundReturn 1');
-          locationPermission = await Geolocator.checkPermission();
-          lo.g('backgroundReturn 3');
-        });
-        return Future.error('Location permissions are disabled.');
-      }
+    if (!granted) {
+      // 위치 서비스 꺼짐 또는 권한 없음 → 기본 위치(서울)로 진행.
+      return _fallbackToDefaultLocation();
     }
 
     // ── 빠른 진입(콜드 GPS 픽스 대기 제거) ──
@@ -233,6 +225,26 @@ class WeatherGogoCntr extends GetxController {
     currentLocation.value.latLng = LatLng(position.latitude, position.longitude);
 
     return position;
+  }
+
+  // 위치 권한/서비스가 없을 때 기본 위치(서울)로 폴백한다.
+  // 날씨는 서울 기준으로 로드되며, 사용자는 상단 검색으로 다른 지역을 선택할 수 있다.
+  Future<Position> _fallbackToDefaultLocation() async {
+    currentLocation.value = GeocodeData(name: '서울', latLng: _defaultLatLng);
+    final Position pos = Position(
+      latitude: _defaultLatLng.latitude,
+      longitude: _defaultLatLng.longitude,
+      altitudeAccuracy: 0,
+      headingAccuracy: 0,
+      timestamp: DateTime.now(),
+      accuracy: 0,
+      altitude: 0,
+      heading: 0,
+      speed: 0,
+      speedAccuracy: 0,
+    );
+    positionData.value = pos;
+    return pos;
   }
 
   // 마지막 위치로 먼저 진입한 뒤, 정밀 위치를 백그라운드에서 갱신한다.
