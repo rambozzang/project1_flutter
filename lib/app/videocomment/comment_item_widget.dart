@@ -15,11 +15,14 @@ class CommentItemWidget extends StatefulWidget {
     required this.boardCommentData,
     required this.controller,
     required this.isDarkTheme,
+    this.onReply,
   });
   final FocusNode? focus;
   final BoardCommentResData boardCommentData;
   final TextEditingController? controller;
   final bool isDarkTheme;
+  // 답글(대댓글) 작성 시작 — 부모 댓글을 넘겨준다.
+  final void Function(BoardCommentResData parent)? onReply;
 
   @override
   State<CommentItemWidget> createState() => _CommentItemWidgetState();
@@ -84,14 +87,29 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
     Color textColorSub = widget.isDarkTheme ? Colors.white54 : Colors.black87;
     Color iconColor = widget.isDarkTheme ? Colors.white54 : Colors.black87;
 
+    // depthNo >= 2 면 대댓글 — 스카이라운지(bbs_comment_item_widget)와 동일하게
+    // ㄴ자 화살표 + 들여쓰기로 원댓글과 계층 구분.
+    final bool isReply = (widget.boardCommentData.depthNo ?? 1) >= 2;
+
     return Material(
       color: backgroundColor,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.only(top: 6, bottom: 0, left: 10, right: 10),
+        padding: EdgeInsets.only(
+          top: 6,
+          bottom: 0,
+          left: isReply ? 20 : 10,
+          right: 10,
+        ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (isReply)
+              const SizedBox(
+                width: 25,
+                height: 20,
+                child: Icon(Icons.subdirectory_arrow_right_outlined, color: Colors.grey, size: 14),
+              ),
             Padding(
               padding: const EdgeInsets.only(left: 5, right: 10),
               child: GestureDetector(
@@ -179,8 +197,14 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
                           iconSize: 14,
                           icon: Icon(Icons.comment_outlined, color: iconColor),
                           onPressed: () {
-                            widget.focus?.requestFocus();
-                            widget.controller?.text = '@${widget.boardCommentData.nickNm.toString()} ';
+                            // 답글 콜백이 있으면 진짜 대댓글로 저장되도록 위임.
+                            // 없으면(레거시 호출부) 기존처럼 입력창에 @닉네임 만 채운다.
+                            if (widget.onReply != null) {
+                              widget.onReply!(widget.boardCommentData);
+                            } else {
+                              widget.focus?.requestFocus();
+                              widget.controller?.text = '@${widget.boardCommentData.nickNm.toString()} ';
+                            }
                           },
                         ),
                       ),
