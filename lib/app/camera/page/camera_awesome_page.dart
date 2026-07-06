@@ -536,9 +536,9 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     );
   }
 
-  // ── 제스처 안내 (좌우=줌 / 상하=밝기) — 프로스티드 글래스 + 코멧 인디케이터 ──
+  // ── 제스처 안내 (좌우=줌 / 상하=밝기) — 캡슐/보더 없이 손끝 점이 화면을 스와이프하는 모션 ──
 
-  // 반투명 유리 알약(블러 + 은은한 흰 테두리). 검정 불투명 캡슐 대비 훨씬 가볍고 고급스럽다.
+  // 반투명 유리 알약(블러 + 은은한 흰 테두리) — 밝기 게이지 표시에 사용.
   Widget _glassPill({required Widget child, EdgeInsets? padding}) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
@@ -557,88 +557,112 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     );
   }
 
-  // 손가락 아이콘이 좌우/상하로 스와이프하는 애니메이션. 정적인 점(코멧) 대신
-  // 실제 제스처처럼 보이는 손가락 + 양쪽 화살표로 "스와이프"임을 명확히 전달한다.
-  Widget _swipeFinger({required bool horizontal, IconData? fingerIcon}) {
+  // 손끝 점이 잔상(고스트 점)을 끌며 크게 왕복 — 배경/보더 없이 실제로 화면을
+  // 문지르는 듯한 모션만으로 "스와이프" 제스처임을 전달한다.
+  Widget _swipeTrail({required bool horizontal}) {
     return AnimatedBuilder(
       animation: _swipeAnim,
       builder: (context, _) {
         final double t = _swipeAnim.value; // 0~1 easeInOut 왕복
-        final double pos = (t * 2 - 1); // -1~1
-        final double head = pos * (horizontal ? 36 : 28);
-        return Transform.translate(
-          offset: horizontal ? Offset(head, 0) : Offset(0, head),
-          child: Icon(
-            fingerIcon ?? Icons.touch_app_rounded,
-            color: Colors.white,
-            size: horizontal ? 22 : 20,
-          ),
+        final double pos = (t * 2 - 1) * (horizontal ? 58 : 44);
+        Offset at(double p) => horizontal ? Offset(p, 0) : Offset(0, p);
+        Widget dot(double size, double alpha, double p, {bool shadow = false}) => Transform.translate(
+              offset: at(p),
+              child: Container(
+                width: size,
+                height: size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: alpha),
+                  boxShadow: shadow
+                      ? [BoxShadow(color: Colors.black.withValues(alpha: 0.45), blurRadius: 10)]
+                      : null,
+                ),
+              ),
+            );
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            // 뒤따라오는 옅은 잔상 점들 — 이동 방향·속도감 전달
+            dot(9, 0.16, pos * 0.45),
+            dot(13, 0.34, pos * 0.72),
+            // 손끝
+            dot(19, 0.95, pos, shadow: true),
+          ],
         );
       },
     );
   }
 
-  // 상하(밝기): 우측의 세로 글래스 알약 — 해 아이콘 + 위/아래 화살표 + 손가락 왕복.
+  // 상하(밝기): 우측에서 손끝이 위아래로 크게 왕복 + 라벨. 캡슐/보더 없음.
   Widget _buildBrightnessHint() {
-    return _glassPill(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.wb_sunny_rounded, color: Colors.white, size: 22),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: 28,
-            height: 92,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // 은은한 트랙
-                Container(width: 3, decoration: BoxDecoration(color: Colors.white.withOpacity(0.25), borderRadius: BorderRadius.circular(2))),
-                // 위/아래 화살표
-                const Positioned(top: 0, child: Icon(Icons.arrow_upward_rounded, color: Colors.white54, size: 14)),
-                const Positioned(bottom: 0, child: Icon(Icons.arrow_downward_rounded, color: Colors.white54, size: 14)),
-                _swipeFinger(horizontal: false),
-              ],
-            ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 44,
+          height: 128,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              const Positioned(top: 0, child: Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white60, size: 22)),
+              const Positioned(bottom: 0, child: Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white60, size: 22)),
+              _swipeTrail(horizontal: false),
+            ],
           ),
-          const SizedBox(height: 10),
-          const Text('밝기', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.2)),
-          const SizedBox(height: 2),
-          Text('스와이프', style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 10, fontWeight: FontWeight.w500)),
-        ],
-      ),
+        ),
+        const SizedBox(height: 6),
+        const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.wb_sunny_rounded, color: Colors.white, size: 14),
+            SizedBox(width: 4),
+            Text('밝기 · 상하 스와이프',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  shadows: [Shadow(color: Colors.black54, blurRadius: 8)],
+                )),
+          ],
+        ),
+      ],
     );
   }
 
-  // 좌우(줌): 중앙의 가로 글래스 알약 — 돋보기 아이콘 + 좌/우 화살표 + 손가락 왕복.
+  // 좌우(줌): 중앙에서 손끝이 좌우로 크게 왕복 + 라벨. 캡슐/보더 없음.
   Widget _buildZoomHint() {
-    return _glassPill(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.zoom_in_rounded, color: Colors.white, size: 22),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 100,
-            height: 28,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(height: 3, decoration: BoxDecoration(color: Colors.white.withOpacity(0.25), borderRadius: BorderRadius.circular(2))),
-                const Positioned(left: 0, child: Icon(Icons.arrow_back_rounded, color: Colors.white54, size: 14)),
-                const Positioned(right: 0, child: Icon(Icons.arrow_forward_rounded, color: Colors.white54, size: 14)),
-                _swipeFinger(horizontal: true),
-              ],
-            ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 180,
+          height: 44,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              const Positioned(left: 0, child: Icon(Icons.chevron_left_rounded, color: Colors.white60, size: 22)),
+              const Positioned(right: 0, child: Icon(Icons.chevron_right_rounded, color: Colors.white60, size: 22)),
+              _swipeTrail(horizontal: true),
+            ],
           ),
-          const SizedBox(width: 12),
-          const Text('줌', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.2)),
-          const SizedBox(width: 2),
-          Text('스와이프', style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 10, fontWeight: FontWeight.w500)),
-        ],
-      ),
+        ),
+        const SizedBox(height: 6),
+        const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.zoom_in_rounded, color: Colors.white, size: 15),
+            SizedBox(width: 4),
+            Text('줌 · 좌우 스와이프',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  shadows: [Shadow(color: Colors.black54, blurRadius: 8)],
+                )),
+          ],
+        ),
+      ],
     );
   }
 }
