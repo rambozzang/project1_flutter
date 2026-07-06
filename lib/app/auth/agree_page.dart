@@ -115,9 +115,15 @@ class _AgreePageState extends State<AgreePage> with WidgetsBindingObserver {
   Future<bool> requestLocationPermission() async {
     LocationPermission locationPermission = await Geolocator.checkPermission();
 
+    // App Store 5.1.1(iv): 미결정(denied) 상태면 설정으로 보내기 전에 반드시
+    // OS 권한 요청 창을 먼저 띄운다. 설정 안내는 영구 거부(deniedForever)일 때만.
+    if (locationPermission == LocationPermission.denied) {
+      locationPermission = await Geolocator.requestPermission();
+    }
+
     bool locationPermissionGranted = locationPermission == LocationPermission.always || locationPermission == LocationPermission.whileInUse;
 
-    if (!locationPermissionGranted) {
+    if (!locationPermissionGranted && locationPermission == LocationPermission.deniedForever) {
       _needToCheckPermission = true;
       bool? openSettings = await showDialog<bool>(
         context: context,
