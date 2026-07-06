@@ -101,6 +101,9 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
 
   bool get _isVideo => _item.typeDtCd == 'V';
 
+  // 멀티 이미지 현재 페이지(상세 히어로 가로 스와이프)
+  int _heroIndex = 0;
+
   String get _mainImage {
     if (_isVideo) {
       String t = _item.thumbnailPath ?? '';
@@ -285,7 +288,20 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          if (_mainImage.isNotEmpty)
+          // 사진 게시물 멀티 이미지: 가로 스와이프(첫 장만 보이던 버그 수정)
+          if (!_isVideo && (_item.imageUrls?.length ?? 0) > 1)
+            PageView.builder(
+              itemCount: _item.imageUrls!.length,
+              onPageChanged: (i) => setState(() => _heroIndex = i),
+              itemBuilder: (_, i) => CachedNetworkImage(
+                imageUrl: _item.imageUrls![i],
+                memCacheWidth: 1080,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => DecoratedBox(decoration: BoxDecoration(gradient: SaWeatherGradients.of('night'))),
+                errorWidget: (_, __, ___) => DecoratedBox(decoration: BoxDecoration(gradient: SaWeatherGradients.of('night'))),
+              ),
+            )
+          else if (_mainImage.isNotEmpty)
             CachedNetworkImage(
               imageUrl: _mainImage,
               memCacheWidth: 1080,
@@ -295,6 +311,20 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
             )
           else
             DecoratedBox(decoration: BoxDecoration(gradient: SaWeatherGradients.of('night'))),
+
+          // 멀티 이미지 n/N 카운터
+          if (!_isVideo && (_item.imageUrls?.length ?? 0) > 1)
+            Positioned(
+              top: topPad + 10,
+              right: 14,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.45), borderRadius: BorderRadius.circular(999)),
+                child: Text('${_heroIndex + 1}/${_item.imageUrls!.length}',
+                    style: SaText.mono(fontSize: 11, color: Colors.white)),
+              ),
+            ),
 
           // 상/하 스크림
           const IgnorePointer(

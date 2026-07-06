@@ -655,16 +655,66 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
     );
   }
 
+  // 멀티 이미지 현재 페이지(사진 게시물 가로 스와이프)
+  int _photoIndex = 0;
+
   Widget _buildPhoto() {
     final item = widget.item;
-    final String img = (item.imageUrls?.isNotEmpty ?? false) ? item.imageUrls!.first : (item.thumbnailPath ?? '');
-    if (img.isEmpty) return const SizedBox.expand();
-    return CachedNetworkImage(
-      imageUrl: img,
-      cacheKey: img,
-      fit: BoxFit.cover,
-      width: double.infinity,
-      height: double.infinity,
+    final List<String> imgs = (item.imageUrls?.isNotEmpty ?? false)
+        ? item.imageUrls!
+        : [if ((item.thumbnailPath ?? '').isNotEmpty) item.thumbnailPath!];
+    if (imgs.isEmpty) return const SizedBox.expand();
+    if (imgs.length == 1) {
+      return CachedNetworkImage(
+        imageUrl: imgs.first,
+        cacheKey: imgs.first,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    }
+    // 멀티 이미지: 가로 PageView(세로 피드와 축이 달라 제스처 충돌 없음) + n/N 카운터 + 도트
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        PageView.builder(
+          itemCount: imgs.length,
+          onPageChanged: (i) => setState(() => _photoIndex = i),
+          itemBuilder: (_, i) => CachedNetworkImage(
+              imageUrl: imgs[i], cacheKey: imgs[i], fit: BoxFit.cover),
+        ),
+        Positioned(
+          top: MediaQuery.of(context).viewPadding.top + 12,
+          right: 14,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+            decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.45), borderRadius: BorderRadius.circular(999)),
+            child: Text('${_photoIndex + 1}/${imgs.length}',
+                style: SaText.mono(fontSize: 11, color: Colors.white)),
+          ),
+        ),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: MediaQuery.of(context).viewPadding.bottom + 96,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (int i = 0; i < imgs.length; i++)
+                Container(
+                  width: i == _photoIndex ? 16 : 6,
+                  height: 6,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  decoration: BoxDecoration(
+                    color: i == _photoIndex ? Colors.white : Colors.white.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
