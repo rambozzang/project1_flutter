@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +10,13 @@ import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_button.dart';
 
+/// 내 게시물 관리 바텀시트 (내정보 > 내 영상 상세의 '...' 버튼).
+///
+/// 2026-07-06 전면 개편:
+/// - 시트 높이 375px 고정 → 화면의 90%.
+/// - 숨기기/익명은 "무엇이 달라지는지" 설명이 붙은 카드 타일 + 스위치.
+/// - 삭제는 스위치(켜고 수정완료를 눌러야 하는 혼란) → 명시적 버튼 + 확인 다이얼로그.
+///   (기존엔 확인 전에 시트를 먼저 닫아 isDelete 반환이 유실되던 버그도 있었음)
 class VideoManagePageSheet {
   Future<dynamic> open(BuildContext context, String boardId, String hideYn, String anonyYn, String contents) async {
     Map<String, dynamic>? returnMap = await showModalBottomSheet(
@@ -19,15 +24,16 @@ class VideoManagePageSheet {
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
-          top: Radius.circular(15.0),
+          top: Radius.circular(20.0),
         ),
       ),
-      backgroundColor: Colors.black, //.withOpacity(0.8),
+      backgroundColor: const Color(0xFF17181C),
       builder: (BuildContext context) {
         return Padding(
           padding: MediaQuery.of(context).viewInsets,
           child: SizedBox(
-              height: 375,
+              // 화면의 90% 높이로 크게 연다(키보드가 올라오면 viewInsets만큼 위로 밀림).
+              height: MediaQuery.of(context).size.height * 0.9,
               child: VideoManagePage(
                 contextParent: context,
                 boardId: boardId,
@@ -62,103 +68,61 @@ class VideoManagePage extends StatefulWidget {
 }
 
 class _VideoManagePageState extends State<VideoManagePage> {
-  // 게시물 숨김 여부
-  ValueNotifier<bool> isHide = ValueNotifier<bool>(false);
-  ValueNotifier<bool> isAnony = ValueNotifier<bool>(false);
-  ValueNotifier<bool> isDelete = ValueNotifier<bool>(false);
-  ValueNotifier<bool> isModify = ValueNotifier<bool>(false);
+  static const Color _surface = Color(0xFF23252C);
+  static const Color _accent = CupertinoColors.activeOrange;
 
-  TextEditingController textController = TextEditingController();
-  FocusNode currentTextNode = FocusNode();
+  final ValueNotifier<bool> isHide = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> isAnony = ValueNotifier<bool>(false);
+  // 내용/스위치가 원래 값에서 바뀌었을 때만 저장 버튼 활성화.
+  final ValueNotifier<bool> isModify = ValueNotifier<bool>(false);
+
+  final TextEditingController textController = TextEditingController();
+  final FocusNode currentTextNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
     isHide.value = widget.hideYn == 'Y';
     isAnony.value = widget.anonyYn == 'Y';
     textController.text = widget.contents;
-
-    // 텍스트 변경 리스너 추가
-    textController.addListener(_onTextChanged);
-
-    // 스위치 상태 변경 리스너 추가
-    isHide.addListener(_onSwitchChanged);
-    isAnony.addListener(_onSwitchChanged);
-    isDelete.addListener(_onSwitchChanged);
+    textController.addListener(_checkModification);
   }
 
   @override
   void dispose() {
-    // 리스너 제거
-    textController.removeListener(_onTextChanged);
-    isHide.removeListener(_onSwitchChanged);
-    isDelete.removeListener(_onSwitchChanged);
+    textController.removeListener(_checkModification);
+    textController.dispose();
+    currentTextNode.dispose();
+    isHide.dispose();
+    isAnony.dispose();
+    isModify.dispose();
     super.dispose();
-  }
-
-  void _onTextChanged() {
-    if (textController.text != widget.contents) {
-      isModify.value = true;
-    } else {
-      _checkModification();
-    }
-  }
-
-  void _onSwitchChanged() {
-    _checkModification();
   }
 
   void _checkModification() {
     isModify.value = textController.text != widget.contents ||
         isHide.value != (widget.hideYn == 'Y') ||
-        isDelete.value ||
         isAnony.value != (widget.anonyYn == 'Y');
   }
 
+  /// 숨기기/익명/내용 수정 저장.
   Future<void> save() async {
     try {
       BoardRepo repo = BoardRepo();
       BoardUpdateData boardUpdateData = BoardUpdateData();
       boardUpdateData.boardId = widget.boardId;
-      // 1.삭제 처리
-      if (isDelete.value) {
-        Utils.showConfirmDialog('확인', '게시물을 영구적으로 삭제 하시겠습니까?', BackButtonBehavior.none, cancel: () {}, confirm: () async {
-          boardUpdateData.delYn = 'Y';
-          try {
-            ResData res = await repo.updateBoard(boardUpdateData);
-            lo.g('res ${res.toString()}');
-            if (res.code == '00') {
-              Utils.alert('삭제되었습니다.');
-              if (mounted) {
-                // 여기서 mounted 체크
-                Map<String, dynamic> returnMap = <String, dynamic>{};
-                returnMap['isDelete'] = 'Y';
-                Navigator.pop(context, returnMap);
-              }
-            } else {
-              Utils.alert('삭제 중 에러가 발생했습니다.${res.msg}');
-            }
-          } catch (e) {
-            lo.g('삭제 중 에러 ${e.toString()}');
-            Utils.alert('삭제 중 에러가 발생했습니다.');
-          }
-          // 삭제 Api 호출
-        }, backgroundReturn: () {});
-        Navigator.pop(context);
-        return;
-      }
-
-      // 2 수정 Api 호출
       boardUpdateData.hideYn = isHide.value ? 'Y' : 'N';
       boardUpdateData.anonyYn = isAnony.value ? 'Y' : 'N';
       boardUpdateData.contents = textController.text;
       ResData res = await repo.updateBoard(boardUpdateData);
       if (res.code == '00') {
         Utils.alert('수정 되었습니다.');
+        if (!mounted) return;
         Map<String, dynamic> returnMap = <String, dynamic>{};
         returnMap['contents'] = textController.text;
         returnMap['hideYn'] = isHide.value ? 'Y' : 'N';
+        returnMap['anonyYn'] = isAnony.value ? 'Y' : 'N';
         returnMap['boardId'] = widget.boardId;
-
         Navigator.pop(context, returnMap);
       } else {
         Utils.alert('수정 중 에러가 발생했습니다.${res.msg}');
@@ -168,259 +132,210 @@ class _VideoManagePageState extends State<VideoManagePage> {
     }
   }
 
-  int value = 0;
-  int? nullableValue;
-  bool positive = false;
-  bool loading = false;
+  /// 삭제 — 확인 다이얼로그 후 즉시 처리하고, 시트를 isDelete와 함께 닫는다.
+  Future<void> _delete() async {
+    Utils.showConfirmDialog('게시물 삭제', '이 게시물을 영구적으로 삭제할까요?\n삭제 후에는 되돌릴 수 없어요.', BackButtonBehavior.none,
+        cancel: () {}, confirm: () async {
+      try {
+        BoardUpdateData boardUpdateData = BoardUpdateData();
+        boardUpdateData.boardId = widget.boardId;
+        boardUpdateData.delYn = 'Y';
+        ResData res = await BoardRepo().updateBoard(boardUpdateData);
+        lo.g('res ${res.toString()}');
+        if (res.code == '00') {
+          Utils.alert('삭제되었습니다.');
+          if (mounted) {
+            Navigator.pop(context, <String, dynamic>{'isDelete': 'Y'});
+          }
+        } else {
+          Utils.alert('삭제 중 에러가 발생했습니다.${res.msg}');
+        }
+      } catch (e) {
+        lo.g('삭제 중 에러 ${e.toString()}');
+        Utils.alert('삭제 중 에러가 발생했습니다.');
+      }
+    }, backgroundReturn: () {});
+  }
+
+  /// 커서 위치에 ' #'를 삽입(앞이 공백이면 '#'만)하고 포커스를 준다.
+  void _insertHashTag() {
+    final currentText = textController.text;
+    final TextSelection selection = textController.selection;
+    final int cursorPosition = selection.base.offset;
+
+    String newText;
+    int newCursorPosition;
+
+    if (cursorPosition >= 0 && cursorPosition <= currentText.length) {
+      if (cursorPosition == 0 || currentText[cursorPosition - 1] != ' ') {
+        newText = currentText.replaceRange(cursorPosition, cursorPosition, ' #');
+        newCursorPosition = cursorPosition + 2;
+      } else {
+        newText = currentText.replaceRange(cursorPosition, cursorPosition, '#');
+        newCursorPosition = cursorPosition + 1;
+      }
+    } else {
+      if (currentText.isNotEmpty && !currentText.endsWith(' ')) {
+        newText = '$currentText #';
+        newCursorPosition = newText.length;
+      } else {
+        newText = '$currentText#';
+        newCursorPosition = newText.length;
+      }
+    }
+
+    textController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newCursorPosition),
+    );
+    FocusScope.of(context).requestFocus(currentTextNode);
+    _checkModification();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Expanded(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.only(left: 10, right: 10),
-              child: Column(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(top: 4),
-                    decoration: BoxDecoration(color: Colors.white60, borderRadius: BorderRadius.circular(100)),
+        // ── 헤더: 그랩바 + 제목 + 닫기 ──
+        Container(
+          width: 40,
+          height: 4,
+          margin: const EdgeInsets.only(top: 10),
+          decoration: BoxDecoration(color: Colors.white38, borderRadius: BorderRadius.circular(100)),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 6, 8, 0),
+          child: Row(
+            children: [
+              const Text(
+                '게시물 관리',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+              ),
+              if (widget.hideYn == 'Y') ...[
+                const Gap(8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: _accent.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  Container(
-                    height: 40,
-                    color: Colors.black.withOpacity(0.5),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        widget.hideYn == 'Y'
-                            ? const Row(
-                                children: [
-                                  Icon(Icons.lock, color: Colors.red, size: 20),
-                                  Text(
-                                    '숨기기 게시물',
-                                    style: TextStyle(color: Colors.red, fontSize: 1),
-                                  ),
-                                ],
-                              )
-                            : const Text(
-                                '게시물 관리',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                ),
-                              ),
-                        const Spacer(),
-                        IconButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          icon: const Icon(Icons.close, color: Colors.white, size: 25),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Divider(
-                    color: Colors.white.withOpacity(0.2),
-                    height: 1,
-                  ),
-                  const Gap(10),
-                  HashTagTextField(
-                    controller: textController,
-                    focusNode: currentTextNode,
-                    basicStyle: const TextStyle(fontSize: 15, color: Colors.white, decorationThickness: 0),
-                    decoratedStyle: const TextStyle(fontSize: 15, color: Colors.blue),
-                    keyboardType: TextInputType.multiline,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
-                      hintText: "내용을 입력해주세요! \n#태그1 #태그2 #태그3",
-                      hintStyle: const TextStyle(fontSize: 15, color: Colors.grey),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(5),
-                          borderSide: const BorderSide(color: Color.fromARGB(255, 59, 104, 81), width: 1.0)),
-                    ),
-                    onChanged: (text) {
-                      _checkModification();
-                    },
-                  ),
-                  ValueListenableBuilder<bool>(
-                    valueListenable: isDelete,
-                    builder: (context, value, child) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Text(
-                              '게시물 숨기기',
-                              style: TextStyle(color: value ? Colors.grey : Colors.white, fontSize: 14),
-                            ),
-                            ValueListenableBuilder<bool>(
-                              valueListenable: isHide,
-                              builder: (context, value, child) {
-                                bool thisValue = value;
-                                return Transform.scale(
-                                  scale: 0.8,
-                                  child: CupertinoSwitch(
-                                    value: thisValue,
-                                    activeTrackColor: CupertinoColors.activeOrange,
-                                    inactiveTrackColor: Colors.white.withOpacity(0.5),
-                                    onChanged: (bool value) {
-                                      isHide.value = value;
-
-                                      _checkModification();
-                                    },
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                  ValueListenableBuilder<bool>(
-                      valueListenable: isDelete,
-                      builder: (context, value, child) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Text(
-                                '게시물 익명처리',
-                                style: TextStyle(color: value ? Colors.grey : Colors.white, fontSize: 14),
-                              ),
-                              ValueListenableBuilder<bool>(
-                                valueListenable: isAnony,
-                                builder: (context, value1, child) {
-                                  bool thisValue = value1;
-                                  return Transform.scale(
-                                    scale: 0.8,
-                                    child: CupertinoSwitch(
-                                      value: thisValue,
-                                      activeTrackColor: CupertinoColors.activeOrange,
-                                      inactiveTrackColor: Colors.white.withOpacity(0.5),
-                                      onChanged: (bool value) {
-                                        isAnony.value = value;
-
-                                        _checkModification();
-                                      },
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        const Text(
-                          '게시물 삭제',
-                          style: TextStyle(color: Colors.white, fontSize: 15),
-                        ),
-                        ValueListenableBuilder<bool>(
-                          valueListenable: isDelete,
-                          builder: (context, value, child) {
-                            return Transform.scale(
-                              scale: 0.8,
-                              child: CupertinoSwitch(
-                                value: value,
-                                activeTrackColor: Colors.red,
-                                inactiveTrackColor: Colors.white.withOpacity(0.5),
-                                onChanged: (bool value) {
-                                  isDelete.value = value;
-                                  if (value) {
-                                    isHide.value = false;
-                                    isAnony.value = false;
-                                  }
-                                  _checkModification();
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Gap(5),
-                  Row(
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          final currentText = textController.text;
-                          final TextSelection selection = textController.selection;
-                          final int cursorPosition = selection.base.offset;
-
-                          String newText;
-                          int newCursorPosition;
-
-                          if (cursorPosition >= 0 && cursorPosition <= currentText.length) {
-                            // 커서 위치가 유효한 경우
-                            // 커서 앞에 공백이 없으면 공백을 추가
-                            if (cursorPosition == 0 || currentText[cursorPosition - 1] != ' ') {
-                              newText = currentText.replaceRange(cursorPosition, cursorPosition, ' #');
-                              newCursorPosition = cursorPosition + 2; // 공백과 # 다음으로 커서 이동
-                            } else {
-                              newText = currentText.replaceRange(cursorPosition, cursorPosition, '#');
-                              newCursorPosition = cursorPosition + 1; // # 다음으로 커서 이동
-                            }
-                          } else {
-                            // 커서 위치가 유효하지 않은 경우 (선택되지 않은 경우)
-                            if (currentText.isNotEmpty && !currentText.endsWith(' ')) {
-                              newText = '$currentText #';
-                              newCursorPosition = newText.length;
-                            } else {
-                              newText = '$currentText#';
-                              newCursorPosition = newText.length;
-                            }
-                          }
-
-                          textController.value = TextEditingValue(
-                            text: newText,
-                            selection: TextSelection.collapsed(offset: newCursorPosition),
-                          );
-                          FocusScope.of(context).requestFocus(currentTextNode);
-                          _checkModification();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          elevation: 1.5,
-                          minimumSize: const Size(0, 0),
-                          backgroundColor: Colors.grey[200],
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10.0),
-                          ),
-                        ),
-                        child: const Text('# 태그추가'),
-                      ),
+                      Icon(Icons.lock, color: _accent, size: 12),
+                      Gap(3),
+                      Text('숨김 중', style: TextStyle(color: _accent, fontSize: 11, fontWeight: FontWeight.w600)),
                     ],
                   ),
-                ],
+                ),
+              ],
+              const Spacer(),
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close, color: Colors.white70, size: 24),
               ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── 내용 수정 ──
+                const Text('내용', style: TextStyle(color: Colors.white54, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                const Gap(8),
+                HashTagTextField(
+                  controller: textController,
+                  focusNode: currentTextNode,
+                  basicStyle: const TextStyle(fontSize: 15, height: 1.4, color: Colors.white, decorationThickness: 0),
+                  decoratedStyle: const TextStyle(fontSize: 15, height: 1.4, color: Color(0xFF6FB2FF)),
+                  keyboardType: TextInputType.multiline,
+                  maxLines: 6,
+                  cursorColor: _accent,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: _surface,
+                    contentPadding: const EdgeInsets.all(12),
+                    hintText: "내용을 입력해주세요!\n#태그1 #태그2 #태그3",
+                    hintStyle: const TextStyle(fontSize: 14, color: Colors.white38),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _accent, width: 1.2),
+                    ),
+                  ),
+                  onChanged: (text) => _checkModification(),
+                ),
+                const Gap(8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: _insertHashTag,
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white70,
+                      backgroundColor: _surface,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    icon: const Icon(Icons.tag, size: 15),
+                    label: const Text('태그 추가', style: TextStyle(fontSize: 13)),
+                  ),
+                ),
+                const Gap(18),
+
+                // ── 공개 설정 ──
+                const Text('공개 설정', style: TextStyle(color: Colors.white54, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                const Gap(8),
+                _settingTile(
+                  icon: Icons.lock_outline_rounded,
+                  title: '게시물 숨기기',
+                  subtitle: '피드에 노출되지 않고 나만 볼 수 있어요',
+                  state: isHide,
+                ),
+                const Gap(10),
+                _settingTile(
+                  icon: Icons.visibility_off_outlined,
+                  title: '익명으로 표시',
+                  subtitle: '닉네임 대신 익명으로 표시돼요',
+                  state: isAnony,
+                ),
+                const Gap(24),
+
+                // ── 삭제 (스위치가 아닌 명시적 버튼) ──
+                Divider(color: Colors.white.withValues(alpha: 0.08), height: 1),
+                const Gap(14),
+                Center(
+                  child: TextButton.icon(
+                    onPressed: _delete,
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFFFF5A5A),
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                    ),
+                    icon: const Icon(Icons.delete_outline_rounded, size: 19),
+                    label: const Text('게시물 삭제', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
+        // ── 하단 저장 버튼(변경이 있을 때만 활성) ──
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          color: Colors.black,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          color: const Color(0xFF17181C),
           child: SafeArea(
             child: ValueListenableBuilder<bool>(
                 valueListenable: isModify,
                 builder: (context, value, child) {
                   return CustomButton(
-                    text: ' 수정 완료 ',
+                    text: ' 저장 ',
                     type: 'XL',
                     isEnable: value,
                     onPressed: value ? () => save() : null,
@@ -429,6 +344,56 @@ class _VideoManagePageState extends State<VideoManagePage> {
           ),
         ),
       ],
+    );
+  }
+
+  /// 공개 설정 타일 — 아이콘 + 제목/설명 + 스위치가 한 카드에 들어간 풀와이드 타일.
+  Widget _settingTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required ValueNotifier<bool> state,
+  }) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: state,
+      builder: (context, on, child) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: _surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: on ? _accent.withValues(alpha: 0.45) : Colors.white.withValues(alpha: 0.06),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: on ? _accent : Colors.white54, size: 21),
+              const Gap(12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+                    const Gap(2),
+                    Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 12.5, height: 1.3)),
+                  ],
+                ),
+              ),
+              const Gap(8),
+              CupertinoSwitch(
+                value: on,
+                activeTrackColor: _accent,
+                inactiveTrackColor: Colors.white24,
+                onChanged: (bool v) {
+                  state.value = v;
+                  _checkModification();
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
