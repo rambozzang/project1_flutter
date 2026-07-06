@@ -10,12 +10,10 @@ import 'package:project1/admob/native_feed_ad_page.dart';
 import 'package:project1/app/videolist/Video_screen_page.dart';
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
-import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/WeatherLottie.dart';
 import 'package:project1/utils/utils.dart';
-import 'package:text_scroll/text_scroll.dart';
 
 /// 틱톡식 빠른 스와이프 물리.
 /// 아주 작은 플링(살짝만 휙)에도 드래그 방향으로 "무조건 한 페이지" 넘어가고,
@@ -404,49 +402,10 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
             if (controller.isLoading.value == true) {
               return const SizedBox.shrink();
             }
-            String weathDesc = WeatherDataProcessor.instance
-                .combineWeatherCondition(controller.currentWeather.value.sky.toString(), controller.currentWeather.value.rain.toString());
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 155,
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Row(
-                    children: [
-                      // Container(
-                      //     width: 22,
-                      //     padding: const EdgeInsets.all(3),
-                      //     decoration: BoxDecoration(
-                      //       color: Colors.green.withOpacity(0.9),
-                      //       borderRadius: BorderRadius.circular(5),
-                      //     ),
-                      //     child: const Icon(Icons.location_on, color: Colors.white, size: 15)),
-                      // const Gap(6),
-                      SizedBox(
-                        width: 130,
-                        child: TextScroll(
-                          '현재날씨 ${controller.currentWeather.value.temp ?? 0}° ${(weathDesc.isEmpty || weathDesc == 'null') ? '' : weathDesc}    ',
-                          // '${controller.currentLocation.value!.name} ${controller.currentWeather.value.temp ?? 0}° ${(weathDesc.isEmpty || weathDesc == 'null' || weathDesc == null) ? '' : weathDesc}',
-                          mode: TextScrollMode.endless,
-                          numberOfReps: 20000,
-                          // fadedBorder: true,
-                          delayBefore: const Duration(milliseconds: 4000),
-                          pauseBetween: const Duration(milliseconds: 2000),
-                          velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
-                          style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w500),
-                          textAlign: TextAlign.left,
-                          selectable: true,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Gap(5),
+                // '현재날씨 xx°' 스크롤 캡슐은 제거(2026-07-06) — 날씨는 날씨 화면에서 확인.
                 TextButton(
                     style: TextButton.styleFrom(
                       backgroundColor: const Color.fromARGB(255, 112, 170, 31).withOpacity(0.4),
