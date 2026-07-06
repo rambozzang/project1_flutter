@@ -161,8 +161,19 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // 설정 앱에서 권한을 바꾸고 돌아왔을 때 자동으로 다시 확인(사용자가 직접 재요청할 필요 없게).
+    // 주의: 여기서 _checkCameraPermission()을 부르면 denied 상태에서 OS 요청 창을
+    // 자동 재발사(프롬프트 남발)하므로, resume에서는 '상태 읽기'만 한다.
     if (state == AppLifecycleState.resumed && _permState != _CamPermState.granted) {
-      _checkCameraPermission();
+      _refreshPermStatusOnly();
+    }
+  }
+
+  // 설정에서 돌아온 직후: 요청 없이 현재 상태만 반영(허용됐으면 즉시 카메라 진입).
+  Future<void> _refreshPermStatusOnly() async {
+    final status = await Permission.camera.status;
+    if (!mounted) return;
+    if (status.isGranted) {
+      setState(() => _permState = _CamPermState.granted);
     }
   }
 
@@ -208,7 +219,7 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
               top: 8,
               left: 8,
               child: _topGlassButton(
-                onTap: () => Navigator.of(context).pop(),
+                onTap: () => Navigator.of(context).maybePop(),
                 child: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
               ),
             ),
