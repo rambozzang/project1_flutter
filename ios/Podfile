@@ -39,5 +39,17 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    # permission_handler: 매크로가 없으면 iOS에서 request()가 프롬프트 없이 즉시
+    # permanentlyDenied를 반환한다(App Store 5.1.1(iv) 리젝 원인). 사용하는 권한만 활성화.
+    target.build_configurations.each do |config|
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
+        '$(inherited)',
+        'PERMISSION_CAMERA=1',
+        'PERMISSION_MICROPHONE=1',
+        'PERMISSION_PHOTOS=1',
+        'PERMISSION_LOCATION=1',
+        'PERMISSION_NOTIFICATIONS=1',
+      ]
+    end
   end
 end
