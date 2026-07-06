@@ -72,6 +72,9 @@ class _CommentsPageState extends State<CommentsPage> {
 
   bool isDarkTheme = true;
 
+  // 답글(대댓글) 작성 대상 — null이면 새 원댓글, 있으면 그 댓글의 대댓글로 저장.
+  BoardCommentResData? _replyTarget;
+
   @override
   void initState() {
     isDarkTheme = widget.isDark;
@@ -108,6 +111,7 @@ class _CommentsPageState extends State<CommentsPage> {
         return;
       }
       list = ((resListData.data) as List).map((data) => BoardCommentResData.fromMap(data)).toList();
+      // 백엔드가 이미 스레드 순서(원댓글 바로 뒤에 대댓글)로 정렬해 주므로 클라이언트 재정렬 금지.
       //listCtrl.sink.add(ResStream.completed([]));
       listCtrl.sink.add(ResStream.completed(list));
     } catch (e) {
@@ -116,21 +120,59 @@ class _CommentsPageState extends State<CommentsPage> {
     }
   }
 
+  // 답글 작성 시작 — 부모 댓글을 설정하고 입력창에 '@닉네임 '을 채운 뒤 포커스.
+  void startReply(BoardCommentResData parent) {
+    setState(() {
+      _replyTarget = parent;
+      replyController.text = '@${parent.nickNm ?? ''} ';
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // 직전 전송에서 키보드만 숨고 포커스가 입력창에 남아있으면 requestFocus가 no-op이라
+      // 키보드가 안 올라온다 → 이미 포커스면 키보드를 명시적으로 다시 띄운다.
+      if (replyFocusNode.hasFocus) {
+        SystemChannels.textInput.invokeMethod('TextInput.show');
+      } else {
+        replyFocusNode.requestFocus();
+      }
+      replyController.selection =
+          TextSelection.fromPosition(TextPosition(offset: replyController.text.length));
+    });
+  }
+
+  void cancelReply() {
+    setState(() {
+      _replyTarget = null;
+      replyController.clear();
+    });
+  }
+
   Future<void> saveComment() async {
     try {
       if (replyController.text == "") return;
 
       isSend.value = true;
 
+      final int bid = int.parse(widget.boardId);
+      // 답글이면 부모 댓글의 depthNo/sortNo/boardId를 넘긴다 — 백엔드가 자식 정렬값을 다시 계산.
+      // (스카이라운지 bbs_comments_cntr 와 동일 방식. 원댓글은 0/0.)
+      int depthNo = 0;
+      int sortNo = 0;
+      int parentId = bid;
+      if (_replyTarget != null) {
+        depthNo = _replyTarget!.depthNo ?? 0;
+        sortNo = _replyTarget!.sortNo ?? 0;
+        parentId = _replyTarget!.boardId ?? bid;
+      }
       CommentRepo repo = CommentRepo();
       BoardCommentData replyData = BoardCommentData();
       replyData.custId = AuthCntr.to.resLoginData.value.custId.toString();
-      replyData.parentId = int.parse(widget.boardId);
+      replyData.parentId = parentId;
+      replyData.rootId = bid;
       replyData.contents = replyController.text;
-      replyData.depthNo = 1;
-      replyData.sortNo = 1;
+      replyData.depthNo = depthNo; // 백에서 다시 계산
+      replyData.sortNo = sortNo; // 백에서 다시 계산
       replyData.typeCd = 'V';
-      replyData.rootId = int.parse(widget.boardId);
       replyData.typeDtCd = 'V';
       replyData.fileListData = [];
 
@@ -138,13 +180,20 @@ class _CommentsPageState extends State<CommentsPage> {
         if (value.code == '00') {
           // Utils.alert("댓글이 등록되었습니다.");
 
-          // 키보드만 내리기
-          SystemChannels.textInput.invokeMethod('TextInput.hide');
+          // 키보드 내리기 — hide만 하면 포커스가 남아 다음 답글 탭에서 키보드가 안 뜬다.
+          replyFocusNode.unfocus();
 
           replyController.clear();
+          _replyTarget = null;
+          setState(() {}); // 답글 배너 즉시 제거
           await getData(widget.boardId);
 
-          scrollController.jumpTo(scrollController.position.maxScrollExtent);
+          // 리스트가 다시 그려진 뒤 최신 댓글로 스크롤(클라이언트 없을 때 예외 방지).
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (scrollController.hasClients) {
+              scrollController.jumpTo(scrollController.position.maxScrollExtent);
+            }
+          });
         } else {
           Utils.alert(value.msg.toString());
         }
@@ -253,6 +302,7 @@ class _CommentsPageState extends State<CommentsPage> {
                                       boardCommentData: list[index],
                                       controller: replyController,
                                       isDarkTheme: isDarkTheme, // 추가된 부분
+                                      onReply: startReply,
                                     );
                             },
                           );
@@ -277,9 +327,41 @@ class _CommentsPageState extends State<CommentsPage> {
                 ),
               ),
             ),
+            if (_replyTarget != null) _buildReplyBanner(),
             buildBottomWidget(),
           ],
         ),
+      ),
+    );
+  }
+
+  // 답글 작성 중 표시 바 — 누구에게 답글 중인지 보여주고 취소할 수 있다.
+  Widget _buildReplyBanner() {
+    final Color sub = isDarkTheme ? Colors.white54 : Colors.black54;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 8, 10, 8),
+      color: isDarkTheme ? Colors.grey[900] : Colors.grey[100],
+      child: Row(
+        children: [
+          Icon(Icons.reply, size: 14, color: sub),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '${_replyTarget?.nickNm ?? ''}님에게 답글 작성 중',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: sub, fontSize: 12.5),
+            ),
+          ),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: cancelReply,
+            child: Padding(
+              padding: const EdgeInsets.all(6),
+              child: Icon(Icons.close, size: 14, color: sub),
+            ),
+          ),
+        ],
       ),
     );
   }

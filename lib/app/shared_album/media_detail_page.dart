@@ -3,15 +3,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/theme/sa_weather_gradients.dart';
-import 'package:project1/app/videocomment/comment_page.dart';
+import 'package:project1/app/videocomment/comment_item_widget.dart';
+import 'package:project1/repo/board/board_repo.dart';
+import 'package:project1/repo/board/data/board_comment_data.dart';
+import 'package:project1/repo/board/data/board_comment_res_data.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
+import 'package:project1/repo/bbs/comment_repo.dart';
+import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/media/media_interaction_repo.dart';
+import 'package:project1/utils/utils.dart';
 
 /// 2b · 미디어 상세 — 미디어 + 촬영일시·날씨칩 + 캡션 + 이모지 반응 + 관람 이력 + 댓글.
-/// v1: 영상은 탭 시 몰입뷰로 재생, 댓글은 기존 CommentPage(시트) 재사용.
+/// 댓글 리스트는 페이지에 인라인으로 표시하고 하단 입력 바에서 바로 작성한다(시트 미사용).
+/// 영상은 탭 시 몰입뷰로 재생.
 class MediaDetailPage extends StatefulWidget {
   const MediaDetailPage({super.key});
 
@@ -33,6 +41,14 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
   List<Map<String, dynamic>> _viewers = [];
   bool _loading = true;
 
+  // 댓글(인라인) — 페이지 내에서 바로 보고 쓴다(시트 미사용).
+  List<BoardCommentResData> _comments = [];
+  final TextEditingController _replyController = TextEditingController();
+  final FocusNode _replyFocusNode = FocusNode();
+  bool _sending = false;
+  // 답글(대댓글) 작성 대상 — null이면 새 원댓글, 있으면 그 댓글의 대댓글로 저장.
+  BoardCommentResData? _replyTarget;
+
   static const List<String> _emojiPalette = ['❤️', '😍', '👏', '🥹', '😂', '🔥'];
 
   @override
@@ -46,6 +62,7 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
     _index = (args['index'] as num?)?.toInt() ?? 0;
     _repo.recordView(_item.boardId ?? 0); // 관람 기록(누가 봤나)
     _load();
+    _loadComments();
   }
 
   Future<void> _load() async {
@@ -103,10 +120,97 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
     });
   }
 
-  void _openComments() {
-    // 전역과 동일한 다크 댓글 바텀시트 사용(앨범 라이트여도 댓글창은 기존 그대로).
-    // autoFocus: 입력창을 눌러 열었으므로 키보드를 바로 띄워 곧장 작성하게 한다.
-    CommentPage().open(context, (_item.boardId ?? 0).toString(), autoFocus: true);
+  Future<void> _loadComments() async {
+    try {
+      final ResData res = await BoardRepo().searchComment((_item.boardId ?? 0).toString(), 0, 500);
+      if (res.code != '00') return;
+      final List<BoardCommentResData> list =
+          ((res.data) as List).map((d) => BoardCommentResData.fromMap(d)).toList();
+      if (!mounted) return;
+      // 백엔드가 이미 스레드 순서(원댓글 바로 뒤에 대댓글)로 정렬해 주므로 클라이언트 재정렬 금지.
+      setState(() => _comments = list);
+    } catch (_) {
+      // 무시 — 재시도 가능(새로고침 등)
+    }
+  }
+
+  // 답글 작성 시작 — 부모 댓글을 설정하고 입력창에 '@닉네임 '을 채운 뒤 포커스.
+  void _startReply(BoardCommentResData parent) {
+    setState(() {
+      _replyTarget = parent;
+      _replyController.text = '@${parent.nickNm ?? ''} ';
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // 직전 전송에서 키보드만 숨고 포커스가 입력창에 남아있으면 requestFocus가 no-op이라
+      // 키보드가 안 올라온다 → 이미 포커스면 키보드를 명시적으로 다시 띄운다.
+      if (_replyFocusNode.hasFocus) {
+        SystemChannels.textInput.invokeMethod('TextInput.show');
+      } else {
+        _replyFocusNode.requestFocus();
+      }
+      _replyController.selection =
+          TextSelection.fromPosition(TextPosition(offset: _replyController.text.length));
+    });
+  }
+
+  void _cancelReply() {
+    setState(() {
+      _replyTarget = null;
+      _replyController.clear();
+    });
+  }
+
+  Future<void> _sendComment() async {
+    final String text = _replyController.text.trim();
+    if (text.isEmpty || _sending) return;
+    setState(() => _sending = true);
+    try {
+      final String typeCd = _item.typeDtCd ?? 'V';
+      final int bid = _item.boardId ?? 0;
+      // 답글이면 부모 댓글의 depthNo/sortNo/boardId를 넘긴다 — 백엔드가 자식 정렬값을 다시 계산.
+      // (스카이라운지 bbs_comments_cntr 와 동일 방식. 원댓글은 0/0.)
+      int depthNo = 0;
+      int sortNo = 0;
+      int parentId = bid;
+      if (_replyTarget != null) {
+        depthNo = _replyTarget!.depthNo ?? 0;
+        sortNo = _replyTarget!.sortNo ?? 0;
+        parentId = _replyTarget!.boardId ?? bid;
+      }
+      final BoardCommentData data = BoardCommentData()
+        ..custId = AuthCntr.to.resLoginData.value.custId.toString()
+        ..parentId = parentId
+        ..rootId = bid
+        ..contents = text
+        ..depthNo = depthNo // 백에서 다시 계산
+        ..sortNo = sortNo // 백에서 다시 계산
+        ..typeCd = typeCd
+        ..typeDtCd = typeCd
+        ..fileListData = [];
+      final ResData res = await CommentRepo().saveComment(data);
+      if (res.code == '00') {
+        _replyController.clear();
+        _replyTarget = null;
+        setState(() {}); // 답글 배너 즉시 제거
+        // 키보드 내리기 — hide만 하면 포커스가 남아 다음 답글 탭에서 키보드가 안 뜬다.
+        _replyFocusNode.unfocus();
+        await _loadComments();
+      } else if (mounted) {
+        Utils.alert(res.msg.toString());
+      }
+    } catch (_) {
+      if (mounted) Utils.alert('다시 시도해주세요.');
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _replyController.dispose();
+    _replyFocusNode.dispose();
+    super.dispose();
   }
 
   String _capturedLabel() {
@@ -143,7 +247,7 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
           children: [
             Expanded(
               child: ListView(
-                padding: EdgeInsets.only(bottom: 20 + pad.bottom),
+                padding: EdgeInsets.only(bottom: 24 + pad.bottom),
                 children: [
                   _buildMedia(pad.top),
                   Padding(
@@ -158,14 +262,17 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
                         _buildReactionBar(),
                         const SizedBox(height: 16),
                         _buildViewedBy(),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 8),
                       ],
                     ),
                   ),
+                  _buildCommentSection(),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
-            _buildCommentBar(pad.bottom),
+            if (_replyTarget != null) _buildReplyBanner(),
+            _buildCommentBar(),
           ],
         ),
       ),
@@ -438,43 +545,144 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
     );
   }
 
-  Widget _buildCommentBar(double bottomPad) {
-    final int cnt = _item.replyCnt ?? 0;
-    // 입력창처럼 보이는 컴포저 바 — 탭하면 댓글 시트가 '키보드가 올라온 채' 열려
-    // 곧바로 입력할 수 있다(중간에 입력창을 한 번 더 누르는 단계 제거).
+  Widget _buildCommentSection() {
+    final int n = _comments.length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 8, 18, 6),
+          child: Row(
+            children: [
+              Text('댓글', style: SaText.titleS),
+              const SizedBox(width: 6),
+              Text('$n', style: SaText.bodyMedium.copyWith(color: SaColors.textSecondary)),
+            ],
+          ),
+        ),
+        if (n == 0)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 12, 18, 20),
+            child: Text('첫 댓글을 남겨보세요',
+                style: SaText.bodyMedium.copyWith(color: SaColors.textTertiary)),
+          )
+        else
+          for (final c in _comments)
+            CommentItemWidget(
+              boardCommentData: c,
+              controller: _replyController,
+              focus: _replyFocusNode,
+              isDarkTheme: !SaColors.isLight,
+              onReply: _startReply,
+            ),
+      ],
+    );
+  }
+
+  // 답글 작성 중 표시 바 — 누구에게 답글 중인지 보여주고 취소할 수 있다.
+  Widget _buildReplyBanner() {
     return Container(
-      padding: EdgeInsets.fromLTRB(16, 10, 16, 10 + bottomPad),
+      padding: const EdgeInsets.fromLTRB(16, 8, 10, 8),
       decoration: BoxDecoration(
         color: SaColors.surface,
         border: Border(top: BorderSide(color: SaColors.border)),
       ),
-      child: GestureDetector(
-        onTap: _openComments,
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          height: 44,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: SaColors.surfaceElevated,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: SaColors.border),
+      child: Row(
+        children: [
+          PhosphorIcon(PhosphorIconsRegular.arrowBendUpLeft, size: 14, color: SaColors.textTertiary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '${_replyTarget?.nickNm ?? ''}님에게 답글 작성 중',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: SaText.body.copyWith(fontSize: 12.5, color: SaColors.textTertiary),
+            ),
           ),
-          child: Row(
-            children: [
-              PhosphorIcon(PhosphorIconsFill.chatCircle, size: 18, color: SaColors.textSecondary),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  cnt > 0 ? '댓글 $cnt개 · 댓글 남기기' : '따뜻한 댓글을 남겨보세요…',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: SaText.body.copyWith(fontSize: 13.5, color: SaColors.textTertiary),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _cancelReply,
+            child: Padding(
+              padding: const EdgeInsets.all(6),
+              child: PhosphorIcon(PhosphorIconsFill.x, size: 14, color: SaColors.textTertiary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommentBar() {
+    // 시스템 내비게이션 바(3버튼/제스처) 위로 입력창을 올린다.
+    // 키보드가 열리면 Scaffold가 body를 줄여 자동으로 밀어올리므로 그때는 추가 여백 없음.
+    final double navInset =
+        MediaQuery.of(context).viewInsets.bottom > 0 ? 0 : MediaQuery.of(context).viewPadding.bottom;
+    return Container(
+      padding: EdgeInsets.fromLTRB(16, 10, 16, 10 + navInset),
+      decoration: BoxDecoration(
+        color: SaColors.surface,
+        border: Border(top: BorderSide(color: SaColors.border)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _replyController,
+              focusNode: _replyFocusNode,
+              minLines: 1,
+              maxLines: 4,
+              textInputAction: TextInputAction.send,
+              onSubmitted: (_) => _sendComment(),
+              cursorColor: SaColors.accentTeal,
+              style: SaText.body.copyWith(fontSize: 14.5, color: SaColors.textPrimary),
+              decoration: InputDecoration(
+                hintText: '따뜻한 댓글을 남겨보세요',
+                hintStyle: SaText.body.copyWith(fontSize: 14, color: SaColors.textTertiary),
+                filled: true,
+                fillColor: SaColors.surfaceElevated,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(22),
+                  borderSide: BorderSide(color: SaColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(22),
+                  borderSide: BorderSide(color: SaColors.accentTeal, width: 1.4),
                 ),
               ),
-              PhosphorIcon(PhosphorIconsFill.paperPlaneTilt, size: 18, color: SaColors.accentTeal),
-            ],
+            ),
           ),
-        ),
+          const SizedBox(width: 8),
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: _replyController,
+            builder: (context, value, _) {
+              final bool hasText = value.text.trim().isNotEmpty;
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: (hasText && !_sending) ? _sendComment : null,
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: hasText ? SaColors.accentTeal : SaColors.surfaceElevated,
+                    border: Border.all(color: hasText ? SaColors.accentTeal : SaColors.border),
+                  ),
+                  child: _sending
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.onAccent))
+                      : PhosphorIcon(PhosphorIconsFill.paperPlaneTilt,
+                          size: 18, color: hasText ? SaColors.onAccent : SaColors.textTertiary),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
