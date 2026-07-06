@@ -395,8 +395,8 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
   Widget buildLocalName() {
     final controller = Get.find<WeatherGogoCntr>();
     return Positioned(
-        // 위 필터 칩 줄(top+10, 높이 약 30)과 붙어 보이지 않게 충분한 틈을 둔다.
-        top: MediaQuery.of(context).padding.top + (Platform.isAndroid ? 62 : 52),
+        // 위 필터 칩 줄(top+10, 높이 약 30)과 붙지 않을 정도의 틈(약 10px)만 둔다.
+        top: MediaQuery.of(context).padding.top + (Platform.isAndroid ? 50 : 40),
         left: 6,
         child: Obx(
           () {
