@@ -123,9 +123,12 @@ class WeatherNotificationService {
     final List<String> parts = [
       if (reh != null) '습도 $reh%',
       if (rn1 != null && rn1 != '0' && pty > 0) '강수 ${rn1}mm',
-      '${DateFormat('HH:mm').format(DateTime.now())} 갱신',
     ];
-    await _show(title, parts.join(' · '), _iconName(pty, sky), await _emojiPng(_emojiFor(pty, sky)));
+    // 갱신 시각은 본문 맨 뒤에 붙이지 않고 알림 헤더(subText: 앱 이름 옆 보조 텍스트)에
+    // 표시한다 → 본문에는 날씨 정보만 남아 깔끔하다.
+    final String updatedAt = '${DateFormat('HH:mm').format(DateTime.now())} 갱신';
+    await _show(title, parts.join(' · '), _iconName(pty, sky), await _emojiPng(_emojiFor(pty, sky)),
+        subText: updatedAt);
   }
 
   /// lastKnown → 직전 저장 위치 → 서울시청 순 폴백.
@@ -229,7 +232,8 @@ class WeatherNotificationService {
     }
   }
 
-  static Future<void> _show(String title, String body, String icon, Uint8List? largeIconPng) async {
+  static Future<void> _show(String title, String body, String icon, Uint8List? largeIconPng,
+      {String? subText}) async {
     final plugin = FlutterLocalNotificationsPlugin();
     // 백그라운드 isolate에서도 안전하도록 매번 초기화(이미 초기화됐어도 무해).
     await plugin.initialize(
@@ -250,6 +254,7 @@ class WeatherNotificationService {
           autoCancel: false,
           onlyAlertOnce: true,
           showWhen: false,
+          subText: subText, // 헤더(앱 이름 옆)에 "HH:mm 갱신" 표시
           icon: icon,
           largeIcon: largeIconPng != null ? ByteArrayAndroidBitmap(largeIconPng) : null,
           silent: true,
