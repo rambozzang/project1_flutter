@@ -166,19 +166,30 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     }
   }
 
+  // 이번 세션(카메라 화면)에서 OS 권한 요청을 실제로 시도했는지.
+  // Apple 5.1.1(iv): OS 요청을 시도하기 전에는 '설정으로 이동' UI를 보여주면 안 된다.
+  // 심사 기기처럼 과거에 이미 거부한 상태로 진입하면 시스템 창이 다시 뜨지 않는데,
+  // 이때 곧바로 설정 버튼부터 보여주면 "요청 전에 설정으로 유도"로 판정됨(build 55 리젝 사유).
+  bool _triedRequestThisSession = false;
+
   // 카메라 권한 상태만 확인한다(마이크는 녹화 버튼을 누를 때 camerawesome이 자체 요청).
-  // 이미 결정된 상태(허용/거부)는 조용히 조회만 하고, 아직 결정 전(notDetermined)일 때만
-  // 시스템 권한 다이얼로그를 1회 띄운다 — 화면 진입만으로 반복 요청하지 않기 위함.
-  Future<void> _checkCameraPermission() async {
+  // - 미결정(notDetermined)이면 시스템 다이얼로그를 1회 띄운다.
+  // - 영구 거부 상태는 사용자가 '권한 허용' 버튼을 직접 눌렀을 때(fromUser)만 요청을
+  //   시도하고, 창 없이 즉시 거부 반환된 뒤에야 설정 안내로 전환한다.
+  Future<void> _checkCameraPermission({bool fromUser = false}) async {
     var status = await Permission.camera.status;
     if (status.isDenied) {
       status = await Permission.camera.request();
+      _triedRequestThisSession = true;
+    } else if (fromUser && status.isPermanentlyDenied) {
+      status = await Permission.camera.request();
+      _triedRequestThisSession = true;
     }
     if (!mounted) return;
     setState(() {
       _permState = status.isGranted
           ? _CamPermState.granted
-          : status.isPermanentlyDenied
+          : (status.isPermanentlyDenied && _triedRequestThisSession)
               ? _CamPermState.permanentlyDenied
               : _CamPermState.denied;
     });
@@ -217,14 +228,14 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
                     const SizedBox(height: 10),
                     Text(
                       permanentlyDenied
-                          ? '사진·영상 촬영을 위해 카메라 접근이 필요해요.\n설정에서 카메라 권한을 허용해주세요.'
+                          ? '권한 요청 창이 더 이상 표시되지 않아요.\n설정에서 카메라 권한을 허용해주세요.'
                           : '사진과 영상을 촬영하려면 카메라 접근을\n허용해주세요.',
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
                     ),
                     const SizedBox(height: 28),
                     ElevatedButton(
-                      onPressed: permanentlyDenied ? openAppSettings : _checkCameraPermission,
+                      onPressed: permanentlyDenied ? openAppSettings : () => _checkCameraPermission(fromUser: true),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF4C8DFF),
                         foregroundColor: Colors.white,
