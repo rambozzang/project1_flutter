@@ -14,6 +14,8 @@ import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/app/videolist/video_list_page.dart';
 import 'package:project1/app/weathergogo/weathergogo_page.dart';
 import 'package:project1/config/app_config.dart';
+import 'package:project1/config/url_config.dart';
+import 'package:project1/repo/api/auth_dio.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
@@ -71,6 +73,22 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
 
   Future<void> checkAppVersion() async {
     try {
+      // 1차: 백엔드 버전 체크 (가장 빠르고 안정적)
+      final dio = await AuthDio.instance.getDio();
+      final res = await dio.get('${UrlConfig.baseURL}/comm/appVersion');
+      final resData = AuthDio.instance.dioResponse(res);
+      if (resData.code == '00' && resData.data != null) {
+        final minVersion = resData.data['minVersion'] ?? '0.0.0';
+        final forceUpdate = resData.data['forceUpdate'] ?? 'N';
+        final needUpdate = _compareVersion(AppConfig.appVersion, minVersion);
+        if (needUpdate) {
+          lo.g('checkAppVersion: 백엔드 강제업데이트 (현재=${AppConfig.appVersion}, 최소=$minVersion)');
+          _showForceUpdate();
+          return;
+        }
+      }
+
+      // 2차: 스토어 스크래핑 (백업)
       await AppVersionUpdate.checkForUpdates(appleId: AppConfig.appleId, playStoreId: AppConfig.playStoreId, country: 'kr')
           .then((data) async {
         if (data.canUpdate!) {
@@ -84,6 +102,31 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     } catch (e) {
       lo.g('checkAppVersion : $e');
     }
+  }
+
+  /// a < b 이면 true (업데이트 필요)
+  bool _compareVersion(String current, String min) {
+    try {
+      final cur = current.split('+')[0].split('.').map(int.parse).toList();
+      final minParts = min.split('+')[0].split('.').map(int.parse).toList();
+      for (int i = 0; i < 3; i++) {
+        final c = i < cur.length ? cur[i] : 0;
+        final m = i < minParts.length ? minParts[i] : 0;
+        if (c < m) return true;
+        if (c > m) return false;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _showForceUpdate() {
+    if (kDebugMode) {
+      Utils.alert("앱 최신번전으로 업데이트가 필요합니다. (백엔드)");
+      return;
+    }
+    Utils.appUpdateAlert(context, '');
   }
 
   onClick(index) {

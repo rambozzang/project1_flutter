@@ -41,6 +41,16 @@ void _processMessageData(Map<String, dynamic> messageData) async {
   final receiveCustId = messageData["receiveCustId"];
   final reportId = messageData["reportId"]?.toString();
 
+  // 앨범 초대: communityId로 앨범 페이지 이동
+  if (messageData["type"] == "COMMUNITY_INVITE") {
+    final communityId = messageData["communityId"];
+    Lo.g("COMMUNITY_INVITE: communityId=$communityId");
+    Future.delayed(const Duration(milliseconds: 300), () {
+      Get.toNamed('/CommunityHomePage', arguments: {'communityId': communityId});
+    });
+    return;
+  }
+
   // 날씨 이벤트(20): boardId가 없으므로 아래 가드보다 먼저 처리(칼메라 진입).
   if (messageData["alramCd"] == '20') {
     Future.delayed(const Duration(milliseconds: 300), () => AppPages.goRoute('20', '', null));
@@ -215,6 +225,17 @@ class FirebaseService {
   void backgroundMessageclick(RemoteMessage message) async {
     Lo.g("onMessageOpenedApp");
     Lo.g("onMessage : ${message.data.toString()}");
+
+    // 앨범 초대
+    if (message.data["type"] == "COMMUNITY_INVITE") {
+      final communityId = message.data["communityId"];
+      Lo.g("COMMUNITY_INVITE (background): communityId=$communityId");
+      Future.delayed(const Duration(milliseconds: 500), () {
+        Get.toNamed('/CommunityHomePage', arguments: {'communityId': communityId});
+      });
+      return;
+    }
+
     if (message.notification != null) {
       final boardId = message.data["boardId"];
       final receiveCustId = message.data["receiveCustId"];
@@ -246,6 +267,16 @@ class FirebaseService {
   void terminatedMessageclick(RemoteMessage? message) async {
     Lo.g("getInitialMessage");
     Lo.g("onMessage : ${message?.data.toString()}");
+
+    // 앨범 초대
+    if (message?.data["type"] == "COMMUNITY_INVITE") {
+      final communityId = message!.data["communityId"];
+      Lo.g("COMMUNITY_INVITE (terminated): communityId=$communityId");
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        Get.toNamed('/CommunityHomePage', arguments: {'communityId': communityId});
+      });
+      return;
+    }
 
     final boardId = message!.data["boardId"];
     final receiveCustId = message.data["receiveCustId"];

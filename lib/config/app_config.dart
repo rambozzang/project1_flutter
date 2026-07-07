@@ -1,6 +1,7 @@
 class AppConfig {
   AppConfig._();
 
-  static const appleId = '6557075398'; // If this value is null, its packagename will be considered
-  static const playStoreId = 'com.codelabtiger.skysnap'; // If this value is null, its packagename will be considered
+  static const appleId = '6557075398';
+  static const playStoreId = 'com.codelabtiger.skysnap';
+  static const appVersion = '1.2.0';
 }
