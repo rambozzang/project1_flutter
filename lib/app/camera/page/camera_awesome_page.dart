@@ -169,11 +169,17 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
   }
 
   // 설정에서 돌아온 직후: 요청 없이 현재 상태만 반영(허용됐으면 즉시 카메라 진입).
+  // 복귀 직후엔 플랫폼이 잠깐 이전(거부) 상태를 돌려주는 경우가 있어
+  // 즉시 1회 + 짧은 지연 후 1회, 총 2회 확인한다.
   Future<void> _refreshPermStatusOnly() async {
-    final status = await Permission.camera.status;
-    if (!mounted) return;
-    if (status.isGranted) {
-      setState(() => _permState = _CamPermState.granted);
+    for (int i = 0; i < 2; i++) {
+      final status = await Permission.camera.status;
+      if (!mounted) return;
+      if (status.isGranted) {
+        setState(() => _permState = _CamPermState.granted);
+        return;
+      }
+      if (i == 0) await Future.delayed(const Duration(milliseconds: 400));
     }
   }
 
