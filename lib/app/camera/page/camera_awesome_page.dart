@@ -212,6 +212,18 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     });
   }
 
+  // '설정에서 허용하기' 탭: 설정으로 보내기 전에 현재 상태를 다시 읽어,
+  // 이미 허용돼 있으면(설정을 다녀왔는데 화면이 뒤처진 경우) 바로 카메라로 진입한다.
+  Future<void> _openSettingsOrEnter() async {
+    final status = await Permission.camera.status;
+    if (!mounted) return;
+    if (status.isGranted) {
+      setState(() => _permState = _CamPermState.granted);
+      return;
+    }
+    openAppSettings();
+  }
+
   // 카메라 접근 안내 화면 — "허용 안 함" 후에도 절대 자동으로 설정 앱을 열지 않는다.
   // 사용자가 버튼을 직접 탭해야만(명시적 동작) 재요청하거나 설정으로 이동한다.
   Widget _buildPermissionGate() {
@@ -252,7 +264,7 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
                     ),
                     const SizedBox(height: 28),
                     ElevatedButton(
-                      onPressed: permanentlyDenied ? openAppSettings : () => _checkCameraPermission(fromUser: true),
+                      onPressed: permanentlyDenied ? _openSettingsOrEnter : () => _checkCameraPermission(fromUser: true),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF4C8DFF),
                         foregroundColor: Colors.white,
