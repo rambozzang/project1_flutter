@@ -183,30 +183,23 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     }
   }
 
-  // 이번 세션(카메라 화면)에서 OS 권한 요청을 실제로 시도했는지.
-  // Apple 5.1.1(iv): OS 요청을 시도하기 전에는 '설정으로 이동' UI를 보여주면 안 된다.
-  // 심사 기기처럼 과거에 이미 거부한 상태로 진입하면 시스템 창이 다시 뜨지 않는데,
-  // 이때 곧바로 설정 버튼부터 보여주면 "요청 전에 설정으로 유도"로 판정됨(build 55 리젝 사유).
-  bool _triedRequestThisSession = false;
-
-  // 카메라 권한 상태만 확인한다(마이크는 녹화 버튼을 누를 때 camerawesome이 자체 요청).
-  // - 미결정(notDetermined)이면 시스템 다이얼로그를 1회 띄운다.
-  // - 영구 거부 상태는 사용자가 '권한 허용' 버튼을 직접 눌렀을 때(fromUser)만 요청을
-  //   시도하고, 창 없이 즉시 거부 반환된 뒤에야 설정 안내로 전환한다.
+  // 카메라 권한 상태 확인 (마이크는 녹화 버튼을 누를 때 camerawesome이 자체 요청).
+  // Apple 5.1.1(iv) 대응 원칙(빌드 53·55·56 리젝 이력):
+  //  - OS 권한 요청은 반드시 사용자의 명시적 탭(fromUser) 뒤에만 띄운다.
+  //    (진입 즉시 자동 요청 금지 — 설명 화면을 먼저 보여주는 Apple 권장 priming 패턴)
+  //  - 설정 이동은 큰 CTA로 유도하지 않는다. 영구 거부 상태에서는 정보성 안내와
+  //    작은 텍스트 링크만 제공한다("include a notification ... and provide a link").
   Future<void> _checkCameraPermission({bool fromUser = false}) async {
     var status = await Permission.camera.status;
-    if (status.isDenied) {
+    if (fromUser && !status.isGranted && !status.isPermanentlyDenied) {
+      // 미결정(iOS notDetermined 포함) → 시스템 다이얼로그. 사용자 제스처 뒤에만 실행된다.
       status = await Permission.camera.request();
-      _triedRequestThisSession = true;
-    } else if (fromUser && status.isPermanentlyDenied) {
-      status = await Permission.camera.request();
-      _triedRequestThisSession = true;
     }
     if (!mounted) return;
     setState(() {
       _permState = status.isGranted
           ? _CamPermState.granted
-          : (status.isPermanentlyDenied && _triedRequestThisSession)
+          : status.isPermanentlyDenied
               ? _CamPermState.permanentlyDenied
               : _CamPermState.denied;
     });
@@ -224,8 +217,10 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     openAppSettings();
   }
 
-  // 카메라 접근 안내 화면 — "허용 안 함" 후에도 절대 자동으로 설정 앱을 열지 않는다.
-  // 사용자가 버튼을 직접 탭해야만(명시적 동작) 재요청하거나 설정으로 이동한다.
+  // 카메라 접근 안내 화면 — 절대 자동으로 설정 앱을 열지 않는다.
+  // - denied(미결정 포함): 왜 필요한지 설명 + '허용하고 계속하기'(탭 → OS 요청). 설정 언급 없음.
+  // - permanentlyDenied: 정보성 안내(주 액션은 '닫기') + 작은 '설정 열기' 텍스트 링크만.
+  //   (큰 설정 CTA가 두 번 연속 5.1.1(iv) 리젝 스크린샷으로 첨부됨 — build 55·56)
   Widget _buildPermissionGate() {
     final bool permanentlyDenied = _permState == _CamPermState.permanentlyDenied;
     return Scaffold(
@@ -247,35 +242,68 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.camera_alt_rounded, color: Colors.white54, size: 56),
+                    Icon(
+                      permanentlyDenied ? Icons.no_photography_outlined : Icons.camera_alt_rounded,
+                      color: Colors.white54,
+                      size: 56,
+                    ),
                     const SizedBox(height: 20),
-                    const Text(
-                      '카메라 접근 권한이 필요합니다',
+                    Text(
+                      permanentlyDenied ? '카메라를 사용할 수 없어요' : '카메라 접근 권한이 필요합니다',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700),
+                      style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 10),
                     Text(
                       permanentlyDenied
-                          ? '권한 요청 창이 더 이상 표시되지 않아요.\n설정에서 카메라 권한을 허용해주세요.'
+                          ? '카메라 권한이 꺼져 있어 촬영 기능을 사용할 수 없어요.\n휴대폰 설정에서 카메라 권한을 허용하면\n다시 촬영할 수 있어요.'
                           : '사진과 영상을 촬영하려면 카메라 접근을\n허용해주세요.',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
+                      style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
                     ),
                     const SizedBox(height: 28),
-                    ElevatedButton(
-                      onPressed: permanentlyDenied ? _openSettingsOrEnter : () => _checkCameraPermission(fromUser: true),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4C8DFF),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    if (!permanentlyDenied)
+                      ElevatedButton(
+                        onPressed: () => _checkCameraPermission(fromUser: true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF4C8DFF),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        ),
+                        child: const Text(
+                          '허용하고 계속하기',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                        ),
+                      )
+                    else ...[
+                      // 주 액션은 '닫기' — 설정 이동을 유도하지 않는다.
+                      ElevatedButton(
+                        onPressed: () => Navigator.of(context).maybePop(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white.withValues(alpha: 0.14),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        ),
+                        child: const Text('닫기', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                       ),
-                      child: Text(
-                        permanentlyDenied ? '설정에서 허용하기' : '카메라 권한 허용',
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                      const SizedBox(height: 12),
+                      // 보조: 원하는 사용자만 탭하는 작은 텍스트 링크.
+                      TextButton(
+                        onPressed: _openSettingsOrEnter,
+                        child: Text(
+                          '설정 열기',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            fontSize: 13,
+                            decoration: TextDecoration.underline,
+                            decorationColor: Colors.white.withValues(alpha: 0.4),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
