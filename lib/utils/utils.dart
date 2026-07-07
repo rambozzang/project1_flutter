@@ -11,6 +11,7 @@ import 'package:giffy_dialog/giffy_dialog.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/utils/anony_profile.dart';
 import 'package:project1/widget/custom_button.dart';
@@ -56,61 +57,90 @@ abstract class Utils {
     );
   }
 
+  /// 필수 업데이트 다이얼로그 — 공유앨범 디자인 토큰(SaColors) 적용, 라이트/다크 자동 대응.
+  /// 강제 흐름: 배리어 탭·백버튼 모두 닫기 불가, 유일한 액션은 스토어 이동.
   static void appUpdateAlert(BuildContext context, String storeUrl) {
+    SaColors.syncWith(context);
     showDialog(
       context: context,
       barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.55),
       builder: (BuildContext context) {
-        return GiffyDialog.image(
-          elevation: 5,
-          flutterWidgets.Image.asset(
-            'assets/images/app_update.png',
-            height: 110,
-            scale: 0.4,
-            fit: BoxFit.cover,
-          ),
-          giffyPadding: const EdgeInsets.all(15),
-          shadowColor: Colors.black.withOpacity(0.5),
-          title: const Text(
-            '최신 업데이트 알림',
-            textAlign: TextAlign.center,
-          ),
-          content: Text(
-            Platform.isIOS ? '최신 버전이 있습니다.\n앱스토어로 이동합니다.' : '최신 버전이 있습니다.\n플레이스토어로 이동합니다.',
-            textAlign: TextAlign.center,
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            TextButton(
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.indigo[400],
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                // minimumSize: const Size(50, 28),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: () {
-                // 스토어 링크는 외부 앱(스토어)으로 열어야 함 — 인앱 웹뷰로 열리면 업데이트 불가.
-                launchUrl(Uri.parse(storeUrl), mode: LaunchMode.externalApplication);
-                //   Future.delayed(const Duration(milliseconds: 1000), () async {
-                //     if (Platform.isIOS) {
-                //       exit(0);
-                //     } else {
-                //       SystemNavigator.pop();
-                //     }
-                //   });
-              },
-              child: const Text(
-                '필수 업데이트',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                ),
+        return PopScope(
+          canPop: false,
+          child: Dialog(
+            backgroundColor: SaColors.surface,
+            elevation: 0,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 36),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+              side: BorderSide(color: SaColors.border),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 30, 24, 22),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 그라디언트 아이콘 칩 — 앨범 주요 액션 칩과 동일한 teal→blue 패턴
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      gradient: SaColors.primaryGradient,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: SaColors.accentTeal.withValues(alpha: 0.35),
+                          blurRadius: 20,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Icon(Icons.rocket_launch_rounded, color: SaColors.onAccent, size: 30),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    '새로운 버전이 나왔어요',
+                    style: TextStyle(color: SaColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '더 안정적이고 새로워진 SkySnap을 만나보세요.\n계속하려면 업데이트가 필요해요.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: SaColors.textSecondary, fontSize: 13.5, height: 1.55),
+                  ),
+                  const SizedBox(height: 24),
+                  // 풀와이드 그라디언트 버튼 — 앨범 primary 버튼 패턴
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: SaColors.primaryGradient,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () {
+                            // 스토어 링크는 외부 앱(스토어)으로 열어야 함 — 인앱 웹뷰로 열리면 업데이트 불가.
+                            launchUrl(Uri.parse(storeUrl), mode: LaunchMode.externalApplication);
+                          },
+                          child: Center(
+                            child: Text(
+                              Platform.isIOS ? 'App Store에서 업데이트' : 'Play 스토어에서 업데이트',
+                              style: TextStyle(color: SaColors.onAccent, fontSize: 15, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         );
       },
     );
