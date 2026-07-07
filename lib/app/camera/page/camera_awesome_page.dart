@@ -228,14 +228,19 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
       body: SafeArea(
         child: Stack(
           children: [
-            Positioned(
-              top: 8,
-              left: 8,
-              child: _topGlassButton(
-                onTap: () => Navigator.of(context).maybePop(),
-                child: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+            // X(닫기)는 영구 거부 안내 화면에서만 노출한다.
+            // 요청 전 설명 화면에는 이탈 버튼을 두지 않는다 — 설명 후에는 반드시
+            // 권한 요청으로 이어져야 함(build 58 리젝: "not include an exit button
+            // on the message before the permission request").
+            if (permanentlyDenied)
+              Positioned(
+                top: 8,
+                left: 8,
+                child: _topGlassButton(
+                  onTap: () => Navigator.of(context).maybePop(),
+                  child: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                ),
               ),
-            ),
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -271,8 +276,10 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
                           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                         ),
+                        // '허용' 같은 단어 금지 — OS 다이얼로그의 선택을 선점하는 인상을 주면 안 됨
+                        // (build 58 리젝: "Use words like 'Continue' or 'Next' on the button").
                         child: const Text(
-                          '허용하고 계속하기',
+                          '계속하기',
                           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                         ),
                       )
