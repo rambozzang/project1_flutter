@@ -58,8 +58,10 @@ class DeepLinkService {
   void _handleUri(Uri uri) {
     lo.g('DeepLinkService 수신 uri: $uri');
 
-    // 커스텀 스킴: skysnap://invite?code=XXX
-    // App Links: https://skysnap.co.kr/invite?code=XXX
+    // 커스텀 스킴: skysnap://invite?code=XXX 또는 skysnap://invite/XXX
+    // App Links: https://skysnap.co.kr/invite?code=XXX 또는 /invite/XXX
+    // ※ 실제 공유 링크·QR(album_invite_page._inviteLink)은 경로형(/invite/{code})이다 —
+    //   쿼리(?code=)만 읽으면 링크·QR 유입이 전부 조용히 무시되던 버그가 있었음.
     final isCustomSchemeInvite = uri.scheme == 'skysnap' && uri.host == 'invite';
     final isAppLinkInvite = (uri.scheme == 'https' || uri.scheme == 'http') &&
         uri.host == 'skysnap.co.kr' &&
@@ -68,7 +70,13 @@ class DeepLinkService {
 
     if (!isCustomSchemeInvite && !isAppLinkInvite) return;
 
-    final code = uri.queryParameters['code'];
+    String? code = uri.queryParameters['code'];
+    if ((code == null || code.trim().isEmpty) && isAppLinkInvite && uri.pathSegments.length >= 2) {
+      code = uri.pathSegments[1]; // https://skysnap.co.kr/invite/{code}
+    }
+    if ((code == null || code.trim().isEmpty) && isCustomSchemeInvite && uri.pathSegments.isNotEmpty) {
+      code = uri.pathSegments.first; // skysnap://invite/{code}
+    }
     if (code == null || code.trim().isEmpty) return;
 
     _pendingInviteCode = code.trim();
