@@ -42,7 +42,8 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
   @override
   void initState() {
     super.initState();
-    _communityId = (Get.arguments?['communityId'] as num).toInt();
+    // int/num/String(FCM·딥링크 유입) 어떤 타입이 와도 안전하게 파싱 — 캐스팅 크래시 방지.
+    _communityId = int.tryParse('${Get.arguments?['communityId'] ?? 0}') ?? 0;
     _init();
     _scrollCtrl.addListener(() {
       if (_scrollCtrl.position.pixels >= _scrollCtrl.position.maxScrollExtent - 300) {

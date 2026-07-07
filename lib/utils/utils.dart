@@ -92,7 +92,8 @@ abstract class Utils {
                 ),
               ),
               onPressed: () {
-                launchUrl(Uri.parse(storeUrl));
+                // 스토어 링크는 외부 앱(스토어)으로 열어야 함 — 인앱 웹뷰로 열리면 업데이트 불가.
+                launchUrl(Uri.parse(storeUrl), mode: LaunchMode.externalApplication);
                 //   Future.delayed(const Duration(milliseconds: 1000), () async {
                 //     if (Platform.isIOS) {
                 //       exit(0);

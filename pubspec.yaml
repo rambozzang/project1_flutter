@@ -82,6 +82,7 @@ dependencies:
   intl: ^0.20.2
   path: ^1.8.3
   path_provider: ^2.1.4
+  package_info_plus: ^8.3.1 # 현재 앱 버전 런타임 조회(강제 업데이트 비교용 — 하드코딩 금지)
   image_cropper: ^9.1.0
   image_picker: ^1.1.2
   rxdart: ^0.28.0

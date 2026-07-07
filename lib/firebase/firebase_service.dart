@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:get/get.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:project1/firebase_options.dart';
@@ -42,8 +43,9 @@ void _processMessageData(Map<String, dynamic> messageData) async {
   final reportId = messageData["reportId"]?.toString();
 
   // 앨범 초대: communityId로 앨범 페이지 이동
+  // FCM data 값은 항상 String이므로 int로 변환해서 넘긴다(페이지가 num 캐스팅함).
   if (messageData["type"] == "COMMUNITY_INVITE") {
-    final communityId = messageData["communityId"];
+    final int communityId = int.tryParse('${messageData["communityId"]}') ?? 0;
     Lo.g("COMMUNITY_INVITE: communityId=$communityId");
     Future.delayed(const Duration(milliseconds: 300), () {
       Get.toNamed('/CommunityHomePage', arguments: {'communityId': communityId});
@@ -226,9 +228,9 @@ class FirebaseService {
     Lo.g("onMessageOpenedApp");
     Lo.g("onMessage : ${message.data.toString()}");
 
-    // 앨범 초대
+    // 앨범 초대 — FCM data 값은 항상 String이라 int 변환 필수.
     if (message.data["type"] == "COMMUNITY_INVITE") {
-      final communityId = message.data["communityId"];
+      final int communityId = int.tryParse('${message.data["communityId"]}') ?? 0;
       Lo.g("COMMUNITY_INVITE (background): communityId=$communityId");
       Future.delayed(const Duration(milliseconds: 500), () {
         Get.toNamed('/CommunityHomePage', arguments: {'communityId': communityId});
@@ -268,9 +270,9 @@ class FirebaseService {
     Lo.g("getInitialMessage");
     Lo.g("onMessage : ${message?.data.toString()}");
 
-    // 앨범 초대
+    // 앨범 초대 — FCM data 값은 항상 String이라 int 변환 필수.
     if (message?.data["type"] == "COMMUNITY_INVITE") {
-      final communityId = message!.data["communityId"];
+      final int communityId = int.tryParse('${message!.data["communityId"]}') ?? 0;
       Lo.g("COMMUNITY_INVITE (terminated): communityId=$communityId");
       Future.delayed(const Duration(milliseconds: 1500), () {
         Get.toNamed('/CommunityHomePage', arguments: {'communityId': communityId});

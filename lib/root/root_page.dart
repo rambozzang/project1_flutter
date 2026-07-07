@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:project1/app/shared_album/album_list_page.dart';
 import 'package:project1/app/camera/page/camera_awesome_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
@@ -72,37 +73,55 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   }
 
   Future<void> checkAppVersion() async {
+    // 현재 설치된 앱 버전 — 하드코딩 상수 대신 런타임 조회(pubspec 버전이 자동 반영되어 rot 없음).
+    String currentVersion = '';
     try {
-      // 1차: 백엔드 버전 체크 (가장 빠르고 안정적)
+      currentVersion = (await PackageInfo.fromPlatform()).version;
+    } catch (e) {
+      lo.g('checkAppVersion: PackageInfo 실패 $e');
+    }
+
+    // 1차: 백엔드 버전 체크. 실패해도 2차(스토어)로 반드시 넘어가도록 자체 try로 격리한다.
+    try {
       final dio = await AuthDio.instance.getDio();
       final res = await dio.get('${UrlConfig.baseURL}/comm/appVersion');
       final resData = AuthDio.instance.dioResponse(res);
       if (resData.code == '00' && resData.data != null) {
-        final minVersion = resData.data['minVersion'] ?? '0.0.0';
-        final forceUpdate = resData.data['forceUpdate'] ?? 'N';
-        final needUpdate = _compareVersion(AppConfig.appVersion, minVersion);
-        if (needUpdate) {
-          lo.g('checkAppVersion: 백엔드 강제업데이트 (현재=${AppConfig.appVersion}, 최소=$minVersion)');
+        final String minVersion = resData.data['minVersion']?.toString() ?? '0.0.0';
+        final bool force = (resData.data['forceUpdate']?.toString() ?? 'N') == 'Y';
+        if (force && currentVersion.isNotEmpty && _compareVersion(currentVersion, minVersion)) {
+          lo.g('checkAppVersion: 백엔드 강제업데이트 (현재=$currentVersion, 최소=$minVersion)');
           _showForceUpdate();
           return;
         }
       }
-
-      // 2차: 스토어 스크래핑 (백업)
-      await AppVersionUpdate.checkForUpdates(appleId: AppConfig.appleId, playStoreId: AppConfig.playStoreId, country: 'kr')
-          .then((data) async {
-        if (data.canUpdate!) {
-          if (kDebugMode) {
-            Utils.alert("앱 최신번전으로 업데이트가 필요합니다.");
-          } else {
-            Utils.appUpdateAlert(context, data.storeUrl.toString());
-          }
-        }
-      });
     } catch (e) {
-      lo.g('checkAppVersion : $e');
+      lo.g('checkAppVersion: 백엔드 체크 실패(스토어 체크로 진행) $e');
+    }
+
+    // 2차: 스토어 신버전 확인(스크래핑) — 실패는 조용히 무시(다음 실행 때 재시도).
+    try {
+      final data = await AppVersionUpdate.checkForUpdates(
+          appleId: AppConfig.appleId, playStoreId: AppConfig.playStoreId, country: 'kr');
+      if (data.canUpdate == true) {
+        if (kDebugMode) {
+          Utils.alert("앱 최신버전으로 업데이트가 필요합니다.");
+        } else if (mounted) {
+          // 스크래핑이 URL을 못 채워주는 경우가 있어 공식 스토어 URL로 폴백을 보장한다.
+          final String url =
+              (data.storeUrl != null && data.storeUrl!.startsWith('http')) ? data.storeUrl! : _storeUrl();
+          Utils.appUpdateAlert(context, url);
+        }
+      }
+    } catch (e) {
+      lo.g('checkAppVersion: 스토어 체크 실패 $e');
     }
   }
+
+  /// 플랫폼별 공식 스토어 URL — 강제 업데이트 버튼이 항상 열 수 있는 유효한 링크.
+  String _storeUrl() => Platform.isIOS
+      ? 'https://apps.apple.com/kr/app/id${AppConfig.appleId}'
+      : 'https://play.google.com/store/apps/details?id=${AppConfig.playStoreId}';
 
   /// a < b 이면 true (업데이트 필요)
   bool _compareVersion(String current, String min) {
@@ -122,11 +141,13 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   }
 
   void _showForceUpdate() {
+    if (!mounted) return;
     if (kDebugMode) {
-      Utils.alert("앱 최신번전으로 업데이트가 필요합니다. (백엔드)");
+      Utils.alert("앱 최신버전으로 업데이트가 필요합니다. (백엔드)");
       return;
     }
-    Utils.appUpdateAlert(context, '');
+    // 빈 URL을 넘기면 닫을 수 없는 다이얼로그에 갇힌다 — 반드시 유효한 스토어 URL 전달.
+    Utils.appUpdateAlert(context, _storeUrl());
   }
 
   onClick(index) {
