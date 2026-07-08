@@ -109,11 +109,12 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              // 밝은 캡슐(white 36%)은 낮 하늘 배경에서 등급색('좋음' 하늘색)이 묻혀
-              // 안 보였음 → 다크 글래스로 반전해 등급색·흰 텍스트 대비를 확보한다.
-              color: Colors.black.withValues(alpha: 0.30),
+              // 은은한 다크 틴트 + 블러: 밝은 캡슐(white 36%)은 등급색이 묻히고,
+              // 진한 캡슐(black 30%)은 앱의 가벼운 톤과 안 맞음 → 중간(16%)으로.
+              // 대비 부족분은 게이지 텍스트 섀도우가 보완한다.
+              color: Colors.black.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.15),

@@ -39,13 +39,15 @@ class DustHalfGauge extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 3),
-        // 다크 글래스 캡슐 위 표시 전제 — 기본 흰 텍스트 + 등급색 강조로 대비 확보.
+        // 옅은 글래스 캡슐 위 표시 — 흰 텍스트 + 등급색 강조 + 섀도우로
+        // 밝은 하늘 배경에서도 대비를 보장한다.
         RichText(
           text: TextSpan(
             style: const TextStyle(
               fontSize: 11.5,
               color: Colors.white,
               fontWeight: FontWeight.w600,
+              shadows: [Shadow(color: Colors.black45, blurRadius: 5)],
             ),
             children: [
               TextSpan(text: '$label ', style: TextStyle(color: Colors.white.withValues(alpha: 0.75))),
@@ -95,9 +97,9 @@ class _HalfGaugePainter extends CustomPainter {
     const startAngle = math.pi;
     const totalSweep = math.pi;
 
-    // 배경 트랙 — 다크 캡슐 위에서 보이도록 흰색 계열
+    // 배경 트랙 — 옅은 글래스 캡슐 위에서도 보이도록 흰색 계열
     final trackPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.22)
+      ..color = Colors.white.withValues(alpha: 0.32)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
