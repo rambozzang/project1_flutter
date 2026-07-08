@@ -1,9 +1,8 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
-import 'package:project1/app/weather/widgets/dust_half_gauge.dart';
+import 'package:project1/app/weather/widgets/dust_bar_gauge.dart';
 import 'package:project1/app/weathergogo/cntr/data/current_weather_data.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
@@ -102,47 +101,25 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
       if (mist == null || (mist.mist10Grade == null && mist.mist25Grade == null)) {
         return const SizedBox.shrink();
       }
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              // 은은한 다크 틴트 + 블러: 밝은 캡슐(white 36%)은 등급색이 묻히고,
-              // 진한 캡슐(black 30%)은 앱의 가벼운 톤과 안 맞음 → 중간(16%)으로.
-              // 대비 부족분은 게이지 텍스트 섀도우가 보완한다.
-              color: Colors.black.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DustHalfGauge(
-                  label: '미세',
-                  value: mist.mist10,
-                  grade: mist.mist10Grade,
-                  max: 150,
-                ),
-                const Gap(16),
-                DustHalfGauge(
-                  label: '초미세',
-                  value: mist.mist25,
-                  grade: mist.mist25Grade,
-                  max: 75,
-                ),
-              ],
-            ),
+      // 캡슐/배경 없이 하늘 위에 바로 얹는 가로 바 게이지 — 앱의 가벼운 톤 유지.
+      // 가독성은 위젯 내부의 텍스트 섀도우·바 그림자가 담당한다.
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DustBarGauge(
+            label: '미세',
+            value: mist.mist10,
+            grade: mist.mist10Grade,
+            max: 150,
           ),
-        ),
+          const Gap(18),
+          DustBarGauge(
+            label: '초미세',
+            value: mist.mist25,
+            grade: mist.mist25Grade,
+            max: 75,
+          ),
+        ],
       );
     });
   }

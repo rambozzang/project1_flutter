@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:project1/app/weather/helper/extensions.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
+import 'package:project1/app/weather/widgets/dust_bar_gauge.dart';
 
 class MainWeatherInfo extends StatelessWidget {
   const MainWeatherInfo({super.key});
@@ -25,7 +26,7 @@ class MainWeatherInfo extends StatelessWidget {
                 children: [
                   // 어제보다 정보
                   Text(
-                    weatherProv.yesterdayDesc.value ?? '',
+                    weatherProv.yesterdayDesc.value,
                     textAlign: TextAlign.left,
                     style: TextStyle(
                       fontSize: 15,
@@ -60,26 +61,33 @@ class MainWeatherInfo extends StatelessWidget {
                     weatherProv.oneCallCurrentWeather.value!.weather![0].description!.toTitleCase(),
                     style: lightText.copyWith(fontSize: 16),
                   ),
-                  Get.find<WeatherCntr>().mistViewData.value?.mist10Grade == null
-                      ? const SizedBox.shrink()
-                      : RichText(
-                          text: TextSpan(
-                            text: '미세',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            children: <TextSpan>[
-                              buildTextMist(Get.find<WeatherCntr>().mistViewData.value!.mist10Grade.toString()),
-                              const TextSpan(
-                                text: ' 초미세',
-                                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: Colors.white),
-                              ),
-                              buildTextMist(Get.find<WeatherCntr>().mistViewData.value!.mist25Grade.toString()),
-                            ],
+                  const SizedBox(height: 6),
+                  Builder(
+                    builder: (context) {
+                      final mist = weatherProv.mistViewData.value;
+                      if (mist == null ||
+                          (mist.mist10Grade == null && mist.mist25Grade == null)) {
+                        return const SizedBox.shrink();
+                      }
+                      return Row(
+                        children: [
+                          DustBarGauge(
+                            label: '미세',
+                            value: mist.mist10,
+                            grade: mist.mist10Grade,
+                            max: 150,
                           ),
-                        ),
+                          const SizedBox(width: 12),
+                          DustBarGauge(
+                            label: '초미세',
+                            value: mist.mist25,
+                            grade: mist.mist25Grade,
+                            max: 75,
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -93,41 +101,5 @@ class MainWeatherInfo extends StatelessWidget {
         ),
       );
     });
-  }
-
-  TextSpan buildTextMist(String mist) {
-    /*
-      if (value >= 0 && value <= 30) {
-      return '좋음';
-    } else if (value >= 31 && value <= 80) {
-      return '보통';
-    } else if (value >= 81 && value <= 150) {
-      return '나쁨';
-    } else {
-      return '매우나쁨';
-    }
-    */
-    Color color = Colors.blue;
-    switch (mist) {
-      case '좋음':
-        color = Colors.blue;
-        break;
-      case '보통':
-        color = Colors.green;
-        break;
-      case '나쁨':
-        color = Colors.orange;
-        break;
-      case '매우나쁨':
-        color = Colors.red;
-        break;
-      default:
-        color = Colors.blue;
-    }
-
-    return TextSpan(
-      text: mist,
-      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: color),
-    );
   }
 }
