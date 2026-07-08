@@ -1,0 +1,32 @@
+default_platform(:android)
+
+# Google Play Store 메타데이터 업데이트
+lane :play_metadata do
+  supply(
+    package_name: "com.codelabtiger.skysnap",
+    metadata_path: "fastlane/metadata/android",
+    skip_upload_aab: true,
+    skip_upload_images: true,
+    skip_upload_screenshots: true,
+    track: "production"
+  )
+end
+
+# App Store 메타데이터 업데이트
+lane :appstore_metadata do
+  deliver(
+    app_identifier: "com.codelabtiger.skysnap",
+    metadata_path: "fastlane/metadata",
+    skip_screenshots: true,
+    skip_binary_upload: true,
+    force: true,
+    submit_for_review: false,
+    automatic_release: false
+  )
+end
+
+# 양쪽 스토어 메타데이터 한번에 업데이트
+lane :all_metadata do
+  play_metadata
+  appstore_metadata
+end

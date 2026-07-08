@@ -1,0 +1,1 @@
+weather,camera,sky,forecast,real-time,rain,snow,sunny,cloudy,temperature,humid
