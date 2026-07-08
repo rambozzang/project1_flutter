@@ -1,7 +1,9 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
+import 'package:project1/app/weather/widgets/dust_half_gauge.dart';
 import 'package:project1/app/weathergogo/cntr/data/current_weather_data.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
@@ -97,48 +99,51 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
   Widget _buildAirQualityInfo(Rx<MistViewData?> mistViewData) {
     return Obx(() {
       final mist = mistViewData.value;
-      if (mist == null) return const SizedBox.shrink();
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Gap(5),
-          RichText(
-            text: TextSpan(
-              style: const TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w500),
+      if (mist == null || (mist.mist10Grade == null && mist.mist25Grade == null)) {
+        return const SizedBox.shrink();
+      }
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              // 밝은 캡슐(white 36%)은 낮 하늘 배경에서 등급색('좋음' 하늘색)이 묻혀
+              // 안 보였음 → 다크 글래스로 반전해 등급색·흰 텍스트 대비를 확보한다.
+              color: Colors.black.withValues(alpha: 0.30),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const TextSpan(text: '미세 '),
-                _buildMistSpan(mist.mist10Grade ?? ''),
-                const TextSpan(text: ' 초미세 '),
-                _buildMistSpan(mist.mist25Grade ?? ''),
+                DustHalfGauge(
+                  label: '미세',
+                  value: mist.mist10,
+                  grade: mist.mist10Grade,
+                  max: 150,
+                ),
+                const Gap(16),
+                DustHalfGauge(
+                  label: '초미세',
+                  value: mist.mist25,
+                  grade: mist.mist25Grade,
+                  max: 75,
+                ),
               ],
             ),
           ),
-        ],
+        ),
       );
     });
-  }
-
-  TextSpan _buildMistSpan(String mist) {
-    final color = _getMistColor(mist);
-    return TextSpan(
-      text: mist,
-      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: color),
-    );
-  }
-
-  Color _getMistColor(String mist) {
-    switch (mist) {
-      case '좋음':
-        return Colors.blue;
-      case '보통':
-        return Colors.green;
-      case '나쁨':
-        return Colors.orange;
-      case '매우나쁨':
-        return Colors.red;
-      default:
-        return Colors.blue;
-    }
   }
 
   Widget _buildWeatherAnimation(CurrentWeatherData weather) {
