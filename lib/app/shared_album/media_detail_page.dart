@@ -11,6 +11,7 @@ import 'package:project1/app/videocomment/comment_item_widget.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_comment_data.dart';
 import 'package:project1/repo/board/data/board_comment_res_data.dart';
+import 'package:project1/repo/board/data/board_comment_update_req_data.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/bbs/comment_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -48,6 +49,9 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
   bool _sending = false;
   // 답글(대댓글) 작성 대상 — null이면 새 원댓글, 있으면 그 댓글의 대댓글로 저장.
   BoardCommentResData? _replyTarget;
+  // 댓글 수정 대상 — null이 아니면 전송 시 새 저장 대신 수정(update)으로 처리.
+  // 수정과 답글은 상호배타 — 한쪽을 켜면 다른쪽은 해제한다.
+  BoardCommentResData? _editTarget;
 
   static const List<String> _emojiPalette = ['❤️', '😍', '👏', '🥹', '😂', '🔥'];
 
@@ -140,6 +144,7 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
   // 답글 작성 시작 — 부모 댓글을 설정하고 입력창에 '@닉네임 '을 채운 뒤 포커스.
   void _startReply(BoardCommentResData parent) {
     setState(() {
+      _editTarget = null; // 답글 시작 시 수정 모드 해제
       _replyTarget = parent;
       _replyController.text = '@${parent.nickNm ?? ''} ';
     });
@@ -164,11 +169,95 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
     });
   }
 
+  // 댓글 수정 시작 — 입력창에 기존 내용을 채우고 수정 모드로 전환한다.
+  void _startEdit(BoardCommentResData c) {
+    setState(() {
+      _replyTarget = null; // 수정 시작 시 답글 모드 해제
+      _editTarget = c;
+      _replyController.text = c.contents ?? '';
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_replyFocusNode.hasFocus) {
+        SystemChannels.textInput.invokeMethod('TextInput.show');
+      } else {
+        _replyFocusNode.requestFocus();
+      }
+      _replyController.selection =
+          TextSelection.fromPosition(TextPosition(offset: _replyController.text.length));
+    });
+  }
+
+  void _cancelEdit() {
+    setState(() {
+      _editTarget = null;
+      _replyController.clear();
+    });
+    _replyFocusNode.unfocus();
+  }
+
+  // 댓글 삭제 — 확인 후 백엔드 삭제(스카이라운지와 동일 엔드포인트) → 목록 새로고침.
+  Future<void> _deleteComment(BoardCommentResData c) async {
+    final bool? ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: SaColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text('댓글 삭제', style: SaText.titleS),
+        content: Text('이 댓글을 삭제할까요?', style: SaText.body.copyWith(color: SaColors.textSecondary)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('취소', style: SaText.bodyMedium.copyWith(color: SaColors.textTertiary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('삭제', style: SaText.bodyMedium.copyWith(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      final ResData res = await CommentRepo().deleteComment((c.boardId ?? 0).toString());
+      if (res.code == '00') {
+        // 수정 중이던 댓글을 삭제하면 수정 모드 해제
+        if (_editTarget?.boardId == c.boardId) _cancelEdit();
+        await _loadComments();
+      } else if (mounted) {
+        Utils.alert(res.msg.toString());
+      }
+    } catch (_) {
+      if (mounted) Utils.alert('댓글 삭제 중 오류가 발생했습니다.');
+    }
+  }
+
   Future<void> _sendComment() async {
     final String text = _replyController.text.trim();
     if (text.isEmpty || _sending) return;
     setState(() => _sending = true);
     try {
+      // 수정 모드 — 저장 대신 update(스카이라운지와 동일 엔드포인트). 앨범 댓글은 이미지가 없어 fileListData는 비움.
+      if (_editTarget != null) {
+        final BoardCommentUpdateReqData data = BoardCommentUpdateReqData()
+          ..boardId = (_editTarget!.boardId ?? 0).toString()
+          ..contents = text
+          ..delYn = 'N'
+          ..hideYn = 'N'
+          ..fileListData = [];
+        final ResData res = await CommentRepo().update(data);
+        if (res.code == '00') {
+          _replyController.clear();
+          _editTarget = null;
+          setState(() {}); // 수정 배너 즉시 제거
+          _replyFocusNode.unfocus();
+          await _loadComments();
+        } else if (mounted) {
+          Utils.alert(res.msg.toString());
+        }
+        return;
+      }
+
       final String typeCd = _item.typeDtCd ?? 'V';
       final int bid = _item.boardId ?? 0;
       // 답글이면 부모 댓글의 depthNo/sortNo/boardId를 넘긴다 — 백엔드가 자식 정렬값을 다시 계산.
@@ -275,6 +364,7 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
               ),
             ),
             if (_replyTarget != null) _buildReplyBanner(),
+            if (_editTarget != null) _buildEditBanner(),
             _buildCommentBar(),
           ],
         ),
@@ -604,6 +694,8 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
               focus: _replyFocusNode,
               isDarkTheme: !SaColors.isLight,
               onReply: _startReply,
+              onEdit: _startEdit,
+              onDelete: _deleteComment,
             ),
       ],
     );
@@ -642,6 +734,39 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
     );
   }
 
+  // 댓글 수정 중 표시 바 — 수정 모드임을 알리고 취소할 수 있다.
+  Widget _buildEditBanner() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 8, 10, 8),
+      decoration: BoxDecoration(
+        color: SaColors.surface,
+        border: Border(top: BorderSide(color: SaColors.border)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.edit_outlined, size: 14, color: SaColors.accentTeal),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '댓글 수정 중',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: SaText.body.copyWith(fontSize: 12.5, color: SaColors.textTertiary),
+            ),
+          ),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _cancelEdit,
+            child: Padding(
+              padding: const EdgeInsets.all(6),
+              child: PhosphorIcon(PhosphorIconsFill.x, size: 14, color: SaColors.textTertiary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCommentBar() {
     // 시스템 내비게이션 바(3버튼/제스처) 위로 입력창을 올린다.
     // 키보드가 열리면 Scaffold가 body를 줄여 자동으로 밀어올리므로 그때는 추가 여백 없음.
@@ -667,7 +792,7 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
               cursorColor: SaColors.accentTeal,
               style: SaText.body.copyWith(fontSize: 14.5, color: SaColors.textPrimary),
               decoration: InputDecoration(
-                hintText: '따뜻한 댓글을 남겨보세요',
+                hintText: _editTarget != null ? '댓글을 수정하세요' : '따뜻한 댓글을 남겨보세요',
                 hintStyle: SaText.body.copyWith(fontSize: 14, color: SaColors.textTertiary),
                 filled: true,
                 fillColor: SaColors.surfaceElevated,
@@ -706,8 +831,10 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.onAccent))
-                      : PhosphorIcon(PhosphorIconsFill.paperPlaneTilt,
-                          size: 18, color: hasText ? SaColors.onAccent : SaColors.textTertiary),
+                      : (_editTarget != null
+                          ? Icon(Icons.check_rounded, size: 20, color: hasText ? SaColors.onAccent : SaColors.textTertiary)
+                          : PhosphorIcon(PhosphorIconsFill.paperPlaneTilt,
+                              size: 18, color: hasText ? SaColors.onAccent : SaColors.textTertiary)),
                 ),
               );
             },

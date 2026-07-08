@@ -16,6 +16,8 @@ class CommentItemWidget extends StatefulWidget {
     required this.controller,
     required this.isDarkTheme,
     this.onReply,
+    this.onEdit,
+    this.onDelete,
   });
   final FocusNode? focus;
   final BoardCommentResData boardCommentData;
@@ -23,6 +25,10 @@ class CommentItemWidget extends StatefulWidget {
   final bool isDarkTheme;
   // 답글(대댓글) 작성 시작 — 부모 댓글을 넘겨준다.
   final void Function(BoardCommentResData parent)? onReply;
+  // 본인 댓글 수정/삭제 — 콜백을 넘긴 화면(앨범 등)에서만 ⋯ 메뉴가 노출된다.
+  // (비디오 댓글 등 콜백 미전달 화면은 기존 UI 그대로 유지)
+  final void Function(BoardCommentResData comment)? onEdit;
+  final void Function(BoardCommentResData comment)? onDelete;
 
   @override
   State<CommentItemWidget> createState() => _CommentItemWidgetState();
@@ -80,6 +86,63 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
     super.dispose();
   }
 
+  // 본인 댓글 ⋯ 메뉴 (수정/삭제) — 스카이라운지 modifyWindow 패턴과 동일하게
+  // 로그인 custId == 댓글 작성자 custId 일 때만, 그리고 콜백이 전달된 화면에서만 노출.
+  Widget _buildMoreMenu() {
+    final bool canManage = widget.onEdit != null || widget.onDelete != null;
+    if (!canManage) return const SizedBox.shrink();
+
+    final String myId = AuthCntr.to.custId.value;
+    final bool isMine = myId.isNotEmpty && myId == (widget.boardCommentData.custId ?? '');
+    if (!isMine) return const SizedBox.shrink();
+
+    final Color menuBg = widget.isDarkTheme ? const Color(0xFF2A2A2A) : Colors.white;
+    final Color menuText = widget.isDarkTheme ? Colors.white : Colors.black87;
+    final Color iconColor = widget.isDarkTheme ? Colors.white54 : Colors.black45;
+
+    return SizedBox(
+      height: 22,
+      width: 26,
+      child: PopupMenuButton<String>(
+        constraints: const BoxConstraints(minWidth: 96, maxWidth: 120),
+        padding: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        icon: Icon(Icons.more_horiz, size: 18, color: iconColor),
+        color: menuBg,
+        onSelected: (String v) {
+          if (v == 'edit') widget.onEdit?.call(widget.boardCommentData);
+          if (v == 'delete') widget.onDelete?.call(widget.boardCommentData);
+        },
+        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+          if (widget.onEdit != null)
+            PopupMenuItem<String>(
+              value: 'edit',
+              height: 42,
+              child: Row(
+                children: [
+                  const Icon(Icons.edit_outlined, color: Colors.blue, size: 17),
+                  const SizedBox(width: 8),
+                  Text('수정', style: TextStyle(fontSize: 13, color: menuText)),
+                ],
+              ),
+            ),
+          if (widget.onDelete != null)
+            PopupMenuItem<String>(
+              value: 'delete',
+              height: 42,
+              child: Row(
+                children: [
+                  const Icon(Icons.delete_outline, color: Colors.red, size: 17),
+                  const SizedBox(width: 8),
+                  Text('삭제', style: TextStyle(fontSize: 13, color: menuText)),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     Color backgroundColor = widget.isDarkTheme ? Colors.black : Colors.white;
@@ -129,9 +192,13 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        widget.boardCommentData.nickNm.toString(),
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: textColorSub),
+                      Flexible(
+                        child: Text(
+                          widget.boardCommentData.nickNm.toString(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: textColorSub),
+                        ),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 7.0),
@@ -144,6 +211,8 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
                         Utils.timeage(widget.boardCommentData.crtDtm!),
                         style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: textColorSub),
                       ),
+                      const Spacer(),
+                      _buildMoreMenu(),
                     ],
                   ),
                   Padding(
