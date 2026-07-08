@@ -159,6 +159,94 @@ class _RealtimeAirWebviewPageState extends State<RealtimeAirWebviewPage> {
   }
 }
 
+/// 실시간 레이더 영상 — Windy.com 날씨 레이더를 임베드.
+class WindyRadarPage extends StatefulWidget {
+  const WindyRadarPage({super.key});
+
+  @override
+  State<WindyRadarPage> createState() => _WindyRadarPageState();
+}
+
+class _WindyRadarPageState extends State<WindyRadarPage> {
+  static const String _url =
+      'https://www.windy.com/ko/-%EB%82%A0%EC%94%A8-%EB%A0%88%EC%9D%B4%EB%8D%94-radar?radar,37.934,127.064,6';
+  bool _showWeb = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _showWeb = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 15),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.radar, color: Colors.white),
+              SizedBox(width: 4.0),
+              Text(
+                '실시간 레이더 영상',
+                style: TextStyle(fontSize: 17, color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+              Spacer(),
+            ],
+          ),
+          const Gap(15),
+          SizedBox(
+            height: 600,
+            child: _showWeb
+                ? const CommonWebView(
+                    isBackBtn: false,
+                    url: _url,
+                  )
+                : Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white10,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Center(
+                      child: CircularProgressIndicator(color: Colors.white70),
+                    ),
+                  ),
+          ),
+          const Gap(10),
+          if (_showWeb)
+            TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.white12,
+                padding: const EdgeInsets.symmetric(horizontal: 0),
+                minimumSize: const Size(50, 22),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (context) => const AirInfoFullPage(
+                          title: '실시간 레이더 영상',
+                          url: _url,
+                        )),
+              ),
+              child: Text('전체화면으로 ', style: semiboldText.copyWith(fontSize: 11.0)),
+            ),
+          const Gap(40)
+        ],
+      ),
+    );
+  }
+}
+/// 넓은 위성 GIS 지도를 크게 보도록 가로 보기를 허용하고, 나가면 세로 고정으로 복귀한다.
 /// 대기정보 전체화면 보기 — 타이틀 바 + 웹뷰 전체.
 /// 넓은 위성 GIS 지도를 크게 보도록 가로 보기를 허용하고, 나가면 세로 고정으로 복귀한다.
 class AirInfoFullPage extends StatefulWidget {
