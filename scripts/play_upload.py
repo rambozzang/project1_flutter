@@ -62,6 +62,21 @@ svc.edits().tracks().update(
     }]},
 ).execute()
 
+# 3.5) 스토어 등록정보 제목(ko-KR) — fastlane 메타데이터에서 읽어 같은 edit에 함께 반영.
+#      제목만 부분 갱신(patch)해 짧은/전체 설명은 건드리지 않는다. 실패해도 배포는 계속.
+TITLE_FILE = os.environ.get("PLAY_TITLE_FILE", "fastlane/metadata/android/ko-KR/title.txt")
+if os.path.exists(TITLE_FILE):
+    with open(TITLE_FILE, encoding="utf-8") as f:
+        title = f.read().strip()[:30]  # Play 제목 30자 제한
+    if title:
+        try:
+            svc.edits().listings().patch(
+                packageName=PACKAGE, editId=edit_id, language="ko-KR",
+                body={"title": title}).execute()
+            print(f"3.5) 등록정보 제목 반영(ko-KR): {title}")
+        except Exception as e:
+            print("   ⚠️ 제목 반영 스킵(배포는 계속):", str(e)[:200])
+
 print("4) commit(심사 제출)...")
 try:
     svc.edits().commit(packageName=PACKAGE, editId=edit_id).execute()

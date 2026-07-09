@@ -131,6 +131,45 @@ try:
 except Exception as e:
     print(f"  ⚠️ 릴리즈 노트 설정 스킵: {str(e)[:150]}")
 
+
+def _read_meta(path):
+    return open(path, encoding="utf-8").read().strip() if os.path.exists(path) else ""
+
+
+# 4.5 앱 이름/부제(appInfoLocalizations, ko) — fastlane 메타데이터에서 읽어 반영.
+#     Apple은 이름/부제를 '편집 가능한' appInfo 로컬라이제이션에만 바꿀 수 있다(위에서 편집가능 버전 확보 완료).
+#     이름은 30자, 부제는 30자 제한. 실패해도 배포/제출은 계속(try/except).
+NAME_FILE = os.environ.get("ASC_NAME_FILE", "fastlane/metadata/ko-KR/name.txt")
+SUBTITLE_FILE = os.environ.get("ASC_SUBTITLE_FILE", "fastlane/metadata/ko-KR/subtitle.txt")
+app_name = _read_meta(NAME_FILE)[:30]
+app_subtitle = _read_meta(SUBTITLE_FILE)[:30]
+if app_name or app_subtitle:
+    try:
+        infos = api("GET", f"/v1/apps/{app_id}/appInfos")["data"]
+
+        def _editable(info):
+            a = info.get("attributes", {})
+            return any(a.get(k) in EDITABLE for k in ("appStoreState", "state"))
+
+        info = next((i for i in infos if _editable(i)), infos[0] if infos else None)
+        if info:
+            ilocs = api("GET", f"/v1/appInfos/{info['id']}/appInfoLocalizations"
+                               f"?fields[appInfoLocalizations]=locale")["data"]
+            iloc = next((l for l in ilocs if l["attributes"]["locale"] == LOCALE), None)
+            attrs = {}
+            if app_name:
+                attrs["name"] = app_name
+            if app_subtitle:
+                attrs["subtitle"] = app_subtitle
+            if iloc and attrs:
+                api("PATCH", f"/v1/appInfoLocalizations/{iloc['id']}", json={"data": {
+                    "type": "appInfoLocalizations", "id": iloc["id"], "attributes": attrs}})
+                print(f"  앱 이름/부제 반영({LOCALE}): {app_name} / {app_subtitle}")
+            else:
+                print(f"  ⚠️ 이름/부제 반영 스킵: {LOCALE} 로컬라이제이션 없음")
+    except Exception as e:
+        print(f"  ⚠️ 앱 이름/부제 반영 스킵(배포는 계속): {str(e)[:200]}")
+
 # 5. 빌드 연결
 api("PATCH", f"/v1/appStoreVersions/{ver_id}/relationships/build",
     json={"data": {"type": "builds", "id": build_id}})
