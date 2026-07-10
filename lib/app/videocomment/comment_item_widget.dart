@@ -211,8 +211,6 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
                         Utils.timeage(widget.boardCommentData.crtDtm!),
                         style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: textColorSub),
                       ),
-                      const Spacer(),
-                      _buildMoreMenu(),
                     ],
                   ),
                   Padding(
@@ -281,7 +279,9 @@ class _CommentItemWidgetState extends State<CommentItemWidget> {
                   )
                 ],
               ),
-            )
+            ),
+            // 수정/삭제 ⋯ 메뉴는 댓글 전체의 최우측(상단 정렬)에 배치.
+            _buildMoreMenu(),
           ],
         ),
       ),

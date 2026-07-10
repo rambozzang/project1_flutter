@@ -393,11 +393,17 @@ class WeatherGogoCntr extends GetxController {
         return;
       }
       mistDetailData.value = rawMistData;
+      // 첫 측정소가 값이 없을 수 있어(예: 경기 부천 소사본동 pm25 '-') pm10·pm25 둘 다 숫자인 측정소를 우선 사용.
+      final items = rawMistData.items!;
+      final rep = items.firstWhere(
+        (e) => int.tryParse(e.pm10Value ?? '') != null && int.tryParse(e.pm25Value ?? '') != null,
+        orElse: () => items.first,
+      );
       mistData.value = MistViewData(
-        mist10: rawMistData.items![0].pm10Value!,
-        mist25: rawMistData.items![0].pm25Value!,
-        mist10Grade: mistRepo.getMist10Grade(rawMistData.items![0].pm10Value!),
-        mist25Grade: mistRepo.getMist25Grade(rawMistData.items![0].pm25Value!),
+        mist10: rep.pm10Value ?? '-',
+        mist25: rep.pm25Value ?? '-',
+        mist10Grade: mistRepo.getMist10Grade(rep.pm10Value ?? '-'),
+        mist25Grade: mistRepo.getMist25Grade(rep.pm25Value ?? '-'),
       );
       // ==========================================================
       lo.g('완료!! => fetchLocalNameAndMistinfo() time : ${stopwatch.elapsedMilliseconds}ms');

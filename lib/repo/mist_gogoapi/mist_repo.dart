@@ -67,7 +67,8 @@ class MistRepo {
   }
 
   String getMist10Grade(String str) {
-    int value = int.parse(str.toString());
+    final value = int.tryParse(str.toString().trim());
+    if (value == null) return '-'; // "-"·빈값 등 측정없음 → int.parse 크래시 방지(예: 경기 부천 pm25 없음)
 
     if (value >= 0 && value <= 30) {
       return '좋음';
@@ -81,7 +82,8 @@ class MistRepo {
   }
 
   String getMist25Grade(String str) {
-    int value = int.parse(str.toString());
+    final value = int.tryParse(str.toString().trim());
+    if (value == null) return '-'; // "-"·빈값 등 측정없음 → int.parse 크래시 방지(예: 경기 부천 pm25 없음)
     if (value >= 0 && value <= 15) {
       return '좋음';
     } else if (value >= 16 && value <= 35) {
