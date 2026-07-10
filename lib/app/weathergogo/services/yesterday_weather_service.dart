@@ -47,24 +47,4 @@ class YesterdayHourlyWeatherService {
     // temp 값을 소수점 1자리
     return double.parse(temp.toStringAsFixed(1));
   }
-
-  // 2개 리스트 비교해서 같은 시간대를 맞춘다. 최대한 데이터를 보존한다.
-  (List<HourlyWeatherData>, List<HourlyWeatherData>) twicelistCompare(
-      List<HourlyWeatherData> hourlyWeather, List<HourlyWeatherData> yesterdayHourlyWeather) {
-    List<HourlyWeatherData> filteredHourlyWeather = [];
-    List<HourlyWeatherData> filteredYesterdayHourlyWeather = [];
-
-    for (var weather in hourlyWeather) {
-      for (var yesterdayWeather in yesterdayHourlyWeather) {
-        if (yesterdayWeather.date.day == (weather.date.subtract(const Duration(days: 1))).day &&
-            yesterdayWeather.date.hour == weather.date.hour) {
-          filteredHourlyWeather.add(weather);
-          filteredYesterdayHourlyWeather.add(yesterdayWeather);
-        }
-      }
-    }
-
-    filteredYesterdayHourlyWeather = filteredYesterdayHourlyWeather.reversed.toList();
-    return (filteredHourlyWeather, filteredYesterdayHourlyWeather);
-  }
 }

@@ -58,6 +58,8 @@ class WeatherGogoCntr extends GetxController {
   final Rx<CurrentWeatherData> currentWeather = CurrentWeatherData(temp: '0.0').obs;
   final RxList<ItemSuperNct> yesterdayWeather = <ItemSuperNct>[].obs;
   final RxList<HourlyWeatherData> yesterdayHourlyWeather = <HourlyWeatherData>[].obs;
+  // 어제 원본(시간별 실황). 예보 완성 후 _alignYesterdayToForecast()에서 예보 시각에 맞춰 정렬해 yesterdayHourlyWeather 를 만든다.
+  final List<HourlyWeatherData> _yesterdayRawList = [];
   final Rx<WeatherAlertRes?> weatherAlert = Rx<WeatherAlertRes?>(null);
 
   final ValueNotifier<bool> isRainVisibleNotifier = ValueNotifier<bool>(false);
@@ -306,6 +308,7 @@ class WeatherGogoCntr extends GetxController {
       hourlyWeather.clear();
       sevenDayWeather.clear();
       yesterdayHourlyWeather.clear();
+      _yesterdayRawList.clear();
       yesterdayDesc.value = '';
 
       await Future.wait([
@@ -314,9 +317,13 @@ class WeatherGogoCntr extends GetxController {
         fetchFct(location),
         fetchMidlandWeather(location),
         fetchLocalNameAndMistinfo(location),
-        // fetchYesterDayWeather(location)
+        fetchYesterDayWeather(location),
         // fetchWeatherAlert(location),
       ]);
+
+      // 예보(hourlyWeather)와 어제 원본(_yesterdayRawList)이 모두 완료된 뒤,
+      // 예보 각 시각의 24시간 전(어제 동일 시각)을 매칭해 어제선을 예보와 같은 길이·순서로 정렬한다.
+      _alignYesterdayToForecast();
 
       isLoading.value = false;
 
@@ -563,8 +570,6 @@ class WeatherGogoCntr extends GetxController {
       tempList.addAll(resultList);
       hourlyWeather.value = tempList;
 
-      // hourlyWeather 가 20개 이상이면 어제 날씨 가져오기 호출
-      isCallyeasterDay(hourlyWeather, location);
       lo.g('완료!! => fetchSuperFct() time : ${stopwatch.elapsedMilliseconds}ms');
 
       fetchSuperFctreCallCnt = 0;
@@ -579,43 +584,25 @@ class WeatherGogoCntr extends GetxController {
     }
   }
 
-  void isCallyeasterDay(List<HourlyWeatherData> hWeather, LatLng location) {
-    final now = DateTime.now();
-    final firstHour = hWeather.first.date.hour;
-    final isWithinTwoHours = (now.hour - firstHour).abs() <= 2;
-    if (isWithinTwoHours && hWeather.length > 20) {
-      fetchYesterDayWeather(location);
+  // 예보(hourlyWeather)에 맞춰 어제선을 인덱스 정렬한다.
+  // 예보 각 시각의 24시간 전(어제 동일 날짜·시각) 온도를 찾아, 예보와 같은 길이·순서의 리스트를 만든다.
+  // 매칭되는 어제 데이터가 없는 시각은 gap(temp: infinity)으로 채워, 그래프(ChartPainterHour)가
+  // isFinite 체크로 자연스럽게 건너뛰도록 한다. 그래프는 인덱스로 오늘[i]/어제[i]를 같은 x에 그리므로
+  // 두 리스트의 길이·순서가 일치해야 항상 정확히 그려진다.
+  void _alignYesterdayToForecast() {
+    if (hourlyWeather.isEmpty || _yesterdayRawList.isEmpty) {
+      yesterdayHourlyWeather.clear();
+      return;
     }
-  }
-
-  // fetchYesterDayWeather() 에서 호출
-  void processingYesterDay(List<HourlyWeatherData> hWeather, List<HourlyWeatherData> yHWeather) {
-    // 중복 제거 함수
-    List<HourlyWeatherData> removeDuplicates(List<HourlyWeatherData> list) {
-      final seen = <String>{};
-      return list.where((data) {
-        final key = '${data.date.day}-${data.date.hour}';
-        if (seen.contains(key)) {
-          return false;
-        } else {
-          seen.add(key);
-          return true;
-        }
-      }).toList();
-    }
-
-    if (hWeather.length > 20 && yHWeather.length > 20) {
-      hWeather.sort((a, b) => a.date.compareTo(b.date));
-      yHWeather.sort((a, b) => a.date.compareTo(b.date));
-      var (syncedToday, syncedYesterday) = WeatherDataProcessor.instance.synchronizeWeatherData(hWeather, yHWeather);
-
-      // 중복 제거 적용
-      syncedToday = removeDuplicates(syncedToday);
-      syncedYesterday = removeDuplicates(syncedYesterday);
-
-      hourlyWeather.value = syncedToday.toList();
-      yesterdayHourlyWeather.value = syncedYesterday.toList();
-    }
+    // 어제 원본을 '일-시' 키로 인덱싱
+    final Map<String, HourlyWeatherData> yMap = {
+      for (final y in _yesterdayRawList) '${y.date.day}-${y.date.hour}': y,
+    };
+    yesterdayHourlyWeather.value = hourlyWeather.map((today) {
+      final DateTime yDate = today.date.subtract(const Duration(days: 1));
+      final HourlyWeatherData? y = yMap['${yDate.day}-${yDate.hour}'];
+      return y ?? HourlyWeatherData(temp: double.infinity, sky: '', rain: '', date: yDate);
+    }).toList();
   }
 
   void logHourlyWeather() {
@@ -664,9 +651,6 @@ class WeatherGogoCntr extends GetxController {
       tempList.addAll(resultList);
       hourlyWeather.value = tempList;
 
-      // hourlyWeather 가 20개 이상이면 어제 날씨 가져오기 호출
-      isCallyeasterDay(hourlyWeather, location);
-
       // 주간예보에서 3일치까지만 셋팅
       sevenDayWeather.addAll(WeatherDataProcessor.instance.processShortTermForecastToDaily(itemFctList,
           lat: location.latitude, lon: location.longitude, cityName: currentLocation.value.name));
@@ -685,7 +669,6 @@ class WeatherGogoCntr extends GetxController {
       fetchFctreCallCnt = 0;
 
       isLoading.value = false;
-      fetchYesterDayWeather(location);
     } catch (e) {
       handleError('3. 단기 예보 조회 오류', e);
       if (fetchFctreCallCnt < 3) {
@@ -752,37 +735,30 @@ class WeatherGogoCntr extends GetxController {
     }
   }
 
-  int fetchYesterDayreCallCnt = 0;
-
-  // 어제 날씨 가져오기
-  Future<void> fetchYesterDayWeather(LatLng location, {int? reCallCnt}) async {
-    reCallCnt ??= 0;
+  // 어제 날씨 원본 가져오기(백엔드 /weather/yesterday, 시간별 실황)
+  // 정렬·그래프 매칭은 예보 완성 후 _alignYesterdayToForecast()에서 일괄 처리한다.
+  Future<void> fetchYesterDayWeather(LatLng location) async {
     try {
-      // ==========================================================
-      // 어제 날씨 가져오기 - 초단기실황조회 한시간전 정보로 구성
-      // ==========================================================
-      yesterdayHourlyWeather.clear();
-      YesterdayHourlyWeatherService yesterdayHourlyWeatherService = YesterdayHourlyWeatherService();
-      List<HourlyWeatherData> ylist = await yesterdayHourlyWeatherService.getYesterdayWeather(location);
+      final service = YesterdayHourlyWeatherService();
+      final List<HourlyWeatherData> ylist = await service.getYesterdayWeather(location);
       ylist.sort((a, b) => a.date.compareTo(b.date));
-      reCallCnt = 0;
-      double compareTemp = yesterdayHourlyWeatherService.compareTempData(ylist);
-      yesterdayDesc.value = compareTemp > 0.0 ? '어제보다 $compareTemp 높아요' : '어제보다 $compareTemp 낮아요';
-      yesterdayDesc.value = compareTemp == 0.0 ? '어제와 같아요' : yesterdayDesc.value;
-      processingYesterDay(hourlyWeather, ylist);
-      fetchYesterDayreCallCnt = 0;
-      // ==========================================================
+      _yesterdayRawList
+        ..clear()
+        ..addAll(ylist);
+
+      // 어제선 안내 문구(header/short 카드에서 사용): 어제 실황 시계열의 시작→끝 변화량.
+      if (ylist.length >= 2) {
+        final double compareTemp = service.compareTempData(ylist);
+        yesterdayDesc.value = compareTemp == 0.0
+            ? '어제와 같아요'
+            : compareTemp > 0.0
+                ? '어제보다 $compareTemp 높아요'
+                : '어제보다 $compareTemp 낮아요';
+      }
     } catch (e) {
       handleError('5.어제 날씨 가져오기 조회 오류', e);
-      if (fetchYesterDayreCallCnt < 3) {
-        Future.delayed(const Duration(milliseconds: 150), () {
-          fetchYesterDayWeather(location);
-          fetchYesterDayreCallCnt++;
-        });
-      }
     } finally {
       isYestdayLoading.value = false;
-      // return true;
     }
   }
 

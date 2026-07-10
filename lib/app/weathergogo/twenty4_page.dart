@@ -201,12 +201,13 @@ class _Twenty4PageState extends State<Twenty4Page> {
   Widget _buildHourlyWeatherItem(HourlyWeatherData data, int index) {
     final yesterdayData = controller.yesterdayHourlyWeather.firstWhere(
       (element) => element.date.hour == data.date.hour && element.date.day == (data.date.subtract(const Duration(days: 1))).day,
-      orElse: () => HourlyWeatherData(temp: 99.0, sky: '', rain: '', date: DateTime.now()),
+      orElse: () => HourlyWeatherData(temp: double.infinity, sky: '', rain: '', date: DateTime.now()),
     );
 
-    final tempDiff = data.temp - (yesterdayData.temp == 99.0 ? data.temp : yesterdayData.temp);
-    var yesterDayDesc = _getYesterdayDescription(tempDiff);
-    yesterDayDesc = yesterdayData.temp == 99.0 ? '-' : yesterDayDesc;
+    // 어제 데이터가 없거나 gap(무한대)인 시각은 '-' 로 표시.
+    final bool hasYesterday = yesterdayData.temp.isFinite;
+    final tempDiff = hasYesterday ? data.temp - yesterdayData.temp : 0.0;
+    final String yesterDayDesc = hasYesterday ? _getYesterdayDescription(tempDiff) : '-';
 
     return Column(
       children: [
