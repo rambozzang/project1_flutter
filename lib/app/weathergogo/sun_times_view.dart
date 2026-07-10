@@ -54,7 +54,7 @@ class SunTimesView extends StatelessWidget {
               behavior: HitTestBehavior.opaque,
               onTap: () => _showWeekModal(context, lat, lng, base),
               child: Container(
-                padding: const EdgeInsets.fromLTRB(10, 8, 10, 7),
+                padding: const EdgeInsets.fromLTRB(10, 1, 10, 7),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(18),
@@ -85,10 +85,10 @@ class SunTimesView extends StatelessWidget {
                             child: ClipRect(
                               child: Align(
                                 alignment: Alignment.topCenter,
-                                heightFactor: 0.5,
+                                heightFactor: 0.55,
                                 child: SizedBox(
-                                  width: _earthR * 2,
-                                  height: _earthR * 2,
+                                  width: _earthR * 2.2,
+                                  height: _earthR * 2.2,
                                   child: ClipOval(
                                     child: Image.asset('assets/images/earth_blue_marble.jpg', fit: BoxFit.cover),
                                   ),
@@ -300,6 +300,5 @@ class _SunOrbitPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _SunOrbitPainter old) =>
-      old.progress != progress || old.isDay != isDay;
+  bool shouldRepaint(covariant _SunOrbitPainter old) => old.progress != progress || old.isDay != isDay;
 }
