@@ -515,6 +515,27 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
               bottomActionsBackgroundColor: Colors.transparent,
             ),
           ),
+          // 촬영 화면 작은 경고 — 부적절·음란물 촬영물은 게시가 제한됨을 안내.
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 58,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.42),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    '부적절·음란물 촬영은 게시가 제한돼요',
+                    style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ),
+          ),
           // 화면 드래그 오버레이(맨 위): 한 손가락 좌우=줌·상하=밝기, 두 손가락=핀치줌.
           // 부모 래핑 대신 최상위 오버레이로 둬야 camerawesome 내부 제스처에 안 먹힘.
           // translucent라 버튼 탭은 아래로 통과(탭>스케일), 드래그/핀치만 여기서 처리.

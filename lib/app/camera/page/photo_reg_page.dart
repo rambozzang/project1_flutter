@@ -76,6 +76,7 @@ class _PhotoRegPageState extends State<PhotoRegPage> {
         child: Column(
           children: [
             Expanded(child: _buildCarousel(photos)),
+            _buildContentWarning(),
             _buildCaptionField(),
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
@@ -106,6 +107,32 @@ class _PhotoRegPageState extends State<PhotoRegPage> {
         ),
       ),
       bottomNavigationBar: _buildBottomBar(),
+    );
+  }
+
+  // 음란물 등 부적절 콘텐츠 경고 — 등록 화면에 항상 노출(다크 테마용).
+  Widget _buildContentWarning() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: const Color(0x26E53935),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0x55E53935)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Icon(Icons.warning_amber_rounded, size: 18, color: Color(0xFFFF7B7B)),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '음란물·불법촬영물·타인 비방 등 부적절한 콘텐츠는 게시가 제한됩니다. 위반 시 삭제·이용 정지되며 관련 법에 따라 처벌될 수 있어요.',
+              style: TextStyle(fontSize: 12, height: 1.4, color: Color(0xFFFFB3B3), fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

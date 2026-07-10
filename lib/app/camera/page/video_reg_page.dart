@@ -506,6 +506,31 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
     );
   }
 
+  // 음란물 등 부적절 콘텐츠 경고 — 등록 화면 상단에 항상 노출(정책 준수 + 사용자 경각심).
+  Widget _buildContentWarning() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFDECEC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFF0C4C4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Icon(Icons.warning_amber_rounded, size: 18, color: Color(0xFFC62828)),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '음란물·불법촬영물·타인 비방 등 부적절한 콘텐츠는 게시가 제한됩니다. 위반 시 삭제·이용 정지되며 관련 법에 따라 처벌될 수 있어요.',
+              style: TextStyle(fontSize: 12, height: 1.4, color: Color(0xFFB23A3A), fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMainContent() {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -513,6 +538,8 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildContentWarning(),
+          const Gap(12),
           // 큰 영상 플레이어 (음소거 + 전체화면 + 재생시간 포함)
           Center(child: _buildVideoPlayer()),
           const Gap(12),
