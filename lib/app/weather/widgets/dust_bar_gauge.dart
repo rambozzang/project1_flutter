@@ -94,13 +94,16 @@ class DustBarGauge extends StatelessWidget {
 
 Color _dustColor(String? grade, double ratio) {
   if (grade == null) return Colors.white70;
-  // 미세/초미세 농도 비율에 따라 파란색(좋음) → 노란색 → 빨간색(나쁨)으로 연속 변화.
-  const blue = Color(0xFF2196F3);
-  const yellow = Color(0xFFFFEB3B);
-  const red = Color(0xFFF44336);
-  final t = ratio.clamp(0.0, 1.0);
-  if (t <= 0.5) {
-    return Color.lerp(blue, yellow, t * 2)!;
-  }
-  return Color.lerp(yellow, red, (t - 0.5) * 2)!;
+  // 선명하고 진한 대기질 그라디언트(시안 → 그린 → 옐로 → 오렌지 → 레드).
+  // 농도 비율(ratio)에 따라 5색을 부드럽게 보간 — 어두운 배경에서 또렷하게 튀도록 고채도.
+  const stops = <Color>[
+    Color(0xFF00C8FF), // 아주 좋음
+    Color(0xFF00E676), // 좋음
+    Color(0xFFFFD600), // 보통
+    Color(0xFFFF9100), // 나쁨
+    Color(0xFFFF1744), // 매우 나쁨
+  ];
+  final double t = ratio.clamp(0.0, 1.0) * (stops.length - 1);
+  final int i = t.floor().clamp(0, stops.length - 2);
+  return Color.lerp(stops[i], stops[i + 1], t - i)!;
 }
