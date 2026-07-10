@@ -5,6 +5,7 @@ import 'package:project1/app/weather/helper/extensions.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
 import 'package:project1/app/weather/widgets/dust_bar_gauge.dart';
+import 'package:project1/app/weather/widgets/dust_detail_modal.dart';
 
 class MainWeatherInfo extends StatelessWidget {
   const MainWeatherInfo({super.key});
@@ -65,26 +66,43 @@ class MainWeatherInfo extends StatelessWidget {
                   Builder(
                     builder: (context) {
                       final mist = weatherProv.mistViewData.value;
+                      final mistData = weatherProv.mistData.value;
                       if (mist == null ||
                           (mist.mist10Grade == null && mist.mist25Grade == null)) {
                         return const SizedBox.shrink();
                       }
-                      return Row(
-                        children: [
-                          DustBarGauge(
-                            label: '미세',
-                            value: mist.mist10,
-                            grade: mist.mist10Grade,
-                            max: 150,
+                      return GestureDetector(
+                        onTap: () => DustDetailModal.show(
+                          context,
+                          mistData,
+                          pm10: mist.mist10,
+                          pm25: mist.mist25,
+                          pm10Grade: mist.mist10Grade,
+                          pm25Grade: mist.mist25Grade,
+                          locationName: weatherProv.currentLocation.value?.name ?? '현재 위치',
+                        ),
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                          color: Colors.transparent,
+                          child: Row(
+                            children: [
+                              DustBarGauge(
+                                label: '미세',
+                                value: mist.mist10,
+                                grade: mist.mist10Grade,
+                                max: 150,
+                              ),
+                              const SizedBox(width: 12),
+                              DustBarGauge(
+                                label: '초미세',
+                                value: mist.mist25,
+                                grade: mist.mist25Grade,
+                                max: 75,
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 12),
-                          DustBarGauge(
-                            label: '초미세',
-                            value: mist.mist25,
-                            grade: mist.mist25Grade,
-                            max: 75,
-                          ),
-                        ],
+                        ),
                       );
                     },
                   ),

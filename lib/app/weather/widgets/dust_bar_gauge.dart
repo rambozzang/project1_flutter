@@ -25,7 +25,7 @@ class DustBarGauge extends StatelessWidget {
     final displayValue = parsed?.toString() ?? '-';
     // 낮은 농도('좋음')에서도 색 조각이 보이도록 최소 6% 채움.
     final ratio = parsed == null ? 0.0 : (parsed / max).clamp(0.06, 1.0);
-    final color = _dustColor(grade);
+    final color = _dustColor(grade, ratio);
     final displayGrade = grade ?? '-';
 
     return Column(
@@ -85,17 +85,15 @@ class DustBarGauge extends StatelessWidget {
   }
 }
 
-Color _dustColor(String? grade) {
-  switch (grade) {
-    case '좋음':
-      return const Color(0xFF29B6F6);
-    case '보통':
-      return const Color(0xFF66BB6A);
-    case '나쁨':
-      return const Color(0xFFFFA726);
-    case '매우나쁨':
-      return const Color(0xFFFF5252);
-    default:
-      return Colors.white70;
+Color _dustColor(String? grade, double ratio) {
+  if (grade == null) return Colors.white70;
+  // 미세/초미세 농도 비율에 따라 파란색(좋음) → 노란색 → 빨간색(나쁨)으로 연속 변화.
+  const blue = Color(0xFF2196F3);
+  const yellow = Color(0xFFFFEB3B);
+  const red = Color(0xFFF44336);
+  final t = ratio.clamp(0.0, 1.0);
+  if (t <= 0.5) {
+    return Color.lerp(blue, yellow, t * 2)!;
   }
+  return Color.lerp(yellow, red, (t - 0.5) * 2)!;
 }

@@ -3,6 +3,7 @@ import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
 import 'package:project1/app/weather/widgets/dust_bar_gauge.dart';
+import 'package:project1/app/weather/widgets/dust_detail_modal.dart';
 import 'package:project1/app/weathergogo/cntr/data/current_weather_data.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
@@ -31,7 +32,7 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
                     controller.currentWeather.value.description ?? '맑음',
                     style: lightText.copyWith(fontSize: 16),
                   ),
-                  _buildAirQualityInfo(controller.mistData),
+                  _buildAirQualityInfo(controller.mistData, context),
                 ],
               ),
             ),
@@ -95,7 +96,7 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
     );
   }
 
-  Widget _buildAirQualityInfo(Rx<MistViewData?> mistViewData) {
+  Widget _buildAirQualityInfo(Rx<MistViewData?> mistViewData, BuildContext context) {
     return Obx(() {
       final mist = mistViewData.value;
       if (mist == null || (mist.mist10Grade == null && mist.mist25Grade == null)) {
@@ -103,23 +104,39 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
       }
       // 캡슐/배경 없이 하늘 위에 바로 얹는 가로 바 게이지 — 앱의 가벼운 톤 유지.
       // 가독성은 위젯 내부의 텍스트 섀도우·바 그림자가 담당한다.
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          DustBarGauge(
-            label: '미세',
-            value: mist.mist10,
-            grade: mist.mist10Grade,
-            max: 150,
+      return GestureDetector(
+        onTap: () => DustDetailModal.show(
+          context,
+          controller.mistDetailData.value,
+          pm10: mist.mist10,
+          pm25: mist.mist25,
+          pm10Grade: mist.mist10Grade,
+          pm25Grade: mist.mist25Grade,
+          locationName: controller.currentLocation.value.name,
+        ),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          color: Colors.transparent,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DustBarGauge(
+                label: '미세',
+                value: mist.mist10,
+                grade: mist.mist10Grade,
+                max: 150,
+              ),
+              const Gap(18),
+              DustBarGauge(
+                label: '초미세',
+                value: mist.mist25,
+                grade: mist.mist25Grade,
+                max: 75,
+              ),
+            ],
           ),
-          const Gap(18),
-          DustBarGauge(
-            label: '초미세',
-            value: mist.mist25,
-            grade: mist.mist25Grade,
-            max: 75,
-          ),
-        ],
+        ),
       );
     });
   }
