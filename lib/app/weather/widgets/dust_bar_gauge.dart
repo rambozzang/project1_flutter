@@ -38,10 +38,15 @@ class DustBarGauge extends StatelessWidget {
               fontSize: 11.5,
               color: Colors.white,
               fontWeight: FontWeight.w600,
-              shadows: [Shadow(color: Colors.black45, blurRadius: 5)],
+              // 밝은 하늘 위에서도 또렷하게 — 촘촘한 진한 윤곽 그림자 + 은은한 확산 그림자 이중 halo.
+              // (크기는 그대로 두고 대비만 끌어올린다. 특히 '좋음'의 파란 글자가 파란 하늘에 묻히던 문제 완화)
+              shadows: [
+                Shadow(color: Colors.black87, blurRadius: 2),
+                Shadow(color: Colors.black54, blurRadius: 6),
+              ],
             ),
             children: [
-              TextSpan(text: '$label ', style: TextStyle(color: Colors.white.withValues(alpha: 0.85))),
+              TextSpan(text: '$label ', style: TextStyle(color: Colors.white.withValues(alpha: 0.95))),
               TextSpan(
                 text: displayValue,
                 style: TextStyle(fontSize: 13, color: color, fontWeight: FontWeight.w800),
@@ -59,10 +64,12 @@ class DustBarGauge extends StatelessWidget {
           width: 84,
           height: 5,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.30),
+            color: Colors.white.withValues(alpha: 0.32),
             borderRadius: BorderRadius.circular(3),
+            // 밝은 배경에서 바 경계가 사라지지 않도록 얇은 진한 윤곽 + 옅은 그림자(크기 변화 없음).
+            border: Border.all(color: Colors.black.withValues(alpha: 0.18), width: 0.5),
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.22), blurRadius: 3, offset: const Offset(0, 1)),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.28), blurRadius: 3, offset: const Offset(0, 1)),
             ],
           ),
           child: parsed == null

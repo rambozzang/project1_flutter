@@ -6,9 +6,24 @@ import 'package:project1/app/weather/theme/textStyle.dart';
 import 'package:project1/repo/mist_gogoapi/data/mist_data.dart';
 import 'package:project1/utils/utils.dart';
 
-/// 날씨 메인 — 미세/초미세 먼지 상세 모달.
-/// AirKorea API(백엔드 경유) 원본 데이터를 시각적으로 풍부하게 보여준다.
-/// 원형 게이지 + 등급 카드 + 오염물질 그리드 + 기준표 + 건강 조언.
+// ── 팔레트 ──────────────────────────────────────────────────────────────────
+// 한국 대기질 관례색(좋음 파랑 · 보통 초록 · 나쁨 주황 · 매우나쁨 빨강).
+// 보통을 '초록'으로 두어 cyan-on-dark(AI 느낌)를 피하고, 채도를 살짝 낮춰 리포트 톤 유지.
+const _cGood = Color(0xFF4C8DF5);
+const _cModerate = Color(0xFF35B37A);
+const _cBad = Color(0xFFE9A13A);
+const _cVeryBad = Color(0xFFE05B49);
+
+const _surface = Color(0xFF0F1626); // 시트 바탕 — 플랫(글로우 없음)
+const _panel = Color(0xFF18213B); // 섹션 패널 — 플랫(반투명 유리 아님)
+const _hair = Color(0xFF2A3654); // 헤어라인 구분선
+const _ink = Color(0xFFE9EDF7); // 본문 — 순백 대신 남색 틴트
+const _muted = Color(0xFF8A93AC); // 보조 텍스트
+
+/// 날씨 메인 — 미세/초미세 상세 시트.
+/// 편집형(에어 리포트) 톤: 플랫 서피스 + 수평 스케일 바("현 위치" 마커) + 스펙시트 리스트.
+/// 원형 게이지·앰비언트 글로우·반투명 유리카드 등 정형화된 표현을 배제하고,
+/// 정보(지금 값이 좋음~매우나쁨 스펙트럼의 어디인지)를 또렷하게 전달하는 데 집중한다.
 class DustDetailModal extends StatelessWidget {
   const DustDetailModal({
     super.key,
@@ -94,86 +109,62 @@ class DustDetailModal extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       decoration: const BoxDecoration(
-        color: Color(0xFF141A33),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        color: _surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: Stack(
-        children: [
-          // 상단 상태색 앰비언트 글로우 — 대기질 등급을 색으로 즉시 전달('살아있는 하늘' 톤과 연결).
-          Positioned(
-            top: -140,
-            left: -60,
-            right: -60,
-            height: 340,
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    colors: [
-                      statusColor.withValues(alpha: 0.30),
-                      statusColor.withValues(alpha: 0.0),
-                    ],
-                  ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 4),
+              width: 38,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 26),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _header(context, item, statusGrade, statusColor),
+                    const SizedBox(height: 22),
+                    _pmSection(item),
+                    const SizedBox(height: 24),
+                    _indexSection(item),
+                    const SizedBox(height: 24),
+                    _standardTable(),
+                    const SizedBox(height: 20),
+                    _healthNote(item, statusColor),
+                  ],
                 ),
               ),
             ),
-          ),
-          SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 상단 핸들
-                Container(
-                  margin: const EdgeInsets.only(top: 10, bottom: 6),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.25),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildHeader(context, locationName, item?.dataTime, statusGrade, statusColor),
-                        const SizedBox(height: 22),
-                        _buildMainGauges(item),
-                        const SizedBox(height: 26),
-                        _buildKhaiCard(item),
-                        const SizedBox(height: 20),
-                        _buildPollutantGrid(item),
-                        const SizedBox(height: 26),
-                        _buildStandardTable(),
-                        const SizedBox(height: 22),
-                        _buildHealthTip(item),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, String locationName, String? dataTime,
-      String statusGrade, Color statusColor) {
+  // ── 헤더 ──────────────────────────────────────────────────────────────────
+  Widget _header(BuildContext context, MistItemData? item, String statusGrade, Color statusColor) {
+    final dataTime = item?.dataTime;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const PhosphorIcon(PhosphorIconsFill.mapPin, color: Colors.white54, size: 15),
+            const PhosphorIcon(PhosphorIconsFill.mapPin, color: _muted, size: 15),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
                 locationName,
-                style: semiboldText.copyWith(fontSize: 15),
+                style: semiboldText.copyWith(fontSize: 15, color: _ink),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -182,48 +173,275 @@ class DustDetailModal extends StatelessWidget {
               behavior: HitTestBehavior.opaque,
               child: const Padding(
                 padding: EdgeInsets.all(2),
-                child: PhosphorIcon(PhosphorIconsFill.x, color: Colors.white54, size: 18),
+                child: PhosphorIcon(PhosphorIconsFill.x, color: _muted, size: 18),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        // 히어로 — 최악 등급을 큰 글자로 즉시 인지 + 한 줄 설명
+        const SizedBox(height: 18),
+        // 히어로 — 대표(최악) 등급 + 한 줄 안내. 좌측 정렬·비대칭 편집형 구성.
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
               statusGrade,
-              style: TextStyle(
-                fontSize: 40,
+              style: boldText.copyWith(
+                fontSize: 32,
                 height: 1.0,
-                fontWeight: FontWeight.w800,
                 color: statusColor,
+                fontWeight: FontWeight.w800,
                 letterSpacing: -0.5,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
                   _statusHeadline(statusGrade),
-                  style: lightText.copyWith(
-                      fontSize: 13, height: 1.35, color: Colors.white.withValues(alpha: 0.82)),
+                  style: lightText.copyWith(fontSize: 12.5, height: 1.35, color: _muted),
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         Text(
           dataTime != null ? '측정 $dataTime 기준' : '측정시간 -',
-          style: lightText.copyWith(fontSize: 11, color: Colors.white.withValues(alpha: 0.5)),
+          style: lightText.copyWith(fontSize: 11, color: _muted.withValues(alpha: 0.8)),
+        ),
+        const SizedBox(height: 16),
+        Container(height: 1, color: _hair),
+      ],
+    );
+  }
+
+  // ── 미세/초미세 — 수평 스케일 바 ─────────────────────────────────────────
+  Widget _pmSection(MistItemData? item) {
+    return Column(
+      children: [
+        _pmRow('미세먼지', 'PM10', _parse(item?.pm10Value), _gradeText(item?.pm10Grade), pm10Breaks),
+        const SizedBox(height: 20),
+        _pmRow('초미세먼지', 'PM2.5', _parse(item?.pm25Value), _gradeText(item?.pm25Grade), pm25Breaks),
+      ],
+    );
+  }
+
+  Widget _pmRow(String name, String code, double value, String grade, List<double> breaks) {
+    final color = _colorForGrade(grade);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(name, style: semiboldText.copyWith(fontSize: 15, color: _ink)),
+            const SizedBox(width: 6),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Text(code, style: lightText.copyWith(fontSize: 10.5, color: _muted)),
+            ),
+            const Spacer(),
+            Text(
+              value >= 0 ? value.toStringAsFixed(0) : '-',
+              style: boldText.copyWith(
+                fontSize: 25,
+                height: 1.0,
+                color: color,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+            const SizedBox(width: 3),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 3),
+              child: Text('㎍/㎥', style: lightText.copyWith(fontSize: 10, color: _muted)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _ScaleBar(value: value, breaks: breaks, color: color),
+        const SizedBox(height: 7),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('좋음', style: lightText.copyWith(fontSize: 10.5, color: _muted)),
+            Text(
+              grade == '-' ? '' : grade,
+              style: TextStyle(fontSize: 11.5, color: color, fontWeight: FontWeight.w700),
+            ),
+            Text('매우나쁨', style: lightText.copyWith(fontSize: 10.5, color: _muted)),
+          ],
         ),
       ],
     );
   }
 
+  // ── 대기 지수 — 스펙시트 리스트(카드 그리드 대신 헤어라인 구분 행) ─────────
+  Widget _indexSection(MistItemData? item) {
+    final rows = <Widget>[
+      _dataRow('통합대기환경지수', _fmt(_parse(item?.khaiValue), 0), '', _gradeText(item?.khaiGrade)),
+      _dataRow('오존', _fmt(_parse(item?.o3Value), 3), 'ppm', _gradeText(item?.o3Grade)),
+      _dataRow('이산화질소', _fmt(_parse(item?.no2Value), 3), 'ppm', _gradeText(item?.no2Grade)),
+      _dataRow('아황산가스', _fmt(_parse(item?.so2Value), 3), 'ppm', _gradeText(item?.so2Grade)),
+      _dataRow('일산화탄소', _fmt(_parse(item?.coValue), 2), 'ppm', _gradeText(item?.coGrade)),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('대기 지수', style: boldText.copyWith(fontSize: 15, color: _ink, letterSpacing: -0.2)),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(color: _panel, borderRadius: BorderRadius.circular(16)),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            children: [
+              for (int i = 0; i < rows.length; i++) ...[
+                if (i > 0) Container(height: 1, color: _hair),
+                rows[i],
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _dataRow(String name, String valueStr, String unit, String grade) {
+    final color = _colorForGrade(grade);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 13),
+      child: Row(
+        children: [
+          Expanded(child: Text(name, style: mediumText.copyWith(fontSize: 13.5, color: _ink))),
+          Text(
+            valueStr,
+            style: semiboldText.copyWith(
+              fontSize: 14,
+              color: _ink,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          if (unit.isNotEmpty) ...[
+            const SizedBox(width: 3),
+            Text(unit, style: lightText.copyWith(fontSize: 10.5, color: _muted)),
+          ],
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 52,
+            child: Text(
+              grade,
+              textAlign: TextAlign.right,
+              style: TextStyle(fontSize: 12.5, color: color, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── 기준표 — 플랫 테이블 ──────────────────────────────────────────────────
+  Widget _standardTable() {
+    final rows = [
+      _StandardRow('좋음', '0~30', '0~15', '0~50', _cGood),
+      _StandardRow('보통', '31~80', '16~35', '51~100', _cModerate),
+      _StandardRow('나쁨', '81~150', '36~75', '101~250', _cBad),
+      _StandardRow('매우나쁨', '151~', '76~', '251~', _cVeryBad),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('대기질 기준표', style: boldText.copyWith(fontSize: 15, color: _ink, letterSpacing: -0.2)),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+          decoration: BoxDecoration(color: _panel, borderRadius: BorderRadius.circular(16)),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(flex: 3, child: Text('등급', style: lightText.copyWith(fontSize: 11, color: _muted))),
+                  Expanded(flex: 3, child: Text('미세', style: lightText.copyWith(fontSize: 11, color: _muted))),
+                  Expanded(flex: 3, child: Text('초미세', style: lightText.copyWith(fontSize: 11, color: _muted))),
+                  Expanded(flex: 3, child: Text('통합', style: lightText.copyWith(fontSize: 11, color: _muted))),
+                ],
+              ),
+              const SizedBox(height: 6),
+              for (int i = 0; i < rows.length; i++) ...[
+                if (i > 0) Container(height: 1, color: _hair.withValues(alpha: 0.55)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 9),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Row(
+                          children: [
+                            Container(width: 7, height: 7, decoration: BoxDecoration(color: rows[i].color, shape: BoxShape.circle)),
+                            const SizedBox(width: 7),
+                            Flexible(
+                              child: Text(
+                                rows[i].grade,
+                                style: TextStyle(fontSize: 12, color: rows[i].color, fontWeight: FontWeight.w700),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(flex: 3, child: Text(rows[i].pm10, style: lightText.copyWith(fontSize: 11.5, color: _ink))),
+                      Expanded(flex: 3, child: Text(rows[i].pm25, style: lightText.copyWith(fontSize: 11.5, color: _ink))),
+                      Expanded(flex: 3, child: Text(rows[i].khai, style: lightText.copyWith(fontSize: 11.5, color: _ink))),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── 건강 가이드 — 플랫 노트(그라디언트/글로우 없음) ───────────────────────
+  Widget _healthNote(MistItemData? item, Color statusColor) {
+    final pm10 = _parse(item?.pm10Value);
+    final pm25 = _parse(item?.pm25Value);
+    final worst = math.max(pm10 >= 0 ? pm10 / 150 : 0, pm25 >= 0 ? pm25 / 75 : 0);
+    final tip = worst > 0.66
+        ? '실외 활동을 자제하고 외출 시 마스크를 착용하세요. 창문을 닫아 실내 공기를 관리하는 것도 좋아요.'
+        : worst > 0.33
+            ? '민감하신 분은 실외 활동 시 마스크를 챙기고, 장시간 야외 활동은 줄이는 게 좋아요.'
+            : '오늘은 공기가 깨끗해요. 가벼운 실외 활동을 즐기기 좋은 날이에요.';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: _panel, borderRadius: BorderRadius.circular(16)),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 3),
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('오늘의 건강 가이드', style: semiboldText.copyWith(fontSize: 13, color: _ink)),
+                const SizedBox(height: 6),
+                Text(tip, style: lightText.copyWith(fontSize: 12.5, height: 1.55, color: _muted)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── 로직 헬퍼 ─────────────────────────────────────────────────────────────
   // 최악(높은) 등급을 대표 상태로 — pm10/pm25 등급 중 나쁜 쪽.
   String _worstGrade(MistItemData? item) {
     final g10 = int.tryParse(item?.pm10Grade ?? '') ?? 0;
@@ -242,301 +460,12 @@ class DustDetailModal extends StatelessWidget {
     };
   }
 
-  Widget _buildMainGauges(MistItemData? item) {
-    final pm10Value = _parse(item?.pm10Value);
-    final pm25Value = _parse(item?.pm25Value);
-    final pm10Grade = _gradeText(item?.pm10Grade);
-    final pm25Grade = _gradeText(item?.pm25Grade);
-
-    return Row(
-      children: [
-        Expanded(
-          child: _circularGauge(
-            label: '미세먼지',
-            value: pm10Value,
-            max: 150,
-            grade: pm10Grade,
-            unit: '㎍/㎥',
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _circularGauge(
-            label: '초미세먼지',
-            value: pm25Value,
-            max: 75,
-            grade: pm25Grade,
-            unit: '㎍/㎥',
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildKhaiCard(MistItemData? item) {
-    final value = _parse(item?.khaiValue);
-    final grade = _gradeText(item?.khaiGrade);
-    final color = _colorForValue(value, khaiBreaks);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [color.withValues(alpha: 0.22), color.withValues(alpha: 0.08)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.18),
-              shape: BoxShape.circle,
-            ),
-            child: PhosphorIcon(PhosphorIconsFill.wind, color: color, size: 24),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('통합대기환경지수', style: mediumText.copyWith(fontSize: 13)),
-                const SizedBox(height: 4),
-                Text(
-                  '${value >= 0 ? value.toStringAsFixed(0) : '-'}  $grade',
-                  style: boldText.copyWith(fontSize: 20, color: color),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPollutantGrid(MistItemData? item) {
-    final pollutants = [
-      _Pollutant('오존', item?.o3Value, item?.o3Grade, 'ppm'),
-      _Pollutant('이산화질소', item?.no2Value, item?.no2Grade, 'ppm'),
-      _Pollutant('아황산가스', item?.so2Value, item?.so2Grade, 'ppm'),
-      _Pollutant('일산화탄소', item?.coValue, item?.coGrade, 'ppm'),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('상세 오염 물질', style: semiboldText.copyWith(fontSize: 16)),
-        const SizedBox(height: 12),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-          childAspectRatio: 1.55,
-          children: pollutants.map((p) => _pollutantCard(p)).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _pollutantCard(_Pollutant p) {
-    final value = _parse(p.value);
-    final grade = _gradeText(p.grade);
-    final color = _colorForGrade(grade);
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(p.name, style: lightText.copyWith(fontSize: 12)),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                value >= 0 ? value.toStringAsFixed(3) : '-',
-                style: boldText.copyWith(fontSize: 17),
-              ),
-              const SizedBox(width: 4),
-              Text(p.unit, style: lightText.copyWith(fontSize: 10, color: Colors.white54)),
-            ],
-          ),
-          Text(
-            grade,
-            style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w700),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStandardTable() {
-    final rows = [
-      _StandardRow('좋음', '0~30', '0~15', '0~50', const Color(0xFF2196F3)),
-      _StandardRow('보통', '31~80', '16~35', '51~100', const Color(0xFF00BCD4)),
-      _StandardRow('나쁨', '81~150', '36~75', '101~250', const Color(0xFFFF9800)),
-      _StandardRow('매우나쁨', '151~', '76~', '251~', const Color(0xFFF44336)),
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('대기질 기준표', style: semiboldText.copyWith(fontSize: 15)),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(flex: 3, child: Text('등급', style: lightText.copyWith(fontSize: 11, color: Colors.white54))),
-              Expanded(flex: 3, child: Text('미세먼지', style: lightText.copyWith(fontSize: 11, color: Colors.white54))),
-              Expanded(flex: 3, child: Text('초미세먼지', style: lightText.copyWith(fontSize: 11, color: Colors.white54))),
-              Expanded(flex: 3, child: Text('통합지수', style: lightText.copyWith(fontSize: 11, color: Colors.white54))),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ...rows.map((r) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 5),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: Row(
-                    children: [
-                      Container(width: 8, height: 8, decoration: BoxDecoration(color: r.color, shape: BoxShape.circle)),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          r.grade,
-                          style: TextStyle(fontSize: 12, color: r.color, fontWeight: FontWeight.w700),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(flex: 3, child: Text(r.pm10, style: lightText.copyWith(fontSize: 12))),
-                Expanded(flex: 3, child: Text(r.pm25, style: lightText.copyWith(fontSize: 12))),
-                Expanded(flex: 3, child: Text(r.khai, style: lightText.copyWith(fontSize: 12))),
-              ],
-            ),
-          )),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHealthTip(MistItemData? item) {
-    final pm10 = _parse(item?.pm10Value);
-    final pm25 = _parse(item?.pm25Value);
-    final worst = math.max(pm10 >= 0 ? pm10 / 150 : 0, pm25 >= 0 ? pm25 / 75 : 0);
-    final tip = worst > 0.66
-        ? '실외 활동을 자제하고 마스크를 착용하세요. 창문을 닫아 실내 공기를 정화하세요.'
-        : worst > 0.33
-            ? '민감군은 실외 활동 시 마스크를 착용하고, 장시간 야외 활동을 줄이세요.'
-            : '오늘은 공기가 깨끗합니다. 가벼운 실외 활동을 즐기기 좋아요.';
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.white.withValues(alpha: 0.1), Colors.white.withValues(alpha: 0.03)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const PhosphorIcon(PhosphorIconsFill.heart, color: Colors.white70, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              tip,
-              style: lightText.copyWith(fontSize: 13, height: 1.5),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _circularGauge({
-    required String label,
-    required double value,
-    required int max,
-    required String grade,
-    required String unit,
-  }) {
-    final ratio = value >= 0 ? (value / max).clamp(0.0, 1.0) : 0.0;
-    final color = _colorForValue(value, label == '초미세먼지' ? pm25Breaks : pm10Breaks);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Column(
-        children: [
-          Text(label, style: mediumText.copyWith(fontSize: 14)),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: 110,
-            height: 110,
-            child: CustomPaint(
-              painter: _GaugePainter(ratio: ratio, color: color),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      value >= 0 ? value.toStringAsFixed(0) : '-',
-                      style: boldText.copyWith(fontSize: 26, color: color),
-                    ),
-                    Text(unit, style: lightText.copyWith(fontSize: 10, color: Colors.white54)),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              grade,
-              style: TextStyle(fontSize: 13, color: color, fontWeight: FontWeight.w800),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   double _parse(String? value) {
     if (value == null) return -1;
     return double.tryParse(value) ?? -1;
   }
+
+  String _fmt(double v, int digits) => v >= 0 ? v.toStringAsFixed(digits) : '-';
 
   String _gradeText(String? gradeCode) {
     switch (gradeCode) {
@@ -555,92 +484,110 @@ class DustDetailModal extends StatelessWidget {
 
   Color _colorForGrade(String grade) {
     return switch (grade) {
-      '좋음' => const Color(0xFF2196F3),
-      '보통' => const Color(0xFF00BCD4),
-      '나쁨' => const Color(0xFFFF9800),
-      '매우나쁨' => const Color(0xFFF44336),
-      _ => Colors.white54,
+      '좋음' => _cGood,
+      '보통' => _cModerate,
+      '나쁨' => _cBad,
+      '매우나쁨' => _cVeryBad,
+      _ => _muted,
     };
-  }
-
-  Color _colorForValue(double value, List<double> breaks) {
-    if (value < 0) return Colors.white54;
-    final colors = [const Color(0xFF2196F3), const Color(0xFF00BCD4), const Color(0xFFFFEB3B), const Color(0xFFF44336)];
-    for (int i = 0; i < breaks.length; i++) {
-      if (value <= breaks[i]) {
-        if (i == 0) return colors[0];
-        final prev = breaks[i - 1];
-        final t = ((value - prev) / (breaks[i] - prev)).clamp(0.0, 1.0);
-        return Color.lerp(colors[i - 1], colors[i], t)!;
-      }
-    }
-    return colors.last;
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Helpers
+// 수평 스케일 바 — 좋음→보통→나쁨→매우나쁨 4구간 위에 현재 값 위치를 마커로 표시.
+// (원형 게이지 대신, "지금 값이 스펙트럼의 어디인지"를 직관적으로 보여주는 편집형 표현)
 // ─────────────────────────────────────────────────────────────────────────────
+class _ScaleBar extends StatelessWidget {
+  final double value;
+  final List<double> breaks; // [구간0끝, 구간1끝, 구간2끝]
+  final Color color;
+
+  const _ScaleBar({required this.value, required this.breaks, required this.color});
+
+  // 값 → 트랙상의 위치(0~1). 각 구간을 등폭으로 두고 구간 내부 비율로 배치.
+  double _markerPos() {
+    if (value < 0) return -1;
+    final b0 = breaks[0], b1 = breaks[1], b2 = breaks[2];
+    double seg;
+    double frac;
+    if (value <= b0) {
+      seg = 0;
+      frac = b0 == 0 ? 0 : value / b0;
+    } else if (value <= b1) {
+      seg = 1;
+      frac = (value - b0) / (b1 - b0);
+    } else if (value <= b2) {
+      seg = 2;
+      frac = (value - b1) / (b2 - b1);
+    } else {
+      seg = 3;
+      frac = ((value - b2) / b2).clamp(0.0, 1.0);
+    }
+    return ((seg + frac) / 4).clamp(0.0, 1.0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const gradeColors = [_cGood, _cModerate, _cBad, _cVeryBad];
+    final pos = _markerPos();
+    final activeSeg = pos < 0 ? -1 : (pos * 4).floor().clamp(0, 3);
+
+    return LayoutBuilder(
+      builder: (ctx, c) {
+        final w = c.maxWidth;
+        const trackH = 9.0;
+        const boxH = 16.0;
+        return SizedBox(
+          height: boxH,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                top: (boxH - trackH) / 2,
+                left: 0,
+                right: 0,
+                child: Row(
+                  children: List.generate(4, (i) {
+                    return Expanded(
+                      child: Container(
+                        height: trackH,
+                        margin: EdgeInsets.only(right: i < 3 ? 3 : 0),
+                        decoration: BoxDecoration(
+                          color: gradeColors[i].withValues(alpha: i == activeSeg ? 0.92 : 0.16),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+              if (pos >= 0)
+                Positioned(
+                  left: (pos * w - 7).clamp(0.0, w - 14),
+                  top: 1,
+                  child: Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: color, width: 2.5),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 4, offset: const Offset(0, 1)),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
 
 const pm10Breaks = [30.0, 80.0, 150.0];
 const pm25Breaks = [15.0, 35.0, 75.0];
-const khaiBreaks = [50.0, 100.0, 250.0];
-
-class _GaugePainter extends CustomPainter {
-  final double ratio;
-  final Color color;
-
-  _GaugePainter({required this.ratio, required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const stroke = 10.0;
-    final rect = Rect.fromLTWH(stroke / 2, stroke / 2, size.width - stroke, size.height - stroke);
-
-    // 배경 아크
-    final bgPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.12)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc(rect, math.pi * 0.75, math.pi * 1.5, false, bgPaint);
-
-    // 글로우 — 채움 아크 아래 은은한 빛으로 상태색을 강조
-    if (ratio > 0) {
-      final glowPaint = Paint()
-        ..color = color.withValues(alpha: 0.45)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = stroke
-        ..strokeCap = StrokeCap.round
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-      canvas.drawArc(rect, math.pi * 0.75, math.pi * 1.5 * ratio, false, glowPaint);
-    }
-
-    // 채움 아크
-    final fillPaint = Paint()
-      ..shader = SweepGradient(
-        startAngle: math.pi * 0.75,
-        endAngle: math.pi * 0.75 + math.pi * 1.5,
-        colors: [color, color.withValues(alpha: 0.6)],
-        stops: const [0.0, 1.0],
-      ).createShader(rect)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc(rect, math.pi * 0.75, math.pi * 1.5 * ratio, false, fillPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
-
-class _Pollutant {
-  final String name;
-  final String? value;
-  final String? grade;
-  final String unit;
-  _Pollutant(this.name, this.value, this.grade, this.unit);
-}
 
 class _StandardRow {
   final String grade;
