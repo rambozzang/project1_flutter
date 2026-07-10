@@ -192,6 +192,18 @@ class CustRepo {
     } finally {}
   }
 
+  // 기상특보 알림 범위 설정: warnScope = 'ALL'(전체) | 'LOCAL'(관심지역만)
+  Future<ResData> updateWarnScope(String custId, String warnScope) async {
+    final dio = await AuthDio.instance.getDio(debug: false);
+    try {
+      var url = '${UrlConfig.baseURL}/cust/updateWarnScope?custId=$custId&warnScope=$warnScope';
+      Response response = await dio.post(url);
+      return AuthDio.instance.dioResponse(response);
+    } on DioException catch (e) {
+      return AuthDio.instance.dioException(e);
+    } finally {}
+  }
+
   //나를 거부했는지 확인여부
   Future<ResData> checkBlock(String custId) async {
     final dio = await AuthDio.instance.getDio(debug: false);

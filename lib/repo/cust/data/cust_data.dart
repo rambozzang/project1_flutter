@@ -17,6 +17,7 @@ class CustData {
   String? accessToken;
   String? followYn;
   String? alramYn;
+  String? warnScope; // 기상특보 알림 범위: 'ALL'(전체·기본) | 'LOCAL'(관심지역만)
   CustData({
     this.custId,
     this.nickNm,
@@ -33,6 +34,7 @@ class CustData {
     this.accessToken,
     this.followYn,
     this.alramYn,
+    this.warnScope,
   });
 
   CustData copyWith({
@@ -108,6 +110,7 @@ class CustData {
       accessToken: map['accessToken'] != null ? map['accessToken'] as String : null,
       followYn: map['followYn'] != null ? map['followYn'] as String : null,
       alramYn: map['alramYn'] != null ? map['alramYn'] as String : null,
+      warnScope: map['warnScope'] != null ? map['warnScope'] as String : null,
     );
   }
 

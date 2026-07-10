@@ -39,6 +39,9 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
   List<Map<String, String>> list = [];
   AlramDenyRepo repo = AlramDenyRepo();
 
+  // 기상특보 알림 범위: 'ALL'(전체·기본) | 'LOCAL'(관심지역만)
+  final ValueNotifier<String> warnScope = ValueNotifier<String>('ALL');
+
   @override
   initState() {
     super.initState();
@@ -88,6 +91,7 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
 
       CustData custData = CustData.fromMap(resData.data);
       isCheckedPush.value = custData.alramYn == 'Y';
+      warnScope.value = (custData.warnScope == 'LOCAL') ? 'LOCAL' : 'ALL';
       if (custData.alramYn == 'Y') {
         searchAlramCdList();
       }
@@ -161,6 +165,20 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
         streamController.sink.add(ResStream.completed([]));
       }
       // isCheckedPush.value = almYn == 'Y' ? true : false;
+    } catch (e) {
+      Utils.alert(e.toString());
+    }
+  }
+
+  // 기상특보 알림 범위 저장('ALL'|'LOCAL')
+  Future<void> updateWarnScope(String scope) async {
+    try {
+      ResData resData = await CustRepo().updateWarnScope(AuthCntr.to.custId.value, scope);
+      if (resData.code != '00') {
+        Utils.alert(resData.msg.toString());
+        return;
+      }
+      BotToast.showText(text: scope == 'LOCAL' ? '관심지역 특보만 받습니다.' : '전체 특보를 받습니다.');
     } catch (e) {
       Utils.alert(e.toString());
     }
@@ -253,6 +271,12 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
                       thickness: 3,
                       color: Colors.grey.withOpacity(0.3),
                     ),
+                    buildWarnScope(),
+                    Divider(
+                      height: 15,
+                      thickness: 3,
+                      color: Colors.grey.withOpacity(0.3),
+                    ),
                     Utils.commonStreamList<Map<String, String>>(streamController, buildAlramList, searchAlram,
                         noDataWidget: const Center(
                           child: Padding(
@@ -318,6 +342,70 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
                 style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w600)),
           ),
         ],
+      ),
+    );
+  }
+
+  // 기상특보 알림 범위 세그먼트(전체/관심지역만) — 기본 전체.
+  Widget buildWarnScope() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.warning_amber_rounded, color: Colors.grey, size: 25),
+              Gap(7),
+              Text("기상특보 알림 범위", style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const Gap(10),
+          ValueListenableBuilder<String>(
+            valueListenable: warnScope,
+            builder: (context, scope, _) {
+              return Row(
+                children: [
+                  _scopeChip('전체', 'ALL', scope),
+                  const Gap(8),
+                  _scopeChip('관심지역만', 'LOCAL', scope),
+                ],
+              );
+            },
+          ),
+          const Padding(
+            padding: EdgeInsets.only(top: 8, left: 2),
+            child: Text('전체: 모든 지역 특보 수신 · 관심지역만: 등록한 관심지역 특보만 수신',
+                style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w500)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _scopeChip(String label, String value, String current) {
+    final bool selected = current == value;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          if (current == value) return;
+          warnScope.value = value;
+          updateWarnScope(value);
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? CupertinoColors.activeBlue : Colors.grey[200],
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(label,
+              style: TextStyle(
+                color: selected ? Colors.white : Colors.black87,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              )),
+        ),
       ),
     );
   }
