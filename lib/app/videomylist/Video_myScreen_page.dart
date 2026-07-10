@@ -53,10 +53,11 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
   Duration position = Duration.zero;
 
   /// 하단 컨텐츠/메뉴의 기준선.
-  /// iOS 홈 인디케이터 영역이 크므로 카드를 더 위로 띄워 메뉴/프로그레스바와 겹치지 않게 한다.
+  /// iOS는 홈 인디케이터 위로 살짝 올라가도 제스처 충돌이 적으므로 20pt 고정.
+  /// Android는 시스템 낵게이션 높이만큼 띄워 가리지 않도록 한다.
   double get bottomHeight {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    return bottomPadding + (Platform.isIOS ? 76 : 44);
+    return Platform.isIOS ? 20 : bottomPadding + 20;
   }
 
   bool isUpdateCount = true;

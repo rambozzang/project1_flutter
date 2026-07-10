@@ -164,6 +164,22 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
           forceMaterialTransparency: true,
           backgroundColor: Colors.transparent,
           title: const AppbarPage(),
+          flexibleSpace: Obx(() {
+            final colors = Get.find<WeatherGogoCntr>().currentColors.toList();
+            if (colors.isEmpty) return const SizedBox.shrink();
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 2000),
+              curve: Curves.easeInOut,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: SkyGradient.begin,
+                  end: SkyGradient.end,
+                  colors: colors.map((c) => c.withOpacity(0.42)).toList(),
+                  stops: colors.length == SkyGradient.stops.length ? SkyGradient.stops : null,
+                ),
+              ),
+            );
+          }),
         ),
         body: Container(
           color: Colors.transparent,

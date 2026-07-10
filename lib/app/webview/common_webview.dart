@@ -14,12 +14,14 @@ class CommonWebView extends StatefulWidget {
   State<CommonWebView> createState() => _CommonWebView2State();
 }
 
-class _CommonWebView2State extends State<CommonWebView> with AutomaticKeepAliveClientMixin<CommonWebView> {
+class _CommonWebView2State extends State<CommonWebView>
+    with AutomaticKeepAliveClientMixin<CommonWebView>, WidgetsBindingObserver {
   final GlobalKey webViewKey = GlobalKey();
   late final WebViewController controller;
   late final PlatformWebViewControllerCreationParams params;
 
   ValueNotifier<bool> isLoading = ValueNotifier<bool>(false);
+  bool _isFirstResumed = true;
 
   @override
   bool get wantKeepAlive => true;
@@ -27,6 +29,7 @@ class _CommonWebView2State extends State<CommonWebView> with AutomaticKeepAliveC
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     if (WebViewPlatform.instance is WebKitWebViewPlatform) {
       params = WebKitWebViewControllerCreationParams(
@@ -69,8 +72,22 @@ class _CommonWebView2State extends State<CommonWebView> with AutomaticKeepAliveC
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     controller.clearCache();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (_isFirstResumed) {
+        _isFirstResumed = false;
+        return;
+      }
+      try {
+        controller.reload();
+      } catch (_) {}
+    }
   }
 
   @override

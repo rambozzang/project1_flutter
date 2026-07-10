@@ -28,7 +28,7 @@ class _BbsListPageState extends State<BbsListPage> with AutomaticKeepAliveClient
 
   ScrollController typeScrollCtrl = ScrollController();
 
-  final cntr = Get.put(BbsListController());
+  final cntr = Get.find<BbsListController>();
 
   @override
   bool get wantKeepAlive => true;

@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:get/get.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/widget/sa_album_card.dart';
@@ -96,13 +96,18 @@ class _AlbumListPageState extends State<AlbumListPage> {
         _loading = false;
       });
       // 카드별 부가 데이터(썸네일 3장·멤버 아바타·최근 업데이트)는 병렬로 지연 로드.
-      // 4개씩 나눠 처리 — 앨범이 많을 때 요청이 몰려(연결 경합) 전체가 느려지는 것을 막고,
-      // 배치마다 화면을 갱신해 썸네일이 순차적으로 채워지게 한다.
+      // 4개씩 나눠 처리 — 앨범이 많을 때 요청이 몰려(연결 경합) 전체가 느려지는 것을 막는다.
+      // 첫 화면은 앨범 대문 이미지(imageUrl)로 먼저 렌더링되고, 모든 카드의 썸네일 로드가
+      // 끝난 뒤 한꺼번에 교체해 리스트 렌더링을 빠르게 한다.
       const int batch = 4;
       for (int i = 0; i < cards.length; i += batch) {
         await Future.wait(cards.skip(i).take(batch).map(_fillCard));
-        if (mounted) setState(() {});
       }
+      // 모든 썸네일 로드가 끝난 뒤 한꺼번에 thumbs에 반영.
+      for (final card in cards) {
+        card.thumbs = card.loadedThumbs;
+      }
+      if (mounted) setState(() {});
     } catch (e) {
       lo.g('앨범 목록 조회 실패: $e');
       if (!mounted) return;
@@ -130,7 +135,7 @@ class _AlbumListPageState extends State<AlbumListPage> {
           // 지정 미디어 우선 + 부족분은 최근 미디어로 채움
           ordered = [...picked, ...items.where((it) => !coverIds.contains(it.boardId))];
         }
-        card.thumbs = ordered
+        card.loadedThumbs = ordered
             .map((e) => e.thumbnailPath ?? '')
             .where((p) => p.isNotEmpty)
             .take(3)

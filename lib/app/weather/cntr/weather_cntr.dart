@@ -46,6 +46,9 @@ class WeatherCntr extends GetxController {
   // 미세먼지 정보
   Rx<MistViewData?> mistViewData = MistViewData().obs;
 
+  // 미세먼지 AirKorea 원본 데이터(상세 모달용)
+  Rx<MistData?> mistData = Rx<MistData?>(null);
+
   // 시간별 날씨 정보
   List<HourlyWeather> hourlyWeather = <HourlyWeather>[].obs;
   // 일별 날씨 정보
@@ -236,6 +239,7 @@ class WeatherCntr extends GetxController {
 
       MistData? mistData = await mistRepo.getMistData(localName);
       if (mistData == null || mistData.items == null || mistData.items!.isEmpty) return;
+      this.mistData.value = mistData;
       // 단위 ㎍/㎥
       MistViewData mistViewData = MistViewData(
         mist10: mistData.items![0].pm10Value!,

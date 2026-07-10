@@ -845,8 +845,7 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
         _maxRatio = maxZ;
         _hasUltraWide = false;
       } else {
-        final Map<dynamic, dynamic>? info =
-            await _lensChannel.invokeMethod<Map<dynamic, dynamic>>('getVirtualBackCamera');
+        final Map<dynamic, dynamic>? info = await _lensChannel.invokeMethod<Map<dynamic, dynamic>>('getVirtualBackCamera');
         debugPrint('[CAM] virtual back camera(iOS): $info');
         if (info == null) {
           // 초광각 없는 기기(iPhone SE 등): 1x부터 디지털 줌만
@@ -951,10 +950,10 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
           end: Alignment.bottomCenter,
           colors: [
             Colors.transparent,
+            Colors.black.withValues(alpha: 0.05),
             Colors.black.withValues(alpha: 0.10),
-            Colors.black.withValues(alpha: 0.40),
           ],
-          stops: const [0.0, 0.55, 1.0],
+          stops: const [0.0, 0.75, 1.0],
         ),
       ),
       child: SafeArea(
@@ -1291,9 +1290,7 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          isRecording
-              ? const SizedBox(width: 48)
-              : _buildGalleryButton(),
+          isRecording ? const SizedBox(width: 48) : _buildGalleryButton(),
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1304,9 +1301,7 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
               _buildShutterButton(state),
             ],
           ),
-          isRecording
-              ? const SizedBox(width: 48)
-              : _buildCameraSwitchButton(state),
+          isRecording ? const SizedBox(width: 48) : _buildCameraSwitchButton(state),
         ],
       ),
     );
@@ -1512,4 +1507,3 @@ class AwesomeCircleButton extends StatelessWidget {
     );
   }
 }
-

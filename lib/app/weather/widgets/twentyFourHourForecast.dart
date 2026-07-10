@@ -3,7 +3,7 @@
 // import 'package:get/get.dart';
 // import 'package:intl/intl.dart';
 // import 'package:lottie/lottie.dart';
-// import 'package:phosphor_flutter/phosphor_flutter.dart';
+// import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 // import 'package:project1/app/weather/helper/extensions.dart';
 // import 'package:project1/app/weather/models/hourlyWeather.dart';
 // import 'package:project1/app/weather/theme/textStyle.dart';

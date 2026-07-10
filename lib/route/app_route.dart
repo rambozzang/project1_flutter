@@ -269,7 +269,11 @@ abstract class AppPages {
 
     GetPage(
       name: '/FavoriteAreaPage',
-      page: () => const FavoriteAreaPage(),
+      page: () {
+        final args = Get.arguments;
+        final returnResult = args is Map && args['returnResult'] == true;
+        return FavoriteAreaPage(returnResult: returnResult);
+      },
     ),
 
     GetPage(

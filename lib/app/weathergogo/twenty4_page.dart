@@ -4,7 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart' as intl;
 
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:project1/app/weatherCom/models/weather_data.dart';
 import 'package:project1/app/weatherCom/weather_com_page.dart';
 import 'package:project1/app/weathergogo/cntr/data/hourly_weather_data.dart';

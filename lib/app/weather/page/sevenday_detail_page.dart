@@ -4,7 +4,7 @@
 
 // import 'package:intl/intl.dart';
 // import 'package:lottie/lottie.dart';
-// import 'package:phosphor_flutter/phosphor_flutter.dart';
+// import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 // import 'package:project1/app/weather/theme/colors.dart';
 // import 'package:project1/app/weather/cntr/weather_cntr.dart';
 // import 'package:project1/utils/log_utils.dart';

@@ -65,7 +65,13 @@ class _SpotWeatherBodyState extends State<SpotWeatherBody> {
                 if (_c.isLoading.value) {
                   return const Center(child: CircularProgressIndicator(color: _accent));
                 }
-                if (_c.spots.isEmpty) {
+                // 위도·경도가 없는 스팟은 날씨/거리 정보가 의미 없으므로 제외한다.
+                final spots = _c.spots.where((s) {
+                  final lat = s.lat;
+                  final lon = s.lon;
+                  return lat != null && lon != null && lat != 0.0 && lon != 0.0;
+                }).toList();
+                if (spots.isEmpty) {
                   return _emptyState();
                 }
                 return RefreshIndicator(
@@ -73,9 +79,9 @@ class _SpotWeatherBodyState extends State<SpotWeatherBody> {
                   onRefresh: _c.fetch,
                   child: ListView.separated(
                     padding: const EdgeInsets.fromLTRB(14, 8, 14, 24),
-                    itemCount: _c.spots.length,
+                    itemCount: spots.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (_, i) => _spotCard(_c.spots[i]),
+                    itemBuilder: (_, i) => _spotCard(spots[i]),
                   ),
                 );
               }),

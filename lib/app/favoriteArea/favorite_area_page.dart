@@ -20,7 +20,10 @@ import 'package:project1/utils/utils.dart';
 /// - 검색어가 비면 '나의 관심 지역' 리스트로 복귀
 /// - 지역 탭 → 저장된 좌표로 즉시 날씨 조회(과거 데이터처럼 좌표가 없으면 지오코딩 폴백)
 class FavoriteAreaPage extends StatefulWidget {
-  const FavoriteAreaPage({super.key});
+  const FavoriteAreaPage({super.key, this.returnResult = false});
+
+  /// true이면 지역 탭 시 Get.back(result: GeocodeData)로 반환하고 날씨 페이지는 열지 않는다.
+  final bool returnResult;
 
   @override
   State<FavoriteAreaPage> createState() => _FavoriteAreaPageState();
@@ -200,8 +203,9 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> {
     }
   }
 
-  /// 지역 탭 → 날씨 조회. 저장된 좌표를 우선 사용하고, 과거 데이터처럼 좌표가 없으면 지오코딩 폴백.
-  Future<void> _openWeather(_FavoriteAreaItem item) async {
+  /// 지역 탭 → 날씨 조회. 저장된 좌표를 우선 사용하고, 과거 데이터처럼 좌표가 없으면 지오코딩 폭백.
+  /// [returnResult]가 true이면 선택한 지역을 GeocodeData로 반환하며 날씨 페이지는 열지 않는다.
+  Future<void> _openWeather(_FavoriteAreaItem item, {bool returnResult = false}) async {
     double? lat = item.lat;
     double? lon = item.lon;
     String addr = item.addr ?? '';
@@ -217,7 +221,12 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> {
         Utils.alert('[${item.name}] 위치를 찾지 못했습니다.');
         return;
       }
-      Get.find<WeatherGogoCntr>().searchWeatherKakao(GeocodeData(name: item.name, latLng: LatLng(lat, lon), addr: addr));
+      final geocode = GeocodeData(name: item.name, latLng: LatLng(lat, lon), addr: addr);
+      if (returnResult) {
+        Get.back(result: geocode);
+        return;
+      }
+      Get.find<WeatherGogoCntr>().searchWeatherKakao(geocode);
       Get.back();
     } catch (e) {
       lo.g('관심지역 날씨 조회 실패: $e');
@@ -429,7 +438,7 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        onTap: () => _openWeather(item),
+        onTap: () => _openWeather(item, returnResult: widget.returnResult),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
           child: Row(

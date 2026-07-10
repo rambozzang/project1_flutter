@@ -22,7 +22,7 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
 
   TextEditingController searChWordController = TextEditingController();
 
-  final bbsListController = Get.put(BbsListController());
+  late final BbsListController bbsListController;
 
   late TabController tabController;
   final ValueNotifier<int> tabIndex = ValueNotifier<int>(0);
@@ -30,7 +30,18 @@ class _AlramPageState extends State<AlramPage> with AutomaticKeepAliveClientMixi
   @override
   void initState() {
     super.initState();
+    _resetBbsController();
     _initializeControllers();
+  }
+
+  /// 재진입 시 기존 BbsListController 인스턴스를 강제 삭제 후 새로 생성한다.
+  /// 단일구독 listCtrl이 닫힌 채로 재사용되면 StreamBuilder에서
+  /// "Stream has already been listened to" 오류가 발생하기 때문이다.
+  void _resetBbsController() {
+    if (Get.isRegistered<BbsListController>()) {
+      Get.delete<BbsListController>(force: true);
+    }
+    bbsListController = Get.put(BbsListController());
   }
 
   void _initializeControllers() {

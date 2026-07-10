@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/widget/sa_glass_chip.dart';
@@ -16,6 +16,10 @@ class SaAlbumCardData {
 
   /// 최근 미디어 썸네일(최대 3장) — 겹침 스택용. 로드 전엔 빈 리스트.
   List<String> thumbs = [];
+
+  /// 백그라운드에서 로드 완료된 썸네일. 아직 화면에는 반영되지 않은 상태.
+  /// 모든 카드의 로드가 끝난 뒤 한꺼번에 [thumbs]로 옮겨 대문 이미지에서 교체한다.
+  List<String> loadedThumbs = [];
 
   /// 멤버 아바타 URL(최대 3명)
   List<String> avatars = [];

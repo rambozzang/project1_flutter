@@ -13,6 +13,8 @@ import 'package:project1/repo/common/comm_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/cust_tag_res_data.dart';
+import 'package:project1/repo/mist_gogoapi/data/mist_data.dart';
+import 'package:project1/repo/mist_gogoapi/mist_repo.dart';
 import 'package:project1/repo/weather/data/weather_view_data.dart';
 import 'package:project1/app/weathergogo/cntr/data/current_weather_data.dart';
 import 'package:project1/app/weathergogo/cntr/data/daily_weather_data.dart';
@@ -48,6 +50,8 @@ class WeatherGogoCntr extends GetxController {
   Rx<GeocodeData> currentLocation = GeocodeData(name: '현재 위치', latLng: const LatLng(0.0, 0.0)).obs;
   final Rx<Position?> positionData = Rx<Position?>(null);
   final Rx<MistViewData> mistData = MistViewData().obs;
+  // AirKorea 원본 데이터(상세 모달용)
+  final Rx<MistData?> mistDetailData = Rx<MistData?>(null);
   final RxList<HourlyWeatherData> hourlyWeather = <HourlyWeatherData>[].obs;
   final RxList<SevenDayWeather> sevenDayWeather = <SevenDayWeather>[].obs;
   final Rx<DateTime> lastUpdated = DateTime.now().obs;
@@ -383,7 +387,18 @@ class WeatherGogoCntr extends GetxController {
       currentLocation.value.addr = '$onValue1 $onValue2';
       currentLocation.refresh();
 
-      mistData.value = (await locationService.getMistData(onValue1))!;
+      final MistRepo mistRepo = MistRepo();
+      final MistData? rawMistData = await mistRepo.getMistData(onValue1);
+      if (rawMistData == null || rawMistData.items == null || rawMistData.items!.isEmpty) {
+        return;
+      }
+      mistDetailData.value = rawMistData;
+      mistData.value = MistViewData(
+        mist10: rawMistData.items![0].pm10Value!,
+        mist25: rawMistData.items![0].pm25Value!,
+        mist10Grade: mistRepo.getMist10Grade(rawMistData.items![0].pm10Value!),
+        mist25Grade: mistRepo.getMist25Grade(rawMistData.items![0].pm25Value!),
+      );
       // ==========================================================
       lo.g('완료!! => fetchLocalNameAndMistinfo() time : ${stopwatch.elapsedMilliseconds}ms');
     } catch (e) {

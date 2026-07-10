@@ -5,7 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:preload_page_view/preload_page_view.dart' hide PageScrollPhysics;
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
@@ -397,7 +397,7 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
       onTap: onTap,
       child: Column(
         children: [
-          PhosphorIcon(icon, size: 30, color: color, shadows: const [Shadow(color: Colors.black54, blurRadius: 8)]),
+          Icon(icon, size: 30, color: color, shadows: const [Shadow(color: Colors.black54, blurRadius: 8)]),
           const SizedBox(height: 4),
           Text(label, style: SaText.mono(fontSize: 10, color: Colors.white)),
         ],
