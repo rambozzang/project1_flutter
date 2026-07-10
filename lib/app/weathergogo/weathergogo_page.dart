@@ -23,6 +23,7 @@ import 'package:project1/app/weathergogo/detail_main_page.dart';
 import 'package:project1/app/weathergogo/header_main_page.dart';
 import 'package:project1/app/weathergogo/naver_scrapping_page.dart';
 import 'package:project1/app/weathergogo/seven_day_chart.dart';
+import 'package:project1/app/weathergogo/sun_times_view.dart';
 import 'package:project1/app/weathergogo/twenty4_page.dart';
 import 'package:project1/app/weathergogo/weather_webview.dart';
 import 'package:project1/app/weathergogo/weathergogo_kakao_searchbar.dart';
@@ -100,6 +101,8 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
       //       key: ValueKey('SevenDayPage'),
       //     ),
       () => const DailyWeatherChart(),
+      // 주간예보 아래 — 날짜별 일출·일몰 리스트(위경도 로컬 계산, 외부 API 없음).
+      () => const SunTimesView(),
 
       // () => const SizedBox(height: 10),
       () => const NaverNewPage(
