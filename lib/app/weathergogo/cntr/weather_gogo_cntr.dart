@@ -60,6 +60,10 @@ class WeatherGogoCntr extends GetxController {
   final RxList<HourlyWeatherData> yesterdayHourlyWeather = <HourlyWeatherData>[].obs;
   // 어제 원본(시간별 실황). 예보 완성 후 _alignYesterdayToForecast()에서 예보 시각에 맞춰 정렬해 yesterdayHourlyWeather 를 만든다.
   final List<HourlyWeatherData> _yesterdayRawList = [];
+
+  // 온도 카운트업 시퀀스 — 관심지역/리프레시/현재위치 등 새 조회마다 +1 해서
+  // 온도 숫자가 매번 0부터 다시 카운트업되도록 한다(헤더에서 key로 사용).
+  final RxInt tempCountSeq = 0.obs;
   final Rx<WeatherAlertRes?> weatherAlert = Rx<WeatherAlertRes?>(null);
 
   final ValueNotifier<bool> isRainVisibleNotifier = ValueNotifier<bool>(false);
@@ -298,6 +302,8 @@ class WeatherGogoCntr extends GetxController {
   Future<void> getWeatherDataByLatLng(LatLng location, bool isAllSearch) async {
     try {
       stopwatch = Stopwatch()..start();
+      // 새 조회 시작 → 온도 카운트업을 0부터 다시 시작(헤더 TweenAnimationBuilder key 갱신).
+      tempCountSeq.value++;
       // webViewUrl.value = '${webViewUrl.value} + ${location.longitude},${location.latitude},2780/loc=';
       // 5분후 해제
       Timer(const Duration(seconds: 15), () {

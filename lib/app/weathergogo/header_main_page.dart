@@ -26,7 +26,7 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _buildYesterdayInfo(controller.yesterdayDesc.value),
-                  _buildTemperature(controller.currentWeather.value.temp ?? '0.0'),
+                  _buildTemperature(controller.currentWeather.value.temp ?? '0.0', controller.tempCountSeq.value),
                   const Gap(5),
                   Text(
                     controller.currentWeather.value.description ?? '맑음',
@@ -60,15 +60,16 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
     );
   }
 
-  Widget _buildTemperature(String temp) {
-    // 리프레시·관심지역·현재위치 클릭 등으로 새 온도가 들어오면 이전 값에서
-    // 새 값으로 숫자가 카운트되며 올라가는 효과(첫 표시는 0부터 카운트업).
+  Widget _buildTemperature(String temp, int seq) {
+    // 리프레시·관심지역·현재위치 클릭 등 새 조회마다(seq 증가) 숫자가 매번 0부터
+    // 다시 카운트업된다. key를 seq로 두어 TweenAnimationBuilder를 새로 시작시킨다.
     final double target = double.tryParse(temp) ?? 0.0;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
         TweenAnimationBuilder<double>(
+          key: ValueKey<int>(seq),
           tween: Tween<double>(begin: 0, end: target),
           duration: const Duration(milliseconds: 900),
           curve: Curves.easeOutCubic,
