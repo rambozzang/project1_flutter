@@ -39,7 +39,6 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
   final List<BoardWeatherListData> _items = [];
   static const int _pageSize = 30;
   int _pageNum = 0;
-  bool _loading = true;
   bool _loadingMore = false;
   bool _hasMore = true;
 
@@ -54,16 +53,21 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
   void initState() {
     super.initState();
     _communityId = (Get.arguments?['communityId'] as num?)?.toInt() ?? 0;
+    // 리스트에서 넘겨준 앨범 정보가 있으면 즉시 셸을 그린다(없으면(딥링크 등) _load 완료까지 스피너).
+    _community = Get.arguments?['community'] as CommunityData?;
     _load();
   }
 
   Future<void> _load() async {
     try {
+      // 피드도 병렬로 시작 — 상세/멤버 완료를 기다리지 않아 표시가 빨라진다.
+      final feedFuture = _loadFeed(reset: true);
       final results = await Future.wait([
         _repo.getDetail(_communityId),
         _repo.getMembers(_communityId),
       ]);
-      _community = results[0] as CommunityData?;
+      // getDetail이 null이면 리스트에서 넘겨받은 값을 유지.
+      _community = (results[0] as CommunityData?) ?? _community;
       _lastSeen = DateTime.tryParse(_community?.lastSeenDtm ?? '');
       _repo.markSeen(_communityId); // 홈 복귀 시 NEW 뱃지 해소
       final members = results[1] as List;
@@ -73,12 +77,13 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
           .take(4)
           .toList()
           .cast<String>();
-      await _loadFeed(reset: true);
+      await feedFuture;
     } catch (e) {
       lo.g('앨범 셸 조회 실패: $e');
-      Utils.alert('앨범 정보를 불러오지 못했습니다.');
+      // 넘겨받은 정보가 전혀 없을 때만 알럿(정보가 있으면 화면은 유지).
+      if (_community == null) Utils.alert('앨범 정보를 불러오지 못했습니다.');
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) setState(() {}); // 최종 데이터(상세·멤버·피드) 반영
     }
   }
 
@@ -160,7 +165,8 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
         extendBody: true,
         body: SafeArea(
           bottom: false,
-          child: _loading
+          // 넘겨받은 앨범 정보가 있으면 셸을 즉시 렌더(피드는 백그라운드 로드). 없을 때만 스피너.
+          child: _community == null
               ? Center(child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal))
               : Column(
                   children: [
@@ -169,7 +175,7 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
                   ],
                 ),
         ),
-        bottomNavigationBar: _loading ? null : _buildBottomBar(),
+        bottomNavigationBar: _community == null ? null : _buildBottomBar(),
       ),
     );
   }
