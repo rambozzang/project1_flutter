@@ -271,12 +271,6 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
                       thickness: 3,
                       color: Colors.grey.withOpacity(0.3),
                     ),
-                    buildWarnScope(),
-                    Divider(
-                      height: 15,
-                      thickness: 3,
-                      color: Colors.grey.withOpacity(0.3),
-                    ),
                     Utils.commonStreamList<Map<String, String>>(streamController, buildAlramList, searchAlram,
                         noDataWidget: const Center(
                           child: Padding(
@@ -287,6 +281,13 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
                             ),
                           ),
                         )),
+                    // 기상특보 알림 범위는 맨 아래 '기상특보 알림' 토글과 함께 배치(혼동 방지).
+                    Divider(
+                      height: 15,
+                      thickness: 3,
+                      color: Colors.grey.withOpacity(0.3),
+                    ),
+                    buildWarnScope(),
                   ],
                 );
               }),
