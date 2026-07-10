@@ -112,6 +112,9 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
   // 카메라 초기화 시 조작 안내(↕밝기·↔줌)를 잠깐 띄웠다 사라지게 한다.
   bool _showGestureHint = false;
   Timer? _hintTimer;
+  // 촬영 화면 경고 문구(음란물·불법촬영물 금지) — 5초 후 자동으로 사라진다.
+  bool _showContentWarning = true;
+  Timer? _warningTimer;
   // 힌트 캡슐 내부의 손가락(점)이 왕복 스와이프하는 애니메이션(0↔1 반복).
   late final AnimationController _swipeCtrl;
   late final Animation<double> _swipeAnim;
@@ -129,6 +132,10 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _checkCameraPermission();
+    // 촬영 화면 경고 문구를 5초 뒤 페이드아웃시킨다.
+    _warningTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) setState(() => _showContentWarning = false);
+    });
     // 손가락 왕복 스와이프 애니메이션(0→1→0 반복, 끝에서 살짝 튕김) — 힌트 노출 중에만 구동.
     _swipeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
     _swipeAnim = CurvedAnimation(parent: _swipeCtrl, curve: Curves.easeInOutBack);
@@ -150,6 +157,7 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _hintTimer?.cancel();
+    _warningTimer?.cancel();
     _gaugeHideTimer?.cancel();
     _swipeCtrl.dispose();
     _brightnessVN.dispose();
@@ -515,22 +523,34 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
               bottomActionsBackgroundColor: Colors.transparent,
             ),
           ),
-          // 촬영 화면 작은 경고 — 부적절·음란물 촬영물은 게시가 제한됨을 안내.
+          // 촬영 화면 경고 — 음란물·불법촬영물 촬영·게시 금지(강한 레드). 5초 후 페이드아웃.
           Positioned(
             top: MediaQuery.of(context).padding.top + 58,
             left: 0,
             right: 0,
             child: IgnorePointer(
               child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.42),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    '부적절·음란물 촬영은 게시가 제한돼요',
-                    style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w600),
+                child: AnimatedOpacity(
+                  opacity: _showContentWarning ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 500),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: const Color(0xE6D32F2F), // 강한 레드(약 90% 불투명)
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.block, color: Colors.white, size: 15),
+                        SizedBox(width: 6),
+                        Text(
+                          '음란물·불법촬영물 촬영·게시 금지',
+                          style: TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w800),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
