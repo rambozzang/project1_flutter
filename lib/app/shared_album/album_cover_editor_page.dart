@@ -43,6 +43,9 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
   late Set<String> _opts;
   bool _saving = false;
   bool _isPublic = true; // 공개 범위(Y/N) — 대문 편집에서 수정 가능
+  // 카드 대표 이미지 소스: true=앨범 표지(imageUrl) / false=미디어 썸네일 montage.
+  // 저장 규칙과 연동 — 표지 모드는 coverMediaIds를 비워 카드가 표지를 쓰게 한다.
+  bool _useCoverImage = true;
 
   @override
   void initState() {
@@ -56,6 +59,8 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
     _selectedIds = List.of(_origin.coverMediaIds);
     _opts = _origin.cardOptions != null ? Set.of(_origin.cardOptions!) : Set.of(_optKeys);
     _isPublic = _origin.isPublic == 'Y';
+    // 대표 미디어가 지정돼 있으면 썸네일 모드, 없으면 표지(기본) 모드.
+    _useCoverImage = _origin.coverMediaIds.isEmpty;
     _nameCtrl.addListener(() => setState(() {}));
     _descCtrl.addListener(() => setState(() {}));
   }
@@ -81,7 +86,8 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
         community: _themeColor.isEmpty && (_origin.themeColor ?? '').isNotEmpty
             ? edited.copyWith(themeColor: '')
             : edited);
-    card.thumbs = _thumbsForPreview();
+    // 표지 모드면 썸네일을 비워 미리보기도 앨범 표지(imageUrl)를 그대로 보여준다.
+    card.thumbs = _useCoverImage ? const <String>[] : _thumbsForPreview();
     if (edited.mediaCnt > 0) card.mediaCount = edited.mediaCnt;
     card.newCount = edited.newCnt;
     return card;
@@ -120,7 +126,12 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
         name: _nameCtrl.text.trim(),
         description: _descCtrl.text,
         themeColor: _themeColor, // ''=자동(해제)
-        coverMediaIds: _selectedIds.join(','),
+        // 표지 모드=coverMediaIds 비움(카드가 앨범 표지 사용). 썸네일 모드=선택 미디어(없으면 최근 3장).
+        coverMediaIds: _useCoverImage
+            ? ''
+            : (_selectedIds.isNotEmpty
+                ? _selectedIds.join(',')
+                : _media.take(3).map((e) => e.boardId).whereType<int>().join(',')),
         // 전체 선택이면 미설정(null=전체 표시)으로 저장
         cardOptions: _opts.length == _optKeys.length ? '' : _opts.join(','),
         isPublic: _isPublic ? 'Y' : 'N',
@@ -166,8 +177,12 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
                       child: IgnorePointer(child: SaAlbumCard(data: _previewData, onTap: () {})),
                     ),
                     const SizedBox(height: 22),
-                    _sectionLabel('대표 이미지 · 겹침 순서'),
-                    _buildMediaStrip(),
+                    _sectionLabel('대표 이미지'),
+                    _buildCoverModeToggle(),
+                    if (!_useCoverImage) ...[
+                      const SizedBox(height: 14),
+                      _buildMediaStrip(),
+                    ],
                     const SizedBox(height: 22),
                     _sectionLabel('제목'),
                     _buildInput(_nameCtrl, hint: '앨범 이름', maxLines: 1),
@@ -302,6 +317,71 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(13),
           borderSide: BorderSide(color: SaColors.accentTeal),
+        ),
+      ),
+    );
+  }
+
+  // 대표 이미지 소스 토글: 앨범 표지(imageUrl) vs 미디어 썸네일 montage. 기본=표지.
+  Widget _buildCoverModeToggle() {
+    return Container(
+      decoration: BoxDecoration(
+        color: SaColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: SaColors.border),
+      ),
+      padding: const EdgeInsets.all(6),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              _coverModePill('앨범 표지', true),
+              const SizedBox(width: 6),
+              _coverModePill('미디어 썸네일', false),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 9, 8, 4),
+            child: Row(
+              children: [
+                Icon(_useCoverImage ? Icons.image_outlined : Icons.collections_outlined,
+                    size: 13, color: SaColors.textTertiary),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _useCoverImage ? '앨범 표지 이미지를 카드에 사용해요' : '앨범 속 사진·영상 썸네일을 겹쳐 보여줘요',
+                    style: SaText.body.copyWith(fontSize: 11.5, color: SaColors.textTertiary),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _coverModePill(String label, bool useCover) {
+    final bool selected = _useCoverImage == useCover;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _useCoverImage = useCover),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? SaColors.accentTeal : Colors.transparent,
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: Text(
+            label,
+            style: SaText.bodyMedium.copyWith(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: selected ? SaColors.onAccent : SaColors.textSecondary,
+            ),
+          ),
         ),
       ),
     );

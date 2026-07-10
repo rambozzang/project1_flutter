@@ -128,18 +128,20 @@ class _AlbumListPageState extends State<AlbumListPage> {
       final feedRes = results[0] as dynamic;
       if (feedRes.code == '00' && feedRes.data is List) {
         final items = (feedRes.data as List).map((e) => BoardWeatherListData.fromMap(e)).toList();
-        List<BoardWeatherListData> ordered = items;
-        if (coverIds.isNotEmpty) {
+        if (coverIds.isEmpty) {
+          // 표지 모드(대표 미디어 미지정) — 카드에 앨범 표지(imageUrl)를 사용, 썸네일 montage는 비운다.
+          card.loadedThumbs = [];
+        } else {
           final byId = {for (final it in items) it.boardId: it};
           final picked = coverIds.map((cid) => byId[cid]).whereType<BoardWeatherListData>().toList();
           // 지정 미디어 우선 + 부족분은 최근 미디어로 채움
-          ordered = [...picked, ...items.where((it) => !coverIds.contains(it.boardId))];
+          final ordered = [...picked, ...items.where((it) => !coverIds.contains(it.boardId))];
+          card.loadedThumbs = ordered
+              .map((e) => e.thumbnailPath ?? '')
+              .where((p) => p.isNotEmpty)
+              .take(3)
+              .toList();
         }
-        card.loadedThumbs = ordered
-            .map((e) => e.thumbnailPath ?? '')
-            .where((p) => p.isNotEmpty)
-            .take(3)
-            .toList();
         if (items.isNotEmpty && items.first.crtDtm != null) {
           card.lastUpdated = Utils.timeage(items.first.crtDtm!);
         }
