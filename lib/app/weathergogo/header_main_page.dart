@@ -134,11 +134,39 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
                 grade: mist.mist25Grade,
                 max: 75,
               ),
+              const Gap(12),
+              // 탭 가능하다는 신호(어포던스) — 배경 없이 '상세 ›' 힌트만.
+              _buildTapHint(),
             ],
           ),
         ),
       );
     });
+  }
+
+  // 미세/초미세 영역이 탭 가능함을 알리는 힌트 — 밝은 하늘 대비용 섀도우 포함.
+  Widget _buildTapHint() {
+    const shadow = [Shadow(color: Colors.black54, blurRadius: 4)];
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '상세',
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.white.withValues(alpha: 0.92),
+            fontWeight: FontWeight.w700,
+            shadows: shadow,
+          ),
+        ),
+        Icon(
+          Icons.chevron_right,
+          size: 16,
+          color: Colors.white.withValues(alpha: 0.92),
+          shadows: shadow,
+        ),
+      ],
+    );
   }
 
   Widget _buildWeatherAnimation(CurrentWeatherData weather) {
