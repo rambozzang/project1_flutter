@@ -95,7 +95,16 @@ class SaAlbumCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 14),
-              Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: SaText.titleM),
+              Row(
+                children: [
+                  Flexible(child: Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: SaText.titleM)),
+                  // 내가 만든 앨범(주인장)이면 대장 뱃지 노출.
+                  if (c.isOwner) ...[
+                    const SizedBox(width: 6),
+                    const SaOwnerBadge(),
+                  ],
+                ],
+              ),
               if ((c.description ?? '').isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Text(c.description!, maxLines: 2, overflow: TextOverflow.ellipsis, style: SaText.body.copyWith(fontSize: 13)),
@@ -143,5 +152,29 @@ class SaAlbumCard extends StatelessWidget {
     if ((c.themeColor ?? '').isNotEmpty) return c.themeColor!;
     const keys = ['rain', 'sunset', 'storm', 'night', 'aurora', 'golden', 'fog', 'snow'];
     return keys[c.communityId % keys.length];
+  }
+}
+
+/// 앨범 주인장(대장) 표시 뱃지 — 리스트/모자이크 카드 공용.
+class SaOwnerBadge extends StatelessWidget {
+  const SaOwnerBadge({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAA61E), // 대장 = 골드
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const PhosphorIcon(PhosphorIconsFill.crown, size: 11, color: Colors.white),
+          const SizedBox(width: 3),
+          Text('대장', style: SaText.mono(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white)),
+        ],
+      ),
+    );
   }
 }

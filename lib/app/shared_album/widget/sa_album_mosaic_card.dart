@@ -73,10 +73,21 @@ class SaAlbumMosaicCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(c.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: SaText.titleS.copyWith(fontSize: 14, fontWeight: FontWeight.w700)),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(c.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: SaText.titleS.copyWith(fontSize: 14, fontWeight: FontWeight.w700)),
+                      ),
+                      // 내가 만든 앨범(주인장)이면 대장 뱃지 노출.
+                      if (c.isOwner) ...[
+                        const SizedBox(width: 5),
+                        const SaOwnerBadge(),
+                      ],
+                    ],
+                  ),
                   const SizedBox(height: 6),
                   Row(
                     children: [
