@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:geolocator/geolocator.dart';
@@ -239,26 +240,33 @@ class WeatherNotificationService {
     await plugin.initialize(
       const InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher')),
     );
-    await plugin.show(
-      _kNotificationId,
-      title,
-      body,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          'weather_ongoing',
-          '날씨 상태바 알림',
-          channelDescription: '상태바에 현재 날씨를 상시 표시합니다.',
-          importance: Importance.low, // 무음 + 상태바 아이콘 유지
-          priority: Priority.low,
-          ongoing: true,
-          autoCancel: false,
-          onlyAlertOnce: true,
-          showWhen: false,
-          subText: subText, // 헤더(앱 이름 옆)에 "HH:mm 갱신" 표시
-          icon: icon,
-          largeIcon: largeIconPng != null ? ByteArrayAndroidBitmap(largeIconPng) : null,
-          silent: true,
-        ),
+    try {
+      await plugin.show(_kNotificationId, title, body, _details(icon, largeIconPng, subText));
+    } on PlatformException catch (e) {
+      // 일부 릴리즈 빌드/Android 버전에서 상태바 아이콘 리소스를 못 찾는 경우(invalid_icon):
+      // 실패 대신 기본(런처) 아이콘으로 폴백해 알림 자체는 표시되게 한다.
+      // (icon=null → initialize()의 기본 아이콘 @mipmap/ic_launcher 사용 — 래스터라 전 버전 안전)
+      debugPrint('[WeatherNoti] 아이콘 실패 → 기본 아이콘 폴백: $e');
+      await plugin.show(_kNotificationId, title, body, _details(null, largeIconPng, subText));
+    }
+  }
+
+  static NotificationDetails _details(String? icon, Uint8List? largeIconPng, String? subText) {
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        'weather_ongoing',
+        '날씨 상태바 알림',
+        channelDescription: '상태바에 현재 날씨를 상시 표시합니다.',
+        importance: Importance.low, // 무음 + 상태바 아이콘 유지
+        priority: Priority.low,
+        ongoing: true,
+        autoCancel: false,
+        onlyAlertOnce: true,
+        showWhen: false,
+        subText: subText, // 헤더(앱 이름 옆)에 "HH:mm 갱신" 표시
+        icon: icon,
+        largeIcon: largeIconPng != null ? ByteArrayAndroidBitmap(largeIconPng) : null,
+        silent: true,
       ),
     );
   }

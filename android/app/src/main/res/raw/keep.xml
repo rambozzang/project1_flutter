@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  리소스 축소(shrinkResources=true) 시, 문자열 이름(getIdentifier)으로만 참조되는
+  날씨 상태바 알림 아이콘이 '미사용'으로 오인되어 제거되는 것을 방지한다.
+  → 릴리즈 빌드 일부 기기에서 발생하던
+     PlatformException(invalid_icon: ic_stat_w_* could not be found) 해결.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_w_snow,@drawable/ic_stat_w_rain,@drawable/ic_stat_w_cloud,@drawable/ic_stat_w_sunny" />
