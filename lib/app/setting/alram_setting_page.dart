@@ -42,6 +42,9 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
   // 기상특보 알림 범위: 'ALL'(전체·기본) | 'LOCAL'(관심지역만)
   final ValueNotifier<String> warnScope = ValueNotifier<String>('ALL');
 
+  // 기상특보 알림(카테고리 10) 활성 여부 — 꺼져 있으면 범위 선택을 비활성화한다.
+  final ValueNotifier<bool> warnAlarmOn = ValueNotifier<bool>(true);
+
   @override
   initState() {
     super.initState();
@@ -92,6 +95,8 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
       CustData custData = CustData.fromMap(resData.data);
       isCheckedPush.value = custData.alramYn == 'Y';
       warnScope.value = (custData.warnScope == 'LOCAL') ? 'LOCAL' : 'ALL';
+      // 전체 알람이 꺼져 있으면 특보 범위도 비활성. 켜져 있으면 카테고리 로드 시 실제 상태로 갱신.
+      warnAlarmOn.value = custData.alramYn == 'Y';
       if (custData.alramYn == 'Y') {
         searchAlramCdList();
       }
@@ -109,6 +114,9 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
         return;
       }
       list = (res.data as List).map<Map<String, String>>((e) => Map<String, String>.from(e)).toList();
+      // 기상특보(카테고리 10) on/off 반영 — denyYn 'Y'=꺼짐.
+      final warn = list.where((e) => e['alramCd'] == '10');
+      if (warn.isNotEmpty) warnAlarmOn.value = warn.first['denyYn'] != 'Y';
       streamController.sink.add(ResStream.completed(list));
     } catch (e) {
       Utils.alert(e.toString());
@@ -163,6 +171,7 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
         searchAlramCdList();
       } else {
         streamController.sink.add(ResStream.completed([]));
+        warnAlarmOn.value = false; // 전체 알람 끄면 특보 범위도 비활성
       }
       // isCheckedPush.value = almYn == 'Y' ? true : false;
     } catch (e) {
@@ -348,39 +357,55 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
   }
 
   // 기상특보 알림 범위 세그먼트(전체/관심지역만) — 기본 전체.
+  // 기상특보 알림이 꺼져 있으면(warnAlarmOn=false) 딤 처리 + 터치 차단.
   Widget buildWarnScope() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.warning_amber_rounded, color: Colors.grey, size: 25),
-              Gap(7),
-              Text("기상특보 알림 범위", style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const Gap(10),
-          ValueListenableBuilder<String>(
-            valueListenable: warnScope,
-            builder: (context, scope, _) {
-              return Row(
+    return ValueListenableBuilder<bool>(
+      valueListenable: warnAlarmOn,
+      builder: (context, enabled, _) {
+        return Opacity(
+          opacity: enabled ? 1.0 : 0.4,
+          child: IgnorePointer(
+            ignoring: !enabled,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _scopeChip('전체', 'ALL', scope),
-                  const Gap(8),
-                  _scopeChip('관심지역만', 'LOCAL', scope),
+                  Row(
+                    children: const [
+                      Icon(Icons.warning_amber_rounded, color: Colors.grey, size: 25),
+                      Gap(7),
+                      Text("기상특보 알림 범위", style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  const Gap(10),
+                  ValueListenableBuilder<String>(
+                    valueListenable: warnScope,
+                    builder: (context, scope, _) {
+                      return Row(
+                        children: [
+                          _scopeChip('전체', 'ALL', scope),
+                          const Gap(8),
+                          _scopeChip('관심지역만', 'LOCAL', scope),
+                        ],
+                      );
+                    },
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8, left: 2),
+                    child: Text(
+                      enabled
+                          ? '전체: 모든 지역 특보 수신 · 관심지역만: 등록한 관심지역 특보만 수신'
+                          : '기상특보 알림을 켜면 범위를 설정할 수 있어요.',
+                      style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w500),
+                    ),
+                  ),
                 ],
-              );
-            },
+              ),
+            ),
           ),
-          const Padding(
-            padding: EdgeInsets.only(top: 8, left: 2),
-            child: Text('전체: 모든 지역 특보 수신 · 관심지역만: 등록한 관심지역 특보만 수신',
-                style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w500)),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -462,6 +487,8 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
 
                     data['denyYn'] = value ? 'N' : 'Y';
                     isChecked.value = !value;
+                    // 기상특보(10) 토글이면 범위 선택 활성/비활성 갱신.
+                    if (data['alramCd'].toString() == '10') warnAlarmOn.value = value;
                     setState(() {});
                   },
                 ),
