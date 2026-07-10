@@ -11,6 +11,7 @@ import 'package:project1/repo/bbs/comment_repo.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_comment_res_data.dart';
 import 'package:project1/repo/board/data/board_comment_data.dart';
+import 'package:project1/repo/board/data/board_comment_update_req_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
@@ -74,6 +75,8 @@ class _CommentsPageState extends State<CommentsPage> {
 
   // 답글(대댓글) 작성 대상 — null이면 새 원댓글, 있으면 그 댓글의 대댓글로 저장.
   BoardCommentResData? _replyTarget;
+  // 댓글 수정 대상 — null이 아니면 전송 시 새 저장 대신 수정(update). 답글과 상호배타.
+  BoardCommentResData? _editTarget;
 
   @override
   void initState() {
@@ -123,6 +126,7 @@ class _CommentsPageState extends State<CommentsPage> {
   // 답글 작성 시작 — 부모 댓글을 설정하고 입력창에 '@닉네임 '을 채운 뒤 포커스.
   void startReply(BoardCommentResData parent) {
     setState(() {
+      _editTarget = null; // 답글 시작 시 수정 모드 해제
       _replyTarget = parent;
       replyController.text = '@${parent.nickNm ?? ''} ';
     });
@@ -147,11 +151,87 @@ class _CommentsPageState extends State<CommentsPage> {
     });
   }
 
+  // 댓글 수정 시작 — 입력창에 기존 내용을 채우고 수정 모드로 전환.
+  void _startEdit(BoardCommentResData c) {
+    setState(() {
+      _replyTarget = null; // 수정 시작 시 답글 모드 해제
+      _editTarget = c;
+      replyController.text = c.contents ?? '';
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (replyFocusNode.hasFocus) {
+        SystemChannels.textInput.invokeMethod('TextInput.show');
+      } else {
+        replyFocusNode.requestFocus();
+      }
+      replyController.selection =
+          TextSelection.fromPosition(TextPosition(offset: replyController.text.length));
+    });
+  }
+
+  void _cancelEdit() {
+    setState(() {
+      _editTarget = null;
+      replyController.clear();
+    });
+    replyFocusNode.unfocus();
+  }
+
+  // 댓글 삭제 — 확인 후 백엔드 삭제(스카이라운지/앨범과 동일 엔드포인트) → 목록 새로고침.
+  Future<void> _deleteComment(BoardCommentResData c) async {
+    final bool? ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('댓글 삭제'),
+        content: const Text('이 댓글을 삭제할까요?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('취소')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('삭제', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      final ResData res = await CommentRepo().deleteComment((c.boardId ?? 0).toString());
+      if (res.code == '00') {
+        if (_editTarget?.boardId == c.boardId) _cancelEdit();
+        await getData(widget.boardId);
+      } else {
+        Utils.alert(res.msg.toString());
+      }
+    } catch (_) {
+      Utils.alert('댓글 삭제 중 오류가 발생했습니다.');
+    }
+  }
+
   Future<void> saveComment() async {
     try {
       if (replyController.text == "") return;
 
       isSend.value = true;
+
+      // 수정 모드 — 저장 대신 update(스카이라운지/앨범과 동일 엔드포인트).
+      if (_editTarget != null) {
+        final BoardCommentUpdateReqData data = BoardCommentUpdateReqData()
+          ..boardId = (_editTarget!.boardId ?? 0).toString()
+          ..contents = replyController.text
+          ..delYn = 'N'
+          ..hideYn = 'N'
+          ..fileListData = [];
+        final ResData res = await CommentRepo().update(data);
+        if (res.code == '00') {
+          replyFocusNode.unfocus();
+          replyController.clear();
+          _editTarget = null;
+          setState(() {});
+          await getData(widget.boardId);
+        } else {
+          Utils.alert(res.msg.toString());
+        }
+        isSend.value = false;
+        return;
+      }
 
       final int bid = int.parse(widget.boardId);
       // 답글이면 부모 댓글의 depthNo/sortNo/boardId를 넘긴다 — 백엔드가 자식 정렬값을 다시 계산.
@@ -303,6 +383,8 @@ class _CommentsPageState extends State<CommentsPage> {
                                       controller: replyController,
                                       isDarkTheme: isDarkTheme, // 추가된 부분
                                       onReply: startReply,
+                                      onEdit: _startEdit,
+                                      onDelete: _deleteComment,
                                     );
                             },
                           );
@@ -328,6 +410,7 @@ class _CommentsPageState extends State<CommentsPage> {
               ),
             ),
             if (_replyTarget != null) _buildReplyBanner(),
+            if (_editTarget != null) _buildEditBanner(),
             buildBottomWidget(),
           ],
         ),
@@ -360,6 +443,29 @@ class _CommentsPageState extends State<CommentsPage> {
               padding: const EdgeInsets.all(6),
               child: Icon(Icons.close, size: 14, color: sub),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 댓글 수정 중 표시 바
+  Widget _buildEditBanner() {
+    final Color sub = isDarkTheme ? Colors.white54 : Colors.black54;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 8, 10, 8),
+      color: isDarkTheme ? Colors.grey[900] : Colors.grey[100],
+      child: Row(
+        children: [
+          Icon(Icons.edit_outlined, size: 14, color: sub),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text('댓글 수정 중', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: sub, fontSize: 12.5)),
+          ),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _cancelEdit,
+            child: Padding(padding: const EdgeInsets.all(6), child: Icon(Icons.close, size: 14, color: sub)),
           ),
         ],
       ),
@@ -415,7 +521,7 @@ class _CommentsPageState extends State<CommentsPage> {
                 style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black, decorationThickness: 0),
                 onSubmitted: (value) => saveComment(),
                 decoration: InputDecoration(
-                  hintText: '댓글 ...',
+                  hintText: _editTarget != null ? '댓글 수정...' : '댓글 ...',
                   hintStyle: TextStyle(color: isDarkTheme ? Colors.white70 : Colors.black54),
                   prefixIconConstraints: const BoxConstraints(minWidth: 27, maxHeight: 27),
                   enabledBorder: OutlineInputBorder(
