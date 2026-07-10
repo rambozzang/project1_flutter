@@ -85,90 +85,161 @@ class DustDetailModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final item = mistData.items?.firstOrNull;
+    final statusGrade = _worstGrade(item);
+    final statusColor = _colorForGrade(statusGrade);
 
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.88,
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
       ),
+      clipBehavior: Clip.antiAlias,
       decoration: const BoxDecoration(
-        color: Color(0xFF1A1F3A),
+        color: Color(0xFF141A33),
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 상단 핸들
-            Container(
-              margin: const EdgeInsets.only(top: 10, bottom: 6),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.25),
-                borderRadius: BorderRadius.circular(2),
+      child: Stack(
+        children: [
+          // 상단 상태색 앰비언트 글로우 — 대기질 등급을 색으로 즉시 전달('살아있는 하늘' 톤과 연결).
+          Positioned(
+            top: -140,
+            left: -60,
+            right: -60,
+            height: 340,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    colors: [
+                      statusColor.withValues(alpha: 0.30),
+                      statusColor.withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
               ),
             ),
+          ),
+          SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 상단 핸들
+                Container(
+                  margin: const EdgeInsets.only(top: 10, bottom: 6),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHeader(context, locationName, item?.dataTime, statusGrade, statusColor),
+                        const SizedBox(height: 22),
+                        _buildMainGauges(item),
+                        const SizedBox(height: 26),
+                        _buildKhaiCard(item),
+                        const SizedBox(height: 20),
+                        _buildPollutantGrid(item),
+                        const SizedBox(height: 26),
+                        _buildStandardTable(),
+                        const SizedBox(height: 22),
+                        _buildHealthTip(item),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, String locationName, String? dataTime,
+      String statusGrade, Color statusColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const PhosphorIcon(PhosphorIconsFill.mapPin, color: Colors.white54, size: 15),
+            const SizedBox(width: 6),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(context, locationName, item?.dataTime),
-                    const SizedBox(height: 24),
-                    _buildMainGauges(item),
-                    const SizedBox(height: 28),
-                    _buildKhaiCard(item),
-                    const SizedBox(height: 20),
-                    _buildPollutantGrid(item),
-                    const SizedBox(height: 28),
-                    _buildStandardTable(),
-                    const SizedBox(height: 24),
-                    _buildHealthTip(item),
-                  ],
+              child: Text(
+                locationName,
+                style: semiboldText.copyWith(fontSize: 15),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              behavior: HitTestBehavior.opaque,
+              child: const Padding(
+                padding: EdgeInsets.all(2),
+                child: PhosphorIcon(PhosphorIconsFill.x, color: Colors.white54, size: 18),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        // 히어로 — 최악 등급을 큰 글자로 즉시 인지 + 한 줄 설명
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              statusGrade,
+              style: TextStyle(
+                fontSize: 40,
+                height: 1.0,
+                fontWeight: FontWeight.w800,
+                color: statusColor,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  _statusHeadline(statusGrade),
+                  style: lightText.copyWith(
+                      fontSize: 13, height: 1.35, color: Colors.white.withValues(alpha: 0.82)),
                 ),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context, String locationName, String? dataTime) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.08),
-            shape: BoxShape.circle,
-          ),
-          child: const PhosphorIcon(PhosphorIconsFill.plant, color: Colors.white, size: 22),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                locationName,
-                style: semiboldText.copyWith(fontSize: 18),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                dataTime != null ? '측정시간 $dataTime' : '측정시간 -',
-                style: lightText.copyWith(fontSize: 12, color: Colors.white.withValues(alpha: 0.6)),
-              ),
-            ],
-          ),
-        ),
-        GestureDetector(
-          onTap: () => Navigator.of(context).pop(),
-          child: const PhosphorIcon(PhosphorIconsFill.x, color: Colors.white54, size: 20),
+        const SizedBox(height: 6),
+        Text(
+          dataTime != null ? '측정 $dataTime 기준' : '측정시간 -',
+          style: lightText.copyWith(fontSize: 11, color: Colors.white.withValues(alpha: 0.5)),
         ),
       ],
     );
+  }
+
+  // 최악(높은) 등급을 대표 상태로 — pm10/pm25 등급 중 나쁜 쪽.
+  String _worstGrade(MistItemData? item) {
+    final g10 = int.tryParse(item?.pm10Grade ?? '') ?? 0;
+    final g25 = int.tryParse(item?.pm25Grade ?? '') ?? 0;
+    final worst = math.max(g10, g25);
+    return _gradeText(worst == 0 ? null : worst.toString());
+  }
+
+  String _statusHeadline(String grade) {
+    return switch (grade) {
+      '좋음' => '공기가 아주 깨끗해요.\n야외 활동을 즐기기 좋아요.',
+      '보통' => '무난한 대기질이에요.\n민감군은 컨디션을 살펴보세요.',
+      '나쁨' => '공기가 좋지 않아요.\n외출 시 마스크를 챙기세요.',
+      '매우나쁨' => '대기질이 매우 나빠요.\n실외 활동을 자제하세요.',
+      _ => '측정 정보를 확인해 보세요.',
+    };
   }
 
   Widget _buildMainGauges(MistItemData? item) {
@@ -533,6 +604,17 @@ class _GaugePainter extends CustomPainter {
       ..strokeWidth = stroke
       ..strokeCap = StrokeCap.round;
     canvas.drawArc(rect, math.pi * 0.75, math.pi * 1.5, false, bgPaint);
+
+    // 글로우 — 채움 아크 아래 은은한 빛으로 상태색을 강조
+    if (ratio > 0) {
+      final glowPaint = Paint()
+        ..color = color.withValues(alpha: 0.45)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke
+        ..strokeCap = StrokeCap.round
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+      canvas.drawArc(rect, math.pi * 0.75, math.pi * 1.5 * ratio, false, glowPaint);
+    }
 
     // 채움 아크
     final fillPaint = Paint()
