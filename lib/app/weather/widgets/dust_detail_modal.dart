@@ -171,9 +171,11 @@ class DustDetailModal extends StatelessWidget {
             GestureDetector(
               onTap: () => Navigator.of(context).pop(),
               behavior: HitTestBehavior.opaque,
-              child: const Padding(
-                padding: EdgeInsets.all(2),
-                child: PhosphorIcon(PhosphorIconsFill.x, color: _muted, size: 18),
+              // 배경 없이(투명) 아이콘만 — 탭 영역은 넉넉히, 아이콘은 크게.
+              child: Container(
+                color: Colors.transparent,
+                padding: const EdgeInsets.all(6),
+                child: const PhosphorIcon(PhosphorIconsFill.x, color: _ink, size: 26),
               ),
             ),
           ],
