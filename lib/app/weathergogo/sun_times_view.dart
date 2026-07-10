@@ -64,42 +64,57 @@ class SunTimesView extends StatelessWidget {
                   children: [
                     SizedBox(
                       height: _stackH,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        alignment: Alignment.bottomCenter,
-                        children: [
-                          // 태양 궤도 + 현재 태양(글로우/광선)
-                          Positioned.fill(
-                            child: CustomPaint(
-                              painter: _SunOrbitPainter(
-                                progress: progress,
-                                isDay: isDay,
-                                earthR: _earthR,
-                                orbitGap: _orbitGap,
-                              ),
-                            ),
-                          ),
-                          // 지구 반원(위성사진 상단 절반)
-                          Align(
+                      child: LayoutBuilder(
+                        builder: (context, cons) {
+                          final double cx = cons.maxWidth / 2;
+                          final double r = _earthR + _orbitGap;
+                          final double theta = math.pi * (1 + progress);
+                          final Offset sunPos = Offset(cx + r * math.cos(theta), _stackH + r * math.sin(theta));
+                          const double sunSize = 26;
+                          return Stack(
+                            clipBehavior: Clip.none,
                             alignment: Alignment.bottomCenter,
-                            child: ClipRect(
-                              child: Align(
-                                alignment: Alignment.topCenter,
-                                heightFactor: 0.55,
-                                child: SizedBox(
-                                  width: _earthR * 2.2,
-                                  height: _earthR * 2.2,
-                                  child: ClipOval(
-                                    child: Image.asset('assets/images/earth_blue_marble.jpg', fit: BoxFit.cover),
+                            children: [
+                              // 태양 궤도(선만)
+                              Positioned.fill(
+                                child: CustomPaint(
+                                  painter: _SunOrbitPainter(
+                                    progress: progress,
+                                    isDay: isDay,
+                                    earthR: _earthR,
+                                    orbitGap: _orbitGap,
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
-                          // 일출/일몰 시각(하단 좌우 — 지평선 끝)
-                          Positioned(left: 2, bottom: 0, child: _timeTag(PhosphorIconsFill.sunHorizon, rise, _riseColor)),
-                          Positioned(right: 2, bottom: 0, child: _timeTag(PhosphorIconsFill.moonStars, set, _setColor)),
-                        ],
+                              // 지구 반원(위성사진 상단 절반)
+                              Align(
+                                alignment: Alignment.bottomCenter,
+                                child: ClipRect(
+                                  child: Align(
+                                    alignment: Alignment.topCenter,
+                                    heightFactor: 0.55,
+                                    child: SizedBox(
+                                      width: _earthR * 2.2,
+                                      height: _earthR * 2.2,
+                                      child: ClipOval(
+                                        child: Image.asset('assets/images/earth_blue_marble.jpg', fit: BoxFit.cover),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              // 현재 태양(위성사진) — 궤도 위치에 얹음
+                              Positioned(
+                                left: sunPos.dx - sunSize / 2,
+                                top: sunPos.dy - sunSize / 2,
+                                child: _sunWidget(sunSize, isDay),
+                              ),
+                              // 일출/일몰 시각(하단 좌우 — 지평선 끝)
+                              Positioned(left: 2, bottom: 0, child: _timeTag(PhosphorIconsFill.sunHorizon, rise, _riseColor)),
+                              Positioned(right: 2, bottom: 0, child: _timeTag(PhosphorIconsFill.moonStars, set, _setColor)),
+                            ],
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -146,6 +161,22 @@ class SunTimesView extends StatelessWidget {
           style: TextStyle(fontSize: 12.5, color: color, fontWeight: FontWeight.w700, fontFeatures: const [FontFeature.tabularFigures()]),
         ),
       ],
+    );
+  }
+
+  // 현재 태양 — NASA 태양 위성사진(원형) + 은은한 글로우.
+  Widget _sunWidget(double size, bool isDay) {
+    final Color glow = isDay ? const Color(0xFFFFD36E) : const Color(0xFFB4C0E0);
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [BoxShadow(color: glow.withOpacity(0.65), blurRadius: 12, spreadRadius: 1)],
+      ),
+      child: ClipOval(
+        child: Image.asset('assets/images/sun_disk.jpg', fit: BoxFit.cover),
+      ),
     );
   }
 
@@ -242,7 +273,6 @@ class _SunOrbitPainter extends CustomPainter {
     final double r = earthR + orbitGap; // 태양 궤도 반지름
     final Rect rect = Rect.fromCircle(center: Offset(cx, baseY), radius: r);
     final double p = progress.clamp(0.0, 1.0);
-    final Color sunColor = isDay ? const Color(0xFFFFD36E) : const Color(0xFFB4C0E0);
 
     // 궤도 배경.
     canvas.drawArc(
@@ -272,31 +302,7 @@ class _SunOrbitPainter extends CustomPainter {
       );
     }
 
-    // 현재 태양/달.
-    final double theta = math.pi * (1 + p);
-    final Offset pos = Offset(cx + r * math.cos(theta), baseY + r * math.sin(theta));
-    canvas.drawCircle(
-      pos,
-      13,
-      Paint()
-        ..color = sunColor.withOpacity(isDay ? 0.5 : 0.32)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 9),
-    );
-    canvas.drawCircle(
-      pos,
-      7,
-      Paint()..shader = RadialGradient(colors: [Colors.white, sunColor]).createShader(Rect.fromCircle(center: pos, radius: 7)),
-    );
-    if (isDay) {
-      final Paint ray = Paint()
-        ..color = sunColor.withOpacity(0.85)
-        ..strokeWidth = 1.4
-        ..strokeCap = StrokeCap.round;
-      for (int i = 0; i < 8; i++) {
-        final double a = i * math.pi / 4;
-        canvas.drawLine(pos + Offset(math.cos(a), math.sin(a)) * 10, pos + Offset(math.cos(a), math.sin(a)) * 13.5, ray);
-      }
-    }
+    // 태양은 위성사진(Positioned Image)으로 궤도 위에 얹으므로 여기선 궤도만 그린다.
   }
 
   @override
