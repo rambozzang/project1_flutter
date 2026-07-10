@@ -383,7 +383,11 @@ class ChartPainterHour extends CustomPainter {
 
       for (int i = 0; i < dataList.length; i++) {
         final data = dataList[i];
-        if (!data.temperature.isFinite) continue;
+        // gap(어제 데이터 없음, temp=무한대)에서는 선을 끊는다 — 다음 유효점을 새 세그먼트로 시작(브리지 방지).
+        if (!data.temperature.isFinite) {
+          isFirstPoint = true;
+          continue;
+        }
 
         final double x = i * cellWidth + cellWidth / 2;
         final double normalizedTemp = (data.temperature - minTemp) / (maxTemp - minTemp);

@@ -598,11 +598,20 @@ class WeatherGogoCntr extends GetxController {
     final Map<String, HourlyWeatherData> yMap = {
       for (final y in _yesterdayRawList) '${y.date.day}-${y.date.hour}': y,
     };
-    yesterdayHourlyWeather.value = hourlyWeather.map((today) {
-      final DateTime yDate = today.date.subtract(const Duration(days: 1));
+    // 어제 비교선은 예보 앞부분 최대 24시간까지만 의미가 있다(그 뒤 시각의 24시간 전은 '오늘'이라 무의미).
+    // /weather/yesterday가 롤링 수십 시간을 주므로 제한하지 않으면 노란선이 계속 이어진다.
+    final int span = hourlyWeather.length < 24 ? hourlyWeather.length : 24;
+    final List<HourlyWeatherData> aligned = [];
+    for (int i = 0; i < span; i++) {
+      final DateTime yDate = hourlyWeather[i].date.subtract(const Duration(days: 1));
       final HourlyWeatherData? y = yMap['${yDate.day}-${yDate.hour}'];
-      return y ?? HourlyWeatherData(temp: double.infinity, sky: '', rain: '', date: yDate);
-    }).toList();
+      aligned.add(y ?? HourlyWeatherData(temp: double.infinity, sky: '', rain: '', date: yDate));
+    }
+    // 뒤쪽 연속 gap(어제 데이터 없음)은 잘라, 마지막 실제 데이터에서 선이 끝나게 한다.
+    while (aligned.isNotEmpty && !aligned.last.temp.isFinite) {
+      aligned.removeLast();
+    }
+    yesterdayHourlyWeather.value = aligned;
   }
 
   void logHourlyWeather() {
