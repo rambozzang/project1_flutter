@@ -32,6 +32,8 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+# Gradle 빌드 산출물 (실수로 추적되던 것 — android/build/ios/XCBuildData 등)
+/android/build/
 
 # Symbolication related
 app.*.symbols
