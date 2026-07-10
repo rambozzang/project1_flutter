@@ -118,26 +118,31 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           color: Colors.transparent,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DustBarGauge(
-                label: '미세',
-                value: mist.mist10,
-                grade: mist.mist10Grade,
-                max: 150,
-              ),
-              const Gap(18),
-              DustBarGauge(
-                label: '초미세',
-                value: mist.mist25,
-                grade: mist.mist25Grade,
-                max: 75,
-              ),
-              const Gap(12),
-              // 탭 가능하다는 신호(어포던스) — 배경 없이 '상세 ›' 힌트만.
-              _buildTapHint(),
-            ],
+          // 좁은 화면에서 '상세' 힌트까지 더해지면 가로폭이 넘칠 수 있어, 넘칠 때만 축소해 오버플로우 방지.
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DustBarGauge(
+                  label: '미세',
+                  value: mist.mist10,
+                  grade: mist.mist10Grade,
+                  max: 150,
+                ),
+                const Gap(18),
+                DustBarGauge(
+                  label: '초미세',
+                  value: mist.mist25,
+                  grade: mist.mist25Grade,
+                  max: 75,
+                ),
+                const Gap(12),
+                // 탭 가능하다는 신호(어포던스) — 배경 없이 '상세 ›' 힌트만.
+                _buildTapHint(),
+              ],
+            ),
           ),
         ),
       );
