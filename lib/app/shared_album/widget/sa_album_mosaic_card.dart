@@ -65,6 +65,8 @@ class SaAlbumMosaicCard extends StatelessWidget {
                         decoration: BoxDecoration(gradient: SaWeatherGradients.of(_gradientKey(c)))),
                   if (data.newCount > 0)
                     Positioned(left: 8, top: 8, child: SaNewBadge(count: data.newCount)),
+                  // 주인장(대장) 뱃지 — 표지 우측 상단.
+                  if (c.isOwner) const Positioned(top: 8, right: 8, child: SaOwnerBadge()),
                 ],
               ),
             ),
@@ -73,21 +75,10 @@ class SaAlbumMosaicCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(c.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: SaText.titleS.copyWith(fontSize: 14, fontWeight: FontWeight.w700)),
-                      ),
-                      // 내가 만든 앨범(주인장)이면 대장 뱃지 노출.
-                      if (c.isOwner) ...[
-                        const SizedBox(width: 5),
-                        const SaOwnerBadge(),
-                      ],
-                    ],
-                  ),
+                  Text(c.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: SaText.titleS.copyWith(fontSize: 14, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 6),
                   Row(
                     children: [

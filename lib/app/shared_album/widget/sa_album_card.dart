@@ -67,12 +67,15 @@ class SaAlbumCard extends StatelessWidget {
                 gradientKey: _gradientKeyFor(c),
                 overlay: Stack(
                   children: [
+                    // +미디어수 칩은 좌측 상단으로(우측 상단은 대장 뱃지 자리).
                     if (data.mediaCount != null && c.showOpt('media'))
                       Positioned(
-                        right: 10,
+                        left: 10,
                         top: 10,
                         child: SaGlassChip(label: '+${data.mediaCount}', mono: true),
                       ),
+                    // 주인장(대장) 뱃지 — 표지 우측 상단.
+                    if (c.isOwner) const Positioned(top: 10, right: 10, child: SaOwnerBadge()),
                     Center(
                       child: Container(
                         width: 54,
@@ -95,16 +98,7 @@ class SaAlbumCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 14),
-              Row(
-                children: [
-                  Flexible(child: Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: SaText.titleM)),
-                  // 내가 만든 앨범(주인장)이면 대장 뱃지 노출.
-                  if (c.isOwner) ...[
-                    const SizedBox(width: 6),
-                    const SaOwnerBadge(),
-                  ],
-                ],
-              ),
+              Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: SaText.titleM),
               if ((c.description ?? '').isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Text(c.description!, maxLines: 2, overflow: TextOverflow.ellipsis, style: SaText.body.copyWith(fontSize: 13)),
