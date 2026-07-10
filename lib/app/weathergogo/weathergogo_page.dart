@@ -33,6 +33,7 @@ import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
 import 'package:project1/widget/custom_tabbarview.dart';
 import 'package:text_scroll/text_scroll.dart';
+import 'package:project1/app/weathergogo/special_weather_hint.dart';
 
 class WeathgergogoPage extends StatefulWidget {
   const WeathgergogoPage({super.key});
@@ -216,6 +217,14 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
               RainDropAnimation(isVisibleNotifier: Get.find<WeatherGogoCntr>().isRainDropVisibleNotifier),
               DarkCloudsAnimation(isVisibleNotifier: Get.find<WeatherGogoCntr>().isDarkCloudVisibleNotifier),
               _buildLazyLoadingContent(),
+
+              // 특보 안내 마퀴 — 관심지역 없을 때 상단에 한 줄 흐르다가 사라진다.
+              Positioned(
+                top: MediaQuery.of(context).padding.top + kToolbarHeight + 4,
+                left: 0,
+                right: 0,
+                child: const SpecialWeatherHint(),
+              ),
 
               const WeathergogoKakaoSearchPage(),
 
