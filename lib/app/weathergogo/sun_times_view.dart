@@ -175,7 +175,11 @@ class SunTimesView extends StatelessWidget {
         boxShadow: [BoxShadow(color: glow.withOpacity(0.65), blurRadius: 12, spreadRadius: 1)],
       ),
       child: ClipOval(
-        child: Image.asset('assets/images/sun_disk.jpg', fit: BoxFit.cover),
+        // 이미지 속 검은 우주(여백)를 잘라내 태양 원반이 원을 가득 채우도록 확대.
+        child: Transform.scale(
+          scale: 1.28,
+          child: Image.asset('assets/images/sun_disk.jpg', fit: BoxFit.cover),
+        ),
       ),
     );
   }
