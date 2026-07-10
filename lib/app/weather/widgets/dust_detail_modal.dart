@@ -7,12 +7,12 @@ import 'package:project1/repo/mist_gogoapi/data/mist_data.dart';
 import 'package:project1/utils/utils.dart';
 
 // ── 팔레트 ──────────────────────────────────────────────────────────────────
-// 한국 대기질 관례색(좋음 파랑 · 보통 초록 · 나쁨 주황 · 매우나쁨 빨강).
-// 보통을 '초록'으로 두어 cyan-on-dark(AI 느낌)를 피하고, 채도를 살짝 낮춰 리포트 톤 유지.
-const _cGood = Color(0xFF4C8DF5);
-const _cModerate = Color(0xFF35B37A);
-const _cBad = Color(0xFFE9A13A);
-const _cVeryBad = Color(0xFFE05B49);
+// 한국 대기질 관례색(좋음 시안블루 · 보통 초록 · 나쁨 주황 · 매우나쁨 빨강).
+// 어두운 배경 위에서 화사하게 튀도록 고채도 비비드 톤(메인 화면 미세 색과 일관).
+const _cGood = Color(0xFF19C6FF);
+const _cModerate = Color(0xFF20E070);
+const _cBad = Color(0xFFFFA61E);
+const _cVeryBad = Color(0xFFFF4757);
 
 const _surface = Color(0xFF0F1626); // 시트 바탕 — 플랫(글로우 없음)
 const _panel = Color(0xFF18213B); // 섹션 패널 — 플랫(반투명 유리 아님)
@@ -555,7 +555,7 @@ class _ScaleBar extends StatelessWidget {
                         height: trackH,
                         margin: EdgeInsets.only(right: i < 3 ? 3 : 0),
                         decoration: BoxDecoration(
-                          color: gradeColors[i].withValues(alpha: i == activeSeg ? 0.92 : 0.16),
+                          color: gradeColors[i].withValues(alpha: i == activeSeg ? 0.95 : 0.28),
                           borderRadius: BorderRadius.circular(3),
                         ),
                       ),
