@@ -165,20 +165,16 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
           forceMaterialTransparency: true,
           backgroundColor: Colors.transparent,
           title: const AppbarPage(),
+          // 타이틀바(상태바 포함)는 바디 그라디언트의 최상단색과 동일한 단색으로 채운다.
+          // → 시간대 변화가 바디와 이음새 없이 함께 반영됨.
+          // (기존: 앱바 높이에 눌러 담은 독자 그라디언트@0.42 → 지평선 밝은색이 섞여 바디와 톤이 달라 보였음)
           flexibleSpace: Obx(() {
             final colors = Get.find<WeatherGogoCntr>().currentColors.toList();
             if (colors.isEmpty) return const SizedBox.shrink();
             return AnimatedContainer(
               duration: const Duration(milliseconds: 2000),
               curve: Curves.easeInOut,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: SkyGradient.begin,
-                  end: SkyGradient.end,
-                  colors: colors.map((c) => c.withOpacity(0.42)).toList(),
-                  stops: colors.length == SkyGradient.stops.length ? SkyGradient.stops : null,
-                ),
-              ),
+              color: colors.first,
             );
           }),
         ),
