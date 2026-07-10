@@ -273,6 +273,7 @@ class CommunityRepo {
     String? themeColor,
     String? coverMediaIds,
     String? cardOptions,
+    String? isPublic, // 'Y'|'N' — 공개/비공개 수정
   }) async {
     try {
       final dio = await AuthDio.instance.getDio();
@@ -283,6 +284,7 @@ class CommunityRepo {
         if (themeColor != null) 'themeColor': themeColor,
         if (coverMediaIds != null) 'coverMediaIds': coverMediaIds,
         if (cardOptions != null) 'cardOptions': cardOptions,
+        if (isPublic != null) 'isPublic': isPublic,
       });
       final data = AuthDio.instance.dioResponse(res);
       return (data.code == '00', data.msg ?? '');

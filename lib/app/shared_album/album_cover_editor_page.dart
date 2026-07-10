@@ -42,6 +42,7 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
   };
   late Set<String> _opts;
   bool _saving = false;
+  bool _isPublic = true; // 공개 범위(Y/N) — 대문 편집에서 수정 가능
 
   @override
   void initState() {
@@ -54,6 +55,7 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
     _themeColor = _origin.themeColor ?? '';
     _selectedIds = List.of(_origin.coverMediaIds);
     _opts = _origin.cardOptions != null ? Set.of(_origin.cardOptions!) : Set.of(_optKeys);
+    _isPublic = _origin.isPublic == 'Y';
     _nameCtrl.addListener(() => setState(() {}));
     _descCtrl.addListener(() => setState(() {}));
   }
@@ -121,6 +123,7 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
         coverMediaIds: _selectedIds.join(','),
         // 전체 선택이면 미설정(null=전체 표시)으로 저장
         cardOptions: _opts.length == _optKeys.length ? '' : _opts.join(','),
+        isPublic: _isPublic ? 'Y' : 'N',
       );
       if (!ok) {
         Utils.alert(msg.isEmpty ? '저장에 실패했습니다.' : msg);
@@ -171,6 +174,9 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
                     const SizedBox(height: 14),
                     _sectionLabel('소개'),
                     _buildInput(_descCtrl, hint: '앨범을 소개해보세요', maxLines: 3),
+                    const SizedBox(height: 22),
+                    _sectionLabel('공개 범위'),
+                    _buildPublicToggle(),
                     const SizedBox(height: 22),
                     _sectionLabel('테마 컬러'),
                     _buildThemeSwatches(),
@@ -296,6 +302,70 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(13),
           borderSide: BorderSide(color: SaColors.accentTeal),
+        ),
+      ),
+    );
+  }
+
+  // 공개/비공개 세그먼트 토글 + 상태 안내(생성 화면과 동일 의미).
+  Widget _buildPublicToggle() {
+    return Container(
+      decoration: BoxDecoration(
+        color: SaColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: SaColors.border),
+      ),
+      padding: const EdgeInsets.all(6),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              _publicPill('공개', true),
+              const SizedBox(width: 6),
+              _publicPill('비공개', false),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 9, 8, 4),
+            child: Row(
+              children: [
+                Icon(_isPublic ? Icons.public : Icons.lock_outline, size: 13, color: SaColors.textTertiary),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _isPublic ? '누구나 검색해서 참여할 수 있어요' : '초대받은 사람만 볼 수 있어요',
+                    style: SaText.body.copyWith(fontSize: 11.5, color: SaColors.textTertiary),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _publicPill(String label, bool value) {
+    final bool selected = _isPublic == value;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _isPublic = value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? SaColors.accentTeal : Colors.transparent,
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: Text(
+            label,
+            style: SaText.bodyMedium.copyWith(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: selected ? SaColors.onAccent : SaColors.textSecondary,
+            ),
+          ),
         ),
       ),
     );
