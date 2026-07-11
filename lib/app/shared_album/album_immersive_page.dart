@@ -525,6 +525,15 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
     if (_isVideo) _initVideo();
   }
 
+  // 신규 업로드(Cloudflare 인코딩 중)는 매니페스트가 잠시 미준비 → 백오프로 여러 번 재시도한다.
+  int _retryCount = 0;
+  static const List<Duration> _retryDelays = [
+    Duration(seconds: 2),
+    Duration(seconds: 4),
+    Duration(seconds: 7),
+    Duration(seconds: 12),
+  ];
+
   /// 기본 피드(VideoScreenPage.initiliazeVideo)와 동일 구성:
   /// Android=DASH(.mpd)+formatHint / iOS=HLS, 캐시 헤더, mixWithOthers.
   Future<void> _initVideo() async {
@@ -572,6 +581,13 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
       _initialized.value = true;
     } catch (e) {
       lo.g('몰입뷰 영상 초기화 실패($url): $e');
+      // 신규 업로드가 아직 인코딩 중이면 잠시 후 다시 시도 → 나갔다 오지 않아도 자동 재생.
+      if (mounted && _retryCount < _retryDelays.length) {
+        final delay = _retryDelays[_retryCount];
+        _retryCount++;
+        await Future.delayed(delay);
+        if (mounted) await _initVideo();
+      }
     }
   }
 

@@ -138,16 +138,19 @@ class VideoScreenPageState extends State<VideoScreenPage> {
           allowBackgroundPlayback: false,
         ),
         formatHint: format,
-      )..initialize().then((_) {
-        if (mounted) {
-          lo.g('VideoScreenPage init time: ${stopwatch.elapsedMilliseconds}ms');
-          timeDesc.value = '${stopwatch.elapsedMilliseconds}ms';
-          _controller.setLooping(true);
-          _controller.pause();
-          initialized.value = true;
-          _setupVideoListener();
-        }
-      });
+      );
+      // await 로 초기화 완료/실패를 직접 받는다.
+      // 기존 ..initialize().then() 은 async 실패가 try/catch 밖으로 새어 재시도가 걸리지 않았다
+      // (신규 업로드가 Cloudflare 인코딩 중이라 매니페스트 미준비면 그대로 멈춰 '느리게 로딩'처럼 보임).
+      await _controller.initialize();
+      if (mounted) {
+        lo.g('VideoScreenPage init time: ${stopwatch.elapsedMilliseconds}ms');
+        timeDesc.value = '${stopwatch.elapsedMilliseconds}ms';
+        _controller.setLooping(true);
+        _controller.pause();
+        initialized.value = true;
+        _setupVideoListener();
+      }
     } catch (e) {
       lo.e("=== Video Player Initialization Failed ===");
       lo.e("Error: $e");
@@ -204,36 +207,47 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     });
   }
 
-  /// 단순화된 에러 처리
+  /// 초기화 에러 처리 — 신규 업로드는 Cloudflare 인코딩 중이라 매니페스트가 잠시 미준비(404/빈응답)일 수 있다.
+  /// 에러 종류를 가리지 않고 백오프로 여러 번 재시도 → 인코딩이 끝나면 사용자가 나갔다 오지 않아도 자동 재생된다.
+  int _retryCount = 0;
+  static const List<Duration> _retryDelays = [
+    Duration(seconds: 2),
+    Duration(seconds: 4),
+    Duration(seconds: 7),
+    Duration(seconds: 12),
+  ];
   Future<void> _handleInitializationError(dynamic error) async {
-    lo.e("Handling initialization error: $error");
+    if (_retryCount >= _retryDelays.length) {
+      lo.e("영상 초기화 재시도 한도 초과($_retryCount): $error");
+      return;
+    }
+    final delay = _retryDelays[_retryCount];
+    _retryCount++;
+    lo.g("영상 초기화 재시도 $_retryCount/${_retryDelays.length} (${delay.inSeconds}s 후): $error");
+    await Future.delayed(delay);
+    if (!mounted) return;
+    try {
+      try {
+        await _controller.dispose();
+      } catch (_) {}
 
-    // 네트워크 에러인 경우 한 번만 재시도
-    if (error.toString().contains('network') || error.toString().contains('timeout') || error.toString().contains('connection')) {
-      lo.g("Network error detected, retrying in 3 seconds...");
-      await Future.delayed(const Duration(seconds: 3));
-
-      if (mounted) {
-        try {
-          // 간단한 재시도
-          String retryUrl = widget.data.videoPath.toString();
-          lo.g("Retry with basic URL: $retryUrl");
-
-          _controller = VideoPlayerController.networkUrl(Uri.parse(retryUrl));
-          await _controller.initialize();
-
-          if (mounted) {
-            initialized.value = true;
-            _setupVideoListener();
-            lo.g("Video initialization successful on retry");
-          }
-        } catch (retryError) {
-          lo.e("Retry also failed: $retryError");
-          // 여기서 사용자에게 에러 표시 가능
-        }
+      String finalUrl = widget.data.videoPath.toString();
+      VideoFormat format = VideoFormat.hls;
+      if (Platform.isAndroid) {
+        finalUrl = finalUrl.replaceAll('.m3u8', '.mpd');
+        format = VideoFormat.dash;
       }
-    } else {
-      lo.e("Non-network error, not retrying: $error");
+      _controller = VideoPlayerController.networkUrl(Uri.parse(finalUrl), formatHint: format);
+      await _controller.initialize();
+      if (mounted) {
+        _controller.setLooping(true);
+        _controller.pause();
+        initialized.value = true;
+        _setupVideoListener();
+        lo.g("영상 초기화 재시도 성공($_retryCount)");
+      }
+    } catch (retryError) {
+      if (mounted) await _handleInitializationError(retryError);
     }
   }
 
