@@ -1479,12 +1479,14 @@ class _MyPageState extends State<MyPage>
       ),
     );
     if (ok != true) return;
+    Get.dialog(const Center(child: CircularProgressIndicator()), barrierDismissible: false);
     final repo = BoardRepo();
     for (final id in ids) {
       try {
         await repo.updateBoard(BoardUpdateData(boardId: id.toString(), delYn: 'Y'));
       } catch (_) {}
     }
+    if (Get.isDialogOpen ?? false) Get.back(); // 로딩 닫기
     if (!mounted) return;
     setState(() {
       _selectMode = false;
@@ -1542,12 +1544,14 @@ class _MyPageState extends State<MyPage>
       ),
     );
     if (apply != true || !changed) return;
+    Get.dialog(const Center(child: CircularProgressIndicator()), barrierDismissible: false);
     final repo = BoardRepo();
     for (final id in ids) {
       try {
         await repo.updateBoard(BoardUpdateData(boardId: id.toString(), communityId: (picked ?? 0).toString()));
       } catch (_) {}
     }
+    if (Get.isDialogOpen ?? false) Get.back(); // 로딩 닫기
     if (!mounted) return;
     setState(() {
       _selectMode = false;
@@ -1601,15 +1605,27 @@ class _MyPageState extends State<MyPage>
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 6, 10, 2),
+      padding: const EdgeInsets.fromLTRB(10, 6, 8, 2),
       child: Row(
         children: [
-          chip('ALL', '전체 ${all.length}'),
+          // 칩+힌트는 가로 스크롤로 감싸 좁은 화면에서도 오버플로우 없음.
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  chip('ALL', '전체 ${all.length}'),
+                  const Gap(8),
+                  chip('FEED', '피드 $feedCnt'),
+                  const Gap(8),
+                  chip('ALBUM', '앨범 $albumCnt'),
+                  const Gap(12),
+                  const Text('· 꾹 눌러 수정', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                ],
+              ),
+            ),
+          ),
           const Gap(8),
-          chip('FEED', '피드 $feedCnt'),
-          const Gap(8),
-          chip('ALBUM', '앨범 $albumCnt'),
-          const Spacer(),
           GestureDetector(
             onTap: () => setState(() => _selectMode = true),
             behavior: HitTestBehavior.opaque,
