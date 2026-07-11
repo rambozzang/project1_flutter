@@ -12,6 +12,8 @@ import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/achievement/service/achievement_service.dart';
 import 'package:project1/app/myinfo/otherinfo_page.dart';
 import 'package:project1/app/videomylist/video_manger_page.dart';
+import 'package:project1/repo/board/data/board_update_data.dart';
+import 'package:project1/app/community/widget/album_target_selector.dart';
 import 'package:project1/app/weather/widgets/customShimmer.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
@@ -68,6 +70,9 @@ class _MyPageState extends State<MyPage>
   List<BoardWeatherListData> myboardlist = [];
   // 내 게시물 필터 — 'ALL'/'FEED'/'ALBUM' (피드/앨범 구분 보기).
   String _myBoardFilter = 'ALL';
+  // 다중 선택 관리 모드.
+  bool _selectMode = false;
+  final Set<int> _selectedIds = {};
   StreamController<ResStream<List<BoardWeatherListData>>> myVideoListCntr =
       BehaviorSubject();
   ScrollController myboardScrollCtrl = ScrollController();
@@ -1423,6 +1428,134 @@ class _MyPageState extends State<MyPage>
     );
   }
 
+  void _toggleSelect(int? boardId) {
+    if (boardId == null) return;
+    setState(() {
+      if (!_selectedIds.remove(boardId)) _selectedIds.add(boardId);
+    });
+  }
+
+  // 다중 선택 모드 상단 액션 바 — 선택 개수 + 앨범 이동/삭제/취소.
+  Widget _selectionBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 6, 4, 2),
+      child: Row(
+        children: [
+          Text('${_selectedIds.length}개 선택', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+          const Spacer(),
+          TextButton.icon(
+            onPressed: _selectedIds.isEmpty ? null : _bulkMove,
+            icon: const Icon(Icons.drive_file_move_outline, size: 18),
+            label: const Text('앨범 이동', style: TextStyle(fontSize: 12.5)),
+          ),
+          TextButton.icon(
+            onPressed: _selectedIds.isEmpty ? null : _bulkDelete,
+            icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+            label: const Text('삭제', style: TextStyle(fontSize: 12.5, color: Colors.red)),
+          ),
+          TextButton(
+            onPressed: () => setState(() {
+              _selectMode = false;
+              _selectedIds.clear();
+            }),
+            child: const Text('취소', style: TextStyle(fontSize: 12.5)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _bulkDelete() async {
+    final ids = _selectedIds.toList();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('삭제'),
+        content: Text('${ids.length}개 게시물을 삭제할까요? 되돌릴 수 없습니다.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('삭제', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final repo = BoardRepo();
+    for (final id in ids) {
+      try {
+        await repo.updateBoard(BoardUpdateData(boardId: id.toString(), delYn: 'Y'));
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    setState(() {
+      _selectMode = false;
+      _selectedIds.clear();
+    });
+    getInitMyBoard();
+  }
+
+  Future<void> _bulkMove() async {
+    final ids = _selectedIds.toList();
+    int? picked;
+    bool changed = false;
+    final apply = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: SafeArea(
+          child: StatefulBuilder(
+            builder: (ctx, setSheet) => Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 2),
+                  child: Text('${ids.length}개 위치 이동', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                ),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+                  child: Text('전체 피드 또는 내 앨범을 선택하세요.', style: TextStyle(fontSize: 12.5, color: Colors.grey)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: AlbumTargetSelector(
+                    selectedCommunityId: picked,
+                    onChanged: (c) {
+                      picked = c?.communityId;
+                      changed = true;
+                      setSheet(() {});
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('적용')),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (apply != true || !changed) return;
+    final repo = BoardRepo();
+    for (final id in ids) {
+      try {
+        await repo.updateBoard(BoardUpdateData(boardId: id.toString(), communityId: (picked ?? 0).toString()));
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    setState(() {
+      _selectMode = false;
+      _selectedIds.clear();
+    });
+    getInitMyBoard();
+  }
+
   // 그리드에서 길게 눌러 바로 관리(내용 수정·공개·위치·삭제) — 몰입뷰 진입 없이 빠르게.
   Future<void> _openManageForItem(BoardWeatherListData item) async {
     final returnMap = await VideoManagePageSheet().open(
@@ -1477,7 +1610,15 @@ class _MyPageState extends State<MyPage>
           const Gap(8),
           chip('ALBUM', '앨범 $albumCnt'),
           const Spacer(),
-          const Text('길게 눌러 수정', style: TextStyle(fontSize: 11, color: Colors.grey)),
+          GestureDetector(
+            onTap: () => setState(() => _selectMode = true),
+            behavior: HitTestBehavior.opaque,
+            child: const Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.checklist_rtl, size: 16, color: Colors.black54),
+              SizedBox(width: 3),
+              Text('선택', style: TextStyle(fontSize: 12.5, color: Colors.black54, fontWeight: FontWeight.w700)),
+            ]),
+          ),
         ],
       ),
     );
@@ -1491,7 +1632,7 @@ class _MyPageState extends State<MyPage>
             : fullList;
     return Column(
       children: [
-        _myBoardFilterChips(fullList),
+        _selectMode ? _selectionBar() : _myBoardFilterChips(fullList),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.all(8.0),
@@ -1509,6 +1650,10 @@ class _MyPageState extends State<MyPage>
               itemCount: list.length,
               itemBuilder: (context, index) => GestureDetector(
                 onTap: () {
+                  if (_selectMode) {
+                    _toggleSelect(list[index].boardId);
+                    return;
+                  }
                   Get.toNamed('/VideoMyinfoListPage', arguments: {
                     'datatype': 'MYFEED',
                     'custId': Get.find<AuthCntr>()
@@ -1519,7 +1664,9 @@ class _MyPageState extends State<MyPage>
                     'boardId': list[index].boardId.toString()
                   });
                 },
-                onLongPress: () => _openManageForItem(list[index]),
+                onLongPress: () => _selectMode
+                    ? _toggleSelect(list[index].boardId)
+                    : _openManageForItem(list[index]),
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.grey[300],
@@ -1625,6 +1772,21 @@ class _MyPageState extends State<MyPage>
                                     style: TextStyle(
                                         color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
                               ]),
+                            ),
+                          ),
+                        // 선택 모드: 우상단 체크 표시.
+                        if (_selectMode)
+                          Positioned(
+                            top: 6,
+                            right: 6,
+                            child: Icon(
+                              _selectedIds.contains(list[index].boardId)
+                                  ? Icons.check_circle
+                                  : Icons.radio_button_unchecked,
+                              color: _selectedIds.contains(list[index].boardId)
+                                  ? const Color(0xFF00B0FF)
+                                  : Colors.white,
+                              size: 22,
                             ),
                           ),
                       ],
