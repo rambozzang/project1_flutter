@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-07-11
+
+### 00:55 | claude | ✅ 완료 (Android release 빌드 실패 수정 — firebase_auth 컴파일 에러 + 서명설정 복원)
+**작업**: `flutter run --release`(SM S926N)가 `:firebase_auth:compileReleaseJavaWithJavac` 14개 에러(cannot find symbol FlutterFirebasePlugin 등)로 실패하던 문제 해결
+- **원인①(컴파일)**: 에러는 2차 증상. 진짜 문제는 :firebase_core의 release 변형이 **Java 소스 0개로 컴파일**되어 classes.jar에 BuildConfig/R만 있던 것. Gradle DSL 마이그레이션(047ccbe, AGP 8.9.1→8.11.1·Gradle 8.14·Kotlin 2.2.20)으로 태스크 입력이 바뀐 상태에서 증분 컴파일 상태가 오염된 일회성 문제 — init 스크립트로 소스 목록 덤프해 확인, sourceSets 설정 자체는 정상. `gradlew clean` 후 전체 재빌드로 해소
+- **원인②(서명, 예방수정)**: 같은 마이그레이션에서 key.properties를 읽던 release signingConfig가 **빈 값(storeFile=null)으로 유실**돼 있었음 → app/build.gradle.kts에 Groovy 시절과 동일한 key.properties 로드 복원
+- **검증**: clean 후 `flutter build apk --release` 성공(294s, 85.6MB), apksigner로 릴리즈 인증서(CN=Android Release) 서명 확인, SM S926N에 설치·실행·크래시 없음 확인(기존 debug 서명 설치본은 제거 후 재설치)
+- **주의(마이그레이션 잔여 드리프트, 미수정)**: minSdk 26→flutter 기본값으로 하향됨, proguard-android.txt→optimize.txt로 변경됨, gradle.properties에서 enableJetifier·parallel·caching·R8 fullMode 제거됨, 네이버맵 maven 저장소가 루트에서 제거됨(플러그인 자체 선언으로 동작 중) — 다음 스토어 배포 전 검토 필요
+
 ## 2026-07-04
 
 ### 12:55 | claude | ✅ 완료 (iOS 심사거절 대응 — 카메라 권한 게이트 추가, 5.1.1)

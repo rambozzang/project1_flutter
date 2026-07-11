@@ -58,7 +58,7 @@ class SunTimesView extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.white.withOpacity(0.09)),
+                  border: Border.all(color: Colors.white.withOpacity(0.06)),
                 ),
                 child: Column(
                   children: [
@@ -76,16 +76,16 @@ class SunTimesView extends StatelessWidget {
                             alignment: Alignment.bottomCenter,
                             children: [
                               // 태양 궤도(선만)
-                              Positioned.fill(
-                                child: CustomPaint(
-                                  painter: _SunOrbitPainter(
-                                    progress: progress,
-                                    isDay: isDay,
-                                    earthR: _earthR,
-                                    orbitGap: _orbitGap,
-                                  ),
-                                ),
-                              ),
+                              // Positioned.fill(
+                              //   child: CustomPaint(
+                              //     painter: _SunOrbitPainter(
+                              //       progress: progress,
+                              //       isDay: isDay,
+                              //       earthR: _earthR,
+                              //       orbitGap: _orbitGap,
+                              //     ),
+                              //   ),
+                              // ),
                               // 지구 반원(위성사진 상단 절반)
                               Align(
                                 alignment: Alignment.bottomCenter,

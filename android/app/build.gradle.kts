@@ -1,9 +1,19 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     id("com.google.gms.google-services")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// 릴리즈 서명 정보는 app/key.properties에서 로드 (Groovy 시절과 동일)
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("app/key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
@@ -33,7 +43,8 @@ android {
 
     defaultConfig {
         applicationId = "com.codelabtiger.skysnap"
-        minSdk = flutter.minSdkVersion
+        // 마이그레이션 후 flutter 기본값(21)으로 하향됐던 것을 26으로 복원(검증 범위 일치).
+        minSdk = 26
         targetSdk = 35  // Android 15의 16KB 페이지 정렬 요구사항 회피
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -45,10 +56,10 @@ android {
 
     signingConfigs {
         create("release") {
-            keyAlias = ""
-            keyPassword = ""
-            storeFile = null
-            storePassword = ""
+            keyAlias = keystoreProperties["keyAlias"] as String?
+            keyPassword = keystoreProperties["keyPassword"] as String?
+            storeFile = (keystoreProperties["storeFile"] as String?)?.let { file(it) }
+            storePassword = keystoreProperties["storePassword"] as String?
         }
     }
 
