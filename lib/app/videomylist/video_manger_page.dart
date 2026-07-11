@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 import 'package:hashtagable_v3/hashtagable.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_update_data.dart';
+import 'package:project1/app/community/widget/album_target_selector.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
@@ -18,7 +19,8 @@ import 'package:project1/widget/custom_button.dart';
 /// - 삭제는 스위치(켜고 수정완료를 눌러야 하는 혼란) → 명시적 버튼 + 확인 다이얼로그.
 ///   (기존엔 확인 전에 시트를 먼저 닫아 isDelete 반환이 유실되던 버그도 있었음)
 class VideoManagePageSheet {
-  Future<dynamic> open(BuildContext context, String boardId, String hideYn, String anonyYn, String contents) async {
+  Future<dynamic> open(BuildContext context, String boardId, String hideYn, String anonyYn, String contents,
+      {int? communityId}) async {
     Map<String, dynamic>? returnMap = await showModalBottomSheet(
       isScrollControlled: true,
       context: context,
@@ -40,6 +42,7 @@ class VideoManagePageSheet {
                 hideYn: hideYn,
                 anonyYn: anonyYn,
                 contents: contents,
+                communityId: communityId,
               )),
         );
       },
@@ -56,12 +59,14 @@ class VideoManagePage extends StatefulWidget {
     required this.hideYn,
     required this.anonyYn,
     required this.contents,
+    this.communityId,
   });
   final BuildContext contextParent;
   final String boardId;
   final String hideYn;
   final String anonyYn;
   final String contents;
+  final int? communityId;
 
   @override
   State<VideoManagePage> createState() => _VideoManagePageState();
@@ -75,6 +80,8 @@ class _VideoManagePageState extends State<VideoManagePage> {
   final ValueNotifier<bool> isAnony = ValueNotifier<bool>(false);
   // 내용/스위치가 원래 값에서 바뀌었을 때만 저장 버튼 활성화.
   final ValueNotifier<bool> isModify = ValueNotifier<bool>(false);
+  // 게시 대상 앨범ID(null=전체 피드). 원래 값(widget.communityId)에서 바뀌면 저장 활성화.
+  int? _communityId;
 
   final TextEditingController textController = TextEditingController();
   final FocusNode currentTextNode = FocusNode();
@@ -84,6 +91,7 @@ class _VideoManagePageState extends State<VideoManagePage> {
     super.initState();
     isHide.value = widget.hideYn == 'Y';
     isAnony.value = widget.anonyYn == 'Y';
+    _communityId = widget.communityId;
     textController.text = widget.contents;
     textController.addListener(_checkModification);
   }
@@ -102,7 +110,8 @@ class _VideoManagePageState extends State<VideoManagePage> {
   void _checkModification() {
     isModify.value = textController.text != widget.contents ||
         isHide.value != (widget.hideYn == 'Y') ||
-        isAnony.value != (widget.anonyYn == 'Y');
+        isAnony.value != (widget.anonyYn == 'Y') ||
+        _communityId != widget.communityId;
   }
 
   /// 숨기기/익명/내용 수정 저장.
@@ -114,6 +123,9 @@ class _VideoManagePageState extends State<VideoManagePage> {
       boardUpdateData.hideYn = isHide.value ? 'Y' : 'N';
       boardUpdateData.anonyYn = isAnony.value ? 'Y' : 'N';
       boardUpdateData.contents = textController.text;
+      if (_communityId != widget.communityId) {
+        boardUpdateData.communityId = (_communityId ?? 0).toString(); // '0'=전체 피드로 이동
+      }
       ResData res = await repo.updateBoard(boardUpdateData);
       if (res.code == '00') {
         Utils.alert('수정 되었습니다.');
@@ -123,6 +135,7 @@ class _VideoManagePageState extends State<VideoManagePage> {
         returnMap['hideYn'] = isHide.value ? 'Y' : 'N';
         returnMap['anonyYn'] = isAnony.value ? 'Y' : 'N';
         returnMap['boardId'] = widget.boardId;
+        returnMap['communityId'] = _communityId;
         Navigator.pop(context, returnMap);
       } else {
         Utils.alert('수정 중 에러가 발생했습니다.${res.msg}');
@@ -305,6 +318,28 @@ class _VideoManagePageState extends State<VideoManagePage> {
                   title: '익명으로 표시',
                   subtitle: '닉네임 대신 익명으로 표시돼요',
                   state: isAnony,
+                ),
+                const Gap(24),
+
+                // ── 게시 대상 (전체 피드 / 앨범) ──
+                const Text('게시 대상', style: TextStyle(color: Colors.white54, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                const Gap(4),
+                Row(
+                  children: [
+                    Icon(_communityId == null ? Icons.public : Icons.photo_album_outlined, size: 15, color: _accent),
+                    const Gap(5),
+                    Text(_communityId == null ? '지금: 전체 피드' : '지금: 앨범',
+                        style: const TextStyle(color: Colors.white70, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+                const Gap(8),
+                AlbumTargetSelector(
+                  dark: true,
+                  selectedCommunityId: _communityId,
+                  onChanged: (c) {
+                    setState(() => _communityId = c?.communityId);
+                    _checkModification();
+                  },
                 ),
                 const Gap(24),
 

@@ -500,6 +500,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
             widget.data.hideYn.toString(),
             widget.data.anonyYn.toString(),
             widget.data.contents.toString(),
+            communityId: widget.data.communityId,
           );
           if (returnMap == null) return;
           if (returnMap['isDelete'] == 'Y') {
@@ -508,6 +509,9 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
           }
           widget.data.contents = returnMap['contents'];
           widget.data.hideYn = returnMap['hideYn'];
+          if (returnMap.containsKey('communityId')) {
+            widget.data.communityId = returnMap['communityId'] as int?;
+          }
           setState(() {});
         },
       ),

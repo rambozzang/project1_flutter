@@ -166,8 +166,24 @@ class _MyboardListPageState extends State<MyboardListPage> {
                       fit: BoxFit.cover,
                     ),
                   ),
-                  child: Align(
-                    alignment: Alignment.bottomRight,
+                  child: Stack(children: [
+                    // 좌상단: 앨범 소속이면 '앨범' 배지(전체 피드는 배지 없음) → 한눈에 구분.
+                    if (list[index].communityId != null)
+                      Positioned(
+                        top: 6,
+                        left: 6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(6)),
+                          child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(Icons.photo_album_outlined, color: Colors.white, size: 11),
+                            SizedBox(width: 3),
+                            Text('앨범', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
+                          ]),
+                        ),
+                      ),
+                    Align(
+                      alignment: Alignment.bottomRight,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -208,6 +224,7 @@ class _MyboardListPageState extends State<MyboardListPage> {
                       ],
                     ),
                   ),
+                  ]),
                 ),
               ),
             )
