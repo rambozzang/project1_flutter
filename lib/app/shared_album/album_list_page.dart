@@ -122,7 +122,8 @@ class _AlbumListPageState extends State<AlbumListPage> {
       // 대문 편집(1f)에서 대표 미디어를 지정한 앨범은 더 넓게 조회해 지정 순서대로 찾는다
       final List<int> coverIds = card.community.coverMediaIds;
       final results = await Future.wait([
-        _repo.getFeedRes(id, 0, coverIds.isEmpty ? 3 : 30),
+        // 표지 모드(대표 미디어 미지정)는 썸네일을 버리고 최신 시각만 쓰므로 1개만 조회(불필요한 페이로드 절감).
+        _repo.getFeedRes(id, 0, coverIds.isEmpty ? 1 : 30),
         _repo.getMembers(id),
       ]);
       final feedRes = results[0] as dynamic;
