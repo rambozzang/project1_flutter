@@ -185,6 +185,13 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
     );
   }
 
+  // 대문(표지) 편집 — 여러 곳에서 재사용.
+  void _openCoverEditor() {
+    Get.toNamed('/AlbumCoverEditorPage', arguments: {'community': _community, 'items': _items})?.then((saved) {
+      if (saved == true) _load();
+    });
+  }
+
   Widget _buildAppBar() {
     final c = _community;
     final int mediaCnt = (c?.videoCnt ?? 0) + (c?.photoCnt ?? 0);
@@ -204,6 +211,11 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
               ],
             ),
           ),
+          // 관리자면 표지 편집을 앱바 우측에 노출 — 멤버 탭에 묻혀 안 보이던 문제 해결.
+          if (c?.canEditCover == true) ...[
+            _circle(PhosphorIconsFill.sparkle, _openCoverEditor),
+            const SizedBox(width: 8),
+          ],
           _circle(PhosphorIconsBold.magnifyingGlass, () {
             Utils.alert('검색은 곧 제공됩니다.');
           }),
@@ -299,12 +311,7 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
             })?.then((_) => _load());
           }),
         if (c?.canEditCover == true)
-          _familyBtn(PhosphorIconsFill.sparkle, '대문 편집', () {
-            Get.toNamed('/AlbumCoverEditorPage', arguments: {'community': c, 'items': _items})
-                ?.then((saved) {
-              if (saved == true) _load();
-            });
-          }),
+          _familyBtn(PhosphorIconsFill.sparkle, '대문(표지) 편집', _openCoverEditor),
       ],
     );
   }
