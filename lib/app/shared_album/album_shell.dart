@@ -122,8 +122,13 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
       'index': feedIndex,
       'communityId': _communityId,
       'albumName': _community?.name ?? '앨범',
-    })?.then((_) {
-      if (mounted) setState(() {});
+    })?.then((r) {
+      if (!mounted) return;
+      if (r == true) {
+        _loadFeed(reset: true); // 삭제 등 변경 → 피드 새로고침
+      } else {
+        setState(() {}); // 문구 수정 등 in-place 반영
+      }
     });
   }
 

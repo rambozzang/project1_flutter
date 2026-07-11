@@ -13,6 +13,7 @@ import 'package:project1/repo/board/data/board_comment_data.dart';
 import 'package:project1/repo/board/data/board_comment_res_data.dart';
 import 'package:project1/repo/board/data/board_comment_update_req_data.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
+import 'package:project1/repo/board/data/board_update_data.dart';
 import 'package:project1/repo/bbs/comment_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/media/media_interaction_repo.dart';
@@ -323,6 +324,128 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
     return parts.join(' · ');
   }
 
+  // 본인 게시물 여부 — custId 일치. 본인이면 상단 우측에 편집/삭제 메뉴를 노출한다.
+  bool get _isOwner {
+    final me = AuthCntr.to.resLoginData.value.custId?.toString();
+    return me != null && me.isNotEmpty && me == _item.custId;
+  }
+
+  // 본인 게시물 메뉴 — 문구 수정 / 삭제.
+  void _showOwnerMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: SaColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            ListTile(
+              leading: Icon(Icons.edit_outlined, size: 22, color: SaColors.textPrimary),
+              title: Text('문구 수정', style: SaText.bodyMedium),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _editCaption();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, size: 22, color: Colors.red),
+              title: Text('삭제', style: SaText.bodyMedium.copyWith(color: Colors.red)),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _deleteMedia();
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 문구(캡션) 수정 — 본인 게시물만. /board/updateBoard 의 contents 갱신 후 화면 즉시 반영.
+  Future<void> _editCaption() async {
+    final TextEditingController ctrl = TextEditingController(text: _item.contents ?? '');
+    final String? result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: SaColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text('문구 수정', style: SaText.titleS),
+        content: TextField(
+          controller: ctrl,
+          minLines: 1,
+          maxLines: 5,
+          style: SaText.body.copyWith(color: SaColors.textPrimary),
+          decoration: InputDecoration(
+            hintText: '문구를 입력하세요',
+            hintStyle: SaText.body.copyWith(color: SaColors.textTertiary),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('취소', style: SaText.bodyMedium.copyWith(color: SaColors.textTertiary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()),
+            child: Text('저장', style: SaText.bodyMedium.copyWith(color: SaColors.accentTeal)),
+          ),
+        ],
+      ),
+    );
+    if (result == null) return; // 취소
+    try {
+      final ResData res = await BoardRepo().updateBoard(
+        BoardUpdateData(boardId: (_item.boardId ?? 0).toString(), contents: result),
+      );
+      if (res.code == '00') {
+        setState(() => _item.contents = result);
+      } else if (mounted) {
+        Utils.alert(res.msg.toString());
+      }
+    } catch (_) {
+      if (mounted) Utils.alert('문구 수정 중 오류가 발생했습니다.');
+    }
+  }
+
+  // 게시물 삭제 — 본인 게시물만. del_yn='Y' 처리 후 상세를 닫으며 리로드 신호(true)를 반환한다.
+  Future<void> _deleteMedia() async {
+    final bool? ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: SaColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text('게시물 삭제', style: SaText.titleS),
+        content: Text('이 게시물을 삭제할까요? 되돌릴 수 없습니다.', style: SaText.body.copyWith(color: SaColors.textSecondary)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('취소', style: SaText.bodyMedium.copyWith(color: SaColors.textTertiary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('삭제', style: SaText.bodyMedium.copyWith(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      final ResData res = await BoardRepo().updateBoard(
+        BoardUpdateData(boardId: (_item.boardId ?? 0).toString(), delYn: 'Y'),
+      );
+      if (res.code == '00') {
+        Get.back(result: true); // 앨범 피드에서 제거되도록 리로드 신호
+      } else if (mounted) {
+        Utils.alert(res.msg.toString());
+      }
+    } catch (_) {
+      if (mounted) Utils.alert('삭제 중 오류가 발생했습니다.');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     SaColors.syncWith(context);
@@ -464,6 +587,22 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
               ),
             ),
           ),
+
+          // 상단 우측: 본인 게시물이면 편집/삭제 메뉴
+          if (_isOwner)
+            Positioned(
+              right: 14,
+              top: topPad + 8,
+              child: GestureDetector(
+                onTap: _showOwnerMenu,
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(color: Colors.black.withOpacity(0.35), shape: BoxShape.circle),
+                  child: const Icon(Icons.more_vert, size: 20, color: Colors.white),
+                ),
+              ),
+            ),
 
           // 하단 업로더 + 촬영일시 + 날씨/위치
           Positioned(
