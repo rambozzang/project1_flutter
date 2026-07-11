@@ -65,6 +65,8 @@ class _MyPageState extends State<MyPage>
   int myboardPageNum = 0;
   int myboardageSize = 10;
   List<BoardWeatherListData> myboardlist = [];
+  // 내 게시물 필터 — 'ALL'/'FEED'/'ALBUM' (피드/앨범 구분 보기).
+  String _myBoardFilter = 'ALL';
   StreamController<ResStream<List<BoardWeatherListData>>> myVideoListCntr =
       BehaviorSubject();
   ScrollController myboardScrollCtrl = ScrollController();
@@ -1420,10 +1422,54 @@ class _MyPageState extends State<MyPage>
     );
   }
 
-  Widget _myFeeds(List<BoardWeatherListData> list) {
+  // 내 게시물 필터 칩 — 전체 / 피드 / 앨범 (각 개수 표시).
+  Widget _myBoardFilterChips(List<BoardWeatherListData> all) {
+    final feedCnt = all.where((e) => e.communityId == null).length;
+    final albumCnt = all.where((e) => e.communityId != null).length;
+    Widget chip(String key, String label) {
+      final sel = _myBoardFilter == key;
+      return GestureDetector(
+        onTap: () => setState(() => _myBoardFilter = key),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: sel ? Colors.black87 : Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(label,
+              style: TextStyle(
+                  fontSize: 12.5, fontWeight: FontWeight.w700, color: sel ? Colors.white : Colors.black54)),
+        ),
+      );
+    }
+
     return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: list.isNotEmpty
+      padding: const EdgeInsets.fromLTRB(10, 6, 10, 2),
+      child: Row(
+        children: [
+          chip('ALL', '전체 ${all.length}'),
+          const Gap(8),
+          chip('FEED', '피드 $feedCnt'),
+          const Gap(8),
+          chip('ALBUM', '앨범 $albumCnt'),
+        ],
+      ),
+    );
+  }
+
+  Widget _myFeeds(List<BoardWeatherListData> fullList) {
+    final list = _myBoardFilter == 'FEED'
+        ? fullList.where((e) => e.communityId == null).toList()
+        : _myBoardFilter == 'ALBUM'
+            ? fullList.where((e) => e.communityId != null).toList()
+            : fullList;
+    return Column(
+      children: [
+        _myBoardFilterChips(fullList),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: list.isNotEmpty
           ? GridView.builder(
               shrinkWrap: false,
               // controller: myboardScrollCtrl,
@@ -1536,13 +1582,39 @@ class _MyPageState extends State<MyPage>
                                 color: Colors.green, size: 20),
                           ),
                         ],
+                        // 앨범 소속이면 좌하단 '앨범' 배지(전체 피드는 배지 없음).
+                        if (list[index].communityId != null)
+                          Positioned(
+                            bottom: 8,
+                            left: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                  color: Colors.black54, borderRadius: BorderRadius.circular(6)),
+                              child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                                Icon(Icons.photo_album_outlined, color: Colors.white, size: 11),
+                                SizedBox(width: 3),
+                                Text('앨범',
+                                    style: TextStyle(
+                                        color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
+                              ]),
+                            ),
+                          ),
                       ],
                     ),
                   ),
                 ),
               ),
             )
-          : Utils.progressbar(),
+          : const Center(
+              child: Padding(
+                padding: EdgeInsets.all(40),
+                child: Text('해당하는 게시물이 없어요', style: TextStyle(color: Colors.grey)),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
