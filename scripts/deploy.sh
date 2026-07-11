@@ -3,14 +3,16 @@
 #   ./deploy.sh <target> [옵션]
 #     target : android | ios | all
 #   옵션:
-#     --bump [build|patch|minor|major]  배포 전 버전 증가 (기본: 안 함)
+#     --bump [patch|minor|major|build|none]  배포 전 버전 증가 (기본: patch 자동)
+#            ★기본 patch — 마케팅 버전을 매 배포마다 올려 앱 업데이트 모달이 반드시 뜨게 하고
+#              iOS 업로드 거부(train closed)를 방지한다. 버전 유지가 꼭 필요하면 --bump none.
 #     --clean                           flutter clean 수행
 #     --apk                             (android) APK도 생성
 #     --no-upload                       (ios) TestFlight 업로드 생략
 #
-# 예) ./deploy.sh all --bump build --clean
+# 예) ./deploy.sh all            (patch 자동 범프 후 양대 스토어)
+#     ./deploy.sh all --clean
 #     ./deploy.sh android --apk
-#     ./deploy.sh ios --no-upload
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -26,10 +28,16 @@ esac
 BUMP=""; PASS=()
 while [ $# -gt 0 ]; do
   case "$1" in
-    --bump) BUMP="${2:-build}"; shift 2 ;;
+    --bump) BUMP="${2:-patch}"; shift 2 ;;
     *) PASS+=("$1"); shift ;;
   esac
 done
+
+# --bump 미지정 시 patch 자동(마케팅 버전 강제). 버전 유지가 필요하면 --bump none.
+# ⚠️ 2026-07-11 사고: build-only(마케팅 버전 유지)는 ① 앱 업데이트 모달이 안 뜨고
+#    ② iOS 업로드가 거부된다(Error 90062). 그래서 기본을 patch 로 강제한다.
+if [ -z "$BUMP" ]; then BUMP="patch"; fi
+if [ "$BUMP" = "none" ]; then BUMP=""; fi
 
 echo -e "${BLUE}════════════════════════════════════════${NC}"
 echo -e "${BLUE} SkySnap 배포  target=${TARGET}${NC}"
