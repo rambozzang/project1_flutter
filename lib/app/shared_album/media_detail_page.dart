@@ -14,6 +14,7 @@ import 'package:project1/repo/board/data/board_comment_res_data.dart';
 import 'package:project1/repo/board/data/board_comment_update_req_data.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/board/data/board_update_data.dart';
+import 'package:project1/app/community/widget/album_target_selector.dart';
 import 'package:project1/repo/bbs/comment_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/media/media_interaction_repo.dart';
@@ -341,12 +342,36 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 8),
+            // 현재 위치 표시 — 전체 피드인지 앨범 소속인지.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 6, 20, 10),
+              child: Row(
+                children: [
+                  Icon(_item.communityId == null ? Icons.public : Icons.photo_album_outlined,
+                      size: 16, color: SaColors.textSecondary),
+                  const SizedBox(width: 6),
+                  Text(
+                    _item.communityId == null ? '현재: 전체 피드' : '현재: 앨범 · $_albumName',
+                    style: SaText.bodyMedium.copyWith(color: SaColors.textSecondary, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
             ListTile(
               leading: Icon(Icons.edit_outlined, size: 22, color: SaColors.textPrimary),
               title: Text('문구 수정', style: SaText.bodyMedium),
               onTap: () {
                 Navigator.of(ctx).pop();
                 _editCaption();
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.swap_horiz, size: 22, color: SaColors.textPrimary),
+              title: Text('위치 변경 (전체 피드 ↔ 앨범)', style: SaText.bodyMedium),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _movePlacement();
               },
             ),
             ListTile(
@@ -443,6 +468,76 @@ class _MediaDetailPageState extends State<MediaDetailPage> {
       }
     } catch (_) {
       if (mounted) Utils.alert('삭제 중 오류가 발생했습니다.');
+    }
+  }
+
+  // 위치 변경 — 전체 피드 ↔ 내 앨범. AlbumTargetSelector로 대상 선택 후 /board/updateBoard 로 이동.
+  Future<void> _movePlacement() async {
+    int? picked = _item.communityId;
+    final bool? apply = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: SaColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: SafeArea(
+          child: StatefulBuilder(
+            builder: (ctx, setSheet) => Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 2),
+                  child: Text('위치 변경', style: SaText.titleS),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 6),
+                  child: Text('전체 피드 또는 내 앨범을 선택하세요.',
+                      style: SaText.body.copyWith(fontSize: 12.5, color: SaColors.textSecondary)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: AlbumTargetSelector(
+                    selectedCommunityId: picked,
+                    onChanged: (c) => setSheet(() => picked = c?.communityId),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      child: Text('적용', style: SaText.bodyMedium.copyWith(color: SaColors.accentTeal)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (apply != true || picked == _item.communityId) return; // 취소 또는 변경 없음
+    try {
+      final ResData res = await BoardRepo().updateBoard(
+        // '0'=전체 피드(null), 숫자=해당 앨범
+        BoardUpdateData(boardId: (_item.boardId ?? 0).toString(), communityId: (picked ?? 0).toString()),
+      );
+      if (res.code == '00') {
+        _item.communityId = picked;
+        // 지금 보고 있는 앨범에서 벗어났으면 상세를 닫고 목록 리로드, 아니면 화면만 갱신.
+        if (picked != _communityId) {
+          Get.back(result: true);
+        } else {
+          setState(() {});
+        }
+      } else if (mounted) {
+        Utils.alert(res.msg.toString());
+      }
+    } catch (_) {
+      if (mounted) Utils.alert('위치 변경 중 오류가 발생했습니다.');
     }
   }
 

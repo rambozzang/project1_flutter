@@ -63,6 +63,7 @@ class BoardWeatherListData {
   int? viewCnt;
   String? icon;
   String? videoId;
+  int? communityId; // 소속 앨범(모임)ID. null=전체 피드, 값 있으면 해당 앨범 소속
   int? size1;
   String? thumbnail;
   String? preview;
@@ -111,6 +112,7 @@ class BoardWeatherListData {
     this.viewCnt,
     this.icon,
     this.videoId,
+    this.communityId,
     this.size1,
     this.thumbnail,
     this.preview,
@@ -311,6 +313,7 @@ class BoardWeatherListData {
       viewCnt: map['viewCnt'] != null ? map['viewCnt'] as int : null,
       icon: map['icon'] != null ? map['icon'] as String : null,
       videoId: map['videoId'] != null ? map['videoId'] as String : null,
+      communityId: map['communityId'] != null ? (map['communityId'] as num).toInt() : null,
       size1: map['size1'] != null ? map['size1'] as int : null,
       thumbnail: map['thumbnail'] != null ? map['thumbnail'] as String : null,
       preview: map['preview'] != null ? map['preview'] as String : null,

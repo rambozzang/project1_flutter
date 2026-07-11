@@ -7,12 +7,14 @@ class BoardUpdateData {
   String? hideYn;
   String? anonyYn;
   String? contents;
+  String? communityId; // 위치 이동: '0'=전체 피드, 숫자=해당 앨범, null/빈값=변경 안 함
   BoardUpdateData({
     this.boardId,
     this.delYn,
     this.hideYn,
     this.anonyYn,
     this.contents,
+    this.communityId,
   });
 
   BoardUpdateData copyWith({
@@ -38,6 +40,7 @@ class BoardUpdateData {
       'hideYn': hideYn,
       'anonyYn': anonyYn,
       'contents': contents,
+      'communityId': communityId,
     };
   }
 
