@@ -115,17 +115,16 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
   }
 
   void _openMedia(int feedIndex) {
-    // 타일 탭 → 2b 미디어 상세(댓글·반응·관람이력). 영상 재생은 상세에서 몰입뷰로 이어짐.
-    Get.toNamed('/MediaDetailPage', arguments: {
-      'item': _items[feedIndex],
-      'items': _items,
-      'index': feedIndex,
+    // 타일 탭 → 몰입 상세(틱톡형). 댓글·좋아요·관람이력·소유자 편집(문구/위치/삭제)을 모두 지원.
+    Get.toNamed('/AlbumImmersivePage', arguments: {
       'communityId': _communityId,
       'albumName': _community?.name ?? '앨범',
+      'items': _items,
+      'initialIndex': feedIndex,
     })?.then((r) {
       if (!mounted) return;
       if (r == true) {
-        _loadFeed(reset: true); // 삭제 등 변경 → 피드 새로고침
+        _loadFeed(reset: true); // 삭제/이동 등 변경 → 피드 새로고침
       } else {
         setState(() {}); // 문구 수정 등 in-place 반영
       }
@@ -140,6 +139,9 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
       'albumName': _community?.name ?? '앨범',
       'items': collection,
       'initialIndex': index,
+    })?.then((r) {
+      // 몰입뷰에서 삭제/이동이 있었으면 피드 새로고침(회고 재생 경로도 동일하게 반영).
+      if (mounted && r == true) _loadFeed(reset: true);
     });
   }
 
