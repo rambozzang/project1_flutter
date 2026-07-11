@@ -132,7 +132,7 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
                   grade: mist.mist10Grade,
                   max: 150,
                 ),
-                const Gap(18),
+                const Gap(10),
                 DustBarGauge(
                   label: '초미세',
                   value: mist.mist25,

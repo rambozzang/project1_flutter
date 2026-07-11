@@ -67,8 +67,7 @@ class MainWeatherInfo extends StatelessWidget {
                     builder: (context) {
                       final mist = weatherProv.mistViewData.value;
                       final mistData = weatherProv.mistData.value;
-                      if (mist == null ||
-                          (mist.mist10Grade == null && mist.mist25Grade == null)) {
+                      if (mist == null || (mist.mist10Grade == null && mist.mist25Grade == null)) {
                         return const SizedBox.shrink();
                       }
                       return GestureDetector(

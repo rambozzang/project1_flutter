@@ -15,9 +15,10 @@ class SunTimesView extends StatelessWidget {
 
   static const Color _riseColor = Color(0xFFFFC066); // 일출
   static const Color _setColor = Color(0xFF9FB6FF); // 일몰
-  static const double _earthR = 52; // 지구(반원) 반지름
+  static const double _earthR = 50; // 지구(반원) 반지름
   static const double _orbitGap = 15; // 지표~태양궤도 간격
-  static const double _stackH = 90; // 아크 영역 높이(컴팩트)
+  static const double _stackH = 98; // 아크 영역 높이(컴팩트)
+  static const double _earthVisibleFrac = 0.6; // 지구 원의 상단 노출 비율(heightFactor와 동일해야 궤도가 동심)
 
   @override
   Widget build(BuildContext context) {
@@ -68,36 +69,43 @@ class SunTimesView extends StatelessWidget {
                         builder: (context, cons) {
                           final double cx = cons.maxWidth / 2;
                           final double r = _earthR + _orbitGap;
+                          // 지구는 상단 60%만 노출되므로 원의 실제 중심은 하단보다 위 — 태양·궤도 모두 이 중심 기준(동심원).
+                          const double earthCy = _stackH - _earthR * 2 * _earthVisibleFrac + _earthR;
                           final double theta = math.pi * (1 + progress);
-                          final Offset sunPos = Offset(cx + r * math.cos(theta), _stackH + r * math.sin(theta));
+                          final Offset sunPos = Offset(cx + r * math.cos(theta), earthCy + r * math.sin(theta));
                           const double sunSize = 26;
                           return Stack(
                             clipBehavior: Clip.none,
                             alignment: Alignment.bottomCenter,
                             children: [
                               // 태양 궤도(선만)
-                              // Positioned.fill(
-                              //   child: CustomPaint(
-                              //     painter: _SunOrbitPainter(
-                              //       progress: progress,
-                              //       isDay: isDay,
-                              //       earthR: _earthR,
-                              //       orbitGap: _orbitGap,
-                              //     ),
-                              //   ),
-                              // ),
+                              Positioned.fill(
+                                child: CustomPaint(
+                                  painter: _SunOrbitPainter(
+                                    progress: progress,
+                                    isDay: isDay,
+                                    earthR: _earthR,
+                                    orbitGap: _orbitGap,
+                                    earthCenterY: earthCy,
+                                  ),
+                                ),
+                              ),
                               // 지구 반원(위성사진 상단 절반)
                               Align(
                                 alignment: Alignment.bottomCenter,
                                 child: ClipRect(
                                   child: Align(
                                     alignment: Alignment.topCenter,
-                                    heightFactor: 0.55,
+                                    heightFactor: _earthVisibleFrac,
                                     child: SizedBox(
-                                      width: _earthR * 2.2,
-                                      height: _earthR * 2.2,
+                                      width: _earthR * 2,
+                                      height: _earthR * 2,
                                       child: ClipOval(
-                                        child: Image.asset('assets/images/earth_blue_marble.jpg', fit: BoxFit.cover),
+                                        // 이미지 속 검은 우주(여백)를 잘라내 지구 원반이 원을 가득 채우도록 확대.
+                                        child: Transform.scale(
+                                          scale: 1.15,
+                                          child: Image.asset('assets/images/earth_blue_marble.jpg', fit: BoxFit.cover),
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -268,12 +276,14 @@ class _SunOrbitPainter extends CustomPainter {
   final bool isDay;
   final double earthR;
   final double orbitGap;
-  _SunOrbitPainter({required this.progress, required this.isDay, required this.earthR, required this.orbitGap});
+  final double earthCenterY; // 지구 원의 실제 중심 y(상단만 노출되므로 하단보다 위)
+  _SunOrbitPainter(
+      {required this.progress, required this.isDay, required this.earthR, required this.orbitGap, required this.earthCenterY});
 
   @override
   void paint(Canvas canvas, Size size) {
     final double cx = size.width / 2;
-    final double baseY = size.height; // 지구 중심 = 하단(반원)
+    final double baseY = earthCenterY; // 지구와 동심원 — 지표~궤도 간격이 전 구간 일정
     final double r = earthR + orbitGap; // 태양 궤도 반지름
     final Rect rect = Rect.fromCircle(center: Offset(cx, baseY), radius: r);
     final double p = progress.clamp(0.0, 1.0);
