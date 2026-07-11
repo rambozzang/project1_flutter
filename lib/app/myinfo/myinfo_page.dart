@@ -11,6 +11,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/achievement/service/achievement_service.dart';
 import 'package:project1/app/myinfo/otherinfo_page.dart';
+import 'package:project1/app/videomylist/video_manger_page.dart';
 import 'package:project1/app/weather/widgets/customShimmer.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
@@ -1422,6 +1423,29 @@ class _MyPageState extends State<MyPage>
     );
   }
 
+  // 그리드에서 길게 눌러 바로 관리(내용 수정·공개·위치·삭제) — 몰입뷰 진입 없이 빠르게.
+  Future<void> _openManageForItem(BoardWeatherListData item) async {
+    final returnMap = await VideoManagePageSheet().open(
+      context,
+      (item.boardId ?? 0).toString(),
+      item.hideYn ?? 'N',
+      item.anonyYn ?? 'N',
+      item.contents ?? '',
+      communityId: item.communityId,
+    );
+    if (returnMap == null) return;
+    if (returnMap['isDelete'] == 'Y') {
+      getInitMyBoard(); // 목록 새로고침
+      return;
+    }
+    setState(() {
+      item.contents = returnMap['contents'];
+      item.hideYn = returnMap['hideYn'];
+      item.anonyYn = returnMap['anonyYn'];
+      if (returnMap.containsKey('communityId')) item.communityId = returnMap['communityId'] as int?;
+    });
+  }
+
   // 내 게시물 필터 칩 — 전체 / 피드 / 앨범 (각 개수 표시).
   Widget _myBoardFilterChips(List<BoardWeatherListData> all) {
     final feedCnt = all.where((e) => e.communityId == null).length;
@@ -1452,6 +1476,8 @@ class _MyPageState extends State<MyPage>
           chip('FEED', '피드 $feedCnt'),
           const Gap(8),
           chip('ALBUM', '앨범 $albumCnt'),
+          const Spacer(),
+          const Text('길게 눌러 수정', style: TextStyle(fontSize: 11, color: Colors.grey)),
         ],
       ),
     );
@@ -1493,6 +1519,7 @@ class _MyPageState extends State<MyPage>
                     'boardId': list[index].boardId.toString()
                   });
                 },
+                onLongPress: () => _openManageForItem(list[index]),
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.grey[300],
