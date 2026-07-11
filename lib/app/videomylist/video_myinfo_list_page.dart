@@ -43,7 +43,8 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
     if (datatype == 'ONE' && (boardId == '' || boardId == 'null')) {
       Get.back();
     }
-    Get.put(VideoMyinfoListCntr(datatype, custId, boardId, searchWord, communityId: communityId));
+    Get.put(VideoMyinfoListCntr(datatype, custId, boardId, searchWord,
+        communityId: communityId, anony: Get.arguments['anony'] == 'Y'));
 
     // 동영상 리스트 진입 시 메인 하단 탭바를 숨겨 겹침/뒤로 보임을 방지한다.
     RootCntr.to.bottomBarStreamController.sink.add(false);

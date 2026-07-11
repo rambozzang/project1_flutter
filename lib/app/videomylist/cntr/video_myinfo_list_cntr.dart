@@ -22,9 +22,21 @@ class VideoMyinfoListCntr extends GetxController {
   final String? northEast;
   final int? searchDay;
   final int? communityId; // 모임 피드(datatype == 'COMMUNITY')용
+  final bool anony; // 지도에서 진입 시 개인정보 보호로 무조건 익명 표시
 
   VideoMyinfoListCntr(this.datatype, this.custId, this.boardId, this.searchWord,
-      {this.southWest, this.northEast, this.searchDay, this.communityId});
+      {this.southWest, this.northEast, this.searchDay, this.communityId, this.anony = false});
+
+  // anony면 업로더 정보를 익명화(지도 진입 개인정보 보호). VideoMySreenPage는 anonyYn=='Y'면 익명 렌더.
+  BoardWeatherListData _maybeAnony(BoardWeatherListData e) {
+    if (anony) {
+      e.anonyYn = 'Y';
+      e.nickNm = '익명';
+      e.custNm = '익명';
+      e.profilePath = '';
+    }
+    return e;
+  }
 
   // 비디오 리스트
   StreamController<ResStream<List<BoardWeatherListData>>> videoMyListCntr = StreamController();
@@ -81,7 +93,7 @@ class VideoMyinfoListCntr extends GetxController {
           Utils.alert('해당 게시물은 존재하지 않습니다.');
           return;
         }
-        BoardWeatherListData boarIdData = BoardWeatherListData.fromMap(resListData.data);
+        BoardWeatherListData boarIdData = _maybeAnony(BoardWeatherListData.fromMap(resListData.data));
         this.list = [boarIdData];
         videoMyListCntr.sink.add(ResStream.completed(this.list));
         return;
@@ -123,7 +135,7 @@ class VideoMyinfoListCntr extends GetxController {
         return;
       }
 
-      List<BoardWeatherListData> list = ((resListData.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
+      List<BoardWeatherListData> list = ((resListData.data) as List).map((data) => _maybeAnony(BoardWeatherListData.fromMap(data))).toList();
 
       if (list.isEmpty || list.length < pagesize) {
         isLastPage = true;

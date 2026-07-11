@@ -89,6 +89,15 @@ class MapCntr extends GetxController {
 
   // 화면에서 호출.
   // initial=true(최초 진입)면 파라미터 좌표 기준 반경으로, 이후(기간버튼·카메라 이동)엔 현재 보이는 지도 경계로 조회.
+  // 지도는 개인정보 보호로 업로더를 무조건 익명 표시.
+  BoardWeatherListData _anonymize(BoardWeatherListData e) {
+    e.anonyYn = 'Y';
+    e.nickNm = '익명';
+    e.custNm = '익명';
+    e.profilePath = '';
+    return e;
+  }
+
   Future<List<BoardWeatherListData>> fetchBoards(int sDay, {bool initial = false}) async {
     try {
       isLoadingList.value = true;
@@ -133,7 +142,7 @@ class MapCntr extends GetxController {
         return [];
       }
 
-      List<BoardWeatherListData> list = ((resListData.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
+      List<BoardWeatherListData> list = ((resListData.data) as List).map((data) => _anonymize(BoardWeatherListData.fromMap(data))).toList();
 
       if (list.length != _limit) {
         isMore = false;
@@ -188,7 +197,7 @@ class MapCntr extends GetxController {
       );
 
       if (resListData.code == '00') {
-        List<BoardWeatherListData> newItems = ((resListData.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
+        List<BoardWeatherListData> newItems = ((resListData.data) as List).map((data) => _anonymize(BoardWeatherListData.fromMap(data))).toList();
 
         if (newItems.length != _limit) {
           isMore = false;

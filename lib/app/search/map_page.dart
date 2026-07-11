@@ -357,6 +357,7 @@ class _MapPageState extends State<MapPage> {
         'datatype': 'ONE',
         'custId': Get.find<AuthCntr>().resLoginData.value.custId.toString(),
         'boardId': data.boardId.toString(),
+        'anony': 'Y', // 지도 진입은 개인정보 보호로 익명 표시
       });
     }
 
@@ -648,6 +649,7 @@ class _MapPageState extends State<MapPage> {
         'southWest': mapCntr.southWest.value,
         'northEast': mapCntr.northEast.value,
         'searchDay': mapCntr.searchDay.value,
+        'anony': 'Y', // 지도 진입은 개인정보 보호로 익명 표시
       }),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
