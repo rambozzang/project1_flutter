@@ -198,12 +198,24 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
+  // 마커 아이콘은 작게 표시되므로 Cloudflare Stream 썸네일을 축소(≈120px)해 받는다.
+  // 풀사이즈(피드용)를 그대로 쓰면 다운로드·디코드·메모리가 마커 수만큼 낭비된다.
+  String _markerThumbUrl(String url) {
+    if (url.isEmpty) return url;
+    if (url.contains('cloudflarestream.com') && url.contains('/thumbnails/')) {
+      final sep = url.contains('?') ? '&' : '?';
+      return '$url${sep}width=120&height=120&fit=crop';
+    }
+    return url;
+  }
+
   // 마커 1개 생성(아이콘은 캐시 우선, 없으면 다운로드해 캐시).
   // 대량 마커 대응: NClusterableMarker 로 만들어 줌아웃 시 자동 병합(클러스터링)되게 한다.
   Future<NClusterableMarker?> _createMarker(BoardWeatherListData element) async {
     try {
       final id = element.boardId.toString();
-      final thumb = element.thumbnailPath?.toString() ?? '';
+      // 마커용 축소 썸네일(성능) — 캐시 키도 이 URL 기준.
+      final thumb = _markerThumbUrl(element.thumbnailPath?.toString() ?? '');
       NOverlayImage? icon = _iconCache[thumb];
       if (icon == null && thumb.isNotEmpty) {
         // 썸네일은 피드가 cached_network_image 로 이미 디스크에 캐시해 둔 것과 동일하므로,
@@ -212,6 +224,8 @@ class _MapPageState extends State<MapPage> {
         final file = await DefaultCacheManager().getSingleFile(thumb).timeout(const Duration(seconds: 8));
         icon = NOverlayImage.fromFile(file); // 바이트를 dart 로 읽지 않고 파일 경로만 넘김(가벼움)
         _iconCache[thumb] = icon;
+        // 아이콘 캐시 무한 증가 방지(오래 패닝 시 메모리 누수) — LRU 상한.
+        if (_iconCache.length > 300) _iconCache.remove(_iconCache.keys.first);
       }
 
       final marker = NClusterableMarker(
