@@ -566,7 +566,7 @@ class _MyPageState extends State<MyPage>
                               [
                                 Column(children: [
                                   _info(),
-                                  _buildActivityMenu(),
+                                  // _buildActivityMenu(), // 챌린지·업적·체감랭킹 비활성화(2026-07-11)
                                   _buildFavoriteArea(),
                                   _buildFavoriteTag(),
                                 ]),
