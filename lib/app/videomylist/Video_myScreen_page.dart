@@ -482,40 +482,31 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
   }
 
   // 본인 게시물 관리 버튼 (상단 우측, close 버튼 왼쪽)
-  Widget buildOwnerActions() {
-    if (Get.find<AuthCntr>().custId.value != widget.data.custId.toString()) {
-      return const SizedBox.shrink();
-    }
-    return Positioned(
-      top: 40,
-      right: 56,
-      child: IconButton(
-        icon: widget.data.hideYn == 'Y'
-            ? const Icon(Icons.lock_outline, color: Colors.redAccent, size: 24)
-            : const Icon(Icons.more_horiz, color: Colors.white, size: 26),
-        onPressed: () async {
-          final returnMap = await VideoManagePageSheet().open(
-            context,
-            widget.data.boardId.toString(),
-            widget.data.hideYn.toString(),
-            widget.data.anonyYn.toString(),
-            widget.data.contents.toString(),
-            communityId: widget.data.communityId,
-          );
-          if (returnMap == null) return;
-          if (returnMap['isDelete'] == 'Y') {
-            Get.back();
-            return;
-          }
-          widget.data.contents = returnMap['contents'];
-          widget.data.hideYn = returnMap['hideYn'];
-          if (returnMap.containsKey('communityId')) {
-            widget.data.communityId = returnMap['communityId'] as int?;
-          }
-          setState(() {});
-        },
-      ),
+  // 상단 우측 ⋯는 제거 → 우측 메뉴바의 '수정'으로 이동(엄지 닿기 쉬운 곳).
+  Widget buildOwnerActions() => const SizedBox.shrink();
+
+  bool get _isOwner => Get.find<AuthCntr>().custId.value == widget.data.custId.toString();
+
+  Future<void> _openManageSheet() async {
+    final returnMap = await VideoManagePageSheet().open(
+      context,
+      widget.data.boardId.toString(),
+      widget.data.hideYn.toString(),
+      widget.data.anonyYn.toString(),
+      widget.data.contents.toString(),
+      communityId: widget.data.communityId,
     );
+    if (returnMap == null) return;
+    if (returnMap['isDelete'] == 'Y') {
+      Get.back();
+      return;
+    }
+    widget.data.contents = returnMap['contents'];
+    widget.data.hideYn = returnMap['hideYn'];
+    if (returnMap.containsKey('communityId')) {
+      widget.data.communityId = returnMap['communityId'] as int?;
+    }
+    setState(() {});
   }
 
 
@@ -538,6 +529,30 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildPhotoDots(),
+          const Gap(8),
+          // 게시 위치(전체 피드 / 앨범) + 숨김 상태
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(color: Colors.black.withOpacity(0.4), borderRadius: BorderRadius.circular(999)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(widget.data.communityId == null ? Icons.public : Icons.photo_album_outlined, color: Colors.white, size: 12),
+                  const Gap(4),
+                  Text(widget.data.communityId == null ? '전체 피드' : '앨범',
+                      style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w700)),
+                ]),
+              ),
+              if (widget.data.hideYn == 'Y') ...[
+                const Gap(6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.85), borderRadius: BorderRadius.circular(999)),
+                  child: const Text('숨김', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w700)),
+                ),
+              ],
+            ],
+          ),
           const Gap(8),
           // 시간 / 날씨 한 줄
           Row(
@@ -729,6 +744,23 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
           _menuItem(Icons.message_outlined, widget.data.replyCnt ?? 0),
           const Gap(14),
           _menuItem(Icons.visibility_outlined, widget.data.viewCnt ?? 0),
+          // 내 영상이면 '수정'을 우측 메뉴바 하단(엄지 존)에 배치.
+          if (_isOwner) ...[
+            const Gap(16),
+            GestureDetector(
+              onTap: _openManageSheet,
+              behavior: HitTestBehavior.opaque,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(widget.data.hideYn == 'Y' ? Icons.lock : Icons.edit,
+                      color: widget.data.hideYn == 'Y' ? Colors.redAccent : Colors.white, size: 26),
+                  const Gap(2),
+                  const Text('수정', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
