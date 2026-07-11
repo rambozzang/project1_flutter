@@ -22,6 +22,9 @@ class CommunityData {
   final String? themeColor; // 카드 무드 그라디언트 키(rain/sunset/...). null=앨범 id 순환
   final List<int> coverMediaIds; // 대표 미디어 boardId(순서 유지, 최대 3)
   final Set<String>? cardOptions; // 카드 표시 옵션(member/media/avatars/new). null=전체 표시
+  // ── 목록 카드 즉시 렌더용(_fillCard N콜 제거) ──
+  final List<String> avatars; // 상위 멤버 프로필경로(최대 4, JOINED)
+  final String? lastMediaDtm; // 최신 미디어 시각('yyyy-MM-dd HH:mm')
 
   CommunityData({
     required this.communityId,
@@ -45,6 +48,8 @@ class CommunityData {
     this.themeColor,
     this.coverMediaIds = const [],
     this.cardOptions,
+    this.avatars = const [],
+    this.lastMediaDtm,
   });
 
   int get mediaCnt => videoCnt + photoCnt;
@@ -122,6 +127,12 @@ class CommunityData {
       cardOptions: map['cardOptions'] == null
           ? null
           : map['cardOptions'].toString().split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toSet(),
+      avatars: (map['avatars'] as List?)
+              ?.map((e) => e.toString())
+              .where((e) => e.isNotEmpty)
+              .toList() ??
+          const [],
+      lastMediaDtm: map['lastMediaDtm']?.toString(),
     );
   }
 }

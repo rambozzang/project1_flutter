@@ -88,6 +88,11 @@ class _AlbumListPageState extends State<AlbumListPage> {
         if (c.mediaCnt > 0) card.mediaCount = c.mediaCnt;
         // NEW 뱃지: 마지막 열람 이후 남이 올린 미디어 수(0이면 자동 숨김)
         card.newCount = c.newCnt;
+        // 아바타·최근 업데이트는 목록 응답(getMyCommunities)에 이미 포함 → 첫 렌더부터 바로 표시.
+        if (c.avatars.isNotEmpty) card.avatars = c.avatars.take(3).toList();
+        if (c.lastMediaDtm != null && c.lastMediaDtm!.isNotEmpty) {
+          card.lastUpdated = Utils.timeage(c.lastMediaDtm!);
+        }
         return card;
       }).toList();
       if (!mounted) return;
@@ -118,42 +123,35 @@ class _AlbumListPageState extends State<AlbumListPage> {
 
   Future<void> _fillCard(SaAlbumCardData card) async {
     final int id = card.community.communityId;
+    // 아바타·최근 업데이트는 목록 응답(getMyCommunities)에 이미 포함되어 _load에서 세팅됨 →
+    // 개별 getMembers 콜 완전 제거. 표지 모드(대표 미디어 미지정)는 앨범 표지(imageUrl)만 쓰므로
+    // 추가 미디어 조회도 불필요 → 대부분의 카드는 네트워크 콜 0.
+    final List<int> coverIds = card.community.coverMediaIds;
+    if (coverIds.isEmpty) {
+      card.loadedThumbs = [];
+      return;
+    }
     try {
-      // 대문 편집(1f)에서 대표 미디어를 지정한 앨범은 더 넓게 조회해 지정 순서대로 찾는다
-      final List<int> coverIds = card.community.coverMediaIds;
-      final results = await Future.wait([
-        // 표지 모드(대표 미디어 미지정)는 썸네일을 버리고 최신 시각만 쓰므로 1개만 조회(불필요한 페이로드 절감).
-        _repo.getFeedRes(id, 0, coverIds.isEmpty ? 1 : 30),
-        _repo.getMembers(id),
-      ]);
-      final feedRes = results[0] as dynamic;
+      // 대표 미디어 montage 모드만 실제 미디어를 조회해 지정 순서대로 썸네일을 구성한다.
+      final feedRes = await _repo.getFeedRes(id, 0, 30) as dynamic;
       if (feedRes.code == '00' && feedRes.data is List) {
         final items = (feedRes.data as List).map((e) => BoardWeatherListData.fromMap(e)).toList();
-        if (coverIds.isEmpty) {
-          // 표지 모드(대표 미디어 미지정) — 카드에 앨범 표지(imageUrl)를 사용, 썸네일 montage는 비운다.
-          card.loadedThumbs = [];
-        } else {
-          final byId = {for (final it in items) it.boardId: it};
-          final picked = coverIds.map((cid) => byId[cid]).whereType<BoardWeatherListData>().toList();
-          // 지정 미디어 우선 + 부족분은 최근 미디어로 채움
-          final ordered = [...picked, ...items.where((it) => !coverIds.contains(it.boardId))];
-          card.loadedThumbs = ordered
-              .map((e) => e.thumbnailPath ?? '')
-              .where((p) => p.isNotEmpty)
-              .take(3)
-              .toList();
-        }
-        if (items.isNotEmpty && items.first.crtDtm != null) {
+        final byId = {for (final it in items) it.boardId: it};
+        final picked = coverIds.map((cid) => byId[cid]).whereType<BoardWeatherListData>().toList();
+        // 지정 미디어 우선 + 부족분은 최근 미디어로 채움
+        final ordered = [...picked, ...items.where((it) => !coverIds.contains(it.boardId))];
+        card.loadedThumbs = ordered
+            .map((e) => e.thumbnailPath ?? '')
+            .where((p) => p.isNotEmpty)
+            .take(3)
+            .toList();
+        // 목록 응답에서 최근 시각을 못 받은 경우에만 보정
+        if ((card.community.lastMediaDtm == null || card.community.lastMediaDtm!.isEmpty) &&
+            items.isNotEmpty &&
+            items.first.crtDtm != null) {
           card.lastUpdated = Utils.timeage(items.first.crtDtm!);
         }
       }
-      final members = results[1] as List;
-      card.avatars = members
-          .map((m) => (m as dynamic).profilePath?.toString() ?? '')
-          .where((p) => p.isNotEmpty)
-          .take(3)
-          .toList()
-          .cast<String>();
     } catch (e) {
       lo.g('앨범($id) 카드 데이터 로드 실패: $e');
     }
