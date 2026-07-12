@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:app_version_update/app_version_update.dart';
+import 'package:in_app_update/in_app_update.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -73,6 +74,27 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   }
 
   Future<void> checkAppVersion() async {
+    // Android: 공식 In-App Update(Play Core) API로 판단·업데이트.
+    // 스토어에 새 버전이 게시되면 스크래핑 없이 versionCode로 안정적으로 감지해 네이티브 업데이트 플로우를 띄운다.
+    // (Play 스토어로 설치된 빌드에서만 동작 — 디버그/사이드로드는 예외로 조용히 무시)
+    if (Platform.isAndroid) {
+      try {
+        final info = await InAppUpdate.checkForUpdate();
+        if (info.updateAvailability == UpdateAvailability.updateAvailable) {
+          if (info.immediateUpdateAllowed) {
+            await InAppUpdate.performImmediateUpdate();
+          } else if (info.flexibleUpdateAllowed) {
+            await InAppUpdate.startFlexibleUpdate();
+            await InAppUpdate.completeFlexibleUpdate();
+          }
+        }
+      } catch (e) {
+        lo.g('checkAppVersion(Android in_app_update) 실패: $e');
+      }
+      return;
+    }
+
+    // iOS: 기존 경로 유지(App Store iTunes 조회는 신뢰 가능).
     // 현재 설치된 앱 버전 — 하드코딩 상수 대신 런타임 조회(pubspec 버전이 자동 반영되어 rot 없음).
     String currentVersion = '';
     try {

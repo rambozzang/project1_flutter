@@ -121,6 +121,7 @@ dependencies:
   syncfusion_flutter_datagrid: ^26.1.40
   giffy_dialog: ^2.1.0
   app_version_update: ^5.0.3
+  in_app_update: ^4.2.3 # Android 공식 In-App Update(Play Core) — 스크래핑 없이 안정적 업데이트 감지
   # flutter_dotenv: ^5.1.0
   sign_in_with_apple: ^6.1.1
   # flutter_weather_bg_null_safety: ^1.0.0
