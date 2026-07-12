@@ -79,6 +79,8 @@ class WeatherGogoCntr extends GetxController {
   final RxList<CustagResData> areaList = <CustagResData>[].obs;
 
   final RxString yesterdayDesc = ''.obs;
+  // 오늘(0~23시) 최고/최저 — [min, max]. 오늘 실황(과거)+예보(남은 시간)+현재값 결합.
+  final Rx<List<double>?> todayHiLo = Rx<List<double>?>(null);
   final Rx<double> sevenDayMinTemp = 0.0.obs;
   final Rx<double> sevenDayMaxTemp = 0.0.obs;
   final RxBool isLocationserviceEnabled = false.obs;
@@ -330,6 +332,10 @@ class WeatherGogoCntr extends GetxController {
       // 예보(hourlyWeather)와 어제 원본(_yesterdayRawList)이 모두 완료된 뒤,
       // 예보 각 시각의 24시간 전(어제 동일 시각)을 매칭해 어제선을 예보와 같은 길이·순서로 정렬한다.
       _alignYesterdayToForecast();
+
+      // 어제 비교(오늘 현재 vs 어제 같은 시각) + 오늘(0~23시) 최고/최저 — 데이터 준비 후 일괄 계산.
+      _computeYesterdayCompare();
+      _computeTodayHiLo();
 
       isLoading.value = false;
 
@@ -761,20 +767,63 @@ class WeatherGogoCntr extends GetxController {
         ..clear()
         ..addAll(ylist);
 
-      // 어제선 안내 문구(header/short 카드에서 사용): 어제 실황 시계열의 시작→끝 변화량.
-      if (ylist.length >= 2) {
-        final double compareTemp = service.compareTempData(ylist);
-        yesterdayDesc.value = compareTemp == 0.0
-            ? '어제와 같아요'
-            : compareTemp > 0.0
-                ? '어제보다 $compareTemp 높아요'
-                : '어제보다 $compareTemp 낮아요';
-      }
+      // 어제 비교 문구는 오늘 현재 온도가 필요하므로 fetch 완료 후 _computeYesterdayCompare()에서 계산한다.
+      // (기존엔 어제 실황 시계열의 시작→끝 변화량을 표시 — '오늘 vs 어제 같은 시각'이 아니라 잘못된 값이었음)
     } catch (e) {
       handleError('5.어제 날씨 가져오기 조회 오류', e);
     } finally {
       isYestdayLoading.value = false;
     }
+  }
+
+  // 오늘 현재 온도 vs 어제 같은 시각(현재 hour의 24시간 전) 온도 비교 → "어제보다 N° 높아요/낮아요".
+  void _computeYesterdayCompare() {
+    final double? todayTemp = double.tryParse(currentWeather.value.temp ?? '');
+    if (todayTemp == null || _yesterdayRawList.isEmpty) return;
+    final DateTime target = DateTime.now().subtract(const Duration(hours: 24));
+    HourlyWeatherData? y;
+    for (final e in _yesterdayRawList) {
+      if (e.date.year == target.year &&
+          e.date.month == target.month &&
+          e.date.day == target.day &&
+          e.date.hour == target.hour) {
+        y = e;
+        break;
+      }
+    }
+    if (y == null) return; // 어제 같은 시각 데이터 없음 → 문구 갱신 생략
+    final double diff = double.parse((todayTemp - y.temp).toStringAsFixed(1));
+    yesterdayDesc.value = diff == 0.0
+        ? '어제와 같아요'
+        : diff > 0
+            ? '어제보다 ${diff.abs()}° 높아요'
+            : '어제보다 ${diff.abs()}° 낮아요';
+  }
+
+  // 오늘(0~23시) 최고/최저 — 오늘 실황(과거, _yesterdayRawList의 오늘분: 누적 시계열)
+  // + 예보(hourlyWeather의 오늘분: 남은 시간) + 현재값을 모두 합쳐 min/max.
+  void _computeTodayHiLo() {
+    final DateTime now = DateTime.now();
+    bool isToday(DateTime d) => d.year == now.year && d.month == now.month && d.day == now.day;
+    final List<double> temps = [];
+    for (final e in _yesterdayRawList) {
+      if (isToday(e.date)) temps.add(e.temp);
+    }
+    for (final e in hourlyWeather) {
+      if (isToday(e.date)) temps.add(e.temp);
+    }
+    final double? cur = double.tryParse(currentWeather.value.temp ?? '');
+    if (cur != null) temps.add(cur);
+    if (temps.isEmpty) {
+      todayHiLo.value = null;
+      return;
+    }
+    double mn = temps.first, mx = temps.first;
+    for (final t in temps) {
+      if (t < mn) mn = t;
+      if (t > mx) mx = t;
+    }
+    todayHiLo.value = [mn, mx];
   }
 
   double getMinTemp(RxList<SevenDayWeather> list) {
