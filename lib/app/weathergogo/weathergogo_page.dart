@@ -111,8 +111,8 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
       // () => _buildWeatherWebView(),
       // 실시간 대기정보(NIER 위성 GIS) — 주석 처리
       // () => const RealtimeAirWebviewPage(),
-      // 실시간 레이더 영상 (Windy.com)
-      () => const WindyRadarPage(),
+      // 실시간 레이더 (RainViewer, 위치권한 프롬프트 차단)
+      () => const RealtimeRadarPage(),
       () => const WeatherWEbviewPage(),
       () => const SizedBox(
             height: 40,

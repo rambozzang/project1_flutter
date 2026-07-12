@@ -6,9 +6,21 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 class CommonWebView extends StatefulWidget {
-  const CommonWebView({super.key, required this.isBackBtn, required this.url});
+  const CommonWebView(
+      {super.key,
+      required this.isBackBtn,
+      required this.url,
+      this.injectJs,
+      this.denyLocation = false,
+      this.touchToggle = false});
   final bool isBackBtn;
   final String url;
+  // 페이지 로드 완료 후 실행할 JS(예: 특정 요소만 남기기). null이면 미실행.
+  final String? injectJs;
+  // true면 웹 위치권한(navigator.geolocation) 프롬프트를 자동 거부(예: RainViewer 현재위치 요청).
+  final bool denyLocation;
+  // true면 기본은 포인터 무시(부모 스크롤 통과)하고 하단 버튼으로 지도 조작 on/off.
+  final bool touchToggle;
 
   @override
   State<CommonWebView> createState() => _CommonWebView2State();
@@ -22,6 +34,7 @@ class _CommonWebView2State extends State<CommonWebView>
 
   ValueNotifier<bool> isLoading = ValueNotifier<bool>(false);
   bool _isFirstResumed = true;
+  bool _touchOn = false; // touchToggle 활성 시 지도 조작 on/off 상태(기본 off=스크롤 통과)
 
   @override
   bool get wantKeepAlive => true;
@@ -45,6 +58,13 @@ class _CommonWebView2State extends State<CommonWebView>
     if (controller.platform is AndroidWebViewController) {
       AndroidWebViewController.enableDebugging(true);
       (controller.platform as AndroidWebViewController).setMediaPlaybackRequiresUserGesture(false);
+      // 위치 권한 프롬프트 자동 거부 — 지도는 loc 파라미터로 중심을 잡으므로 현재위치가 불필요.
+      if (widget.denyLocation) {
+        (controller.platform as AndroidWebViewController).setGeolocationPermissionsPromptCallbacks(
+          onShowPrompt: (request) async =>
+              const GeolocationPermissionsResponse(allow: false, retain: true),
+        );
+      }
     }
 
     // #docregion webview_controller
@@ -58,6 +78,11 @@ class _CommonWebView2State extends State<CommonWebView>
           },
           onPageFinished: (String url) {
             isLoading.value = false;
+            final js = widget.injectJs;
+            if (js != null && js.isNotEmpty) {
+              // 렌더 직후 DOM이 아직 안 붙었을 수 있어, JS 내부에서 폴링/재적용까지 처리한다.
+              controller.runJavaScript(js).catchError((_) {});
+            }
           },
           onHttpError: (HttpResponseError error) {},
           onNavigationRequest: (NavigationRequest request) {
@@ -96,19 +121,23 @@ class _CommonWebView2State extends State<CommonWebView>
     return Scaffold(
       body: Stack(
         children: [
-          ValueListenableBuilder<bool>(
-              valueListenable: isLoading,
-              builder: (context, value, snapshot) {
-                return AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 350),
-                  switchInCurve: Curves.easeIn,
-                  child: value
-                      ? const Center(
-                          child: CircularProgressIndicator(),
-                        )
-                      : WebViewWidget(controller: controller),
-                );
-              }),
+          // touchToggle: 기본은 포인터 무시(부모 스크롤 통과) → 버튼으로 켜면 지도 조작(줌/이동) 가능.
+          IgnorePointer(
+            ignoring: widget.touchToggle && !_touchOn,
+            child: ValueListenableBuilder<bool>(
+                valueListenable: isLoading,
+                builder: (context, value, snapshot) {
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 350),
+                    switchInCurve: Curves.easeIn,
+                    child: value
+                        ? const Center(
+                            child: CircularProgressIndicator(),
+                          )
+                        : WebViewWidget(controller: controller),
+                  );
+                }),
+          ),
           if (widget.isBackBtn)
             Positioned(
               top: 40,
@@ -121,7 +150,39 @@ class _CommonWebView2State extends State<CommonWebView>
                 onPressed: () => Navigator.pop(context),
               ),
             ),
+          if (widget.touchToggle)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 12,
+              child: Center(child: _touchToggleButton()),
+            ),
         ],
+      ),
+    );
+  }
+
+  // 지도 조작 on/off 토글 버튼 — 하단 중앙. 기본(off)은 스크롤 통과, on이면 줌·이동 가능.
+  Widget _touchToggleButton() {
+    final bool on = _touchOn;
+    return GestureDetector(
+      onTap: () => setState(() => _touchOn = !_touchOn),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: (on ? Colors.teal.shade600 : Colors.black).withOpacity(0.62),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: Colors.white.withOpacity(0.35)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(on ? Icons.lock_open_rounded : Icons.touch_app, size: 15, color: Colors.white),
+            const SizedBox(width: 6),
+            Text(on ? '조작 켜짐 · 탭하여 잠금' : '지도 조작하기 (탭)',
+                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+          ],
+        ),
       ),
     );
   }
