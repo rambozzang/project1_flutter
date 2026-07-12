@@ -7,8 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:intl/intl.dart';
 import 'package:project1/config/url_config.dart';
+import 'package:project1/repo/kakao/kakao_repo.dart';
 import 'package:project1/repo/weather_gogo/adapter/adapter_map.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -120,16 +120,80 @@ class WeatherNotificationService {
     final String? rn1 = nct['RN1'];
 
     final String condition = _conditionText(pty, sky);
-    final String title = '${temp.toStringAsFixed(1)}° $condition';
-    final List<String> parts = [
-      if (reh != null) '습도 $reh%',
-      if (rn1 != null && rn1 != '0' && pty > 0) '강수 ${rn1}mm',
-    ];
-    // 갱신 시각은 본문 맨 뒤에 붙이지 않고 알림 헤더(subText: 앱 이름 옆 보조 텍스트)에
-    // 표시한다 → 본문에는 날씨 정보만 남아 깔끔하다.
-    final String updatedAt = '${DateFormat('HH:mm').format(DateTime.now())} 갱신';
-    await _show(title, parts.join(' · '), _iconName(pty, sky), await _emojiPng(_emojiFor(pty, sky)),
-        subText: updatedAt);
+
+    // 동네 이름 + 시도(초미세먼지 조회용) — Kakao 역지오코딩(무인증 REST 키, 백그라운드 안전).
+    String? dong;
+    String? sido;
+    try {
+      final (String s, String gu, String d) = await KakaoRepo().getAddressbylatlon(lat, lon);
+      sido = s;
+      dong = d.isNotEmpty ? d : (gu.isNotEmpty ? gu : null);
+    } catch (e) {
+      debugPrint('[WeatherNoti] 역지오코딩 실패: $e');
+    }
+
+    // 초미세먼지(PM2.5) — /weather/mist?sidoName= (plain Dio; AuthDio는 GetX 의존이라 백그라운드 불가).
+    String? pm25;
+    if (sido != null && sido.isNotEmpty) {
+      pm25 = await _fetchPm25(dio, _convertSido(sido));
+    }
+
+    // 제목: "맑음 34.5°C"
+    final String title = '$condition ${temp.toStringAsFixed(1)}°C';
+    // 본문: "초미세먼지 좋음 3㎍/㎥" (측정값 없으면 습도·강수로 폴백)
+    final String body;
+    if (pm25 != null && pm25.isNotEmpty && pm25 != '-') {
+      body = '초미세먼지 ${_pm25GradeText(pm25)} ${pm25}㎍/㎥';
+    } else {
+      body = [
+        if (reh != null) '습도 $reh%',
+        if (rn1 != null && rn1 != '0' && pty > 0) '강수 ${rn1}mm',
+      ].join(' · ');
+    }
+
+    // 헤더(앱 이름 옆 subText)에 동네 이름 → "앱이름 · 홍제1동".
+    await _show(title, body, _iconName(pty, sky), await _emojiPng(_emojiFor(pty, sky)), subText: dong);
+  }
+
+  /// /weather/mist 응답에서 대표(첫) 관측소의 PM2.5 값을 뽑는다.
+  /// 백엔드 래퍼 구조: { code:'00', data:{ items:[ {pm25Value,...}, ... ] } }.
+  static Future<String?> _fetchPm25(Dio dio, String sidoName) async {
+    try {
+      final res = await dio.get('${UrlConfig.baseURL}/weather/mist', queryParameters: {'sidoName': sidoName});
+      final body = res.data;
+      if (body is! Map || body['code'] != '00') return null;
+      final data = body['data'];
+      final items = (data is Map) ? data['items'] : null;
+      if (items is List && items.isNotEmpty && items.first is Map) {
+        return (items.first as Map)['pm25Value']?.toString();
+      }
+      return null;
+    } catch (e) {
+      debugPrint('[WeatherNoti] 미세먼지 조회 실패: $e');
+      return null;
+    }
+  }
+
+  // 환경부 초미세먼지(PM2.5) 등급: 0~15 좋음 / 16~35 보통 / 36~75 나쁨 / 76~ 매우나쁨.
+  static String _pm25GradeText(String v) {
+    final n = int.tryParse(v.trim());
+    if (n == null) return '-';
+    if (n <= 15) return '좋음';
+    if (n <= 35) return '보통';
+    if (n <= 75) return '나쁨';
+    return '매우나쁨';
+  }
+
+  // Kakao 시도명 → AirKorea sidoName(축약형). 예: 서울특별시→서울, 강원특별자치도→강원.
+  static String _convertSido(String s) {
+    const map = {
+      '서울특별시': '서울', '부산광역시': '부산', '대구광역시': '대구', '인천광역시': '인천',
+      '광주광역시': '광주', '대전광역시': '대전', '울산광역시': '울산', '세종특별자치시': '세종',
+      '경기도': '경기', '강원도': '강원', '강원특별자치도': '강원', '충청북도': '충북', '충청남도': '충남',
+      '전라북도': '전북', '전북특별자치도': '전북', '전라남도': '전남', '경상북도': '경북', '경상남도': '경남',
+      '제주특별자치도': '제주',
+    };
+    return map[s] ?? s;
   }
 
   /// lastKnown → 직전 저장 위치 → 서울시청 순 폴백.
