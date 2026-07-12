@@ -28,10 +28,7 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
                   _buildYesterdayInfo(controller.yesterdayDesc.value),
                   _buildTemperature(controller.currentWeather.value.temp ?? '0.0', controller.tempCountSeq.value),
                   const Gap(5),
-                  Text(
-                    controller.currentWeather.value.description ?? '맑음',
-                    style: lightText.copyWith(fontSize: 16),
-                  ),
+                  _buildConditionLine(controller),
                   _buildAirQualityInfo(controller.mistData, context),
                 ],
               ),
@@ -41,6 +38,60 @@ class HeaderMainPage extends GetView<WeatherGogoCntr> {
         ),
       ),
     );
+  }
+
+  // 날씨 설명(맑음/비/흐림 등) + 오른쪽에 당일 최고(↑)·최저(↓) 기온.
+  Widget _buildConditionLine(WeatherGogoCntr controller) {
+    final minMax = _next24hMinMax(controller);
+    return Row(
+      children: [
+        Flexible(
+          child: Text(
+            controller.currentWeather.value.description ?? '맑음',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: lightText.copyWith(fontSize: 16),
+          ),
+        ),
+        if (minMax != null) ...[
+          const Gap(10),
+          _buildTodayHiLo(minMax),
+        ],
+      ],
+    );
+  }
+
+  // 향후 24시간 최고/최저 기온 표시 — ↑최고 ↓최저(°). 24시 예보와 같게 소수1자리로 표기.
+  Widget _buildTodayHiLo((double, double) minMax) {
+    const shadow = [Shadow(color: Colors.black38, blurRadius: 4)];
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.arrow_upward_rounded, size: 14, color: Colors.redAccent.shade100, shadows: shadow),
+        Text('${minMax.$2.toStringAsFixed(1)}°',
+            style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w600, shadows: shadow)),
+        const Gap(6),
+        Icon(Icons.arrow_downward_rounded, size: 14, color: Colors.lightBlueAccent.shade100, shadows: shadow),
+        Text('${minMax.$1.toStringAsFixed(1)}°',
+            style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w600, shadows: shadow)),
+      ],
+    );
+  }
+
+  // 앞으로 24시간 최저/최고 — 시간별 예보(hourlyWeather, now~now+24h)의 min/max.
+  // '오늘(달력일)'만 보면 오후엔 내일 새벽 최저가 빠져 24시 예보와 값이 어긋난다(예: 헤더 28 vs 예보 25.7).
+  // 시간별 예보는 과거 시각을 담지 않으므로(now 이후만), 24시 예보와 동일한 향후 24시간 구간으로 계산해 일치시킨다.
+  // 반환: (최저, 최고). 데이터가 없으면 null.
+  (double, double)? _next24hMinMax(WeatherGogoCntr controller) {
+    final until = DateTime.now().add(const Duration(hours: 24));
+    double? mn, mx;
+    for (final e in controller.hourlyWeather) {
+      if (e.date.isAfter(until)) continue; // 24시간 이후는 제외(하한은 예보 시작점이 곧 now)
+      if (mn == null || e.temp < mn) mn = e.temp;
+      if (mx == null || e.temp > mx) mx = e.temp;
+    }
+    if (mn == null || mx == null) return null;
+    return (mn, mx);
   }
 
   Widget _buildYesterdayInfo(String? yesterdayDesc) {

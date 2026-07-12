@@ -46,7 +46,8 @@ class _DailyWeatherChartState extends State<DailyWeatherChart> {
             );
           }),
         ),
-        const SizedBox(height: 25.0),
+        // 일출·일몰 섹션과의 간격이 다른 구간보다 넓어 하단 여백 축소(25 → 8).
+        const SizedBox(height: 8.0),
       ],
     );
   }
