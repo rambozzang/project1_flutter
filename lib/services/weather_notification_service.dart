@@ -151,8 +151,19 @@ class WeatherNotificationService {
       ].join(' · ');
     }
 
-    // 헤더(앱 이름 옆 subText)에 동네 이름 → "앱이름 · 홍제1동".
-    await _show(title, body, _iconName(pty, sky), await _emojiPng(_emojiFor(pty, sky)), subText: dong);
+    // 헤더(앱 이름 옆 subText)에 "동네 갱신시각" → "앱이름 · 홍제1동 오후 3:20".
+    final String timeStr = _koTime(DateTime.now());
+    final String header = (dong != null && dong.isNotEmpty) ? '$dong $timeStr' : timeStr;
+    await _show(title, body, _iconName(pty, sky), await _emojiPng(_emojiFor(pty, sky)), subText: header);
+  }
+
+  // "오후 3:20" 형태(12시간제, 한국어 오전/오후) — 백그라운드 isolate 안전(intl/로케일 미사용).
+  static String _koTime(DateTime t) {
+    final bool pm = t.hour >= 12;
+    int h12 = t.hour % 12;
+    if (h12 == 0) h12 = 12;
+    final String m = t.minute.toString().padLeft(2, '0');
+    return '${pm ? '오후' : '오전'} $h12:$m';
   }
 
   /// /weather/mist 응답에서 대표(첫) 관측소의 PM2.5 값을 뽑는다.
