@@ -18,6 +18,7 @@ class AlbumTimelineView extends StatelessWidget {
     required this.onTapItem,
     this.onLoadMore,
     this.onRefresh,
+    this.loading = false,
   });
 
   final List<BoardWeatherListData> items;
@@ -27,23 +28,28 @@ class AlbumTimelineView extends StatelessWidget {
   final VoidCallback? onLoadMore;
   // 당겨서 새로고침 — 앨범 피드/메타 다시 로드
   final Future<void> Function()? onRefresh;
+  // 첫 피드 로딩 중 여부 — true면 빈 메시지 대신 스피너를 보여 '없음'으로 오해하지 않게 한다.
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
     final days = _groupByDay();
     // 빈 상태도 스크롤 가능한 리스트로 감싸 '당겨서 새로고침'이 동작하게 한다.
     final Widget content = days.isEmpty
-        ? ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            children: [
-              SizedBox(height: MediaQuery.of(context).size.height * 0.28),
-              Padding(
-                padding: const EdgeInsets.all(40),
-                child: Text('아직 담긴 순간이 없어요.\n＋ 로 첫 사진·영상을 올려보세요.',
-                    textAlign: TextAlign.center, style: SaText.body),
-              ),
-            ],
-          )
+        ? (loading
+            // 첫 피드 로딩 중엔 스피너 — 빈 메시지가 먼저 번쩍이지 않게.
+            ? Center(child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal))
+            : ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.28),
+                  Padding(
+                    padding: const EdgeInsets.all(40),
+                    child: Text('아직 담긴 순간이 없어요.\n＋ 로 첫 사진·영상을 올려보세요.',
+                        textAlign: TextAlign.center, style: SaText.body),
+                  ),
+                ],
+              ))
         : NotificationListener<ScrollNotification>(
             onNotification: (n) {
               if (onLoadMore != null &&

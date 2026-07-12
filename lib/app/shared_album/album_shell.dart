@@ -41,6 +41,7 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
   int _pageNum = 0;
   bool _loadingMore = false;
   bool _hasMore = true;
+  bool _feedLoaded = false; // 첫 피드 로딩 완료 여부(빈 상태 vs 로딩 구분용)
 
   int _tab = 0; // 0 타임라인 / 1 회고 / 2 활동 / 3 멤버
 
@@ -110,6 +111,7 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
       _hasMore = false;
     } finally {
       _loadingMore = false;
+      _feedLoaded = true; // 첫 피드 로딩(성공/실패 무관) 완료 → 이후 빈 상태 판단
       if (mounted) setState(() {});
     }
   }
@@ -215,7 +217,8 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
           ),
           // 관리자면 표지 편집을 앱바 우측에 노출 — 멤버 탭에 묻혀 안 보이던 문제 해결.
           if (c?.canEditCover == true) ...[
-            _circle(PhosphorIconsFill.sparkle, _openCoverEditor),
+            // 하단 '회고' 탭(sparkle)과 겹치지 않게 대문편집은 붓 아이콘 사용.
+            _circle(PhosphorIconsFill.paintBrush, _openCoverEditor),
             const SizedBox(width: 8),
           ],
           _circle(PhosphorIconsBold.magnifyingGlass, () {
@@ -233,6 +236,7 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
           items: _items,
           communityId: _communityId,
           lastSeen: _lastSeen,
+          loading: !_feedLoaded, // 첫 피드 로딩 전엔 스피너(빈 메시지 번쩍임 방지)
           onTapItem: _openMedia,
           onLoadMore: () => _loadFeed(),
           onRefresh: () => _loadFeed(reset: true), // 당겨서 새로고침
@@ -312,8 +316,7 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
               'isManager': c?.canEditCover == true,
             })?.then((_) => _load());
           }),
-        if (c?.canEditCover == true)
-          _familyBtn(PhosphorIconsFill.sparkle, '대문(표지) 편집', _openCoverEditor),
+        // 대문(표지) 편집은 상단 앱바 아이콘으로 이동 → 멤버 탭의 중복 링크 제거.
       ],
     );
   }
