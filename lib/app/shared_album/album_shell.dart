@@ -196,6 +196,35 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
     });
   }
 
+  // 방장이 아닌 가입 멤버의 앨범 나가기(탈퇴). 백엔드 /community/leave (방장은 서버가 거부).
+  Future<void> _leaveAlbum() async {
+    final bool? ok = await Get.dialog<bool>(AlertDialog(
+      backgroundColor: SaColors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      title: Text('앨범 나가기', style: SaText.titleS),
+      content: Text('${_community?.name ?? '이 앨범'}에서 나가시겠어요?',
+          style: SaText.body.copyWith(color: SaColors.textSecondary)),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(result: false),
+          child: Text('취소', style: SaText.bodyMedium.copyWith(color: SaColors.textTertiary)),
+        ),
+        TextButton(
+          onPressed: () => Get.back(result: true),
+          child: Text('나가기', style: SaText.bodyMedium.copyWith(color: Colors.red)),
+        ),
+      ],
+    ));
+    if (ok != true) return;
+    final (bool success, String msg) = await _repo.leave(_communityId);
+    if (success) {
+      Utils.alert('앨범에서 나갔습니다.');
+      Get.back(result: true); // 목록으로 복귀하며 새로고침 신호
+    } else {
+      Utils.alert(msg.isEmpty ? '나가기에 실패했습니다.' : msg);
+    }
+  }
+
   Widget _buildAppBar() {
     final c = _community;
     final int mediaCnt = (c?.videoCnt ?? 0) + (c?.photoCnt ?? 0);
@@ -221,6 +250,11 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
             _circle(PhosphorIconsFill.paintBrush, _openCoverEditor),
             const SizedBox(width: 8),
           ],
+          // 그리드(앨범 홈) 보기 — 언제든지 진입 가능.
+          _circle(PhosphorIconsBold.squaresFour, () {
+            Get.toNamed('/CommunityHomePage', arguments: {'communityId': _communityId})?.then((_) => _load());
+          }),
+          const SizedBox(width: 8),
           _circle(PhosphorIconsBold.magnifyingGlass, () {
             Utils.alert('검색은 곧 제공됩니다.');
           }),
@@ -317,6 +351,9 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
             })?.then((_) => _load());
           }),
         // 대문(표지) 편집은 상단 앱바 아이콘으로 이동 → 멤버 탭의 중복 링크 제거.
+        // 방장이 아닌 가입 멤버는 앨범에서 나갈 수 있다(방장은 백엔드가 탈퇴 거부).
+        if (c?.isJoined == true && c?.isOwner != true)
+          _familyBtn(PhosphorIconsBold.signOut, '앨범 나가기', _leaveAlbum),
       ],
     );
   }
