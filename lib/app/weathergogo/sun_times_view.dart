@@ -71,7 +71,13 @@ class SunTimesView extends StatelessWidget {
                           final double r = _earthR + _orbitGap;
                           // 지구는 상단 60%만 노출되므로 원의 실제 중심은 하단보다 위 — 태양·궤도 모두 이 중심 기준(동심원).
                           const double earthCy = _stackH - _earthR * 2 * _earthVisibleFrac + _earthR;
-                          final double theta = math.pi * (1 + progress);
+                          // 지구 노출 하단(수평선)은 적도보다 horizonDy 만큼 아래 → 궤도(동심원)를 그만큼 더 내려
+                          // 시작·끝(일출·일몰 지점)을 지구 노출 하단과 정확히 맞춘다. (지구 자체는 그대로)
+                          const double horizonDy = _stackH - earthCy;
+                          final double sunkAngle = math.asin((horizonDy / r).clamp(-1.0, 1.0));
+                          final double startAngle = math.pi - sunkAngle;
+                          final double sweepAngle = math.pi + 2 * sunkAngle;
+                          final double theta = startAngle + sweepAngle * progress;
                           final Offset sunPos = Offset(cx + r * math.cos(theta), earthCy + r * math.sin(theta));
                           const double sunSize = 26;
                           return Stack(
@@ -87,6 +93,8 @@ class SunTimesView extends StatelessWidget {
                                     earthR: _earthR,
                                     orbitGap: _orbitGap,
                                     earthCenterY: earthCy,
+                                    startAngle: startAngle,
+                                    sweepAngle: sweepAngle,
                                   ),
                                 ),
                               ),
@@ -111,12 +119,13 @@ class SunTimesView extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              // 현재 태양(위성사진) — 궤도 위치에 얹음
-                              Positioned(
-                                left: sunPos.dx - sunSize / 2,
-                                top: sunPos.dy - sunSize / 2,
-                                child: _sunWidget(sunSize, isDay),
-                              ),
+                              // 현재 태양(위성사진) — 낮에만 궤도 위에 표시(해뜨기 전·진 뒤엔 숨김)
+                              if (isDay)
+                                Positioned(
+                                  left: sunPos.dx - sunSize / 2,
+                                  top: sunPos.dy - sunSize / 2,
+                                  child: _sunWidget(sunSize, isDay),
+                                ),
                               // 일출/일몰 시각(하단 좌우 — 지평선 끝)
                               Positioned(left: 2, bottom: 0, child: _timeTag(PhosphorIconsFill.sunHorizon, rise, _riseColor)),
                               Positioned(right: 2, bottom: 0, child: _timeTag(PhosphorIconsFill.moonStars, set, _setColor)),
@@ -277,8 +286,16 @@ class _SunOrbitPainter extends CustomPainter {
   final double earthR;
   final double orbitGap;
   final double earthCenterY; // 지구 원의 실제 중심 y(상단만 노출되므로 하단보다 위)
+  final double startAngle; // 궤도 시작각(지구 노출 하단=수평선에 맞춤)
+  final double sweepAngle; // 궤도 스윕각(π + 2·내림각)
   _SunOrbitPainter(
-      {required this.progress, required this.isDay, required this.earthR, required this.orbitGap, required this.earthCenterY});
+      {required this.progress,
+      required this.isDay,
+      required this.earthR,
+      required this.orbitGap,
+      required this.earthCenterY,
+      required this.startAngle,
+      required this.sweepAngle});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -291,8 +308,8 @@ class _SunOrbitPainter extends CustomPainter {
     // 궤도 배경.
     canvas.drawArc(
       rect,
-      math.pi,
-      math.pi,
+      startAngle,
+      sweepAngle,
       false,
       Paint()
         ..color = Colors.white.withOpacity(0.16)
@@ -305,8 +322,8 @@ class _SunOrbitPainter extends CustomPainter {
     if (p > 0) {
       canvas.drawArc(
         rect,
-        math.pi,
-        math.pi * p,
+        startAngle,
+        sweepAngle * p,
         false,
         Paint()
           ..shader = const LinearGradient(colors: [Color(0xFFFFB65C), Color(0xFFFFE49A), Color(0xFF9FB6FF)]).createShader(rect)
@@ -320,5 +337,6 @@ class _SunOrbitPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _SunOrbitPainter old) => old.progress != progress || old.isDay != isDay;
+  bool shouldRepaint(covariant _SunOrbitPainter old) =>
+      old.progress != progress || old.isDay != isDay || old.startAngle != startAngle || old.sweepAngle != sweepAngle;
 }
