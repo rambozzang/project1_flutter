@@ -171,11 +171,11 @@ class SunTimesView extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        PhosphorIcon(icon, color: color, size: 13),
-        const SizedBox(width: 3),
+        PhosphorIcon(icon, color: color, size: 16),
+        const SizedBox(width: 4),
         Text(
           time,
-          style: TextStyle(fontSize: 12.5, color: color, fontWeight: FontWeight.w700, fontFeatures: const [FontFeature.tabularFigures()]),
+          style: TextStyle(fontSize: 16, color: color, fontWeight: FontWeight.w700, fontFeatures: const [FontFeature.tabularFigures()]),
         ),
       ],
     );
