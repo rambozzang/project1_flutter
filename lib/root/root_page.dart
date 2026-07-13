@@ -323,13 +323,13 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   }
 
   Widget makeBottomItem() {
-    // 날씨 탭(index 0)은 시간대별 하늘 그라데이션 위에 뜬다. 낮엔 하늘이 밝아 흰 아이콘이 묻히므로,
-    // 시간대(nightFactor: 밤 1.0~낮 0.0)에 맞춰 다크 스크림 필을 낮엔 진하게·밤엔 옅게 깔아 항상 대비 확보.
+    // 날씨 탭(index 0)은 시간대별 하늘 그라데이션 위에 뜬다. 배경이 낮엔 밝고 밤엔 검정이므로
+    // 바 배경을 '낮=어둡게(흰 아이콘 대비)·밤=밝게(검정에 안 묻히게)'로 시간대(nightFactor)에 맞춰 뒤집는다.
     final bool onSky = RootCntr.to.rootPageIndex.value == 0;
-    final double nf = SkyGradient.nightFactor(DateTime.now());
+    final double nf = SkyGradient.nightFactor(DateTime.now()); // 밤 1.0 ~ 낮 0.0
     final Color skyBarBg = Color.lerp(
-      Colors.black.withOpacity(0.42), // 낮: 진한 프로스트 다크
-      Colors.black.withOpacity(0.24), // 밤: 옅게(배경이 이미 어두움)
+      Colors.black.withOpacity(0.40), // 낮: 밝은 하늘 위 → 어둡게
+      Colors.white.withOpacity(0.14), // 밤: 검은 배경 위 → 살짝 밝게(바가 보이도록)
       nf,
     )!;
     return Container(
