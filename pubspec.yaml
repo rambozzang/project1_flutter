@@ -3,7 +3,7 @@ description: "SkySnap Flutter project."
 
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
-version: 1.2.2+62 # 날씨 미세색·일출일몰·어제그래프 안정화·앨범 공개설정/대장뱃지·특보 알림범위·촬영안내
+version: 1.2.3+63 # 날씨 미세색·일출일몰·어제그래프 안정화·앨범 공개설정/대장뱃지·특보 알림범위·촬영안내
 # version: 1.0.0+25  # Android 초기 버전
 
 
