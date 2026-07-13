@@ -225,6 +225,35 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
     }
   }
 
+  // 방장의 앨범 삭제. 백엔드 /community/delete (소프트삭제 — 목록/조회에서 제외). 성공 시 셸 닫고 목록으로.
+  Future<void> _deleteAlbum() async {
+    final bool? ok = await Get.dialog<bool>(AlertDialog(
+      backgroundColor: SaColors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      title: Text('앨범 삭제', style: SaText.titleS),
+      content: Text("'${_community?.name ?? '이 앨범'}'을(를) 삭제하면 되돌릴 수 없어요.\n담긴 사진·영상도 더 이상 보이지 않습니다.",
+          style: SaText.body.copyWith(color: SaColors.textSecondary)),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(result: false),
+          child: Text('취소', style: SaText.bodyMedium.copyWith(color: SaColors.textTertiary)),
+        ),
+        TextButton(
+          onPressed: () => Get.back(result: true),
+          child: Text('삭제', style: SaText.bodyMedium.copyWith(color: Colors.red)),
+        ),
+      ],
+    ));
+    if (ok != true) return;
+    final (bool success, String msg) = await _repo.deleteAlbum(_communityId);
+    if (success) {
+      Utils.alert(msg.isEmpty ? '앨범을 삭제했습니다.' : msg);
+      Get.back(result: true); // 목록으로 복귀하며 새로고침 신호
+    } else {
+      Utils.alert(msg.isEmpty ? '삭제에 실패했습니다.' : msg);
+    }
+  }
+
   Widget _buildAppBar() {
     final c = _community;
     final int mediaCnt = (c?.videoCnt ?? 0) + (c?.photoCnt ?? 0);
@@ -354,6 +383,8 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
         // 방장이 아닌 가입 멤버는 앨범에서 나갈 수 있다(방장은 백엔드가 탈퇴 거부).
         if (c?.isJoined == true && c?.isOwner != true)
           _familyBtn(PhosphorIconsBold.signOut, '앨범 나가기', _leaveAlbum),
+        // 방장은 앨범 자체를 삭제할 수 있다(소프트삭제 — 목록/조회에서 제외).
+        if (c?.isOwner == true) _familyBtn(PhosphorIconsBold.trash, '앨범 삭제', _deleteAlbum),
       ],
     );
   }

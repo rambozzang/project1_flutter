@@ -114,6 +114,19 @@ class CommunityRepo {
     }
   }
 
+  /// 앨범 삭제(방장). 백엔드 /community/delete → useYn='N' 소프트삭제로 모든 목록/조회에서 제외.
+  Future<(bool, String)> deleteAlbum(int communityId) async {
+    try {
+      final dio = await AuthDio.instance.getDio();
+      final res = await dio.post('${UrlConfig.baseURL}/community/delete', queryParameters: {'communityId': communityId});
+      final resData = AuthDio.instance.dioResponse(res);
+      return (resData.code == '00', resData.msg?.toString() ?? '');
+    } catch (e) {
+      lo.g('CommunityRepo.deleteAlbum error: $e');
+      return (false, '삭제 중 오류가 발생했습니다: $e');
+    }
+  }
+
   /// 멤버 목록(비공개는 멤버만).
   Future<List<CommunityMemberData>> getMembers(int communityId) async {
     try {
