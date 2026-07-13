@@ -15,6 +15,7 @@ import 'package:project1/app/myinfo/myinfo_page.dart';
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/app/videolist/video_list_page.dart';
 import 'package:project1/app/weathergogo/weathergogo_page.dart';
+import 'package:project1/app/weathergogo/theme/sky_gradient.dart';
 import 'package:project1/config/app_config.dart';
 import 'package:project1/config/url_config.dart';
 import 'package:project1/repo/api/auth_dio.dart';
@@ -309,22 +310,38 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     return BottomNavigationBarItem(
       icon: Obx(() => Icon(
             icondata,
-            color: RootCntr.to.rootPageIndex.value == 0 ? Colors.white : Colors.grey,
+            // 날씨 탭: 다크 필 위 살짝 흐린 흰색(미선택), 그 외 탭: 회색
+            color: RootCntr.to.rootPageIndex.value == 0 ? Colors.white70 : Colors.grey,
           )),
       label: label,
-      activeIcon: Icon(icondata, color: Colors.black),
+      // 선택 아이콘도 탭에 맞춰: 날씨 탭 다크 필엔 흰색, 그 외엔 검정
+      activeIcon: Obx(() => Icon(
+            icondata,
+            color: RootCntr.to.rootPageIndex.value == 0 ? Colors.white : Colors.black,
+          )),
     );
   }
 
   Widget makeBottomItem() {
+    // 날씨 탭(index 0)은 시간대별 하늘 그라데이션 위에 뜬다. 낮엔 하늘이 밝아 흰 아이콘이 묻히므로,
+    // 시간대(nightFactor: 밤 1.0~낮 0.0)에 맞춰 다크 스크림 필을 낮엔 진하게·밤엔 옅게 깔아 항상 대비 확보.
+    final bool onSky = RootCntr.to.rootPageIndex.value == 0;
+    final double nf = SkyGradient.nightFactor(DateTime.now());
+    final Color skyBarBg = Color.lerp(
+      Colors.black.withOpacity(0.42), // 낮: 진한 프로스트 다크
+      Colors.black.withOpacity(0.24), // 밤: 옅게(배경이 이미 어두움)
+      nf,
+    )!;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
       decoration: BoxDecoration(
-        // color: Colors.grey.withOpacity(0.63),
-        color: RootCntr.to.rootPageIndex.value == 0 ? Colors.white10.withOpacity(0.63) : Colors.grey[200]?.withOpacity(0.75),
+        color: onSky ? skyBarBg : Colors.grey[200]?.withOpacity(0.85),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.withOpacity(0.63), width: 0.25),
+        border: Border.all(
+          color: onSky ? Colors.white.withOpacity(0.18) : Colors.grey.withOpacity(0.5),
+          width: 0.6,
+        ),
       ),
       child: BottomNavigationBar(
         backgroundColor: Colors.transparent,
@@ -339,9 +356,9 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
         },
         selectedIconTheme: const IconThemeData(size: 24),
         selectedFontSize: 13,
-        selectedItemColor: Colors.black,
+        selectedItemColor: onSky ? Colors.white : Colors.black,
         unselectedFontSize: 11,
-        unselectedItemColor: RootCntr.to.rootPageIndex.value == 0 ? Colors.white : Colors.black,
+        unselectedItemColor: onSky ? Colors.white70 : Colors.black54,
         unselectedIconTheme: const IconThemeData(size: 22),
         items: bottomItemList,
       ),
