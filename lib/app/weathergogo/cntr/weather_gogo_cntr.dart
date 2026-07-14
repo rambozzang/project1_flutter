@@ -330,6 +330,10 @@ class WeatherGogoCntr extends GetxController {
         // fetchWeatherAlert(location),
       ]);
 
+      // 초단기·단기예보는 병렬로 완료되므로 응답 순서에 의존하지 않게 최종 시간축을 만든다.
+      // 현재 시간이 16:22라면 16시부터, 중복 없이 앞으로 24시간만 표시한다.
+      _normalizeHourlyForecast();
+
       // 예보(hourlyWeather)와 어제 원본(_yesterdayRawList)이 모두 완료된 뒤,
       // 예보 각 시각의 24시간 전(어제 동일 시각)을 매칭해 어제선을 예보와 같은 길이·순서로 정렬한다.
       _alignYesterdayToForecast();
@@ -588,24 +592,49 @@ class WeatherGogoCntr extends GetxController {
       yesterdayHourlyWeather.clear();
       return;
     }
-    // 어제 원본을 '일-시' 키로 인덱싱
-    final Map<String, HourlyWeatherData> yMap = {
-      for (final y in _yesterdayRawList) '${y.date.day}-${y.date.hour}': y,
-    };
     // 어제 비교선은 예보 앞부분 최대 24시간까지만 의미가 있다(그 뒤 시각의 24시간 전은 '오늘'이라 무의미).
     // /weather/yesterday가 롤링 수십 시간을 주므로 제한하지 않으면 노란선이 계속 이어진다.
     final int span = hourlyWeather.length < 24 ? hourlyWeather.length : 24;
     final List<HourlyWeatherData> aligned = [];
     for (int i = 0; i < span; i++) {
       final DateTime yDate = hourlyWeather[i].date.subtract(const Duration(days: 1));
-      final HourlyWeatherData? y = yMap['${yDate.day}-${yDate.hour}'];
-      aligned.add(y ?? HourlyWeatherData(temp: double.infinity, sky: '', rain: '', date: yDate));
+      final HourlyWeatherData? y = _findYesterdayAtOrBefore(yDate);
+      aligned.add(y == null
+          ? HourlyWeatherData(temp: double.infinity, sky: '', rain: '', date: yDate)
+          : HourlyWeatherData(temp: y.temp, sky: y.sky, rain: y.rain, date: yDate, rainPo: y.rainPo));
     }
     // 뒤쪽 연속 gap(어제 데이터 없음)은 잘라, 마지막 실제 데이터에서 선이 끝나게 한다.
     while (aligned.isNotEmpty && !aligned.last.temp.isFinite) {
       aligned.removeLast();
     }
     yesterdayHourlyWeather.value = aligned;
+  }
+
+  /// 초단기·단기예보를 하나의 결정적인 시간축으로 합친다.
+  void _normalizeHourlyForecast() {
+    if (hourlyWeather.isEmpty) return;
+    final DateTime now = DateTime.now();
+    final DateTime currentHour = DateTime(now.year, now.month, now.day, now.hour);
+    final Map<DateTime, HourlyWeatherData> byHour = {};
+    for (final item in hourlyWeather) {
+      final DateTime hour = DateTime(item.date.year, item.date.month, item.date.day, item.date.hour);
+      if (hour.isBefore(currentHour)) continue;
+      // 같은 시각은 한 항목으로 합쳐 화면 시간축이 중복되지 않게 한다.
+      byHour[hour] = item;
+    }
+    final List<HourlyWeatherData> normalized = byHour.values.toList()..sort((a, b) => a.date.compareTo(b.date));
+    hourlyWeather.value = normalized.take(24).toList();
+  }
+
+  /// 정확한 시각이 없으면 직전 적재 시각을 사용한다(최대 6시간).
+  HourlyWeatherData? _findYesterdayAtOrBefore(DateTime target) {
+    HourlyWeatherData? candidate;
+    for (final item in _yesterdayRawList) {
+      if (item.date.isAfter(target)) break;
+      candidate = item;
+    }
+    if (candidate == null || target.difference(candidate.date) > const Duration(hours: 6)) return null;
+    return candidate;
   }
 
   void logHourlyWeather() {
@@ -745,16 +774,7 @@ class WeatherGogoCntr extends GetxController {
     final double? todayTemp = double.tryParse(currentWeather.value.temp ?? '');
     if (todayTemp == null || _yesterdayRawList.isEmpty) return;
     final DateTime target = DateTime.now().subtract(const Duration(hours: 24));
-    HourlyWeatherData? y;
-    for (final e in _yesterdayRawList) {
-      if (e.date.year == target.year &&
-          e.date.month == target.month &&
-          e.date.day == target.day &&
-          e.date.hour == target.hour) {
-        y = e;
-        break;
-      }
-    }
+    final HourlyWeatherData? y = _findYesterdayAtOrBefore(target);
     if (y == null) return; // 어제 같은 시각 데이터 없음 → 문구 갱신 생략
     final double diff = double.parse((todayTemp - y.temp).toStringAsFixed(1));
     yesterdayDesc.value = diff == 0.0
