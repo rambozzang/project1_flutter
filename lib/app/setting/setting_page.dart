@@ -59,15 +59,22 @@ class _SettingPageState extends State<SettingPage> {
   void _showAlbumThemeSheet() {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(18))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(18))),
       builder: (context) {
-        Widget option(SaThemeMode mode, IconData icon, String label, String desc) {
+        Widget option(
+            SaThemeMode mode, IconData icon, String label, String desc) {
           final bool selected = SaColors.themeMode == mode;
           return ListTile(
-            leading: Icon(icon, color: selected ? Colors.teal : Colors.grey[600]),
-            title: Text(label, style: TextStyle(fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
-            subtitle: Text(desc, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-            trailing: selected ? const Icon(Icons.check, color: Colors.teal) : null,
+            leading:
+                Icon(icon, color: selected ? Colors.teal : Colors.grey[600]),
+            title: Text(label,
+                style: TextStyle(
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
+            subtitle: Text(desc,
+                style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+            trailing:
+                selected ? const Icon(Icons.check, color: Colors.teal) : null,
             onTap: () async {
               await SaColors.saveMode(mode);
               if (mounted) setState(() {});
@@ -84,12 +91,17 @@ class _SettingPageState extends State<SettingPage> {
                 padding: EdgeInsets.fromLTRB(20, 16, 20, 4),
                 child: Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('앨범 테마', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  child: Text('앨범 테마',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                 ),
               ),
-              option(SaThemeMode.system, CupertinoIcons.circle_lefthalf_fill, '시스템 설정 따름', '휴대폰 다크모드 설정에 맞춰 자동 전환'),
-              option(SaThemeMode.light, CupertinoIcons.sun_max, '라이트', '앨범 화면을 항상 밝게'),
-              option(SaThemeMode.dark, CupertinoIcons.moon, '다크', '앨범 화면을 항상 어둡게'),
+              option(SaThemeMode.system, CupertinoIcons.circle_lefthalf_fill,
+                  '시스템 설정 따름', '휴대폰 다크모드 설정에 맞춰 자동 전환'),
+              option(SaThemeMode.light, CupertinoIcons.sun_max, '라이트',
+                  '앨범 화면을 항상 밝게'),
+              option(
+                  SaThemeMode.dark, CupertinoIcons.moon, '다크', '앨범 화면을 항상 어둡게'),
               const Gap(8),
             ],
           ),
@@ -124,7 +136,8 @@ class _SettingPageState extends State<SettingPage> {
             ),
             title: const Text(
               "설정",
-              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              style:
+                  TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
             ),
             centerTitle: true,
             // backgroundColor: Colors.transparent,
@@ -137,7 +150,10 @@ class _SettingPageState extends State<SettingPage> {
               children: [
                 SettingsGroup(
                   settingsGroupTitle: "문의",
-                  settingsGroupTitleStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 16),
+                  settingsGroupTitleStyle: const TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16),
                   items: [
                     SettingsItem(
                       onTap: () => Get.toNamed('/NotiPage'),
@@ -154,7 +170,10 @@ class _SettingPageState extends State<SettingPage> {
                 ),
                 SettingsGroup(
                   settingsGroupTitle: "커뮤니티",
-                  settingsGroupTitleStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 16),
+                  settingsGroupTitleStyle: const TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16),
                   items: [
                     SettingsItem(
                       // 라운지 하단탭이 새 앨범 허브(CommunityHubPage)로 바뀌어,
@@ -175,7 +194,10 @@ class _SettingPageState extends State<SettingPage> {
                 ),
                 SettingsGroup(
                   settingsGroupTitle: "설정",
-                  settingsGroupTitleStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 16),
+                  settingsGroupTitleStyle: const TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16),
                   items: [
                     SettingsItem(
                       onTap: () => Get.toNamed('/AlramSettingPage'),
@@ -229,7 +251,10 @@ class _SettingPageState extends State<SettingPage> {
                 const Gap(30),
                 SettingsGroup(
                   settingsGroupTitle: "개인정 동의 및 약관",
-                  settingsGroupTitleStyle: const TextStyle(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 16),
+                  settingsGroupTitleStyle: const TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16),
                   items: [
                     if (kDebugMode) ...[
                       SettingsItem(
@@ -238,7 +263,8 @@ class _SettingPageState extends State<SettingPage> {
                         backgroundColor: Colors.white,
                         iconStyle: IconStyle(),
                         title: '마케팅 수신 동의 설정',
-                        subtitle: "다양한 맴버 혜택을 담은 마케팅 정보를 SMS, 이메일, 앱 푸시로 보내드립니다.",
+                        subtitle:
+                            "다양한 맴버 혜택을 담은 마케팅 정보를 SMS, 이메일, 앱 푸시로 보내드립니다.",
                         titleMaxLine: 1,
                         subtitleMaxLine: 1,
                       ),
@@ -307,7 +333,10 @@ class _SettingPageState extends State<SettingPage> {
                           //   barrierDismissible: true,
                           // );
                           // AgreePage() 페이지로 이동 머터리얼 라우터를 이용
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => const AgreePage()));
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const AgreePage()));
                         },
                         icons: Icons.exit_to_app_rounded,
                         iconStyle: IconStyle(
@@ -336,24 +365,6 @@ class _SettingPageState extends State<SettingPage> {
                         title: '공유앨범 홈 1a (디자인 검수)',
                         titleMaxLine: 1,
                         subtitleMaxLine: 1,
-                      ),
-                      SettingsItem(
-                        onTap: () => Get.toNamed('/TestDioPage'),
-                        icons: CupertinoIcons.link_circle,
-                        title: "TestDioPage",
-                        titleStyle: const TextStyle(
-                          color: Colors.red,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SettingsItem(
-                        onTap: () => Get.toNamed('/WeatherComparePage'),
-                        icons: CupertinoIcons.link_circle,
-                        title: "WeatherComparePage",
-                        titleStyle: const TextStyle(
-                          color: Colors.red,
-                          fontWeight: FontWeight.bold,
-                        ),
                       ),
                       //
                     ]
@@ -410,7 +421,8 @@ class _SettingPageState extends State<SettingPage> {
           const Gap(20),
           Stack(
             children: [
-              Image.asset('assets/images/5124556.jpg', fit: BoxFit.cover, width: double.infinity, height: 75),
+              Image.asset('assets/images/5124556.jpg',
+                  fit: BoxFit.cover, width: double.infinity, height: 75),
               // Positioned(
               //   right: 0,
               //   bottom: 0,
@@ -439,16 +451,21 @@ class _SettingPageState extends State<SettingPage> {
       builder: (BuildContext context) {
         return StatefulBuilder(builder: (context, setState) {
           return AlertDialog(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
             content: Container(
                 height: 390,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   color: Colors.white,
                   shape: BoxShape.rectangle,
                   boxShadow: const [
-                    BoxShadow(color: Colors.black, offset: Offset(0, 10), blurRadius: 10),
+                    BoxShadow(
+                        color: Colors.black,
+                        offset: Offset(0, 10),
+                        blurRadius: 10),
                   ],
                 ),
                 child: Column(
@@ -458,14 +475,20 @@ class _SettingPageState extends State<SettingPage> {
                     const Gap(20),
                     const Text(
                       "정말 탈퇴하시겠습니까?",
-                      style: TextStyle(fontSize: 20, color: Colors.red, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          fontSize: 20,
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold),
                     ),
                     const Gap(20),
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 18.0),
                       child: Text(
                         "1년간 재가입 불가합니다. 데이터는 모두 삭제되어 복구 불가능합니다.",
-                        style: TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.black87,
+                            fontWeight: FontWeight.bold),
                       ),
                     ),
                     Row(
@@ -480,7 +503,10 @@ class _SettingPageState extends State<SettingPage> {
                             }),
                         const Text(
                           '진짜 다시 확인해주세요!!',
-                          style: TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.black87,
+                              fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -533,11 +559,17 @@ class SettingsGroup extends StatelessWidget {
   // Icons size
   final double? iconItemSize;
 
-  const SettingsGroup({super.key, this.settingsGroupTitle, this.settingsGroupTitleStyle, required this.items, this.iconItemSize = 25});
+  const SettingsGroup(
+      {super.key,
+      this.settingsGroupTitle,
+      this.settingsGroupTitleStyle,
+      required this.items,
+      this.iconItemSize = 25});
 
   @override
   Widget build(BuildContext context) {
-    if (iconItemSize != null) SettingsScreenUtils.settingsGroupIconSize = iconItemSize;
+    if (iconItemSize != null)
+      SettingsScreenUtils.settingsGroupIconSize = iconItemSize;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -552,7 +584,8 @@ class SettingsGroup extends StatelessWidget {
                   child: Text(
                     settingsGroupTitle!,
                     style: (settingsGroupTitleStyle == null)
-                        ? const TextStyle(fontSize: 25, fontWeight: FontWeight.bold)
+                        ? const TextStyle(
+                            fontSize: 25, fontWeight: FontWeight.bold)
                         : settingsGroupTitleStyle,
                   ),
                 )
@@ -602,7 +635,8 @@ class SettingsItem extends StatelessWidget {
   final TextOverflow? overflow;
 
   const SettingsItem(
-      {super.key, required this.icons,
+      {super.key,
+      required this.icons,
       this.iconStyle,
       required this.title,
       this.titleStyle,
@@ -652,10 +686,12 @@ class SettingsItem extends StatelessWidget {
                 subtitle!,
                 style: subtitleStyle ?? Theme.of(context).textTheme.bodyMedium!,
                 maxLines: subtitleMaxLine,
-                overflow: subtitleMaxLine != null ? TextOverflow.ellipsis : null,
+                overflow:
+                    subtitleMaxLine != null ? TextOverflow.ellipsis : null,
               )
             : null,
-        trailing: (trailing != null) ? trailing : const Icon(Icons.navigate_next),
+        trailing:
+            (trailing != null) ? trailing : const Icon(Icons.navigate_next),
       ),
     );
   }

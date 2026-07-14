@@ -43,7 +43,8 @@ class WeathgergogoPage extends StatefulWidget {
   State<WeathgergogoPage> createState() => WeathgergogoPageState();
 }
 
-class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAliveClientMixin<WeathgergogoPage> {
+class WeathgergogoPageState extends State<WeathgergogoPage>
+    with AutomaticKeepAliveClientMixin<WeathgergogoPage> {
   @override
   bool get wantKeepAlive => true;
 
@@ -56,7 +57,8 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
   // final WeatherGogoCntr controller = Get.find();
 
   List<TwinklingStar> twinklingStars = [];
-  ValueNotifier<List<TwinklingStar>> starsNotifier = ValueNotifier<List<TwinklingStar>>([]);
+  ValueNotifier<List<TwinklingStar>> starsNotifier =
+      ValueNotifier<List<TwinklingStar>>([]);
 
   List<Color> currentColors = [];
   late Color appbarColor;
@@ -133,7 +135,8 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
     isStartStart = true;
     for (int i = 0; i < 100; i++) {
       twinklingStars.add(TwinklingStar(
-          Random().nextDouble() * MediaQuery.of(context).size.width, Random().nextDouble() * MediaQuery.of(context).size.height));
+          Random().nextDouble() * MediaQuery.of(context).size.width,
+          Random().nextDouble() * MediaQuery.of(context).size.height));
     }
     starsNotifier.value = twinklingStars;
     startObjectMovement();
@@ -142,7 +145,8 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
   Timer? _animationTimer;
 
   void startObjectMovement() {
-    _animationTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+    _animationTimer =
+        Timer.periodic(const Duration(milliseconds: 100), (timer) {
       if (mounted) {
         updateStarPositions();
       } else {
@@ -191,7 +195,8 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
               // 시간대별 "살아 있는 하늘" 배경 — 10분마다 부드럽게 전환된다.
               Positioned.fill(
                 child: Obx(() {
-                  final colors = Get.find<WeatherGogoCntr>().currentColors.toList();
+                  final colors =
+                      Get.find<WeatherGogoCntr>().currentColors.toList();
                   if (colors.isEmpty) return const SizedBox.shrink();
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 2000),
@@ -201,7 +206,9 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
                         begin: SkyGradient.begin,
                         end: SkyGradient.end,
                         colors: colors,
-                        stops: colors.length == SkyGradient.stops.length ? SkyGradient.stops : null,
+                        stops: colors.length == SkyGradient.stops.length
+                            ? SkyGradient.stops
+                            : null,
                       ),
                     ),
                   );
@@ -212,12 +219,24 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
               buildStarts(),
               // NightSun(isVisibleNotifier: Get.find<WeatherGogoCntr>().isNightSun, top: 0, right: 0),
               // DaySun(isVisibleNotifier: Get.find<WeatherGogoCntr>().isDaySun, top: 56, right: 20),
-              RainAnimation2(isVisibleNotifier: Get.find<WeatherGogoCntr>().isRainVisibleNotifier),
-              SnowAnimation2(isVisibleNotifier: Get.find<WeatherGogoCntr>().isSnowVisibleNotifier),
-              CloudyAnimation(isVisibleNotifier: Get.find<WeatherGogoCntr>().isCloudVisibleNotifier),
-              HazyAnimation(isVisibleNotifier: Get.find<WeatherGogoCntr>().isHazyVisibleNotifier),
-              RainDropAnimation(isVisibleNotifier: Get.find<WeatherGogoCntr>().isRainDropVisibleNotifier),
-              DarkCloudsAnimation(isVisibleNotifier: Get.find<WeatherGogoCntr>().isDarkCloudVisibleNotifier),
+              RainAnimation2(
+                  isVisibleNotifier:
+                      Get.find<WeatherGogoCntr>().isRainVisibleNotifier),
+              SnowAnimation2(
+                  isVisibleNotifier:
+                      Get.find<WeatherGogoCntr>().isSnowVisibleNotifier),
+              CloudyAnimation(
+                  isVisibleNotifier:
+                      Get.find<WeatherGogoCntr>().isCloudVisibleNotifier),
+              HazyAnimation(
+                  isVisibleNotifier:
+                      Get.find<WeatherGogoCntr>().isHazyVisibleNotifier),
+              RainDropAnimation(
+                  isVisibleNotifier:
+                      Get.find<WeatherGogoCntr>().isRainDropVisibleNotifier),
+              DarkCloudsAnimation(
+                  isVisibleNotifier:
+                      Get.find<WeatherGogoCntr>().isDarkCloudVisibleNotifier),
               _buildLazyLoadingContent(),
 
               // 특보 안내 마퀴 — 관심지역 없을 때 상단에 한 줄 흐르다가 사라진다.
@@ -240,7 +259,8 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
   Widget _buildAtmosphere() {
     final double nf = SkyGradient.nightFactor(DateTime.now()); // 0=낮 … 1=밤
     // 천체 글로우 색: 낮=따뜻한 햇무리, 밤=차가운 달빛
-    final Color glow = Color.lerp(const Color(0xFFFFE6A8), const Color(0xFFBFD2FF), nf)!;
+    final Color glow =
+        Color.lerp(const Color(0xFFFFE6A8), const Color(0xFFBFD2FF), nf)!;
     final double glowOpacity = 0.16 + 0.12 * (1 - nf); // 낮에 조금 더 또렷하게
     return IgnorePointer(
       child: Stack(
@@ -255,7 +275,10 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [glow.withOpacity(glowOpacity), glow.withOpacity(0.0)],
+                  colors: [
+                    glow.withOpacity(glowOpacity),
+                    glow.withOpacity(0.0)
+                  ],
                 ),
               ),
             ),
@@ -312,7 +335,8 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
     return SingleChildScrollView(
       controller: RootCntr.to.hideButtonController5,
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 20.0).copyWith(
+      padding:
+          const EdgeInsets.symmetric(horizontal: 0.0, vertical: 20.0).copyWith(
         top: kToolbarHeight + 3,
       ),
       child: Column(
@@ -326,7 +350,8 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
       controller: RootCntr.to.hideButtonController5,
       cacheExtent: 5000,
       physics: physic,
-      padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 20.0).copyWith(
+      padding:
+          const EdgeInsets.symmetric(horizontal: 0.0, vertical: 20.0).copyWith(
         top: kToolbarHeight + 3,
       ),
       itemCount: sections.length,
@@ -345,11 +370,16 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
             if (Get.find<WeatherGogoCntr>().weatherAlert.value == null) {
               return const SizedBox();
             }
-            final String tmFc = Get.find<WeatherGogoCntr>().weatherAlert.value!.tmFc.toString();
+            final String tmFc =
+                Get.find<WeatherGogoCntr>().weatherAlert.value!.tmFc.toString();
             // 날짜 형식 변경 .
             final String tmFc2 =
                 '${tmFc.substring(0, 4)}.${tmFc.substring(4, 6)}.${tmFc.substring(6, 8)} ${tmFc.substring(8, 10)}:${tmFc.substring(10, 12)}';
-            String title = Get.find<WeatherGogoCntr>().weatherAlert.value!.title.toString();
+            String title = Get.find<WeatherGogoCntr>()
+                .weatherAlert
+                .value!
+                .title
+                .toString();
             // 제목도  / 가 포함되어 있으면 / 를 기준으로 나누어서 2개로 나누어서 2번째 값만 사용한다.
             final List<String> titleList = title.split('/');
             if (titleList.length > 1) {
@@ -357,9 +387,11 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
             }
 
             return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 5),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10.0, vertical: 5),
               decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 237, 219, 240).withOpacity(0.15),
+                color:
+                    const Color.fromARGB(255, 237, 219, 240).withOpacity(0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -377,7 +409,10 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
                       delayBefore: const Duration(milliseconds: 4000),
                       pauseBetween: const Duration(milliseconds: 2000),
                       velocity: const Velocity(pixelsPerSecond: Offset(100, 0)),
-                      style: const TextStyle(fontSize: 14, color: Colors.yellow, fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.yellow,
+                          fontWeight: FontWeight.w700),
                       textAlign: TextAlign.left,
                       selectable: false,
                     ),
@@ -395,32 +430,6 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
                 children: [
                   Text('날씨정보', style: semiboldText.copyWith(fontSize: 20.0)),
                   const Gap(10),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.black87, // 텍스트 및 아이콘 색상
-                      backgroundColor: Colors.white12, // 버튼 배경색
-                      elevation: 4, // 그림자 높이
-                      shadowColor: Colors.black.withOpacity(0.3), // 그림자 색상
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      minimumSize: const Size(67, 25),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8), // 더 둥근 모서리
-                      ),
-                    ),
-                    onPressed: () {
-                      // Get.find<WeatherGogoCntr>().changeBgColor();
-                      // Get.toNamed('/WeathgergogoPage');
-
-                      // Get.find<WeatherGogoCntr>().fetchWeatherAlert(Get.find<WeatherGogoCntr>().currentLocation.value.latLng);
-                      Get.toNamed('/WeatherComPage');
-                    },
-                    child: Row(
-                      children: [
-                        Text('날씨비교 ', style: semiboldText.copyWith(fontSize: 11.0)),
-                        const Icon(Icons.arrow_forward_ios, size: 12.0, color: Colors.amber),
-                      ],
-                    ),
-                  ),
                   const Gap(3),
                   Stack(
                     children: [
@@ -437,15 +446,32 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
                           ),
                         ),
                         // onPressed: () => Get.toNamed('/MapPage'), // Get.find<WeatherGogoCntr>().test(), //
-                        onPressed: () => Get.toNamed('/ShortViewPage', arguments: {
-                          'address': Get.find<WeatherGogoCntr>().currentLocation.value.addr,
-                          'lat': Get.find<WeatherGogoCntr>().currentLocation.value.latLng.latitude.toString(),
-                          'lng': Get.find<WeatherGogoCntr>().currentLocation.value.latLng.longitude.toString(),
+                        onPressed: () =>
+                            Get.toNamed('/ShortViewPage', arguments: {
+                          'address': Get.find<WeatherGogoCntr>()
+                              .currentLocation
+                              .value
+                              .addr,
+                          'lat': Get.find<WeatherGogoCntr>()
+                              .currentLocation
+                              .value
+                              .latLng
+                              .latitude
+                              .toString(),
+                          'lng': Get.find<WeatherGogoCntr>()
+                              .currentLocation
+                              .value
+                              .latLng
+                              .longitude
+                              .toString(),
                         }),
                         child: const Row(
                           children: [
-                            Text('동네라운지 ', style: TextStyle(fontSize: 13.0, color: Colors.yellow)),
-                            Icon(Icons.arrow_forward_ios, size: 13.0, color: Colors.amber),
+                            Text('동네라운지 ',
+                                style: TextStyle(
+                                    fontSize: 13.0, color: Colors.yellow)),
+                            Icon(Icons.arrow_forward_ios,
+                                size: 13.0, color: Colors.amber),
                             // ShimmeringText(
                             //   text: '동네라운지 ',
                             //   fontSize: 13.0,
@@ -459,10 +485,24 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
                         top: -10,
                         right: 2,
                         child: GestureDetector(
-                          onTap: () => Get.toNamed('/ShortViewPage', arguments: {
-                            'address': Get.find<WeatherGogoCntr>().currentLocation.value.addr,
-                            'lat': Get.find<WeatherGogoCntr>().currentLocation.value.latLng.latitude.toString(),
-                            'lng': Get.find<WeatherGogoCntr>().currentLocation.value.latLng.longitude.toString(),
+                          onTap: () =>
+                              Get.toNamed('/ShortViewPage', arguments: {
+                            'address': Get.find<WeatherGogoCntr>()
+                                .currentLocation
+                                .value
+                                .addr,
+                            'lat': Get.find<WeatherGogoCntr>()
+                                .currentLocation
+                                .value
+                                .latLng
+                                .latitude
+                                .toString(),
+                            'lng': Get.find<WeatherGogoCntr>()
+                                .currentLocation
+                                .value
+                                .latLng
+                                .longitude
+                                .toString(),
                           }),
                           child: Transform.rotate(
                             angle: pi / 16,
@@ -593,15 +633,21 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
       child: Obx(() {
         if (Get.find<WeatherGogoCntr>().areaList.isEmpty) {
           return InkWell(
-            onTap: () async => await Get.toNamed('/FavoriteAreaPage')!.then((value) => Get.find<WeatherGogoCntr>().getLocalTag()),
+            onTap: () async => await Get.toNamed('/FavoriteAreaPage')!
+                .then((value) => Get.find<WeatherGogoCntr>().getLocalTag()),
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 3),
               alignment: Alignment.center,
               child: Row(
                 children: [
-                  const Text('관심지역', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white)),
+                  const Text('관심지역',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white)),
                   const Gap(3),
-                  const Icon(Icons.arrow_circle_right_outlined, color: Colors.white, size: 16),
+                  const Icon(Icons.arrow_circle_right_outlined,
+                      color: Colors.white, size: 16),
                   const Gap(6),
                   Text(
                     '등록된 관심지역이 없습니다.',
@@ -621,14 +667,23 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
           physics: const AlwaysScrollableScrollPhysics(),
           child: Row(children: [
             InkWell(
-                onTap: () async => await Get.toNamed('/FavoriteAreaPage')!.then((value) => Get.find<WeatherGogoCntr>().getLocalTag()),
-                child: const Text('관심지역', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white))),
+                onTap: () async => await Get.toNamed('/FavoriteAreaPage')!
+                    .then((value) => Get.find<WeatherGogoCntr>().getLocalTag()),
+                child: const Text('관심지역',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white))),
             const Gap(3),
             InkWell(
-                onTap: () async => await Get.toNamed('/FavoriteAreaPage')!.then((value) => Get.find<WeatherGogoCntr>().getLocalTag()),
-                child: const Icon(Icons.arrow_circle_right_outlined, color: Colors.white, size: 16)),
+                onTap: () async => await Get.toNamed('/FavoriteAreaPage')!
+                    .then((value) => Get.find<WeatherGogoCntr>().getLocalTag()),
+                child: const Icon(Icons.arrow_circle_right_outlined,
+                    color: Colors.white, size: 16)),
             const Gap(5),
-            ...Get.find<WeatherGogoCntr>().areaList.map((e) => buildLocalChip(e)),
+            ...Get.find<WeatherGogoCntr>()
+                .areaList
+                .map((e) => buildLocalChip(e)),
           ]),
         );
       }),
@@ -646,14 +701,16 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
             onTap: () {
               late GeocodeData geocodeData = GeocodeData(
                 name: data.id!.tagNm.toString(),
-                latLng: LatLng(double.parse(data.lat.toString()), double.parse(data.lon.toString())),
+                latLng: LatLng(double.parse(data.lat.toString()),
+                    double.parse(data.lon.toString())),
               );
               Get.find<WeatherGogoCntr>().searchWeatherKakao(geocodeData);
             },
             child: Chip(
               elevation: 4,
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-              backgroundColor: const Color.fromARGB(255, 122, 110, 199), // Color.fromARGB(255, 76, 70, 124),
+              backgroundColor: const Color.fromARGB(
+                  255, 122, 110, 199), // Color.fromARGB(255, 76, 70, 124),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
                 side: const BorderSide(color: Color.fromARGB(0, 166, 155, 155)),
@@ -661,10 +718,15 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
               label: Text(
                 data.id!.tagNm.toString(),
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600, height: 1.0),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    height: 1.0),
               ),
               visualDensity: const VisualDensity(horizontal: 0, vertical: -4),
-              labelPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+              labelPadding:
+                  const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
             ),
           ),
         ));

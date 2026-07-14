@@ -4,14 +4,7 @@ import 'package:project1/config/url_config.dart';
 import 'package:project1/repo/api/auth_dio.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/weather_gogo/adapter/adapter_map.dart';
-import 'package:project1/repo/weather_gogo/interface/imp_fct_repository.dart';
-import 'package:project1/repo/weather_gogo/interface/imp_fct_version_repository.dart';
-import 'package:project1/repo/weather_gogo/interface/imp_super_fct_repository.dart';
-import 'package:project1/repo/weather_gogo/interface/imp_super_nct_repository.dart';
-import 'package:project1/repo/weather_gogo/models/enum/data_type.dart';
-import 'package:project1/repo/weather_gogo/models/request/weather.dart';
 import 'package:project1/repo/weather_gogo/models/request/weather_cache_req.dart';
-import 'package:project1/repo/weather_gogo/models/request/weather_version.dart';
 import 'package:project1/repo/weather_gogo/models/response/fct/fct_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/fct_version/fct_version_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/midland_fct/midlan_fct_res.dart';
@@ -32,11 +25,6 @@ import 'package:dio/dio.dart' as rdio;
 예보버전 :  WeatherVersion class
 */
 class WeatherGogoRepo {
-  // static const _baseURL = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0';
-  //decoding key 를 사용.
-  static const _key = 'CeGmiV26lUPH9guq1Lca6UA25Al/aZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur+t2iPaL/LtEQdZebg==';
-  // static const _key = 'CeGmiV26lUPH9guq1Lca6UA25Al%2FaZlWD3Bm8kehJ73oqwWiG38eHxcTOnEUzwpXKY3Ur%2Bt2iPaL%2FLtEQdZebg%3D%3D';
-
   // static Dio createDio({required bool isLog, PrettyDioLogger? customLogger}) {
   //   var dio = Dio(BaseOptions(baseUrl: _baseURL));
 
@@ -49,28 +37,10 @@ class WeatherGogoRepo {
 
   // 초단기 실황 24시 조회
   //  X축이 Longitude, Y축이 Latitude
-  Future<List<ItemSuperNct>> getYesterDayJson(LatLng latLng, {isLog = false, isChache = false}) async {
-    lo.g("################ 1:  ${latLng.longitude} ${latLng.latitude}");
-    //위경도를 기상청 좌료로 변경
-    //  제주도 126.54587355630036 33.379777816446165 - > nx: 54, ny: 36
-    //  서울역 126.970606917394 37.5546788388674 ->  nx: 61, ny: 127
-    //  서울 홍제 x=126.944267&y=37.588688 => =59&ny=127
-    MapAdapter changeMap = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
-
-    Weather weather = Weather(
-      serviceKey: _key,
-      pageNo: 1,
-      numOfRows: 100000,
-      nx: changeMap.x,
-      ny: changeMap.y,
-    );
-
-    final List<ItemSuperNct> items = [];
-    final json = await SuperNctRepositoryImp(isLog: isLog).getYesterDayJson(weather, false);
-
-    json.map((e) => items.add(e)).toList();
-
-    return items;
+  Future<List<ItemSuperNct>> getYesterDayJson(LatLng latLng,
+      {isLog = false, isChache = false}) async {
+    final grid = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
+    return BackendWeatherApi().getYesterdayWeather(grid.x, grid.y);
   }
 
   //----------------------------------------------------------
@@ -84,23 +54,10 @@ class WeatherGogoRepo {
   // PTY : 강수형태 ㅣ (초단기) 없음(0), 비(1), 비/눈(2), 눈(3), 빗방울(5), 빗방울눈날림(6), 눈날림(7)
   // VEC : 풍량 deg
   // WSD : 풍속
-  Future<List<ItemSuperNct>> getSuperNctListJson(LatLng latLng, {isLog = false, isChache = false}) async {
-    MapAdapter changeMap = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
-    final weather = Weather(
-      serviceKey: _key,
-      pageNo: 1,
-      numOfRows: 1000,
-      nx: changeMap.x,
-      ny: changeMap.y,
-      // dateTime: DateTime.now().subtract(const Duration(hours: 23, minutes: 59, seconds: 01),
-      // ),
-    );
-    final List<ItemSuperNct> items = [];
-    final json = await SuperNctRepositoryImp(isLog: isLog).getItemListJSON(weather);
-
-    json.map((e) => items.add(e)).toList();
-
-    return items;
+  Future<List<ItemSuperNct>> getSuperNctListJson(LatLng latLng,
+      {isLog = false, isChache = false}) async {
+    final grid = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
+    return BackendWeatherApi().getCurrentWeather(grid.x, grid.y);
   }
 
   // 기온
@@ -119,23 +76,10 @@ class WeatherGogoRepo {
   // LGT	낙뢰	kA(킬로암페어)
   // VEC	풍향	deg
   // WSD	풍속	m/s
-  Future<List<ItemSuperFct>> getSuperFctListJson(LatLng latLng, {isLog = false, isChache = false}) async {
-    MapAdapter changeMap = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
-
-    final weather = Weather(
-        serviceKey: _key,
-        pageNo: 1,
-        numOfRows: 10000, //기준시간별 항목이 12개이므로 24시간치 데이터를 가져오기 위해 12 * 24
-        nx: changeMap.x,
-        ny: changeMap.y);
-
-    final List<ItemSuperFct> items = [];
-
-    final json = await SuperFctRepositoryImp(isLog: isLog).getItemListJSON(weather);
-
-    json.map((e) => items.add(e)).toList();
-
-    return items;
+  Future<List<ItemSuperFct>> getSuperFctListJson(LatLng latLng,
+      {isLog = false, isChache = false}) async {
+    final grid = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
+    return BackendWeatherApi().getSuperFct(grid.x, grid.y);
   }
 
   //----------------------------------------------------------
@@ -155,50 +99,30 @@ class WeatherGogoRepo {
   // WAV	파고	M
   // VEC	풍향	deg
   // WSD	풍속	m/s
-  Future<List<ItemFct>> getFctListJson(LatLng latLng, {isLog = false, isChache = false}) async {
-    lo.g('getFctListJson : ${DateTime.now().subtract(const Duration(hours: 24, minutes: 01, seconds: 01))}');
-
-    MapAdapter changeMap = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
-
-    final weather = Weather(
-      serviceKey: _key,
-      pageNo: 1,
-      numOfRows: 100000,
-      nx: changeMap.x,
-      ny: changeMap.y,
-      // dateTime: DateTime.now().subtract(const Duration(hours: 23, minutes: 59, seconds: 01),),
-    );
-    final List<ItemFct> items = [];
-    final json = await FctRepositoryImp(isLog: isLog).getItemListJSON(weather);
-
-    json.map((e) => items.add(e)).toList();
-
-    return items;
+  Future<List<ItemFct>> getFctListJson(LatLng latLng,
+      {isLog = false, isChache = false}) async {
+    final grid = MapAdapter.changeMap(latLng.longitude, latLng.latitude);
+    return BackendWeatherApi().getFct(grid.x, grid.y);
   }
 
   // 예보버전
-  Future<List<ItemFctVersion>> getFctVersionJson(LatLng latLng, {isLog = true}) async {
-    final List<ItemFctVersion> items = [];
-    const ItemFctVersion item = ItemFctVersion();
-    final weather = WeatherVersion(
-      serviceKey: _key,
-      pageNo: 1,
-      numOfRows: 1000000,
-      dataType: DataType.json,
-    );
-
-    final json = await FctVersionRepositoryImp(isLog: isLog).getItemListJSON(weather);
-    json.map((e) => items.add(e)).toList();
-
-    return items;
+  Future<List<ItemFctVersion>> getFctVersionJson(LatLng latLng,
+      {isLog = true}) async {
+    // 백엔드에 예보 버전 조회 규격이 없고 운영 기능에서도 사용하지 않는다.
+    // Flutter가 data.go.kr로 우회 호출하지 않도록 빈 결과를 반환한다.
+    lo.g('getFctVersionJson: 백엔드 미지원 기능');
+    return [];
   }
 
   //중기 예보 - 육상 상태 정보 (백엔드 /weather/mid 경유)
-  Future<MidLandFcstResponse?> getMidFctJson(LatLng latLng, {isLog = true}) async {
+  Future<MidLandFcstResponse?> getMidFctJson(LatLng latLng,
+      {isLog = true}) async {
     try {
-      final data = await BackendWeatherApi().getMidForecast(latLng.latitude, latLng.longitude);
+      final data = await BackendWeatherApi()
+          .getMidForecast(latLng.latitude, latLng.longitude);
       if (data == null || data['land'] == null) return null;
-      return MidLandFcstResponse.fromMap(Map<String, dynamic>.from(data['land'] as Map));
+      return MidLandFcstResponse.fromMap(
+          Map<String, dynamic>.from(data['land'] as Map));
     } catch (e) {
       lo.g(e.toString());
       return null;
@@ -208,9 +132,11 @@ class WeatherGogoRepo {
   //중기 예보 - 기온 정보 (백엔드 /weather/mid 경유)
   Future<MidTaResponse?> getMidTaJson(LatLng latLng, {isLog = true}) async {
     try {
-      final data = await BackendWeatherApi().getMidForecast(latLng.latitude, latLng.longitude);
+      final data = await BackendWeatherApi()
+          .getMidForecast(latLng.latitude, latLng.longitude);
       if (data == null || data['ta'] == null) return null;
-      return MidTaResponse.fromMap(Map<String, dynamic>.from(data['ta'] as Map));
+      return MidTaResponse.fromMap(
+          Map<String, dynamic>.from(data['ta'] as Map));
     } catch (e) {
       lo.g(e.toString());
       return null;
@@ -218,15 +144,19 @@ class WeatherGogoRepo {
   }
 
   // 특보 (백엔드 /weather/warn/current 경유)
-  Future<WeatherAlertRes?> getSpecialAlertJson(LatLng latLng, {isLog = true}) async {
+  Future<WeatherAlertRes?> getSpecialAlertJson(LatLng latLng,
+      {isLog = true}) async {
     try {
       final list = await BackendWeatherApi().getWeatherWarnings();
       if (list.isEmpty) return null;
       final first = Map<String, dynamic>.from(list[0] as Map);
       return WeatherAlertRes(
         stnId: first['areaId']?.toString(),
-        title: '[특보] ${first['wrnNm'] ?? ''} ${first['wrnMdivNm'] ?? ''} / ${first['areaNm'] ?? ''}',
-        tmFc: first['tmFc'] != null ? int.tryParse(first['tmFc'].toString()) : null,
+        title:
+            '[특보] ${first['wrnNm'] ?? ''} ${first['wrnMdivNm'] ?? ''} / ${first['areaNm'] ?? ''}',
+        tmFc: first['tmFc'] != null
+            ? int.tryParse(first['tmFc'].toString())
+            : null,
         tmSeq: null,
       );
     } catch (e) {
@@ -289,7 +219,8 @@ class WeatherGogoRepo {
   Future<ResData> findWeatherCacheYesterday(String lox, String loy) async {
     try {
       final diodio = await AuthDio.instance.getDio(debug: false);
-      var url = '${UrlConfig.baseURL}/board/findWeatherCacheYesterday?lox=$lox&loy=$loy';
+      var url =
+          '${UrlConfig.baseURL}/board/findWeatherCacheYesterday?lox=$lox&loy=$loy';
 
       rdio.Response response = await diodio.post(url);
       return AuthDio.instance.dioResponse(response);
@@ -303,7 +234,8 @@ class WeatherGogoRepo {
     try {
       final diodio = await AuthDio.instance.getDio(debug: false);
       log("getWeatherYesterday >>>  3333");
-      var url = '${UrlConfig.baseURL}/weather/getKmaforecastApi?lox=$lox&loy=$loy';
+      var url =
+          '${UrlConfig.baseURL}/weather/getKmaforecastApi?lox=$lox&loy=$loy';
 
       rdio.Response response = await diodio.post(url);
       return AuthDio.instance.dioResponse(response);

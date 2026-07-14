@@ -41,7 +41,6 @@ import 'package:project1/app/shared_album/album_list_page.dart';
 import 'package:project1/app/shared_album/sa_preview_page.dart';
 import 'package:project1/app/setting/maketing_page.dart';
 import 'package:project1/app/favoriteArea/favorite_area_page.dart';
-import 'package:project1/app/test/weather_compare_page.dart';
 import 'package:project1/app/videomylist/video_myinfo_list_page.dart';
 import 'package:project1/app/community/community_hub_page.dart';
 import 'package:project1/app/community/community_create_page.dart';
@@ -62,10 +61,6 @@ import 'package:project1/app/setting/noti_view_page.dart';
 import 'package:project1/app/setting/open_source_page.dart';
 import 'package:project1/app/setting/privecy_page.dart';
 import 'package:project1/app/setting/setting_page.dart';
-import 'package:project1/app/test/test_dio_page.dart';
-import 'package:project1/app/weather/page/weather_page.dart';
-import 'package:project1/app/weatherCom/cntr/weather_com_controller.dart';
-import 'package:project1/app/weatherCom/weather_com_page.dart';
 import 'package:project1/app/weathergogo/weathergogo_page.dart';
 import 'package:project1/app/challenge/challenge_main_page.dart';
 import 'package:project1/app/attendance/attendance_calendar_page.dart';
@@ -81,7 +76,8 @@ abstract class AppPages {
   static const INITIAL = '/AuthPage';
 
   // fcm 또는 알람 리스트에서 알람을 클릭했을 때 해당 알람에 대한 상세 페이지로 이동하는 라우트
-  static goRoute(String alramCd, String custId, String? boardId, {String? reportId}) {
+  static goRoute(String alramCd, String custId, String? boardId,
+      {String? reportId}) {
     // alramCd에 따라 이동할 페이지를 분기
     // 08: 게시판 좋아요
     // 09: 게시판 댓글
@@ -95,7 +91,8 @@ abstract class AppPages {
 
     // 기상 특보(30) 푸시 클릭 시 상세 페이지로 이동. reportId가 없으면 boardId를 fallback으로 사용.
     if (alramCd == '30') {
-      Get.toNamed('/SpecialWeatherDetailPage', arguments: {'reportId': reportId ?? boardId ?? ''});
+      Get.toNamed('/SpecialWeatherDetailPage',
+          arguments: {'reportId': reportId ?? boardId ?? ''});
       return;
     }
 
@@ -107,10 +104,15 @@ abstract class AppPages {
       case '08':
       case '09':
         RootCntr.to.changeRootPageIndex(3);
-        Get.toNamed('/BbsViewPage', arguments: {'boardId': boardId.toString(), 'tag': 'list'});
+        Get.toNamed('/BbsViewPage',
+            arguments: {'boardId': boardId.toString(), 'tag': 'list'});
         break;
       default:
-        Get.toNamed('/VideoMyinfoListPage', arguments: {'datatype': 'ONE', 'custId': custId, 'boardId': boardId.toString()});
+        Get.toNamed('/VideoMyinfoListPage', arguments: {
+          'datatype': 'ONE',
+          'custId': custId,
+          'boardId': boardId.toString()
+        });
         break;
     }
   }
@@ -240,20 +242,6 @@ abstract class AppPages {
       page: () => const OtherInfoPage(),
       transition: Transition.rightToLeftWithFade,
     ),
-    GetPage(
-      name: '/TestDioPage',
-      page: () => const TestDioPage(),
-
-      // transition: Transition.downToUp,
-    ),
-
-    //날씨 관련 페이지
-    GetPage(
-      name: '/WeatherPage',
-      page: () => const WeatherPage(),
-
-      // transition: Transition.downToUp,
-    ),
     // GetPage(
     //   name: '/SevendayDetailPage/:initialIndex',
     //   page: () => const SevendayDetailPage(),
@@ -337,11 +325,6 @@ abstract class AppPages {
       transition: Transition.downToUp,
     ),
     GetPage(
-      name: '/WeatherComparePage',
-      page: () => const WeatherComparePage(),
-      // transition: Transition.downToUp,
-    ),
-    GetPage(
       name: '/AgreePage/:custId',
       page: () => const AgreePage(),
       // transition: Transition.downToUp,
@@ -350,12 +333,6 @@ abstract class AppPages {
       name: '/WeathgergogoPage',
       page: () => const WeathgergogoPage(),
       // binding: WeatherGogoCntrBinding(),
-      // transition: Transition.downToUp,
-    ),
-    GetPage(
-      name: '/WeatherComPage',
-      page: () => const WeatherComPage(),
-      binding: WeatherComControllerBinding(),
       // transition: Transition.downToUp,
     ),
 
