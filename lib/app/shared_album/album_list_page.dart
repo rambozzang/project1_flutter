@@ -322,7 +322,11 @@ class _AlbumListPageState extends State<AlbumListPage> {
     // 앨범 진입 = 셸(2a 타임라인 + 하단 탭바). 구 1d 상세는 /AlbumDetailPage로 남겨둠.
     // 이미 가진 카드 정보(community)를 함께 넘겨 셸이 즉시 렌더되게 한다(진입 지연 제거).
     Get.toNamed('/AlbumShellPage',
-        arguments: {'communityId': card.community.communityId, 'community': card.community})?.then((_) => _reload());
+        arguments: {'communityId': card.community.communityId, 'community': card.community})?.then((r) {
+      // 상세에서 삭제·나가기 등 변경(result==true)이 있을 때만 목록 새로고침.
+      // 일반 뒤로가기는 리스트를 그대로 유지(불필요한 리프레시·스크롤 초기화 방지).
+      if (r == true) _reload();
+    });
   }
 
   // ── 받은 초대(구 허브 기능 보존) ──────────────────────────
