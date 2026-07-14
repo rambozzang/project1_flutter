@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
@@ -30,8 +29,6 @@ import 'package:project1/repo/weather_gogo/models/response/midta_fct/midta_fct_r
 import 'package:project1/repo/weather_gogo/models/response/special_alert/special_alert_res.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_fct/super_fct_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_nct/super_nct_model.dart';
-import 'package:project1/repo/weather_gogo/repository/weather_gogo_caching.dart';
-import 'package:project1/utils/StringUtils.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 
@@ -86,10 +83,11 @@ class WeatherGogoCntr extends GetxController {
   final RxBool isLocationserviceEnabled = false.obs;
 
   int reCallCnt = 0;
+  bool _weatherLoadInFlight = false;
 
   late LocationPermission locationPermission;
-  final WeatherService weatherService = WeatherService();
   final LocationService locationService = LocationService();
+  final BackendWeatherApi _backendWeatherApi = BackendWeatherApi();
 
   List<Color> nightColors = [
     const Color(0xFF0c1445), // 짙은 남색
@@ -300,18 +298,21 @@ class WeatherGogoCntr extends GetxController {
     }
   }
 
-  late var stopwatch;
+  late Stopwatch stopwatch;
   Future<void> getWeatherDataByLatLng(LatLng location, bool isAllSearch) async {
+    // 최초 진입·새로고침·현위치·지역검색이 겹쳐도 동일 컨트롤러에서는 한 번만 조회한다.
+    if (_weatherLoadInFlight) {
+      lo.g('날씨 조회 중복 요청 생략: $location');
+      return;
+    }
+    _weatherLoadInFlight = true;
+    isLoading.value = true;
     try {
       stopwatch = Stopwatch()..start();
       // 새 조회 시작 → 온도 카운트업을 0부터 다시 시작(헤더 TweenAnimationBuilder key 갱신).
       tempCountSeq.value++;
       // webViewUrl.value = '${webViewUrl.value} + ${location.longitude},${location.latitude},2780/loc=';
-      // 5분후 해제
-      Timer(const Duration(seconds: 15), () {
-        isLoading.value = false;
-        isYestdayLoading.value = false;
-      });
+      isYestdayLoading.value = true;
 
       hourlyWeather.clear();
       sevenDayWeather.clear();
@@ -337,8 +338,6 @@ class WeatherGogoCntr extends GetxController {
       _computeYesterdayCompare();
       _computeTodayHiLo();
 
-      isLoading.value = false;
-
       // 뉴스는 날씨 렌더링과 무관하므로 크리티컬 경로에서 분리(로딩 대기시간에서 제외).
       // 실패해도 날씨엔 영향 없도록 fire-and-forget.
       unawaited(searchNaverNews());
@@ -350,9 +349,10 @@ class WeatherGogoCntr extends GetxController {
       lo.g('getWeatherDataByLatLng initialization time: ${stopwatch.elapsedMilliseconds}ms');
     } catch (e) {
       handleError('getWeatherDataByLatLng() 오류', e);
+    } finally {
+      _weatherLoadInFlight = false;
       isLoading.value = false;
       isYestdayLoading.value = false;
-    } finally {
       stopwatch.stop();
       // searchNaverNews();
     }
@@ -361,22 +361,19 @@ class WeatherGogoCntr extends GetxController {
   // 특보 정보 가져오기
   Future<void> fetchWeatherAlert(LatLng location) async {
     try {
-      // ==========================================================
-      // 특보 정보 가져오기
-      // ==========================================================
-      WeatherAlertRes res = await weatherService.getWeatherData<WeatherAlertRes>(location, ForecastType.weatherAlert);
-      lo.g('bbb=> ${res.toString()}');
-      if (!StringUtils.isEmpty(res.title)) {
-        String title = res.title!;
-        if (title.split('/')[1].contains('특보')) {
-          weatherAlert.value = res;
-        } else {
-          weatherAlert.value = null;
-        }
+      // 백엔드에 캐시된 현재 특보만 조회한다(data.go.kr 직접 호출/클라이언트 캐시 미사용).
+      final list = await _backendWeatherApi.getWeatherWarnings();
+      if (list.isEmpty) {
+        weatherAlert.value = null;
         return;
       }
-
-      // ==========================================================
+      final first = Map<String, dynamic>.from(list.first as Map);
+      weatherAlert.value = WeatherAlertRes(
+        stnId: first['areaId']?.toString(),
+        title: '[특보] ${first['wrnNm'] ?? ''} ${first['wrnMdivNm'] ?? ''} / ${first['areaNm'] ?? ''}',
+        tmFc: first['tmFc'] != null ? int.tryParse(first['tmFc'].toString()) : null,
+        tmSeq: null,
+      );
       lo.g('완료!! => fetchSpecialWeather() time : ${stopwatch.elapsedMilliseconds}ms');
     } catch (e) {
       handleError('특보 정보 오류', e);
@@ -461,13 +458,12 @@ class WeatherGogoCntr extends GetxController {
     }
   }
 
-  int fetchSuperNctreCallCnt = 0;
   // 초단기 실황 가져오기
   Future<void> fetchSuperNct(LatLng location) async {
     try {
       // 백엔드 경유(/weather/current) - data.go.kr 직접호출 대신 백엔드 캐시 사용 (앱 키 quota 무관)
       final changeMap = MapAdapter.changeMap(location.longitude, location.latitude);
-      List<ItemSuperNct> itemSuperNctList = await BackendWeatherApi().getCurrentWeather(changeMap.x, changeMap.y);
+      List<ItemSuperNct> itemSuperNctList = await _backendWeatherApi.getCurrentWeather(changeMap.x, changeMap.y);
       if (itemSuperNctList.isEmpty) {
         lo.g('백엔드 현재날씨 빈응답 nx=${changeMap.x} ny=${changeMap.y}');
         return;
@@ -502,19 +498,10 @@ class WeatherGogoCntr extends GetxController {
 
       lo.g('완료!! => fetchSuperNct() time : ${stopwatch.elapsedMilliseconds}ms');
 
-      fetchSuperNctreCallCnt = 0;
     } catch (e) {
       handleError('1. 초단기 실황 조회 오류', e);
-      if (fetchSuperNctreCallCnt < 3) {
-        Future.delayed(const Duration(milliseconds: 350), () {
-          fetchSuperNct(location);
-          fetchSuperNctreCallCnt++;
-        });
-      }
     }
   }
-
-  int fetchSuperFctreCallCnt = 0;
 
   // 초단기 예보 가져오기
   // 1시간 단위 6시간 정보를 셋팅한다.
@@ -523,7 +510,7 @@ class WeatherGogoCntr extends GetxController {
       List<HourlyWeatherData> resultList = [];
       // 2.초단기 예보 가져오기
       final changeMap = MapAdapter.changeMap(location.longitude, location.latitude);
-      List<ItemSuperFct> itemFctList = await BackendWeatherApi().getSuperFct(changeMap.x, changeMap.y);
+      List<ItemSuperFct> itemFctList = await _backendWeatherApi.getSuperFct(changeMap.x, changeMap.y);
       if (itemFctList.isEmpty) {
         lo.g('백엔드 초단기예보 빈응답 nx=${changeMap.x} ny=${changeMap.y}');
         return;
@@ -584,15 +571,8 @@ class WeatherGogoCntr extends GetxController {
 
       lo.g('완료!! => fetchSuperFct() time : ${stopwatch.elapsedMilliseconds}ms');
 
-      fetchSuperFctreCallCnt = 0;
     } catch (e) {
       handleError('2. 초단기 예보 조회 오류', e);
-      if (fetchSuperFctreCallCnt < 3) {
-        Future.delayed(const Duration(milliseconds: 150), () {
-          fetchSuperFct(location);
-          fetchSuperFctreCallCnt++;
-        });
-      }
     }
   }
 
@@ -638,8 +618,6 @@ class WeatherGogoCntr extends GetxController {
     }
   }
 
-  int fetchFctreCallCnt = 0;
-
   // 단기 날씨 가져오기
   // 24시간 및 주간예보 3일치 셋팅
   Future<void> fetchFct(LatLng location) async {
@@ -648,7 +626,7 @@ class WeatherGogoCntr extends GetxController {
 
       // 백엔드 경유(/weather/fct) - data.go.kr 직접호출 대신 백엔드 캐시 사용
       final changeMap = MapAdapter.changeMap(location.longitude, location.latitude);
-      List<ItemFct> itemFctList = await BackendWeatherApi().getFct(changeMap.x, changeMap.y);
+      List<ItemFct> itemFctList = await _backendWeatherApi.getFct(changeMap.x, changeMap.y);
       if (itemFctList.isEmpty) {
         lo.g('백엔드 단기예보 빈응답 nx=${changeMap.x} ny=${changeMap.y}');
         return;
@@ -687,35 +665,28 @@ class WeatherGogoCntr extends GetxController {
       // 첫번째는 당일로 데이터가 없음으로 제거
       sevenDayWeather.removeAt(0);
 
-      fetchFctreCallCnt = 0;
-
-      isLoading.value = false;
     } catch (e) {
       handleError('3. 단기 예보 조회 오류', e);
-      if (fetchFctreCallCnt < 3) {
-        Future.delayed(const Duration(milliseconds: 150), () {
-          fetchFct(location);
-          fetchFctreCallCnt++;
-        });
-      }
     }
   }
-
-  int fetchMidlanreCallCnt = 0;
 
   // 중기 날씨 가져오기
   // 3일치 이후 데이터 셋팅
   Future<void> fetchMidlandWeather(LatLng location) async {
     try {
-      // 중기육상상태 날씨와 중기기온 날씨를 병렬로 가져오기
-      final results = await Future.wait([
-        weatherService.getWeatherData<MidLandFcstResponse>(location, ForecastType.midFctLand),
-        weatherService.getWeatherData<MidTaResponse>(location, ForecastType.midTa),
-      ]);
-
-      // results[0]는 MidLandFcstResponse, results[1]는 MidTaResponse로 캐스팅
-      final midLandFcstResponse = results[0] as MidLandFcstResponse;
-      final midTaResponse = results[1] as MidTaResponse;
+      // 백엔드 /weather/mid는 육상+기온을 한 응답으로 제공한다.
+      // 기존 WeatherService 경로는 같은 엔드포인트를 두 번 호출했으므로 한 번만 조회한다.
+      final data = await _backendWeatherApi.getMidForecast(location.latitude, location.longitude);
+      if (data == null || data['land'] == null || data['ta'] == null) {
+        lo.g('백엔드 중기예보 빈응답 lat=${location.latitude} lng=${location.longitude}');
+        return;
+      }
+      final midLandFcstResponse = MidLandFcstResponse.fromMap(
+        Map<String, dynamic>.from(data['land'] as Map),
+      );
+      final midTaResponse = MidTaResponse.fromMap(
+        Map<String, dynamic>.from(data['ta'] as Map),
+      );
 
       // 날씨 데이터 처리
       List<SevenDayWeather> tmpList = WeatherDataProcessor.instance.processMidTermForecast(
@@ -726,11 +697,9 @@ class WeatherGogoCntr extends GetxController {
         cityName: currentLocation.value.name,
       );
 
-      // 데이터가 충분하지 않으면 재시도
+      // 불완전한 백엔드 응답은 현재 화면을 유지하고 다음 사용자 갱신 때 다시 조회한다.
       if (tmpList.length < 4) {
-        Future.delayed(const Duration(milliseconds: 200), () {
-          fetchMidlandWeather(location);
-        });
+        lo.g('백엔드 중기예보 데이터 부족 count=${tmpList.length}');
         return;
       }
 
@@ -744,15 +713,8 @@ class WeatherGogoCntr extends GetxController {
 
       sevenDayWeather.sort((a, b) => a.fcstDate!.compareTo(b.fcstDate!));
 
-      fetchMidlanreCallCnt = 0;
     } catch (e) {
       handleError('4. 중기 예보 조회 오류', e);
-      if (fetchMidlanreCallCnt < 3) {
-        Future.delayed(const Duration(milliseconds: 150), () {
-          fetchMidlandWeather(location);
-          fetchMidlanreCallCnt++;
-        });
-      }
     }
   }
 
