@@ -388,7 +388,8 @@ class WeatherGogoCntr extends GetxController {
       // ==========================================================
       LocationService locationService = LocationService();
       final (onValue1, onValue2) = await locationService.getLocalName(location);
-      if (onValue1 == null || onValue2 == null) {
+      if (onValue1 == null || onValue1.isEmpty || onValue2 == null) {
+        lo.g('미세먼지 조회 생략: 주소 변환 실패 location=$location sido=$onValue1 local=$onValue2');
         return;
       }
 
@@ -406,6 +407,7 @@ class WeatherGogoCntr extends GetxController {
       final MistRepo mistRepo = MistRepo();
       final MistData? rawMistData = await mistRepo.getMistData(onValue1);
       if (rawMistData == null || rawMistData.items == null || rawMistData.items!.isEmpty) {
+        lo.g('미세먼지 백엔드 빈응답: sido=$onValue1 location=$location');
         return;
       }
       mistDetailData.value = rawMistData;
@@ -424,7 +426,7 @@ class WeatherGogoCntr extends GetxController {
       // ==========================================================
       lo.g('완료!! => fetchLocalNameAndMistinfo() time : ${stopwatch.elapsedMilliseconds}ms');
     } catch (e) {
-      // handleError('동네 이름, 미세 먼지 정보 오류', e);
+      lo.g('동네 이름/미세먼지 조회 오류: location=$location error=$e');
     }
   }
 
