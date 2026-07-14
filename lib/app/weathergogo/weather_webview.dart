@@ -138,6 +138,7 @@ class RealtimeRadarPage extends StatelessWidget {
           title: '실시간 레이더',
           url: _rainviewerUrl,
           denyLocation: true,
+          touchToggleBelow: true,
         ),
         Gap(40),
       ],
@@ -203,10 +204,11 @@ class RealtimeSatellitePage extends StatelessWidget {
   // 첫 번째 레이어를 닫은 뒤 앱 다운로드 레이어가 연이어 나타날 수 있으므로
   // 성공해도 즉시 종료하지 않고 제한 시간 동안 계속 감시한다.
   dismiss();
-  const observer = new MutationObserver(() => {
-    dismiss();
-    attributes: true,
-    attributeFilter: ['href', 'aria-label', 'class']
+  const observer = new MutationObserver(dismiss);
+  observer.observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+    characterData: true,
   });
 
   let attempts = 0;
