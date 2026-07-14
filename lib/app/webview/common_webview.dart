@@ -13,7 +13,7 @@ class CommonWebView extends StatefulWidget {
       this.injectJs,
       this.denyLocation = false,
       this.touchToggle = false,
-      this.touchToggleOutside = false});
+      this.externalTouchEnabled});
   final bool isBackBtn;
   final String url;
   // 페이지 로드 완료 후 실행할 JS(예: 특정 요소만 남기기). null이면 미실행.
@@ -22,8 +22,8 @@ class CommonWebView extends StatefulWidget {
   final bool denyLocation;
   // true면 기본은 포인터 무시(부모 스크롤 통과)하고 하단 버튼으로 지도 조작 on/off.
   final bool touchToggle;
-  // true면 지도 조작 버튼을 WebView 위가 아닌 바로 아래 별도 영역에 표시.
-  final bool touchToggleOutside;
+  // null이 아니면 외부 버튼이 지도 조작 상태를 제어한다(내부 토글 버튼은 숨김).
+  final ValueNotifier<bool>? externalTouchEnabled;
 
   @override
   State<CommonWebView> createState() => _CommonWebView2State();
@@ -38,7 +38,6 @@ class _CommonWebView2State extends State<CommonWebView>
   ValueNotifier<bool> isLoading = ValueNotifier<bool>(false);
   bool _isFirstResumed = true;
   bool _touchOn = false; // touchToggle 활성 시 지도 조작 on/off 상태(기본 off=스크롤 통과)
-  bool _retried = false; // 메인 프레임 로드 실패 시 1회만 자동 재시도(무한 루프 방지)
 
   @override
   bool get wantKeepAlive => true;
@@ -47,6 +46,8 @@ class _CommonWebView2State extends State<CommonWebView>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _touchOn = widget.externalTouchEnabled?.value ?? false;
+    widget.externalTouchEnabled?.addListener(_onExternalTouchChanged);
 
     if (WebViewPlatform.instance is WebKitWebViewPlatform) {
       params = WebKitWebViewControllerCreationParams(
@@ -89,20 +90,6 @@ class _CommonWebView2State extends State<CommonWebView>
             }
           },
           onHttpError: (HttpResponseError error) {},
-          onWebResourceError: (WebResourceError error) {
-            // 그동안 에러를 삼켜, 실패해도 원인 없이 빈 화면이 됐다 → 로그로 노출 + 1회 자동 재시도.
-            debugPrint('[CommonWebView] error url=${widget.url} code=${error.errorCode} '
-                'type=${error.errorType} mainFrame=${error.isForMainFrame} desc=${error.description}');
-            if ((error.isForMainFrame ?? false) && !_retried && mounted) {
-              _retried = true;
-              Future.delayed(const Duration(milliseconds: 1200), () {
-                if (mounted) {
-                  isLoading.value = true;
-                  controller.loadRequest(Uri.parse(widget.url));
-                }
-              });
-            }
-          },
           onNavigationRequest: (NavigationRequest request) {
             return NavigationDecision.navigate;
           },
@@ -116,8 +103,15 @@ class _CommonWebView2State extends State<CommonWebView>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    widget.externalTouchEnabled?.removeListener(_onExternalTouchChanged);
     controller.clearCache();
     super.dispose();
+  }
+
+  void _onExternalTouchChanged() {
+    if (mounted) {
+      setState(() => _touchOn = widget.externalTouchEnabled?.value ?? false);
+    }
   }
 
   @override
@@ -137,41 +131,24 @@ class _CommonWebView2State extends State<CommonWebView>
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: widget.touchToggle && widget.touchToggleOutside
-          ? Column(
-              children: [
-                Expanded(child: _buildWebViewStack(showTouchToggle: false)),
-                const SizedBox(height: 8),
-                _touchToggleButton(),
-              ],
-            )
-          : _buildWebViewStack(showTouchToggle: widget.touchToggle),
-    );
-  }
-
-  Widget _buildWebViewStack({required bool showTouchToggle}) {
-    return Stack(
+      body: Stack(
         children: [
           // touchToggle: 기본은 포인터 무시(부모 스크롤 통과) → 버튼으로 켜면 지도 조작(줌/이동) 가능.
           IgnorePointer(
             ignoring: widget.touchToggle && !_touchOn,
-            // iOS 플랫폼 뷰는 같은 controller의 WebViewWidget을 제거 후 재생성하면
-            // recreating_view 예외가 발생한다. 로딩 중에도 WebView를 항상 유지한다.
-            child: WebViewWidget(key: webViewKey, controller: controller),
-          ),
-          ValueListenableBuilder<bool>(
-            valueListenable: isLoading,
-            builder: (context, loading, child) {
-              if (!loading) return const SizedBox.shrink();
-              return const Positioned.fill(
-                child: IgnorePointer(
-                  child: Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
-              );
-            },
+            child: ValueListenableBuilder<bool>(
+                valueListenable: isLoading,
+                builder: (context, value, snapshot) {
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 350),
+                    switchInCurve: Curves.easeIn,
+                    child: value
+                        ? const Center(
+                            child: CircularProgressIndicator(),
+                          )
+                        : WebViewWidget(controller: controller),
+                  );
+                }),
           ),
           if (widget.isBackBtn)
             Positioned(
@@ -185,7 +162,7 @@ class _CommonWebView2State extends State<CommonWebView>
                 onPressed: () => Navigator.pop(context),
               ),
             ),
-          if (showTouchToggle)
+          if (widget.touchToggle && widget.externalTouchEnabled == null)
             Positioned(
               left: 0,
               right: 0,
@@ -193,6 +170,7 @@ class _CommonWebView2State extends State<CommonWebView>
               child: Center(child: _touchToggleButton()),
             ),
         ],
+      ),
     );
   }
 

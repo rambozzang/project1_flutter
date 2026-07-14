@@ -113,7 +113,10 @@ class WeathgergogoPageState extends State<WeathgergogoPage> with AutomaticKeepAl
       // () => const RealtimeAirWebviewPage(),
       // 실시간 레이더 (RainViewer, 위치권한 프롬프트 차단)
       () => const RealtimeRadarPage(),
-      () => const WeatherWEbviewPage(),
+      // 실시간 위성영상 (Zoom Earth, 앱 안내 레이어의 "계속" 버튼 자동 닫기)
+      () => const RealtimeSatellitePage(),
+      // 대기 흐름(earth.nullschool) — 추후 다시 사용 예정
+      // () => const WeatherWEbviewPage(),
       () => const SizedBox(
             height: 40,
           ),

@@ -34,7 +34,8 @@ class RealtimeAirWebviewPage extends StatefulWidget {
 }
 
 class _RealtimeAirWebviewPageState extends State<RealtimeAirWebviewPage> {
-  static const String _url = 'https://nesc.nier.go.kr/ko/html/satellite/gis/index.do';
+  static const String _url =
+      'https://nesc.nier.go.kr/ko/html/satellite/gis/index.do';
   bool _showWeb = false;
 
   @override
@@ -62,7 +63,10 @@ class _RealtimeAirWebviewPageState extends State<RealtimeAirWebviewPage> {
               SizedBox(width: 4.0),
               Text(
                 '실시간 대기정보',
-                style: TextStyle(fontSize: 17, color: Colors.white, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    fontSize: 17,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold),
               ),
               Spacer(),
             ],
@@ -104,7 +108,8 @@ class _RealtimeAirWebviewPageState extends State<RealtimeAirWebviewPage> {
                           url: _url,
                         )),
               ),
-              child: Text('전체화면으로 ', style: semiboldText.copyWith(fontSize: 11.0)),
+              child:
+                  Text('전체화면으로 ', style: semiboldText.copyWith(fontSize: 11.0)),
             ),
           const Gap(40)
         ],
@@ -129,8 +134,105 @@ class RealtimeRadarPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Column(
       children: [
-        _RadarPanel(title: '실시간 레이더', url: _rainviewerUrl, denyLocation: true),
+        _RadarPanel(
+          title: '실시간 레이더',
+          url: _rainviewerUrl,
+          denyLocation: true,
+        ),
         Gap(40),
+      ],
+    );
+  }
+}
+
+/// 실시간 위성영상 — Zoom Earth 위성 지도를 한국 인근 중심으로 표시한다.
+/// 첫 로드 때 나타나는 앱 안내 레이어는 [CommonWebView]의 JS 주입으로 자동 닫는다.
+class RealtimeSatellitePage extends StatelessWidget {
+  const RealtimeSatellitePage({super.key});
+
+  // URL의 날짜와 시각은 기기 시간대와 무관하게 한국 표준시(UTC+9)의 현재 값을 사용한다.
+  static String get _url {
+    final nowKst = DateTime.now().toUtc().add(const Duration(hours: 9));
+    final year = nowKst.year.toString().padLeft(4, '0');
+    final month = nowKst.month.toString().padLeft(2, '0');
+    final day = nowKst.day.toString().padLeft(2, '0');
+    final hour = nowKst.hour.toString().padLeft(2, '0');
+    final minute = nowKst.minute.toString().padLeft(2, '0');
+    return 'https://zoom.earth/maps/satellite/#view=34.086,126.899,6z/date=$year-$month-$day,$hour:$minute,+9';
+  }
+
+  // 안내 레이어가 비동기로 나타날 수 있어 DOM 변경과 짧은 폴링을 함께 감시한다.
+  // 앱 다운로드 요소는 건드리지 않고 "Continue/계속" 버튼만 클릭한다.
+  static const String _dismissContinuePopupJs = r'''
+(() => {
+  if (window.__skySnapDismissZoomEarthOverlaysV2) return;
+  window.__skySnapDismissZoomEarthOverlaysV2 = true;
+
+  const appLinkStyle = document.createElement('style');
+  appLinkStyle.textContent = '.panel.id-app-link { display: none !important; }';
+  (document.head || document.documentElement).appendChild(appLinkStyle);
+
+  const labels = new Set(['continue', '계속']);
+  const dismiss = () => {
+    const candidates = document.querySelectorAll(
+      'button, [role="button"], input[type="button"], input[type="submit"]'
+    );
+    for (const element of candidates) {
+      const label = (element.innerText || element.textContent || element.value || '')
+        .trim()
+        .toLocaleLowerCase();
+      if (labels.has(label)) {
+        element.click();
+        return true;
+      }
+    }
+
+    // Zoom Earth 앱 다운로드 패널의 닫기 버튼만 정확히 클릭한다.
+    const appDownloadPanel = document.querySelector('.panel.id-app-link');
+    if (appDownloadPanel) {
+      const appDownloadClose = appDownloadPanel.querySelector('button.close');
+      if (appDownloadClose) appDownloadClose.click();
+      // 사이트의 클릭 핸들러가 동작하지 않는 WebView에서도 확실히 보이지 않게 한다.
+      appDownloadPanel.style.setProperty('display', 'none', 'important');
+      appDownloadPanel.setAttribute('aria-hidden', 'true');
+      return true;
+    }
+    return false;
+  };
+
+  // 첫 번째 레이어를 닫은 뒤 앱 다운로드 레이어가 연이어 나타날 수 있으므로
+  // 성공해도 즉시 종료하지 않고 제한 시간 동안 계속 감시한다.
+  dismiss();
+  const observer = new MutationObserver(() => {
+    dismiss();
+    attributes: true,
+    attributeFilter: ['href', 'aria-label', 'class']
+  });
+
+  let attempts = 0;
+  const timer = setInterval(() => {
+    attempts += 1;
+    dismiss();
+    if (attempts >= 120) {
+      clearInterval(timer);
+      // 폴링만 중단하고 DOM 감시는 유지해 나중에 다시 나타나는 레이어도 처리한다.
+    }
+  }, 500);
+})();
+''';
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _RadarPanel(
+          title: '실시간 위성영상',
+          url: _url,
+          icon: Icons.satellite_alt,
+          injectJs: _dismissContinuePopupJs,
+          touchToggleBelow: true,
+        ),
+        const Gap(40),
       ],
     );
   }
@@ -143,8 +245,15 @@ class _RadarPanel extends StatefulWidget {
   final String url;
   final bool denyLocation; // true면 웹 위치권한 프롬프트 자동 거부.
   final IconData icon; // 헤더 아이콘(레이더/대기흐름 등)
+  final String? injectJs; // 페이지 로드 완료 후 실행할 선택적 JS.
+  final bool touchToggleBelow; // 지도 조작 버튼을 WebView 아래에 표시.
   const _RadarPanel(
-      {required this.title, required this.url, this.denyLocation = false, this.icon = Icons.radar});
+      {required this.title,
+      required this.url,
+      this.denyLocation = false,
+      this.icon = Icons.radar,
+      this.injectJs,
+      this.touchToggleBelow = false});
 
   @override
   State<_RadarPanel> createState() => _RadarPanelState();
@@ -152,14 +261,24 @@ class _RadarPanel extends StatefulWidget {
 
 class _RadarPanelState extends State<_RadarPanel> {
   bool _showWeb = false;
+  ValueNotifier<bool>? _externalTouchEnabled;
 
   @override
   void initState() {
     super.initState();
+    if (widget.touchToggleBelow) {
+      _externalTouchEnabled = ValueNotifier<bool>(false);
+    }
     // 초기 페이지 렌더 부담을 줄이려 웹뷰는 2초 지연 후 생성(그 전엔 스피너).
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) setState(() => _showWeb = true);
     });
+  }
+
+  @override
+  void dispose() {
+    _externalTouchEnabled?.dispose();
+    super.dispose();
   }
 
   @override
@@ -178,7 +297,10 @@ class _RadarPanelState extends State<_RadarPanel> {
               const SizedBox(width: 4.0),
               Text(
                 widget.title,
-                style: const TextStyle(fontSize: 17, color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    fontSize: 17,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold),
               ),
               const Spacer(),
             ],
@@ -191,7 +313,9 @@ class _RadarPanelState extends State<_RadarPanel> {
                     isBackBtn: false,
                     url: widget.url,
                     denyLocation: widget.denyLocation,
+                    injectJs: widget.injectJs,
                     touchToggle: true, // 기본 스크롤 통과, 하단 버튼으로 조작 on/off
+                    externalTouchEnabled: _externalTouchEnabled,
                   )
                 : Container(
                     decoration: BoxDecoration(
@@ -203,6 +327,10 @@ class _RadarPanelState extends State<_RadarPanel> {
                     ),
                   ),
           ),
+          if (_showWeb && _externalTouchEnabled != null) ...[
+            const Gap(10),
+            Center(child: _buildExternalTouchButton()),
+          ],
           const Gap(10),
           if (_showWeb)
             TextButton(
@@ -220,16 +348,49 @@ class _RadarPanelState extends State<_RadarPanel> {
                     builder: (context) => AirInfoFullPage(
                           title: widget.title,
                           url: widget.url,
+                          injectJs: widget.injectJs,
                           denyLocation: widget.denyLocation,
                         )),
               ),
-              child: Text('전체화면으로 ', style: semiboldText.copyWith(fontSize: 11.0)),
+              child:
+                  Text('전체화면으로 ', style: semiboldText.copyWith(fontSize: 11.0)),
             ),
         ],
       ),
     );
   }
+
+  Widget _buildExternalTouchButton() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _externalTouchEnabled!,
+      builder: (context, enabled, child) {
+        return GestureDetector(
+          onTap: () => _externalTouchEnabled!.value = !enabled,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: (enabled ? Colors.teal.shade600 : Colors.black).withValues(alpha: 0.62),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(enabled ? Icons.lock_open_rounded : Icons.touch_app, size: 15, color: Colors.white),
+                const SizedBox(width: 6),
+                Text(
+                  enabled ? '조작 켜짐 · 탭하여 잠금' : '지도 조작하기 (탭)',
+                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
+
 /// 넓은 위성 GIS 지도를 크게 보도록 가로 보기를 허용하고, 나가면 세로 고정으로 복귀한다.
 /// 대기정보 전체화면 보기 — 타이틀 바 + 웹뷰 전체.
 /// 넓은 위성 GIS 지도를 크게 보도록 가로 보기를 허용하고, 나가면 세로 고정으로 복귀한다.
@@ -239,7 +400,11 @@ class AirInfoFullPage extends StatefulWidget {
   final String? injectJs;
   final bool denyLocation;
   const AirInfoFullPage(
-      {super.key, required this.title, required this.url, this.injectJs, this.denyLocation = false});
+      {super.key,
+      required this.title,
+      required this.url,
+      this.injectJs,
+      this.denyLocation = false});
 
   @override
   State<AirInfoFullPage> createState() => _AirInfoFullPageState();
@@ -272,7 +437,8 @@ class _AirInfoFullPageState extends State<AirInfoFullPage> {
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         elevation: 0,
-        title: Text(widget.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        title: Text(widget.title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, size: 20),
           onPressed: () => Navigator.of(context).pop(),
@@ -281,7 +447,10 @@ class _AirInfoFullPageState extends State<AirInfoFullPage> {
       body: SafeArea(
         top: false,
         child: CommonWebView(
-            isBackBtn: false, url: widget.url, injectJs: widget.injectJs, denyLocation: widget.denyLocation),
+            isBackBtn: false,
+            url: widget.url,
+            injectJs: widget.injectJs,
+            denyLocation: widget.denyLocation),
       ),
     );
   }
