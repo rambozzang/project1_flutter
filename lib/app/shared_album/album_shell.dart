@@ -42,6 +42,7 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
   bool _loadingMore = false;
   bool _hasMore = true;
   bool _feedLoaded = false; // 첫 피드 로딩 완료 여부(빈 상태 vs 로딩 구분용)
+  bool _changed = false; // 업로드·수정·삭제·표지변경 등 목록에 영향 주는 변경 발생 → 뒤로갈 때 리스트에 신호
 
   int _tab = 0; // 0 타임라인 / 1 회고 / 2 활동 / 3 멤버
 
@@ -126,6 +127,7 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
     })?.then((r) {
       if (!mounted) return;
       if (r == true) {
+        _changed = true; // 삭제/이동 → 목록에도 반영 신호
         _loadFeed(reset: true); // 삭제/이동 등 변경 → 피드 새로고침
       } else {
         setState(() {}); // 문구 수정 등 in-place 반영
@@ -143,7 +145,10 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
       'initialIndex': index,
     })?.then((r) {
       // 몰입뷰에서 삭제/이동이 있었으면 피드 새로고침(회고 재생 경로도 동일하게 반영).
-      if (mounted && r == true) _loadFeed(reset: true);
+      if (mounted && r == true) {
+        _changed = true;
+        _loadFeed(reset: true);
+      }
     });
   }
 
@@ -155,6 +160,7 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
     RootCntr.to.pendingCommunityId = _communityId;
     await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CameraAwesomePage()));
     if (mounted) {
+      _changed = true; // 촬영·업로드 진입 → 목록(미디어 수)도 갱신되게 신호
       await Future.delayed(const Duration(milliseconds: 800));
       _loadFeed(reset: true);
     }
@@ -169,7 +175,13 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
         statusBarIconBrightness: SaColors.isLight ? Brightness.dark : Brightness.light,
         statusBarBrightness: SaColors.isLight ? Brightness.light : Brightness.dark,
       ),
-      child: Scaffold(
+      child: PopScope<bool>(
+        canPop: false,
+        onPopInvokedWithResult: (bool didPop, bool? result) {
+          if (didPop) return;
+          Get.back(result: _changed); // 시스템/제스처 뒤로가기도 변경신호(있을 때만 목록 새로고침)
+        },
+        child: Scaffold(
         backgroundColor: SaColors.bgBase,
         extendBody: true,
         body: SafeArea(
@@ -186,13 +198,17 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
         ),
         bottomNavigationBar: _community == null ? null : _buildBottomBar(),
       ),
+      ),
     );
   }
 
   // 대문(표지) 편집 — 여러 곳에서 재사용.
   void _openCoverEditor() {
     Get.toNamed('/AlbumCoverEditorPage', arguments: {'community': _community, 'items': _items})?.then((saved) {
-      if (saved == true) _load();
+      if (saved == true) {
+        _changed = true; // 표지 변경 → 목록 카드 표지도 갱신
+        _load();
+      }
     });
   }
 
@@ -261,7 +277,7 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
       child: Row(
         children: [
-          _circle(PhosphorIconsBold.caretLeft, () => Get.back()),
+          _circle(PhosphorIconsBold.caretLeft, () => Get.back(result: _changed)),
           Expanded(
             child: Column(
               children: [
