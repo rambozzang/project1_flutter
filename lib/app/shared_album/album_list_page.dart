@@ -6,6 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:get/get.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:project1/app/community/widget/cover_template.dart' show albumCoverCacheUrl;
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/widget/sa_album_card.dart';
@@ -16,6 +17,7 @@ import 'package:project1/repo/community/community_repo.dart';
 import 'package:project1/repo/community/data/community_data.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// 공유앨범 홈 — 1a 스택 피드.
 /// 내가 속한 앨범을 큰 카드 리스트로 보여준다. 카드 상단 겹침 스택은 앨범 최근 미디어
@@ -67,13 +69,22 @@ class _AlbumListPageState extends State<AlbumListPage> {
   }
 
   Future<void> _restoreViewMode() async {
-    final v = await _storage.read(key: _kViewModeKey);
+    // SharedPreferences 사용 — 이전엔 secure storage였는데 로그아웃 시 AuthCntr.removeAll()이
+    // deleteAll()로 전체를 지워 보기 방식도 함께 초기화됐다. UI 취향값이라 일반 저장소가 맞다.
+    final prefs = await SharedPreferences.getInstance();
+    String? v = prefs.getString(_kViewModeKey);
+    if (v == null) {
+      // 기존 사용자 마이그레이션: 예전 secure storage 값이 남아있으면 1회 이관.
+      v = await _storage.read(key: _kViewModeKey);
+      if (v != null) await prefs.setString(_kViewModeKey, v);
+    }
     if (mounted && v == 'mosaic') setState(() => _mosaic = true);
   }
 
   void _toggleViewMode() {
     setState(() => _mosaic = !_mosaic);
-    _storage.write(key: _kViewModeKey, value: _mosaic ? 'mosaic' : 'stack');
+    SharedPreferences.getInstance()
+        .then((p) => p.setString(_kViewModeKey, _mosaic ? 'mosaic' : 'stack'));
   }
 
   Future<void> _createAlbum() async {
@@ -494,11 +505,13 @@ class _AlbumListPageState extends State<AlbumListPage> {
   Widget _inviteThumb(CommunityData c) {
     const double size = 42;
     final radius = BorderRadius.circular(12);
-    if (c.imageUrl != null && c.imageUrl!.isNotEmpty) {
+    final coverUrl = c.coverDisplayUrl;
+    if (coverUrl != null) {
       return ClipRRect(
         borderRadius: radius,
         child: CachedNetworkImage(
-          imageUrl: c.imageUrl!,
+          imageUrl: albumCoverCacheUrl(coverUrl),
+          memCacheWidth: 160,
           width: size,
           height: size,
           fit: BoxFit.cover,
