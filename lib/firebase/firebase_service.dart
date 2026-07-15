@@ -48,7 +48,7 @@ void _processMessageData(Map<String, dynamic> messageData) async {
     final int communityId = int.tryParse('${messageData["communityId"]}') ?? 0;
     Lo.g("COMMUNITY_INVITE: communityId=$communityId");
     Future.delayed(const Duration(milliseconds: 300), () {
-      Get.toNamed('/CommunityHomePage', arguments: {'communityId': communityId});
+      Get.toNamed('/AlbumShellPage', arguments: {'communityId': communityId});
     });
     return;
   }
@@ -233,7 +233,7 @@ class FirebaseService {
       final int communityId = int.tryParse('${message.data["communityId"]}') ?? 0;
       Lo.g("COMMUNITY_INVITE (background): communityId=$communityId");
       Future.delayed(const Duration(milliseconds: 500), () {
-        Get.toNamed('/CommunityHomePage', arguments: {'communityId': communityId});
+        Get.toNamed('/AlbumShellPage', arguments: {'communityId': communityId});
       });
       return;
     }
@@ -275,7 +275,7 @@ class FirebaseService {
       final int communityId = int.tryParse('${message!.data["communityId"]}') ?? 0;
       Lo.g("COMMUNITY_INVITE (terminated): communityId=$communityId");
       Future.delayed(const Duration(milliseconds: 1500), () {
-        Get.toNamed('/CommunityHomePage', arguments: {'communityId': communityId});
+        Get.toNamed('/AlbumShellPage', arguments: {'communityId': communityId});
       });
       return;
     }

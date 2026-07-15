@@ -5,16 +5,15 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:project1/app/camera/page/camera_awesome_page.dart';
+import 'package:project1/app/community/community_home_body.dart';
 import 'package:project1/app/shared_album/activity_view.dart';
-import 'package:project1/app/shared_album/album_timeline_page.dart';
 import 'package:project1/app/shared_album/recap_view.dart';
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
-import 'package:project1/app/shared_album/widget/sa_gradient_button.dart';
-import 'package:project1/app/shared_album/widget/sa_member_avatar_stack.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/community/community_repo.dart';
 import 'package:project1/repo/community/data/community_data.dart';
+import 'package:project1/repo/community/data/community_tag_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
@@ -33,8 +32,6 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
 
   late final int _communityId;
   CommunityData? _community;
-  List<String> _memberAvatars = [];
-  DateTime? _lastSeen;
 
   final List<BoardWeatherListData> _items = [];
   static const int _pageSize = 30;
@@ -44,7 +41,12 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
   bool _feedLoaded = false; // 첫 피드 로딩 완료 여부(빈 상태 vs 로딩 구분용)
   bool _changed = false; // 업로드·수정·삭제·표지변경 등 목록에 영향 주는 변경 발생 → 뒤로갈 때 리스트에 신호
 
-  int _tab = 0; // 0 타임라인 / 1 회고 / 2 활동 / 3 멤버
+  // 홈 탭(첫 탭 = CommunityHomePage 디자인) — 인기 태그 필터 & 무한 스크롤 컨트롤러
+  List<CommunityTagData> _tags = [];
+  String? _activeTag; // 선택된 인기 태그(탭하면 이미 로드된 피드에서 클라이언트 필터링)
+  final ScrollController _homeScrollCtrl = ScrollController();
+
+  int _tab = 0; // 0 홈 / 1 회고 / 2 활동 (멤버는 별도 화면으로 바로 진입)
 
   bool get _canPost {
     final c = _community;
@@ -54,31 +56,34 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
   @override
   void initState() {
     super.initState();
-    _communityId = (Get.arguments?['communityId'] as num?)?.toInt() ?? 0;
+    // int/num/String(FCM·딥링크 유입) 어떤 타입이 와도 안전하게 파싱 — 캐스팅 크래시 방지.
+    _communityId = int.tryParse('${Get.arguments?['communityId'] ?? 0}') ?? 0;
     // 리스트에서 넘겨준 앨범 정보가 있으면 즉시 셸을 그린다(없으면(딥링크 등) _load 완료까지 스피너).
     _community = Get.arguments?['community'] as CommunityData?;
+    // 홈 탭 무한 스크롤 — 하단 근처에서 다음 페이지 로드.
+    _homeScrollCtrl.addListener(() {
+      if (_homeScrollCtrl.position.pixels >= _homeScrollCtrl.position.maxScrollExtent - 300) {
+        _loadFeed();
+      }
+    });
     _load();
+  }
+
+  @override
+  void dispose() {
+    _homeScrollCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
     try {
-      // 피드도 병렬로 시작 — 상세/멤버 완료를 기다리지 않아 표시가 빨라진다.
+      // 피드도 병렬로 시작 — 상세 완료를 기다리지 않아 표시가 빨라진다.
       final feedFuture = _loadFeed(reset: true);
-      final results = await Future.wait([
-        _repo.getDetail(_communityId),
-        _repo.getMembers(_communityId),
-      ]);
+      final detail = await _repo.getDetail(_communityId);
       // getDetail이 null이면 리스트에서 넘겨받은 값을 유지.
-      _community = (results[0] as CommunityData?) ?? _community;
-      _lastSeen = DateTime.tryParse(_community?.lastSeenDtm ?? '');
+      _community = detail ?? _community;
       _repo.markSeen(_communityId); // 홈 복귀 시 NEW 뱃지 해소
-      final members = results[1] as List;
-      _memberAvatars = members
-          .map((m) => (m as dynamic).profilePath?.toString() ?? '')
-          .where((p) => p.isNotEmpty)
-          .take(4)
-          .toList()
-          .cast<String>();
+      if (_canViewFeed) _loadTags(); // 홈 탭 인기 태그(피드 조회 가능할 때만)
       await feedFuture;
     } catch (e) {
       lo.g('앨범 셸 조회 실패: $e');
@@ -164,6 +169,86 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
       await Future.delayed(const Duration(milliseconds: 800));
       _loadFeed(reset: true);
     }
+  }
+
+  // ── 홈 탭(그리드 홈) 지원 ────────────────────────────────
+  bool get _canViewFeed {
+    final c = _community;
+    if (c == null) return false;
+    return !c.isPrivate || c.isJoined || c.isOwner; // 공개거나, 비공개+멤버/방장
+  }
+
+  // 태그 필터가 적용된 피드(선택된 인기 태그가 있으면 해당 해시태그 포함분만).
+  List<BoardWeatherListData> get _visibleFeed {
+    final tag = _activeTag;
+    if (tag == null) return _items;
+    return _items.where((e) => (e.contents ?? '').contains(tag)).toList();
+  }
+
+  Future<void> _loadTags() async {
+    final tags = await _repo.getTags(_communityId);
+    if (!mounted) return;
+    setState(() => _tags = tags);
+  }
+
+  // 태그 탭 → 선택 토글. 이미 로드된 피드 안에서 클라이언트 필터링(과설계 방지).
+  void _onTagTap(String tag) {
+    setState(() => _activeTag = _activeTag == tag ? null : tag);
+  }
+
+  Future<void> _join() async {
+    final (ok, _, msg) = await _repo.join(_communityId);
+    Utils.alert(msg.isEmpty ? (ok ? '처리되었습니다.' : '실패했습니다.') : msg);
+    if (ok) _load();
+  }
+
+  Future<void> _openMembersPage() async {
+    final wasJoined = _community?.isJoined == true;
+    final wasOwner = _community?.isOwner == true;
+    final changed = await Get.toNamed('/CommunityMembersPage', arguments: {
+      'communityId': _communityId,
+      'communityName': _community?.name,
+      'isOwner': _community?.isOwner == true,
+      'isApproval': _community?.isApproval == true,
+    });
+    if (!mounted || changed != true) return;
+    final updated = await _repo.getDetail(_communityId);
+    if (!mounted) return;
+    if (wasJoined && !wasOwner && updated?.isJoined != true) {
+      Get.back(result: true);
+      return;
+    }
+    await _load();
+  }
+
+  void _openInvite() {
+    final c = _community;
+    Get.toNamed('/AlbumInvitePage', arguments: {
+      'communityId': _communityId,
+      'albumName': c?.name ?? '앨범',
+      'memberCnt': c?.memberCnt ?? 0,
+      'isManager': c?.canEditCover == true,
+    })?.then((_) => _load());
+  }
+
+  // 홈 그리드 타일 탭 → 몰입 상세. 태그 필터가 적용된 목록 기준으로 인덱스 계산.
+  void _openHomeItem(BoardWeatherListData item) {
+    final list = _visibleFeed;
+    final idx = list.indexWhere((e) => e.boardId == item.boardId);
+    Get.toNamed('/AlbumImmersivePage', arguments: {
+      'communityId': _communityId,
+      'albumName': _community?.name ?? '앨범',
+      'items': list,
+      'initialIndex': idx < 0 ? 0 : idx,
+    })?.then((r) {
+      if (!mounted) return;
+      if (r == true) {
+        _changed = true; // 삭제/이동 → 목록에도 반영 신호
+        _loadFeed(reset: true);
+      } else {
+        setState(() {}); // 문구 수정 등 in-place 반영
+      }
+    });
   }
 
   @override
@@ -295,14 +380,7 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
             _circle(PhosphorIconsFill.paintBrush, _openCoverEditor),
             const SizedBox(width: 8),
           ],
-          // 그리드(앨범 홈) 보기 — 언제든지 진입 가능.
-          _circle(PhosphorIconsBold.squaresFour, () {
-            Get.toNamed('/CommunityHomePage', arguments: {'communityId': _communityId})?.then((_) => _load());
-          }),
-          const SizedBox(width: 8),
-          _circle(PhosphorIconsBold.magnifyingGlass, () {
-            Utils.alert('검색은 곧 제공됩니다.');
-          }),
+          if (_canPost || c?.isOwner == true) _buildMoreMenu(),
         ],
       ),
     );
@@ -311,14 +389,29 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
   Widget _buildTabBody() {
     switch (_tab) {
       case 0:
-        return AlbumTimelineView(
-          items: _items,
-          communityId: _communityId,
-          lastSeen: _lastSeen,
-          loading: !_feedLoaded, // 첫 피드 로딩 전엔 스피너(빈 메시지 번쩍임 방지)
-          onTapItem: _openMedia,
-          onLoadMore: () => _loadFeed(),
-          onRefresh: () => _loadFeed(reset: true), // 당겨서 새로고침
+        // 홈 탭 = CommunityHomePage 그리드 홈 디자인(공용 위젯). 데이터·페이징은 셸이 소유.
+        // 배경은 CommunityHomePage 원본 톤(#F6F7FB) 유지 — 셸 SaColors 톤이 카드 여백에 비치지 않게.
+        return ColoredBox(
+          color: const Color(0xFFF6F7FB),
+          child: CommunityHomeBody(
+            community: _community!,
+            visibleFeed: _visibleFeed,
+            tags: _tags,
+            activeTag: _activeTag,
+            feedLoading: !_feedLoaded || _loadingMore, // 첫 로딩/추가 로딩 중엔 스피너(빈 메시지 번쩍임 방지)
+            canViewFeed: _canViewFeed,
+            controller: _homeScrollCtrl,
+            onRefresh: () => _load(), // 당겨서 새로고침 — 상세·멤버·피드·태그 재조회
+            onTagTap: _onTagTap,
+            onTapItem: _openHomeItem,
+            onJoin: _join,
+            onOpenMembers: _openMembersPage,
+            onOpenCoverEditor: _openCoverEditor,
+            onCreatePost: _canPost ? _openUpload : null,
+            showCoverEditAction: false,
+            showMemberAction: false,
+            bottomPadding: 100, // 셸 하단 바(82) 아래 여유
+          ),
         );
       case 1:
         return RecapView(
@@ -335,89 +428,59 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
             if (idx >= 0) _openMedia(idx);
           },
         );
-      case 3:
-        return _buildFamily();
       default:
         return const SizedBox.shrink();
     }
   }
 
-  Widget _placeholder(IconData icon, String title, String desc) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          PhosphorIcon(icon, size: 44, color: SaColors.accentTeal),
-          const SizedBox(height: 14),
-          Text(title, style: SaText.titleM.copyWith(fontSize: 18)),
-          const SizedBox(height: 8),
-          Text(desc, textAlign: TextAlign.center, style: SaText.body),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFamily() {
+  Widget _buildMoreMenu() {
     final c = _community;
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 110),
-      children: [
-        Text('멤버', style: SaText.titleL),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: SaColors.surface,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: SaColors.border),
-          ),
-          child: Row(
-            children: [
-              if (_memberAvatars.isNotEmpty)
-                SaMemberAvatarStack(
-                  avatarUrls: _memberAvatars,
-                  extraCount: ((c?.memberCnt ?? 0) - _memberAvatars.length).clamp(0, 999),
-                ),
-              const SizedBox(width: 12),
-              Expanded(child: Text('멤버 ${c?.memberCnt ?? 0}명', style: SaText.bodyMedium)),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        _familyBtn(PhosphorIconsFill.users, '멤버 보기',
-            () => Get.toNamed('/CommunityMembersPage', arguments: {'communityId': _communityId})),
+    return PopupMenuButton<String>(
+      tooltip: '앨범 관리',
+      color: SaColors.surface,
+      onSelected: (value) {
+        if (value == 'invite') _openInvite();
+        if (value == 'leave') _leaveAlbum();
+        if (value == 'delete') _deleteAlbum();
+      },
+      itemBuilder: (_) => [
         if (_canPost)
-          _familyBtn(PhosphorIconsBold.userPlus, '멤버 초대', () {
-            Get.toNamed('/AlbumInvitePage', arguments: {
-              'communityId': _communityId,
-              'albumName': c?.name ?? '앨범',
-              'memberCnt': c?.memberCnt ?? 0,
-              'isManager': c?.canEditCover == true,
-            })?.then((_) => _load());
-          }),
-        // 대문(표지) 편집은 상단 앱바 아이콘으로 이동 → 멤버 탭의 중복 링크 제거.
-        // 방장이 아닌 가입 멤버는 앨범에서 나갈 수 있다(방장은 백엔드가 탈퇴 거부).
+          PopupMenuItem(
+            value: 'invite',
+            child: Row(children: [
+              PhosphorIcon(PhosphorIconsBold.userPlus, size: 18, color: SaColors.textPrimary),
+              const SizedBox(width: 10),
+              Text('멤버 초대', style: SaText.bodyMedium),
+            ]),
+          ),
         if (c?.isJoined == true && c?.isOwner != true)
-          _familyBtn(PhosphorIconsBold.signOut, '앨범 나가기', _leaveAlbum),
-        // 방장은 앨범 자체를 삭제할 수 있다(소프트삭제 — 목록/조회에서 제외).
-        if (c?.isOwner == true) _familyBtn(PhosphorIconsBold.trash, '앨범 삭제', _deleteAlbum),
+          PopupMenuItem(
+            value: 'leave',
+            child: Row(children: [
+              const PhosphorIcon(PhosphorIconsBold.signOut, size: 18, color: Colors.red),
+              const SizedBox(width: 10),
+              Text('앨범 나가기', style: SaText.bodyMedium.copyWith(color: Colors.red)),
+            ]),
+          ),
+        if (c?.isOwner == true)
+          PopupMenuItem(
+            value: 'delete',
+            child: Row(children: [
+              const PhosphorIcon(PhosphorIconsBold.trash, size: 18, color: Colors.red),
+              const SizedBox(width: 10),
+              Text('앨범 삭제', style: SaText.bodyMedium.copyWith(color: Colors.red)),
+            ]),
+          ),
       ],
-    );
-  }
-
-  Widget _familyBtn(IconData icon, String label, VoidCallback onTap) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: SaColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: SaColors.border),
-      ),
-      child: ListTile(
-        leading: PhosphorIcon(icon, size: 20, color: SaColors.textPrimary),
-        title: Text(label, style: SaText.bodyMedium),
-        trailing: PhosphorIcon(PhosphorIconsBold.caretRight, size: 14, color: SaColors.textTertiary),
-        onTap: onTap,
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: SaColors.surface,
+          shape: BoxShape.circle,
+          border: Border.all(color: SaColors.borderStrong),
+        ),
+        child: PhosphorIcon(PhosphorIconsBold.dotsThree, size: 18, color: SaColors.textPrimary),
       ),
     );
   }
@@ -453,11 +516,11 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              _tabItem(0, PhosphorIconsFill.stack, PhosphorIconsBold.stack, '타임라인'),
+              _tabItem(0, PhosphorIconsFill.house, PhosphorIconsBold.house, '홈'),
               _tabItem(1, PhosphorIconsFill.sparkle, PhosphorIconsBold.sparkle, '회고'),
               _centerButton(),
               _tabItem(2, PhosphorIconsFill.bell, PhosphorIconsBold.bell, '활동'),
-              _tabItem(3, PhosphorIconsFill.usersThree, PhosphorIconsBold.usersThree, '멤버'),
+              _actionTabItem(PhosphorIconsBold.usersThree, '멤버', _openMembersPage),
             ],
           ),
         ),
@@ -483,6 +546,31 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
                     fontSize: 10,
                     fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                     color: color)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _actionTabItem(IconData icon, String label, VoidCallback onTap) {
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            PhosphorIcon(icon, size: 23, color: SaColors.textTertiary),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Pretendard',
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                color: SaColors.textTertiary,
+              ),
+            ),
           ],
         ),
       ),

@@ -1,11 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:project1/app/camera/page/camera_awesome_page.dart';
-import 'package:project1/app/community/widget/cover_template.dart';
-import 'package:project1/app/community/widget/cover_template_picker.dart';
+import 'package:project1/app/community/community_home_body.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/community/community_repo.dart';
 import 'package:project1/repo/community/data/community_data.dart';
@@ -14,8 +12,8 @@ import 'package:project1/repo/community/data/community_tag_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/utils.dart';
 
-/// 앨범 홈. 헤더(가입/탈퇴/멤버) + 앨범 그리드 피드.
-/// 앨범 탭 → 풀스크린 틱톡 뷰어(VideoMyinfoListPage, datatype=COMMUNITY) 재사용.
+/// 앨범 홈. 헤더·멤버 관리·대문 편집과 앨범 그리드 피드를 제공한다.
+/// 앨범 미디어 탭 → 편집·삭제를 지원하는 몰입형 상세 화면으로 이동한다.
 class CommunityHomePage extends StatefulWidget {
   const CommunityHomePage({super.key});
 
@@ -132,19 +130,14 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
     if (ok) _refresh();
   }
 
-  Future<void> _leave() async {
-    final confirmed = await Get.dialog<bool>(AlertDialog(
-      title: const Text('앨범 탈퇴'),
-      content: Text('${_community?.name ?? '이 앨범'}에서 탈퇴하시겠어요?'),
-      actions: [
-        TextButton(onPressed: () => Get.back(result: false), child: const Text('취소')),
-        TextButton(onPressed: () => Get.back(result: true), child: const Text('탈퇴', style: TextStyle(color: Colors.red))),
-      ],
-    ));
-    if (confirmed != true) return;
-    final (ok, msg) = await _repo.leave(_communityId);
-    Utils.alert(msg.isEmpty ? (ok ? '탈퇴했습니다.' : '실패했습니다.') : msg);
-    if (ok) _refresh();
+  Future<void> _openMembers() async {
+    final changed = await Get.toNamed('/CommunityMembersPage', arguments: {
+      'communityId': _communityId,
+      'communityName': _community?.name,
+      'isOwner': _community?.isOwner == true,
+      'isApproval': _community?.isApproval == true,
+    });
+    if (changed == true) _refresh();
   }
 
   bool get _canPost {
@@ -177,64 +170,47 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
       backgroundColor: Colors.white,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
-      builder: (ctx) => _InviteSheet(info: info, onInviteFriends: () {
-        Navigator.of(ctx).pop();
-        Get.toNamed('/CommunityInvitePage', arguments: {'communityId': _communityId});
-      }),
+      builder: (ctx) => _InviteSheet(
+          info: info,
+          onInviteFriends: () {
+            Navigator.of(ctx).pop();
+            Get.toNamed('/CommunityInvitePage', arguments: {'communityId': _communityId});
+          }),
     );
   }
 
-  Future<void> _showCoverEditSheet() async {
-    final c = _community;
-    if (c == null) return;
-    String? selectedTemplateId = c.coverTemplateId;
-    bool isCustomSelected = c.coverTemplateId == null && (c.imageUrl?.isNotEmpty ?? false);
-    await showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) => Padding(
-          padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(ctx).viewInsets.bottom + 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('표지 수정', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
-              const SizedBox(height: 14),
-              CoverTemplatePicker(
-                selectedTemplateId: selectedTemplateId,
-                isCustomPhotoSelected: isCustomSelected,
-                onSelectTemplate: (id) async {
-                  Navigator.of(ctx).pop();
-                  final (ok, msg) = await _repo.updateCover(_communityId, coverTemplateId: id);
-                  Utils.alert(msg.isEmpty ? (ok ? '표지를 변경했습니다.' : '실패했습니다.') : msg);
-                  if (ok) _refresh();
-                },
-                onPickCustomPhoto: () async {
-                  final url = await pickAndUploadCoverPhoto();
-                  if (url == null) return;
-                  Navigator.of(ctx).pop();
-                  final (ok, msg) = await _repo.updateCover(_communityId, imageUrl: url);
-                  Utils.alert(msg.isEmpty ? (ok ? '표지를 변경했습니다.' : '실패했습니다.') : msg);
-                  if (ok) _refresh();
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  Future<void> _openCoverEditor() async {
+    final saved = await Get.toNamed('/AlbumCoverEditorPage', arguments: {
+      'community': _community,
+      'items': _feed,
+    });
+    if (saved == true) await _refresh();
+  }
+
+  Future<void> _deleteAlbum() async {
+    final confirmed = await Get.dialog<bool>(AlertDialog(
+      title: const Text('앨범 삭제'),
+      content: Text("'${_community?.name ?? '이 앨범'}'을(를) 삭제하면 되돌릴 수 없어요.\n담긴 사진·영상도 더 이상 보이지 않습니다."),
+      actions: [
+        TextButton(onPressed: () => Get.back(result: false), child: const Text('취소')),
+        TextButton(onPressed: () => Get.back(result: true), child: const Text('삭제', style: TextStyle(color: Colors.red))),
+      ],
+    ));
+    if (confirmed != true) return;
+    final (ok, msg) = await _repo.deleteAlbum(_communityId);
+    Utils.alert(msg.isEmpty ? (ok ? '앨범을 삭제했습니다.' : '삭제에 실패했습니다.') : msg);
+    if (ok) Get.back(result: true);
   }
 
   void _openViewer(BoardWeatherListData item) {
-    Get.toNamed('/VideoMyinfoListPage', arguments: {
-      'datatype': 'COMMUNITY',
-      'custId': '',
-      'boardId': item.boardId.toString(),
-      'searchWord': '',
+    final int initialIndex = _visibleFeed.indexWhere((e) => e.boardId == item.boardId);
+    Get.toNamed('/AlbumImmersivePage', arguments: {
       'communityId': _communityId,
+      'albumName': _community?.name ?? '앨범',
+      'items': _visibleFeed,
+      'initialIndex': initialIndex < 0 ? 0 : initialIndex,
+    })?.then((changed) {
+      if (changed == true) _loadFeed(reset: true);
     });
   }
 
@@ -266,11 +242,26 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
             IconButton(
               icon: const Icon(Icons.people_alt_outlined, color: Colors.black87),
               tooltip: '멤버',
-              onPressed: () => Get.toNamed('/CommunityMembersPage', arguments: {
-                'communityId': _communityId,
-                'isOwner': _community!.isOwner,
-                'isApproval': _community!.isApproval,
-              }),
+              onPressed: _openMembers,
+            ),
+          if (_community?.isOwner == true)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: Colors.black87),
+              onSelected: (value) {
+                if (value == 'delete') _deleteAlbum();
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_outline, color: Colors.red),
+                      SizedBox(width: 10),
+                      Text('앨범 삭제', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
             ),
         ],
       ),
@@ -278,339 +269,24 @@ class _CommunityHomePageState extends State<CommunityHomePage> {
           ? const Center(child: CircularProgressIndicator())
           : _community == null
               ? const Center(child: Text('앨범을 찾을 수 없습니다.', style: TextStyle(color: Color(0xFF7A8291))))
-              : RefreshIndicator(
+              : CommunityHomeBody(
+                  community: _community!,
+                  visibleFeed: _visibleFeed,
+                  tags: _tags,
+                  activeTag: _activeTag,
+                  feedLoading: _feedLoading,
+                  canViewFeed: _canViewFeed,
+                  controller: _scrollCtrl,
                   onRefresh: _refresh,
-                  child: CustomScrollView(
-                    controller: _scrollCtrl,
-                    slivers: [
-                      SliverToBoxAdapter(child: _header()),
-                      if (!_canViewFeed)
-                        SliverFillRemaining(hasScrollBody: false, child: _privateGate())
-                      else ...[
-                        if (_tags.isNotEmpty) SliverToBoxAdapter(child: _tagSection()),
-                        if (_visibleFeed.isEmpty && !_feedLoading)
-                          SliverFillRemaining(hasScrollBody: false, child: _emptyFeed())
-                        else
-                          SliverPadding(
-                            padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
-                            sliver: SliverGrid(
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2, childAspectRatio: 0.62, mainAxisSpacing: 10, crossAxisSpacing: 10),
-                              delegate: SliverChildBuilderDelegate(
-                                (context, i) => _feedCard(_visibleFeed[i]),
-                                childCount: _visibleFeed.length,
-                              ),
-                            ),
-                          ),
-                        if (_feedLoading)
-                          const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.all(20), child: Center(child: CircularProgressIndicator()))),
-                      ],
-                    ],
-                  ),
+                  onTagTap: _onTagTap,
+                  onTapItem: _openViewer,
+                  onJoin: _join,
+                  onOpenMembers: _openMembers,
+                  onOpenCoverEditor: _openCoverEditor,
                 ),
     );
   }
 
-  Widget _header() {
-    final c = _community!;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0xFFECEEF3))),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _coverBanner(c),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    _thumb(c, 64),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Flexible(child: Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87))),
-                              if (c.isPrivate) ...[const SizedBox(width: 6), const Icon(Icons.lock, size: 15, color: Color(0xFF9AA3B2))],
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              const Icon(Icons.people, size: 14, color: Color(0xFF9AA3B2)),
-                              const SizedBox(width: 3),
-                              Text('멤버 ${c.memberCnt}명', style: const TextStyle(fontSize: 12.5, color: Color(0xFF7A8291))),
-                              const SizedBox(width: 10),
-                              Text(c.isApproval ? '승인제' : '자유가입', style: const TextStyle(fontSize: 12.5, color: Color(0xFF7A8291))),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                if (c.description != null && c.description!.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text(c.description!, style: const TextStyle(fontSize: 13.5, color: Color(0xFF4A5162), height: 1.45)),
-                ],
-                const SizedBox(height: 14),
-                _actionButton(c),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _coverBanner(CommunityData c) {
-    return Stack(
-      children: [
-        if (c.imageUrl != null && c.imageUrl!.isNotEmpty)
-          CachedNetworkImage(
-            imageUrl: '${c.imageUrl}?w=800',
-            width: double.infinity, height: 140, fit: BoxFit.cover,
-            errorWidget: (_, __, ___) => _coverFallback(c),
-          )
-        else
-          _coverFallback(c),
-        if (c.canEditCover)
-          Positioned(
-            top: 10, right: 10,
-            child: Material(
-              color: Colors.black45,
-              shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: _showCoverEditSheet,
-                child: const Padding(
-                  padding: EdgeInsets.all(8),
-                  child: Icon(Icons.edit, color: Colors.white, size: 18),
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _coverFallback(CommunityData c) {
-    return Container(
-      width: double.infinity, height: 140,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(colors: [Color(0xFF5B8DEF), Color(0xFF3B6FE0)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-      ),
-      alignment: Alignment.center,
-      child: Text(c.name.isNotEmpty ? c.name.characters.first : '?',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 40)),
-    );
-  }
-
-  Widget _actionButton(CommunityData c) {
-    if (c.isOwner) {
-      return _outlineButton('방장 · 멤버 관리', Icons.manage_accounts_outlined, () => Get.toNamed('/CommunityMembersPage', arguments: {
-            'communityId': _communityId, 'isOwner': true, 'isApproval': c.isApproval,
-          }));
-    }
-    if (c.isJoined) {
-      return _outlineButton('가입중 · 탈퇴하기', Icons.logout, _leave, color: const Color(0xFF9AA3B2));
-    }
-    if (c.isPending) {
-      return _outlineButton('승인 대기중', Icons.hourglass_empty, null, color: const Color(0xFF9AA3B2));
-    }
-    return SizedBox(
-      width: double.infinity,
-      height: 46,
-      child: ElevatedButton.icon(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF3B6FE0), elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        icon: const Icon(Icons.add, color: Colors.white, size: 20),
-        label: Text(c.isApproval ? '가입 신청' : '가입하기', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-        onPressed: _join,
-      ),
-    );
-  }
-
-  Widget _outlineButton(String text, IconData icon, VoidCallback? onTap, {Color color = const Color(0xFF3B6FE0)}) {
-    return SizedBox(
-      width: double.infinity,
-      height: 46,
-      child: OutlinedButton.icon(
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(color: color.withOpacity(0.4)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        icon: Icon(icon, color: color, size: 19),
-        label: Text(text, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14.5)),
-        onPressed: onTap,
-      ),
-    );
-  }
-
-  Widget _privateGate() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(30),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.lock_outline, size: 48, color: Color(0xFF9AA3B2)),
-            const SizedBox(height: 12),
-            const Text('비공개 앨범입니다', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
-            const SizedBox(height: 6),
-            const Text('가입 후 멤버가 되면\n게시물을 볼 수 있어요.',
-                textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: Color(0xFF7A8291), height: 1.5)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _tagSection() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.only(left: 4, bottom: 8),
-            child: Text('인기 태그', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)),
-          ),
-          SizedBox(
-            height: 34,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: _tags.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (context, i) {
-                final t = _tags[i];
-                final selected = _activeTag == t.tag;
-                return GestureDetector(
-                  onTap: () => _onTagTap(t.tag),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: selected ? const Color(0xFF3B6FE0) : const Color(0xFFF1F5FF),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: selected ? const Color(0xFF3B6FE0) : const Color(0xFFD6E0FA)),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text('${t.tag} ${t.count}',
-                        style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.bold,
-                            color: selected ? Colors.white : const Color(0xFF3B6FE0))),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _emptyFeed() {
-    final filtered = _activeTag != null;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(30),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.photo_library_outlined, size: 46, color: Color(0xFF9AA3B2)),
-            const SizedBox(height: 12),
-            Text(filtered ? "'$_activeTag' 태그 게시물이 없어요" : '아직 게시물이 없어요',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
-            const SizedBox(height: 4),
-            Text(filtered ? '다른 태그를 선택해보세요.' : '첫 게시물을 올려보세요!',
-                style: const TextStyle(fontSize: 12.5, color: Color(0xFF7A8291))),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _feedCard(BoardWeatherListData item) {
-    return GestureDetector(
-      onTap: () => _openViewer(item),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (item.thumbnailPath != null && item.thumbnailPath!.isNotEmpty)
-              CachedNetworkImage(imageUrl: item.thumbnailPath!, fit: BoxFit.cover, errorWidget: (_, __, ___) => Container(color: const Color(0xFFE6E8EF)))
-            else
-              Container(color: const Color(0xFFE6E8EF)),
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.center, end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black54],
-                ),
-              ),
-            ),
-            Positioned(
-              left: 8, right: 8, bottom: 8,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('@${item.nickNm ?? item.custNm ?? ''}',
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      const Icon(Icons.favorite, color: Colors.white, size: 13),
-                      Text(' ${item.likeCnt ?? 0}', style: const TextStyle(color: Colors.white, fontSize: 11)),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.visibility, color: Colors.white, size: 13),
-                      Text(' ${item.viewCnt ?? 0}', style: const TextStyle(color: Colors.white, fontSize: 11)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _thumb(CommunityData c, double size) {
-    final radius = BorderRadius.circular(16);
-    if (c.imageUrl != null && c.imageUrl!.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: radius,
-        child: CachedNetworkImage(imageUrl: c.imageUrl!, width: size, height: size, fit: BoxFit.cover,
-            errorWidget: (_, __, ___) => _thumbFallback(c, size, radius)),
-      );
-    }
-    return _thumbFallback(c, size, radius);
-  }
-
-  Widget _thumbFallback(CommunityData c, double size, BorderRadius radius) {
-    return Container(
-      width: size, height: size,
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        gradient: const LinearGradient(colors: [Color(0xFF5B8DEF), Color(0xFF3B6FE0)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-      ),
-      alignment: Alignment.center,
-      child: Text(c.name.isNotEmpty ? c.name.characters.first : '?',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24)),
-    );
-  }
 }
 
 /// 앨범 초대 바텀시트: 초대코드 + 복사/공유/친구초대
@@ -629,11 +305,12 @@ class _InviteSheet extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Center(
-              child: Container(width: 40, height: 4, decoration: BoxDecoration(color: const Color(0xFFE0E3EA), borderRadius: BorderRadius.circular(2))),
+              child: Container(
+                  width: 40, height: 4, decoration: BoxDecoration(color: const Color(0xFFE0E3EA), borderRadius: BorderRadius.circular(2))),
             ),
             const SizedBox(height: 16),
-            Text("'${info.name}' 초대하기", textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.black87)),
+            Text("'${info.name}' 초대하기",
+                textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.black87)),
             const SizedBox(height: 4),
             const Text('아래 코드/링크를 공유하거나 친구를 직접 초대하세요.',
                 textAlign: TextAlign.center, style: TextStyle(fontSize: 12.5, color: Color(0xFF7A8291))),
@@ -651,7 +328,8 @@ class _InviteSheet extends StatelessWidget {
                   const Text('초대 코드', style: TextStyle(fontSize: 12.5, color: Color(0xFF7A8291), fontWeight: FontWeight.bold)),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(info.inviteCode, textAlign: TextAlign.center,
+                    child: Text(info.inviteCode,
+                        textAlign: TextAlign.center,
                         style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 3, color: Color(0xFF2C4FA0))),
                   ),
                   IconButton(
@@ -685,7 +363,8 @@ class _InviteSheet extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF3B6FE0), elevation: 0,
+                      backgroundColor: const Color(0xFF3B6FE0),
+                      elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 13),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
