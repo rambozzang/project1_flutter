@@ -9,6 +9,7 @@ import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/theme/sa_weather_gradients.dart';
 import 'package:project1/app/shared_album/widget/sa_album_card.dart';
+import 'package:project1/app/community/widget/cover_template.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/community/community_repo.dart';
 import 'package:project1/repo/community/data/community_data.dart';
@@ -46,6 +47,11 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
   // 카드 대표 이미지 소스: true=앨범 표지(imageUrl) / false=미디어 썸네일 montage.
   // 저장 규칙과 연동 — 표지 모드는 coverMediaIds를 비워 카드가 표지를 쓰게 한다.
   bool _useCoverImage = true;
+  // 표지 이미지: 템플릿(templateId) 또는 커스텀 업로드(imageUrl). 둘 중 하나만.
+  String? _coverTemplateId;
+  String? _customCoverUrl;
+  bool _uploadingCover = false;
+  bool _coverCacheWarmed = false;
 
   @override
   void initState() {
@@ -61,6 +67,12 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
     _isPublic = _origin.isPublic == 'Y';
     // 대표 미디어가 지정돼 있으면 썸네일 모드, 없으면 표지(기본) 모드.
     _useCoverImage = _origin.coverMediaIds.isEmpty;
+    // 표지 상태 복원: 템플릿이 지정돼 있으면 템플릿, 아니면 커스텀 사진(imageUrl).
+    _coverTemplateId = _origin.coverTemplateId;
+    _customCoverUrl = _origin.coverTemplateId == null ? _origin.imageUrl : null;
+    if (_coverTemplateId == null && (_customCoverUrl ?? '').isEmpty) {
+      _coverTemplateId = kCoverTemplates.first.id; // 표지가 없는 경우 기본 템플릿
+    }
     _nameCtrl.addListener(() => setState(() {}));
     _descCtrl.addListener(() => setState(() {}));
   }
@@ -70,6 +82,16 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
     _nameCtrl.dispose();
     _descCtrl.dispose();
     super.dispose();
+  }
+
+  /// 현재 선택된 표지 미리보기 URL(템플릿/커스텀/기존 순).
+  String? get _previewCoverUrl {
+    if (_customCoverUrl != null && _customCoverUrl!.isNotEmpty) return _customCoverUrl;
+    if (_coverTemplateId != null && _coverTemplateId!.isNotEmpty) {
+      final t = kCoverTemplates.where((e) => e.id == _coverTemplateId).firstOrNull;
+      if (t != null) return t.imageUrl;
+    }
+    return _origin.coverDisplayUrl;
   }
 
   /// 편집 상태가 반영된 미리보기용 카드 데이터
@@ -82,10 +104,15 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
       cardOptions: _opts.length == _optKeys.length ? null : _opts,
     );
     // themeColor ''(자동)은 null로 — copyWith가 ??라 별도 재생성 대신 showOpt/gradient에서 ''를 자동 취급하지 않으므로 여기서 보정
-    final card = SaAlbumCardData(
-        community: _themeColor.isEmpty && (_origin.themeColor ?? '').isNotEmpty
-            ? edited.copyWith(themeColor: '')
-            : edited);
+    CommunityData community = _themeColor.isEmpty && (_origin.themeColor ?? '').isNotEmpty
+        ? edited.copyWith(themeColor: '')
+        : edited;
+    // 표지 모드면 선택한 표지(템플릿/커스텀)를 미리보기에 반영한다.
+    if (_useCoverImage) {
+      final url = _previewCoverUrl;
+      community = community.copyWith(imageUrl: url, coverThumbnailUrl: null);
+    }
+    final card = SaAlbumCardData(community: community);
     // 표지 모드면 썸네일을 비워 미리보기도 앨범 표지(imageUrl)를 그대로 보여준다.
     card.thumbs = _useCoverImage ? const <String>[] : _thumbsForPreview();
     if (edited.mediaCnt > 0) card.mediaCount = edited.mediaCnt;
@@ -121,6 +148,21 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
     if (_saving) return;
     setState(() => _saving = true);
     try {
+      // 표지 변경분이 있으면 먼저 저장(updateCover). 템플릿이 있으면 imageUrl은 무시됨.
+      final String? origCustom = _origin.coverTemplateId == null ? _origin.imageUrl : null;
+      final bool coverChanged =
+          _coverTemplateId != _origin.coverTemplateId || (_customCoverUrl ?? '') != (origCustom ?? '');
+      if (coverChanged) {
+        final (okCover, msgCover) = await _repo.updateCover(
+          _origin.communityId,
+          coverTemplateId: _customCoverUrl == null ? _coverTemplateId : null,
+          imageUrl: _customCoverUrl,
+        );
+        if (!okCover) {
+          Utils.alert(msgCover.isEmpty ? '표지 변경에 실패했습니다.' : msgCover);
+          return;
+        }
+      }
       final (ok, msg) = await _repo.updateFront(
         _origin.communityId,
         name: _nameCtrl.text.trim(),
@@ -179,7 +221,12 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
                     const SizedBox(height: 22),
                     _sectionLabel('대표 이미지'),
                     _buildCoverModeToggle(),
-                    if (!_useCoverImage) ...[
+                    if (_useCoverImage) ...[
+                      const SizedBox(height: 14),
+                      _buildCoverPreview(),
+                      const SizedBox(height: 10),
+                      _buildTemplateStrip(),
+                    ] else ...[
                       const SizedBox(height: 14),
                       _buildMediaStrip(),
                     ],
@@ -365,7 +412,10 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
     final bool selected = _useCoverImage == useCover;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _useCoverImage = useCover),
+        onTap: () {
+          setState(() => _useCoverImage = useCover);
+          if (useCover) _warmCoverCache();
+        },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 10),
@@ -385,6 +435,147 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
         ),
       ),
     );
+  }
+
+  // 선택된 표지 큰 미리보기(생성 화면과 동일).
+  Widget _buildCoverPreview() {
+    final url = _previewCoverUrl;
+    return Container(
+      height: 150,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: SaColors.border),
+        color: SaColors.surfaceElevated,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (url != null && url.isNotEmpty)
+            CachedNetworkImage(
+              imageUrl: coverImageUrl(url),
+              fit: BoxFit.cover,
+              fadeInDuration: const Duration(milliseconds: 120),
+              placeholder: (_, __) => CachedNetworkImage(
+                imageUrl: coverImageUrl(url, width: 200),
+                fit: BoxFit.cover,
+                placeholder: (_, __) => ColoredBox(color: SaColors.surfaceElevated),
+                errorWidget: (_, __, ___) => ColoredBox(color: SaColors.surfaceElevated),
+              ),
+              errorWidget: (_, __, ___) => ColoredBox(color: SaColors.surfaceElevated),
+            ),
+          if (_uploadingCover)
+            Container(
+              color: Colors.black45,
+              child: Center(
+                  child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal))),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // 표지 템플릿 가로 스트립 + 커스텀 업로드 타일(생성 화면과 동일).
+  Widget _buildTemplateStrip() {
+    return SizedBox(
+      height: 78,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          // 커스텀 사진 업로드 타일
+          GestureDetector(
+            onTap: _uploadingCover ? null : _pickCustomCover,
+            child: Container(
+              width: 62,
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _customCoverUrl != null ? SaColors.accentTeal : SaColors.borderStrong,
+                  width: _customCoverUrl != null ? 2 : 1,
+                ),
+                color: SaColors.surface,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  PhosphorIcon(PhosphorIconsFill.camera, size: 18, color: SaColors.textSecondary),
+                  const SizedBox(height: 4),
+                  Text('내 사진', style: SaText.mono(fontSize: 8.5)),
+                ],
+              ),
+            ),
+          ),
+          for (final t in kCoverTemplates)
+            GestureDetector(
+              onTap: () => _selectTemplate(t.id),
+              child: Container(
+                width: 62,
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _coverTemplateId == t.id ? SaColors.accentTeal : SaColors.borderStrong,
+                    width: _coverTemplateId == t.id ? 2 : 1,
+                  ),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    CachedNetworkImage(
+                      imageUrl: coverImageUrl(t.imageUrl, width: 200),
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => ColoredBox(color: SaColors.surfaceElevated),
+                      errorWidget: (_, __, ___) => ColoredBox(color: SaColors.surfaceElevated),
+                    ),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 3),
+                        color: Colors.black.withOpacity(0.55),
+                        child: Text(t.label,
+                            textAlign: TextAlign.center,
+                            style: SaText.caption.copyWith(fontSize: 9.5, color: Colors.white)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _selectTemplate(String? id) {
+    setState(() {
+      _coverTemplateId = id;
+      _customCoverUrl = null;
+    });
+  }
+
+  Future<void> _pickCustomCover() async {
+    setState(() => _uploadingCover = true);
+    final url = await pickAndUploadCoverPhoto();
+    if (!mounted) return;
+    setState(() {
+      _uploadingCover = false;
+      if (url != null) {
+        _customCoverUrl = url;
+        _coverTemplateId = null;
+      }
+    });
+  }
+
+  void _warmCoverCache() {
+    if (!mounted || _coverCacheWarmed) return;
+    _coverCacheWarmed = true;
+    for (final t in kCoverTemplates) {
+      precacheImage(CachedNetworkImageProvider(coverImageUrl(t.imageUrl)), context);
+    }
   }
 
   // 공개/비공개 세그먼트 토글 + 상태 안내(생성 화면과 동일 의미).
@@ -454,7 +645,7 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
   // 테마 스와치: '자동' + weather gradient 8종
   Widget _buildThemeSwatches() {
     return SizedBox(
-      height: 64,
+      height: 72,
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
@@ -473,6 +664,8 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
       child: Padding(
         padding: const EdgeInsets.only(right: 12),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               width: 44,
@@ -536,11 +729,12 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
   Widget _buildMembersRow() {
     return Container(
       decoration: BoxDecoration(
-        color: SaColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: SaColors.border),
       ),
+      clipBehavior: Clip.antiAlias,
       child: ListTile(
+        tileColor: SaColors.surface,
         leading: PhosphorIcon(PhosphorIconsFill.usersThree, size: 20, color: SaColors.textPrimary),
         title: Text('멤버 관리', style: SaText.bodyMedium.copyWith(fontSize: 13.5)),
         trailing: Row(

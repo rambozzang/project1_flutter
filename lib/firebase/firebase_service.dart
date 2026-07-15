@@ -42,11 +42,11 @@ void _processMessageData(Map<String, dynamic> messageData) async {
   final receiveCustId = messageData["receiveCustId"];
   final reportId = messageData["reportId"]?.toString();
 
-  // 앨범 초대: communityId로 앨범 페이지 이동
+  // 앨범 초대/가입: communityId로 앨범 페이지 이동
   // FCM data 값은 항상 String이므로 int로 변환해서 넘긴다(페이지가 num 캐스팅함).
-  if (messageData["type"] == "COMMUNITY_INVITE") {
+  if (messageData["type"] == "COMMUNITY_INVITE" || messageData["type"] == "COMMUNITY_JOIN") {
     final int communityId = int.tryParse('${messageData["communityId"]}') ?? 0;
-    Lo.g("COMMUNITY_INVITE: communityId=$communityId");
+    Lo.g("COMMUNITY_INVITE/JOIN: communityId=$communityId");
     Future.delayed(const Duration(milliseconds: 300), () {
       Get.toNamed('/AlbumShellPage', arguments: {'communityId': communityId});
     });
@@ -228,10 +228,10 @@ class FirebaseService {
     Lo.g("onMessageOpenedApp");
     Lo.g("onMessage : ${message.data.toString()}");
 
-    // 앨범 초대 — FCM data 값은 항상 String이라 int 변환 필수.
-    if (message.data["type"] == "COMMUNITY_INVITE") {
+    // 앨범 초대/가입 — FCM data 값은 항상 String이라 int 변환 필수.
+    if (message.data["type"] == "COMMUNITY_INVITE" || message.data["type"] == "COMMUNITY_JOIN") {
       final int communityId = int.tryParse('${message.data["communityId"]}') ?? 0;
-      Lo.g("COMMUNITY_INVITE (background): communityId=$communityId");
+      Lo.g("COMMUNITY_INVITE/JOIN (background): communityId=$communityId");
       Future.delayed(const Duration(milliseconds: 500), () {
         Get.toNamed('/AlbumShellPage', arguments: {'communityId': communityId});
       });
@@ -270,10 +270,10 @@ class FirebaseService {
     Lo.g("getInitialMessage");
     Lo.g("onMessage : ${message?.data.toString()}");
 
-    // 앨범 초대 — FCM data 값은 항상 String이라 int 변환 필수.
-    if (message?.data["type"] == "COMMUNITY_INVITE") {
+    // 앨범 초대/가입 — FCM data 값은 항상 String이라 int 변환 필수.
+    if (message?.data["type"] == "COMMUNITY_INVITE" || message?.data["type"] == "COMMUNITY_JOIN") {
       final int communityId = int.tryParse('${message!.data["communityId"]}') ?? 0;
-      Lo.g("COMMUNITY_INVITE (terminated): communityId=$communityId");
+      Lo.g("COMMUNITY_INVITE/JOIN (terminated): communityId=$communityId");
       Future.delayed(const Duration(milliseconds: 1500), () {
         Get.toNamed('/AlbumShellPage', arguments: {'communityId': communityId});
       });

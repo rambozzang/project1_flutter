@@ -248,6 +248,8 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
 
   @override
   Widget build(BuildContext context) {
+    // 사진 게시물은 영상용 Scaffold 대신 전용 캐러셀 스캐폴드로 렌더링(피드와 동일 동작).
+    if (isPhotoPost) return _buildPhotoScaffold();
     return Scaffold(
       backgroundColor: Colors.transparent,
       resizeToAvoidBottomInset: false,
@@ -258,9 +260,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
           Expanded(
             child: Stack(
               children: [
-                isPhotoPost
-                    ? Positioned.fill(child: _buildPhotoCarousel())
-                    : GestureDetector(
+                GestureDetector(
                   onTap: () {
                     initPlay = true;
                     if (_controller.value.isPlaying) {
@@ -372,6 +372,41 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
   void changeContents(String contents) {
     widget.data.contents = contents;
     setState(() {});
+  }
+
+  // ───────── 사진 게시물(typeDtCd='I' 또는 imageUrls 보유) 전용 스캐폴드 ─────────
+  // 피드(Video_screen_page)와 동일 구조: 가로 캐러셀 + 하단/우측 오버레이 + 신고.
+  Widget _buildPhotoScaffold() {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      resizeToAvoidBottomInset: false,
+      extendBodyBehindAppBar: true,
+      extendBody: true,
+      body: Stack(
+        children: [
+          Positioned.fill(child: _buildPhotoCarousel()),
+          // 영상과 동일한 하단/우측 오버레이 재사용(위치·날씨·캡션·프로필·좋아요·댓글·신고)
+          buildBottomContent(),
+          buildRightMenuBar(),
+          Positioned(
+            top: (MediaQuery.of(context).size.height - 60) * .5,
+            right: 14,
+            child: GestureDetector(
+              onTap: () => SigoPageSheet().open(
+                  context, widget.data.boardId.toString(), Get.find<VideoMyinfoListCntr>().list[widget.index].custId.toString(),
+                  callBackFunction: Get.find<VideoMyinfoListCntr>().getSingAfterGetData),
+              child: Column(
+                children: [
+                  const Icon(Icons.warning, color: Colors.white),
+                  const Text('신고', style: TextStyle(color: Colors.white, fontSize: 9)),
+                  Text('$initialized', style: const TextStyle(color: Colors.transparent, fontSize: 1)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // 사진 게시물 가로 캐러셀(세로 피드와 직교 → 제스처 충돌 없음)

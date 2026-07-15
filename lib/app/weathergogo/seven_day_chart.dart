@@ -18,7 +18,7 @@ class DailyWeatherChart extends StatefulWidget {
 class _DailyWeatherChartState extends State<DailyWeatherChart> {
   final double itemWidth = 95.0;
 
-  final double itemHeight = 310.0;
+  final double itemHeight = 330.0;
 
   final double graphHeight = 140.0;
 
