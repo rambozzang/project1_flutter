@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' show ImageFilter;
 
 import 'package:app_version_update/app_version_update.dart';
 import 'package:in_app_update/in_app_update.dart';
@@ -310,8 +311,8 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     return BottomNavigationBarItem(
       icon: Obx(() => Icon(
             icondata,
-            // 날씨 탭: 다크 필 위 살짝 흐린 흰색(미선택), 그 외 탭: 회색
-            color: RootCntr.to.rootPageIndex.value == 0 ? Colors.white70 : Colors.grey,
+            // 날씨 탭: 다크 필 위 또렷한 흰색(미선택), 그 외 탭: 회색
+            color: RootCntr.to.rootPageIndex.value == 0 ? Colors.white.withOpacity(0.85) : Colors.grey,
           )),
       label: label,
       // 선택 아이콘도 탭에 맞춰: 날씨 탭 다크 필엔 흰색, 그 외엔 검정
@@ -323,44 +324,67 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
   }
 
   Widget makeBottomItem() {
-    // 날씨 탭(index 0)은 시간대별 하늘 그라데이션 위에 뜬다. 배경이 낮엔 밝고 밤엔 검정이므로
-    // 바 배경을 '낮=어둡게(흰 아이콘 대비)·밤=밝게(검정에 안 묻히게)'로 시간대(nightFactor)에 맞춰 뒤집는다.
+    // 날씨 탭(index 0)은 시간대별 하늘 그라데이션 위에 뜬다. 밤(20~05시)엔 하늘이 거의 검정이라,
+    // 아이콘은 흰색으로 두고 필(fill)은 낮·밤 모두 '어둡게' 유지해 흰 아이콘 대비를 지킨다.
+    // 대신 밤엔 ①필을 더 불투명하게 ②테두리를 밝혀 윤곽을 살리고 ③은은한 밝은 헤일로로 검정에서 바를 띄운다.
     final bool onSky = RootCntr.to.rootPageIndex.value == 0;
     final double nf = SkyGradient.nightFactor(DateTime.now()); // 밤 1.0 ~ 낮 0.0
     final Color skyBarBg = Color.lerp(
-      Colors.black.withOpacity(0.40), // 낮: 밝은 하늘 위 → 어둡게
-      Colors.white.withOpacity(0.14), // 밤: 검은 배경 위 → 살짝 밝게(바가 보이도록)
+      Colors.black.withOpacity(0.38), // 낮: 밝은 하늘 위 어두운 필
+      Colors.black.withOpacity(0.55), // 밤: 검은 배경 위에서도 흰 아이콘이 또렷하게(옅은 흰 필 → 어두운 필로 교체)
       nf,
     )!;
+    final Color skyBorder = Color.lerp(
+      Colors.white.withOpacity(0.18), // 낮
+      Colors.white.withOpacity(0.42), // 밤: 검정 배경과 분리되도록 밝은 윤곽선
+      nf,
+    )!;
+    final BorderRadius radius = BorderRadius.circular(20);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
       decoration: BoxDecoration(
-        color: onSky ? skyBarBg : Colors.grey[200]?.withOpacity(0.85),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: onSky ? Colors.white.withOpacity(0.18) : Colors.grey.withOpacity(0.5),
-          width: 0.6,
-        ),
+        borderRadius: radius,
+        // 밤엔 은은한 밝은 헤일로로 검정 배경에서 바를 띄운다(어두운 그림자는 검정 위에서 안 보임).
+        boxShadow: onSky && nf > 0
+            ? [BoxShadow(color: Colors.white.withOpacity(0.06 * nf), blurRadius: 18, spreadRadius: 1)]
+            : null,
       ),
-      child: BottomNavigationBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        currentIndex: RootCntr.to.rootPageIndex.value,
-        showUnselectedLabels: true,
-        type: BottomNavigationBarType.fixed,
-        showSelectedLabels: true,
-        iconSize: 22,
-        onTap: (index) {
-          onClick(index);
-        },
-        selectedIconTheme: const IconThemeData(size: 24),
-        selectedFontSize: 13,
-        selectedItemColor: onSky ? Colors.white : Colors.black,
-        unselectedFontSize: 11,
-        unselectedItemColor: onSky ? Colors.white70 : Colors.black54,
-        unselectedIconTheme: const IconThemeData(size: 22),
-        items: bottomItemList,
+      child: ClipRRect(
+        borderRadius: radius,
+        child: BackdropFilter(
+          // 프로스티드 글래스(앨범 셸 하단바와 동일 패턴) — 바쁜 그라데이션 위에서도 바가 또렷.
+          filter: ImageFilter.blur(sigmaX: onSky ? 14 : 0, sigmaY: onSky ? 14 : 0),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 1),
+            decoration: BoxDecoration(
+              color: onSky ? skyBarBg : Colors.grey[200]?.withOpacity(0.85),
+              borderRadius: radius,
+              border: Border.all(
+                color: onSky ? skyBorder : Colors.grey.withOpacity(0.5),
+                width: onSky ? 0.8 : 0.6,
+              ),
+            ),
+            child: BottomNavigationBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              currentIndex: RootCntr.to.rootPageIndex.value,
+              showUnselectedLabels: true,
+              type: BottomNavigationBarType.fixed,
+              showSelectedLabels: true,
+              iconSize: 22,
+              onTap: (index) {
+                onClick(index);
+              },
+              selectedIconTheme: const IconThemeData(size: 24),
+              selectedFontSize: 13,
+              selectedItemColor: onSky ? Colors.white : Colors.black,
+              unselectedFontSize: 11,
+              unselectedItemColor: onSky ? Colors.white.withOpacity(0.85) : Colors.black54,
+              unselectedIconTheme: const IconThemeData(size: 22),
+              items: bottomItemList,
+            ),
+          ),
+        ),
       ),
     );
   }
