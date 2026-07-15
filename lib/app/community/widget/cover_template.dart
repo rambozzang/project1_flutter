@@ -37,6 +37,10 @@ String coverImageUrl(String url, {int width = 800}) {
   return '$url?w=$width&q=70&fm=jpg';
 }
 
+/// 앱의 앨범 대문은 화면마다 같은 요청 URL을 사용해야 디스크 캐시와 Hero가 재사용된다.
+/// 위젯 크기에 따른 메모리 디코딩 크기는 `memCacheWidth`에서 별도로 줄인다.
+String albumCoverCacheUrl(String url) => coverImageUrl(url, width: 960);
+
 /// 표지 템플릿 10종(순서 중요 — 첫 항목이 앨범 생성 시 기본 선택값).
 /// 2026-07-03 전면 교체: 밝고 귀여운 캐릭터·토이 무드의 무료(Unsplash) 사진으로 통일(눈검수 완료).
 const List<CoverTemplate> kCoverTemplates = [

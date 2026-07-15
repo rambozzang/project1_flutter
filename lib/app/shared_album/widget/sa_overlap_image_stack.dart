@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:project1/app/community/widget/cover_template.dart' show coverImageUrl;
+import 'package:project1/app/community/widget/cover_template.dart' show albumCoverCacheUrl;
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_weather_gradients.dart';
 
@@ -88,7 +88,7 @@ class SaOverlapImageStack extends StatelessWidget {
         ? DecoratedBox(decoration: BoxDecoration(gradient: SaWeatherGradients.of(gradientKey)))
         : CachedNetworkImage(
             // Unsplash 표지 폴백은 원본(수 MB)이라 경량본으로 변환(다른 호스트는 no-op)
-            imageUrl: coverImageUrl(url, width: 600),
+            imageUrl: albumCoverCacheUrl(url),
             memCacheWidth: 600,
             fit: BoxFit.cover,
             placeholder: (_, __) =>

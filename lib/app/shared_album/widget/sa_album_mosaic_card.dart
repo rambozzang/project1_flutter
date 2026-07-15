@@ -1,6 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:project1/app/community/widget/cover_template.dart' show coverImageUrl;
+import 'package:project1/app/community/widget/cover_template.dart' show albumCoverCacheUrl;
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
@@ -30,7 +30,7 @@ class SaAlbumMosaicCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = data.community;
-    final String? thumb = data.thumbs.isNotEmpty ? data.thumbs.first : c.imageUrl;
+    final String? thumb = data.thumbs.isNotEmpty ? data.thumbs.first : c.coverDisplayUrl;
     final double imageH = tall ? 150 : 106;
     return Container(
       decoration: BoxDecoration(
@@ -55,7 +55,7 @@ class SaAlbumMosaicCard extends StatelessWidget {
                   if (thumb != null && thumb.isNotEmpty)
                     CachedNetworkImage(
                       // Unsplash 표지 폴백은 원본(수 MB)이라 경량본으로 변환(다른 호스트는 no-op)
-                      imageUrl: coverImageUrl(thumb, width: 400),
+                      imageUrl: albumCoverCacheUrl(thumb),
                       memCacheWidth: 500,
                       fit: BoxFit.cover,
                       placeholder: (_, __) => DecoratedBox(

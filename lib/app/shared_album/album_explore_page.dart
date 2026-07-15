@@ -1,11 +1,12 @@
 import 'dart:async';
 
 import 'package:bot_toast/bot_toast.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
-import 'package:project1/app/community/widget/cover_template.dart' show coverImageUrl;
+import 'package:project1/app/community/widget/cover_template.dart' show albumCoverCacheUrl;
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/theme/sa_weather_gradients.dart';
@@ -296,9 +297,13 @@ class _AlbumExplorePageState extends State<AlbumExplorePage> {
               borderRadius: BorderRadius.circular(12),
             ),
             clipBehavior: Clip.antiAlias,
-            child: (c.imageUrl ?? '').isNotEmpty
-                ? Image.network(coverImageUrl(c.imageUrl!, width: 200), fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink())
+            child: c.coverDisplayUrl != null
+                ? CachedNetworkImage(
+                    imageUrl: albumCoverCacheUrl(c.coverDisplayUrl!),
+                    memCacheWidth: 200,
+                    fit: BoxFit.cover,
+                    errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                  )
                 : null,
           ),
           const SizedBox(width: 12),

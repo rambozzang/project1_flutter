@@ -62,7 +62,7 @@ class SaAlbumCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SaOverlapImageStack(
-                leadUrl: data.thumbs.isNotEmpty ? data.thumbs[0] : c.imageUrl,
+                leadUrl: data.thumbs.isNotEmpty ? data.thumbs[0] : c.coverDisplayUrl,
                 leftUrl: data.thumbs.length > 1 ? data.thumbs[1] : null,
                 rightUrl: data.thumbs.length > 2 ? data.thumbs[2] : null,
                 gradientKey: _gradientKeyFor(c),

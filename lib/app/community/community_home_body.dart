@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:project1/app/community/widget/cover_template.dart' show albumCoverCacheUrl;
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/community/data/community_data.dart';
 import 'package:project1/repo/community/data/community_tag_data.dart';
@@ -157,13 +158,15 @@ class CommunityHomeBody extends StatelessWidget {
   }
 
   Widget _coverBanner(CommunityData c) {
+    final coverUrl = c.coverDisplayUrl;
     return Stack(
       children: [
         SaAlbumCoverHero(
           communityId: c.communityId,
-          child: c.imageUrl != null && c.imageUrl!.isNotEmpty
+          child: coverUrl != null
               ? CachedNetworkImage(
-                  imageUrl: '${c.imageUrl}?w=800',
+                  imageUrl: albumCoverCacheUrl(coverUrl),
+                  memCacheWidth: 960,
                   width: double.infinity,
                   height: 140,
                   fit: BoxFit.cover,
@@ -400,11 +403,13 @@ class CommunityHomeBody extends StatelessWidget {
 
   Widget _thumb(CommunityData c, double size) {
     final radius = BorderRadius.circular(16);
-    if (c.imageUrl != null && c.imageUrl!.isNotEmpty) {
+    final coverUrl = c.coverDisplayUrl;
+    if (coverUrl != null) {
       return ClipRRect(
         borderRadius: radius,
         child: CachedNetworkImage(
-            imageUrl: c.imageUrl!,
+            imageUrl: albumCoverCacheUrl(coverUrl),
+            memCacheWidth: (size * 3).round(),
             width: size,
             height: size,
             fit: BoxFit.cover,

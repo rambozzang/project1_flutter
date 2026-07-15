@@ -9,7 +9,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:project1/app/camera/page/photo_reg_page.dart';
 import 'package:project1/app/camera/page/video_reg_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 /// 카메라 권한 화면 상태.
 enum _CamPermState { checking, granted, denied, permanentlyDenied }
@@ -57,7 +56,6 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     _cameraState = state;
     _zoomSub?.cancel();
     _zoomSub = state.sensorConfig.zoom$.listen((z) => _lastZoom = z);
-    _scheduleGestureHint();
   }
 
   void _onScaleStart() {
@@ -115,7 +113,7 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
   bool _showGestureHint = false;
   Timer? _hintTimer;
   // 촬영 화면 경고 문구(음란물·불법촬영물 금지) — 5초 후 자동으로 사라진다.
-  bool _showContentWarning = true;
+  bool _showContentWarning = false;
   Timer? _warningTimer;
   // 힌트 캡슐 내부의 손가락(점)이 왕복 스와이프하는 애니메이션(0↔1 반복).
   late final AnimationController _swipeCtrl;
@@ -126,40 +124,36 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
   final ValueNotifier<bool> _gaugeVN = ValueNotifier<bool>(false);
   Timer? _gaugeHideTimer;
 
-  // 제스처 힌트는 사용자당 1번만 노출한다. 앱 재실행 후에도 반복하지 않는다.
-  static const String _gestureHintPrefKey = 'CAMERA_GESTURE_HINT_V3_SEEN';
+  // 저장소 조회 없이 앱 실행당 한 번만 노출한다. 카메라 진입 경로에는 I/O를 두지 않는다.
   static bool _gestureHintShownThisRun = false;
-  bool _gestureHintChecked = false;
-  late final Future<SharedPreferences> _gesturePrefsFuture;
+  bool _gestureHintScheduled = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // 권한 확인과 동시에 안내 노출 여부를 미리 읽어 카메라 준비 후 지연이 없게 한다.
-    _gesturePrefsFuture = SharedPreferences.getInstance();
-    _checkCameraPermission();
-    // 촬영 화면 경고 문구를 5초 뒤 페이드아웃시킨다.
-    _warningTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted) setState(() => _showContentWarning = false);
-    });
     // 과한 튕김 없이 방향만 또렷하게 읽히는 왕복 모션.
     _swipeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100));
     _swipeAnim = CurvedAnimation(parent: _swipeCtrl, curve: Curves.easeInOutCubic);
+    _checkCameraPermission();
   }
 
-  Future<void> _scheduleGestureHint() async {
-    if (_gestureHintChecked || _gestureHintShownThisRun) return;
-    _gestureHintChecked = true;
-    final prefs = await _gesturePrefsFuture;
-    if (!mounted || prefs.getBool(_gestureHintPrefKey) == true) return;
+  /// 권한 승인과 같은 상태 변경 안에서 두 안내를 함께 활성화한다.
+  /// 카메라 상태/하단 컨트롤 초기화를 기다리지 않으므로 첫 카메라 프레임부터 동시에 보인다.
+  void _prepareCameraNotices() {
+    _warningTimer?.cancel();
+    _showContentWarning = true;
+    _warningTimer = Timer(const Duration(milliseconds: 2800), () {
+      if (mounted) setState(() => _showContentWarning = false);
+    });
 
-    // 실제 카메라가 준비되는 즉시 표시한다. 안내는 상단에만 있어 촬영 버튼을 막지 않는다.
-    _gestureHintShownThisRun = true;
-    unawaited(prefs.setBool(_gestureHintPrefKey, true));
-    _swipeCtrl.repeat(reverse: true);
-    setState(() => _showGestureHint = true);
-    _hintTimer = Timer(const Duration(milliseconds: 6000), _dismissGestureHint);
+    if (!_gestureHintScheduled && !_gestureHintShownThisRun) {
+      _gestureHintScheduled = true;
+      _gestureHintShownThisRun = true;
+      _swipeCtrl.repeat(reverse: true);
+      _showGestureHint = true;
+      _hintTimer = Timer(const Duration(milliseconds: 2800), _dismissGestureHint);
+    }
   }
 
   void _dismissGestureHint() {
@@ -199,6 +193,7 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
       final status = await Permission.camera.status;
       if (!mounted) return;
       if (status.isGranted) {
+        _prepareCameraNotices();
         setState(() => _permState = _CamPermState.granted);
         return;
       }
@@ -219,6 +214,7 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
       status = await Permission.camera.request();
     }
     if (!mounted) return;
+    if (status.isGranted) _prepareCameraNotices();
     setState(() {
       _permState = status.isGranted
           ? _CamPermState.granted
@@ -234,6 +230,7 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     final status = await Permission.camera.status;
     if (!mounted) return;
     if (status.isGranted) {
+      _prepareCameraNotices();
       setState(() => _permState = _CamPermState.granted);
       return;
     }
@@ -538,7 +535,7 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
               bottomActionsBackgroundColor: Colors.transparent,
             ),
           ),
-          // 촬영 화면 경고 — 음란물·불법촬영물 촬영·게시 금지(배경 투명, 그림자로 가독성). 3초 후 페이드아웃.
+          // 촬영 화면 경고 — 제스처 안내와 동시에 나타나고 함께 사라진다.
           Positioned(
             top: MediaQuery.of(context).padding.top + 58,
             left: 0,
@@ -547,7 +544,8 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
               child: Center(
                 child: AnimatedOpacity(
                   opacity: _showContentWarning ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 500),
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeOut,
                   // 배경 투명(빨강 제거) — 카메라 위 가독성은 텍스트/아이콘 그림자로 확보.
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
@@ -643,7 +641,8 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
           ),
           // 카메라 조작 안내: 실제 프리뷰 위에서 핵심 제스처 2개만 한곳에 보여준다.
           Positioned(
-            top: MediaQuery.paddingOf(context).top + 92,
+            // 상단 금지 문구(top + 58) 아래에 고정 간격을 둬 서로 겹치지 않는다.
+            top: MediaQuery.paddingOf(context).top + 96,
             left: 20,
             right: 20,
             child: IgnorePointer(
