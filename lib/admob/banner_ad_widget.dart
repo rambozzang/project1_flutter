@@ -29,6 +29,9 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
       if (!isLoaded || ad == null) {
         _adWidget = null;
         _cachedAd = null;
+        // 슬롯이 화면에 있는데 광고가 없으면 재로드를 요청한다(매니저에서 30초 디바운스).
+        // 날씨 메인처럼 initState가 1회뿐인 탭에서 콜드스타트 로드 실패를 자가치유.
+        Future.microtask(() => AdManager().ensureBannerAd(widget.screenName));
         return const SizedBox.shrink();
       }
 

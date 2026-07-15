@@ -41,7 +41,15 @@ class AdManager {
   Future<void> loadBannerAd(String screenName) async {
     // 초기화가 완료될 때까지 대기한다. (main.dart에서 unawaited로 호출될 수 있음)
     if (!_initialized) {
-      await _initCompleter.future.timeout(const Duration(seconds: 10));
+      try {
+        await _initCompleter.future.timeout(const Duration(seconds: 30));
+      } catch (e) {
+        // 저사양 콜드스타트에서 SDK 초기화가 늦으면 예외로 죽지 않고 재시도를 예약한다.
+        // (이전: 10초 초과 시 예외 → 첫 탭(날씨 메인)만 앱 재시작 전까지 배너 영구 공백)
+        lo.g('AdManager init 대기 초과($screenName), 10초 후 재시도: $e');
+        Future.delayed(const Duration(seconds: 10), () => loadBannerAd(screenName));
+        return;
+      }
     }
 
     if (_bannerAds.containsKey(screenName)) {
@@ -50,7 +58,19 @@ class AdManager {
       return;
     }
 
+    // 화면 진입 등 명시적 재요청은 재시도 카운터를 리셋해 백오프를 처음부터 다시 준다.
+    _retryAttempts.remove(screenName);
     await _createAndLoadBannerAd(screenName);
+  }
+
+  /// 배너 슬롯이 화면에 보이는데 광고가 없으면 재로드를 시도한다(30초 디바운스).
+  /// 날씨 메인처럼 initState가 1회뿐인 탭(IndexedStack)에서 콜드스타트 실패를 자가치유한다.
+  void ensureBannerAd(String screenName) {
+    if (_bannerAds.containsKey(screenName)) return;
+    if (_loading[screenName] == true) return;
+    final last = _lastAttempt[screenName];
+    if (last != null && DateTime.now().difference(last) < const Duration(seconds: 30)) return;
+    loadBannerAd(screenName);
   }
 
   void _startAdTimer(String screenName) {
@@ -75,6 +95,10 @@ class AdManager {
   }
 
   Future<void> _createAndLoadBannerAd(String screenName) async {
+    // 동일 화면 중복 로드 방지(ensure/재시도가 겹쳐 불려도 요청은 1건).
+    if (_loading[screenName] == true) return;
+    _loading[screenName] = true;
+    _lastAttempt[screenName] = DateTime.now();
     try {
       final adUnitId = _resolveAdUnitId(screenName);
 
@@ -90,12 +114,14 @@ class AdManager {
         listener: AdManagerBannerAdListener(
           onAdLoaded: (Ad ad) {
             lo.g('$AdManagerBannerAd loaded for $screenName.');
+            _loading[screenName] = false;
             Get.find<RootCntr>().updateAdLoadingStatus(screenName, true);
             _startAdTimer(screenName);
             _handleAdRetry(screenName, reset: true); // 재시도 카운터 리셋
           },
           onAdFailedToLoad: (Ad ad, LoadAdError error) {
             lo.g('$AdManagerBannerAd failedToLoad for $screenName: $error');
+            _loading[screenName] = false;
             Get.find<RootCntr>().updateAdLoadingStatus(screenName, false);
             ad.dispose();
             _bannerAds.remove(screenName);
@@ -110,12 +136,16 @@ class AdManager {
       _bannerAds[screenName] = ad;
     } catch (e) {
       lo.g('Error creating banner ad for $screenName: $e');
+      _loading[screenName] = false;
       Get.find<RootCntr>().updateAdLoadingStatus(screenName, false);
+      _handleAdRetry(screenName); // 예외(초기화 지연 등)도 백오프 재시도
     }
   }
 
   final Map<String, int> _retryAttempts = {};
-  final int maxRetryAttempts = 3;
+  final Map<String, bool> _loading = {};
+  final Map<String, DateTime> _lastAttempt = {};
+  final int maxRetryAttempts = 5;
 
   void _handleAdRetry(String screenName, {bool reset = false}) {
     if (reset) {
@@ -126,8 +156,18 @@ class AdManager {
     _retryAttempts[screenName] = (_retryAttempts[screenName] ?? 0) + 1;
 
     if (_retryAttempts[screenName]! <= maxRetryAttempts) {
-      final delay = Duration(seconds: pow(2, _retryAttempts[screenName]!).toInt()); // 지수 백오프
-      Future.delayed(delay, () {
+      // 지수 백오프(최대 60초 캡) — 콜드스타트 네트워크 혼잡 구간을 넘길 수 있게.
+      final int seconds = min(pow(2, _retryAttempts[screenName]!).toInt(), 60);
+      Future.delayed(Duration(seconds: seconds), () {
+        if (_bannerAds[screenName] == null) {
+          _createAndLoadBannerAd(screenName);
+        }
+      });
+    } else {
+      // 소진 후에도 영구 포기하지 않는다 — 5분 쿨다운 후 카운터를 리셋하고 재시도.
+      // (이전: 3회 소진 시 영구 공백 → initState가 1회뿐인 날씨 메인 탭은 앱 재시작 전까지 광고 없음)
+      _retryAttempts.remove(screenName);
+      Future.delayed(const Duration(minutes: 5), () {
         if (_bannerAds[screenName] == null) {
           _createAndLoadBannerAd(screenName);
         }
