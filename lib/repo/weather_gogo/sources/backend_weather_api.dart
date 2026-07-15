@@ -130,6 +130,43 @@ class BackendWeatherApi {
     }
   }
 
+  /// 통합 조회 - GET /weather/main?nx=&ny=&lat=&lng= → {current, yesterday, superfct, fct, mid}
+  /// 앱 라운드트립 절감용. 실패 시 null → 호출자가 기존 개별 엔드포인트로 폴백한다.
+  Future<Map<String, dynamic>?> getWeatherMain(int nx, int ny, double lat, double lng) async {
+    try {
+      final dio = await AuthDio.instance.getDio();
+      final res = await dio.get(
+        '${UrlConfig.baseURL}/weather/main',
+        queryParameters: {'nx': nx, 'ny': ny, 'lat': lat, 'lng': lng},
+      );
+      final resData = AuthDio.instance.dioResponse(res);
+      if (resData.code != '00' || resData.data is! Map) {
+        lo.g('BackendWeatherApi main 빈응답(폴백) code=${resData.code}');
+        return null;
+      }
+      return Map<String, dynamic>.from(resData.data as Map);
+    } catch (e) {
+      lo.g('BackendWeatherApi.getWeatherMain error(폴백): $e');
+      return null;
+    }
+  }
+
+  // 번들(/weather/main) 응답의 각 슬롯을 개별 엔드포인트와 동일하게 파싱한다.
+  List<ItemSuperNct> parseCurrentItems(dynamic data) {
+    if (data is! List) return [];
+    return data.map((e) => ItemSuperNct.fromJson(Map<String, Object?>.from(e as Map))).toList();
+  }
+
+  List<ItemSuperFct> parseSuperFctItems(dynamic data) {
+    if (data is! List) return [];
+    return data.map((e) => ItemSuperFct.fromJson(Map<String, Object?>.from(e as Map))).toList();
+  }
+
+  List<ItemFct> parseFctItems(dynamic data) {
+    if (data is! List) return [];
+    return data.map((e) => ItemFct.fromJson(Map<String, Object?>.from(e as Map))).toList();
+  }
+
   /// 기상특보 조회 - POST /weather/warn/current
   Future<List<dynamic>> getWeatherWarnings() async {
     try {

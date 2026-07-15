@@ -1,9 +1,7 @@
 import 'package:flutter/widgets.dart';
-import 'package:get/get.dart';
 import 'package:project1/app/weathergogo/cntr/data/current_weather_data.dart';
 import 'package:project1/app/weathergogo/cntr/data/daily_weather_data.dart';
 import 'package:project1/app/weathergogo/cntr/data/hourly_weather_data.dart';
-import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/weather_gogo/models/response/fct/fct_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/midland_fct/midlan_fct_res.dart';
 import 'package:project1/repo/weather_gogo/models/response/midta_fct/midta_fct_res.dart';
@@ -18,7 +16,11 @@ class WeatherDataProcessor {
   // 정적 인스턴스
   static final WeatherDataProcessor instance = WeatherDataProcessor._();
 
-  List<SevenDayWeather> processShortTermForecastToDaily(List<ItemFct> forecastItems, {double? lat, double? lon, String? cityName}) {
+  List<SevenDayWeather> processShortTermForecastToDaily(
+      List<ItemFct> forecastItems,
+      {double? lat,
+      double? lon,
+      String? cityName}) {
     Map<String, SevenDayWeather> dailyMap = {};
 
     for (var item in forecastItems) {
@@ -39,7 +41,9 @@ class WeatherDataProcessor {
       }
 
       bool isMorning = int.parse(item.fcstTime!) < 1200;
-      DayWeatherData timeData = isMorning ? dailyMap[forecastDate]!.morning : dailyMap[forecastDate]!.afternoon;
+      DayWeatherData timeData = isMorning
+          ? dailyMap[forecastDate]!.morning
+          : dailyMap[forecastDate]!.afternoon;
 
       switch (item.category) {
         case 'TMP':
@@ -92,11 +96,13 @@ class WeatherDataProcessor {
   // LGT	낙뢰	kA(킬로암페어)
   // VEC	풍향	deg
   // WSD	풍속	m/s
-  List<HourlyWeatherData> processSuperShortTermForecast(List<ItemSuperFct> forecastItems) {
+  List<HourlyWeatherData> processSuperShortTermForecast(
+      List<ItemSuperFct> forecastItems) {
     Map<DateTime, HourlyWeatherData> hourlyMap = {};
 
     for (var item in forecastItems) {
-      DateTime forecastDate = DateTime.parse('${item.fcstDate} ${item.fcstTime}');
+      DateTime forecastDate =
+          DateTime.parse('${item.fcstDate} ${item.fcstTime}');
 
       // 껍데이 만들어놓구 아래서 셋팅
       if (!hourlyMap.containsKey(forecastDate)) {
@@ -129,21 +135,18 @@ class WeatherDataProcessor {
   }
 
   //7~ 24시가지 날씨 정보 파싱처리
-  List<HourlyWeatherData> processShortTermForecast(List<ItemFct> forecastItems) {
+  List<HourlyWeatherData> processShortTermForecast(
+    List<ItemFct> forecastItems, {
+    DateTime? now,
+  }) {
     Map<DateTime, HourlyWeatherData> hourlyMap = {};
-    // 현재시점의  강수확률 셋팅
-    int index = 0;
+    final cutoff = (now ?? DateTime.now()).add(const Duration(hours: 5));
     for (var item in forecastItems) {
-      DateTime forecastDate = DateTime.parse('${item.fcstDate} ${item.fcstTime}');
-
-      // 강수확률의 경우 현재시점의 데이터를 저장
-      if (index == 0 && item.category == 'POP') {
-        Get.find<WeatherGogoCntr>().currentWeather.value.rainPo = item.fcstValue!;
-      }
-      index++;
+      DateTime forecastDate =
+          DateTime.parse('${item.fcstDate} ${item.fcstTime}');
 
       // 6시간 이후의 데이터만 사용
-      if (forecastDate.isBefore(DateTime.now().add(const Duration(hours: 5)))) {
+      if (forecastDate.isBefore(cutoff)) {
         continue;
       }
 
@@ -165,9 +168,9 @@ class WeatherDataProcessor {
           break;
         case 'PTY':
           hourlyMap[forecastDate]!.rain = item.fcstValue!;
+          break;
         case 'POP':
           hourlyMap[forecastDate]!.rainPo = item.fcstValue!;
-
           break;
       }
     }
@@ -180,8 +183,23 @@ class WeatherDataProcessor {
     // return hourlyList.take(24).toList();
   }
 
+  /// 단기예보 원본에서 가장 이른 시각의 강수확률을 찾는다.
+  ///
+  /// 예전에는 이 값 설정을 위해 processor가 GetX controller를 직접 찾아
+  /// 변경했다. 같은 선택 규칙을 유지하되 값만 반환해 호출자가 상태를
+  /// 반영하도록 한다.
+  String? findCurrentRainProbability(List<ItemFct> forecastItems) {
+    final popItems = forecastItems
+        .where((item) => item.category == 'POP' && item.fcstValue != null)
+        .toList()
+      ..sort((a, b) =>
+          '${a.fcstDate}${a.fcstTime}'.compareTo('${b.fcstDate}${b.fcstTime}'));
+    return popItems.isEmpty ? null : popItems.first.fcstValue;
+  }
+
   // 중기 예보 조합 최종 sevendayWeather에 적재
-  List<SevenDayWeather> processMidTermForecast(MidLandFcstResponse landForecast, MidTaResponse taForecast,
+  List<SevenDayWeather> processMidTermForecast(
+      MidLandFcstResponse landForecast, MidTaResponse taForecast,
       {double? lat, double? lon, String? cityName}) {
     List<SevenDayWeather> midTermList = [];
 
@@ -191,7 +209,11 @@ class WeatherDataProcessor {
 
     for (int i = 0; i < 6; i++) {
       // 중기 예보는 5일치 데이터를 제공 (3일 후부터 7일 후까지)
-      String fcstDate = startDate.add(Duration(days: i)).toString().substring(0, 10).replaceAll('-', '');
+      String fcstDate = startDate
+          .add(Duration(days: i))
+          .toString()
+          .substring(0, 10)
+          .replaceAll('-', '');
 
       SevenDayWeather weatherData = SevenDayWeather(
         lat: lat,
@@ -203,14 +225,22 @@ class WeatherDataProcessor {
       );
 
       // 아침 데이터 설정
-      weatherData.morning.skyDesc = _getSkyState(landForecast, i + afterday, isAm: true);
-      weatherData.morning.rainPo = _getRainProbability(landForecast, i + afterday, isAm: true).toString();
-      weatherData.morning.minTemp = _getTemperature(taForecast, 'taMin${i + afterday}');
+      weatherData.morning.skyDesc =
+          _getSkyState(landForecast, i + afterday, isAm: true);
+      weatherData.morning.rainPo =
+          _getRainProbability(landForecast, i + afterday, isAm: true)
+              .toString();
+      weatherData.morning.minTemp =
+          _getTemperature(taForecast, 'taMin${i + afterday}');
 
       // 오후 데이터 설정
-      weatherData.afternoon.skyDesc = _getSkyState(landForecast, i + afterday, isAm: false);
-      weatherData.afternoon.rainPo = _getRainProbability(landForecast, i + afterday, isAm: false).toString();
-      weatherData.afternoon.maxTemp = _getTemperature(taForecast, 'taMax${i + afterday}');
+      weatherData.afternoon.skyDesc =
+          _getSkyState(landForecast, i + afterday, isAm: false);
+      weatherData.afternoon.rainPo =
+          _getRainProbability(landForecast, i + afterday, isAm: false)
+              .toString();
+      weatherData.afternoon.maxTemp =
+          _getTemperature(taForecast, 'taMax${i + afterday}');
 
       // 공통 데이터 설정
       weatherData.morning.temp = weatherData.morning.minTemp;
@@ -259,7 +289,8 @@ class WeatherDataProcessor {
   }
 
 // 헬퍼 함수들
-  String _getSkyState(MidLandFcstResponse landForecast, int day, {bool isAm = true}) {
+  String _getSkyState(MidLandFcstResponse landForecast, int day,
+      {bool isAm = true}) {
     switch (day) {
       // case 3:
       //   return isAm ? landForecast.wf3Am : landForecast.wf3Pm;
@@ -282,7 +313,8 @@ class WeatherDataProcessor {
     }
   }
 
-  int _getRainProbability(MidLandFcstResponse landForecast, int day, {bool isAm = true}) {
+  int _getRainProbability(MidLandFcstResponse landForecast, int day,
+      {bool isAm = true}) {
     switch (day) {
       // case 3:
       //   return isAm ? landForecast.rnSt3Am : landForecast.rnSt3Pm;
