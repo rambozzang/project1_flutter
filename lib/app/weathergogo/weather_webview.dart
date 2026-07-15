@@ -223,6 +223,35 @@ class RealtimeSatellitePage extends StatelessWidget {
 })();
 ''';
 
+  // 로드 완료 후 타임랩스 애니메이션을 자동 재생한다.
+  // 재생 버튼은 재생 중이면 aria-label이 '일시정지'로 바뀌므로, '재생' 상태일 때만 한 번 누른다.
+  // 타임라인이 비동기로 붙을 수 있어 짧게 폴링하고, 한 번 눌렀으면 즉시 종료한다(사용자가 다시 멈추면 재개하지 않음).
+  static const String _autoPlayJs = r'''
+(() => {
+  if (window.__skySnapAutoPlaySatellite) return;
+  window.__skySnapAutoPlaySatellite = true;
+
+  let started = false;
+  const clickPlay = () => {
+    if (started) return true;
+    const playBtn = document.querySelector('button.play[aria-label*="재생"]');
+    if (playBtn) {
+      playBtn.click();
+      started = true;
+      return true;
+    }
+    return false;
+  };
+
+  clickPlay();
+  let attempts = 0;
+  const timer = setInterval(() => {
+    attempts += 1;
+    if (clickPlay() || attempts >= 40) clearInterval(timer);
+  }, 500);
+})();
+''';
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -231,7 +260,8 @@ class RealtimeSatellitePage extends StatelessWidget {
           title: '실시간 위성영상',
           url: _url,
           icon: Icons.satellite_alt,
-          injectJs: _dismissContinuePopupJs,
+          // 팝업 자동 닫기 + 타임랩스 자동 재생을 함께 주입한다.
+          injectJs: '$_dismissContinuePopupJs\n$_autoPlayJs',
           touchToggleBelow: true,
         ),
         const Gap(40),

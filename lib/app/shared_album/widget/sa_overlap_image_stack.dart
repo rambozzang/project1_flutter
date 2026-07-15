@@ -19,6 +19,7 @@ class SaOverlapImageStack extends StatelessWidget {
     this.height = 208,
     this.leadHeight = 200,
     this.overlay,
+    this.heroTag,
   });
 
   final String? leadUrl;
@@ -32,6 +33,7 @@ class SaOverlapImageStack extends StatelessWidget {
 
   /// 리드 이미지 위 오버레이(날씨칩·미디어수칩·재생버튼·NEW뱃지 등) — Stack으로 얹힌다.
   final Widget? overlay;
+  final Object? heroTag;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +66,14 @@ class SaOverlapImageStack extends StatelessWidget {
                 ),
               ),
               // 중앙 리드
-              _media(leadUrl, leadW, leadHeight, radius: 20, shadow: true),
+              if (heroTag != null)
+                Hero(
+                  tag: heroTag!,
+                  transitionOnUserGestures: true,
+                  child: _media(leadUrl, leadW, leadHeight, radius: 20, shadow: true),
+                )
+              else
+                _media(leadUrl, leadW, leadHeight, radius: 20, shadow: true),
               if (overlay != null)
                 SizedBox(width: leadW, height: leadHeight, child: overlay),
             ],

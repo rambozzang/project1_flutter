@@ -6,6 +6,7 @@ import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/theme/sa_weather_gradients.dart';
 import 'package:project1/app/shared_album/widget/sa_album_card.dart';
+import 'package:project1/app/shared_album/widget/sa_album_cover_hero.dart';
 import 'package:project1/app/shared_album/widget/sa_new_badge.dart';
 import 'package:project1/repo/community/data/community_data.dart';
 
@@ -43,10 +44,12 @@ class SaAlbumMosaicCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              height: imageH,
-              width: double.infinity,
-              child: Stack(
+            SaAlbumCoverHero(
+              communityId: c.communityId,
+              child: SizedBox(
+                height: imageH,
+                width: double.infinity,
+                child: Stack(
                 fit: StackFit.expand,
                 children: [
                   if (thumb != null && thumb.isNotEmpty)
@@ -67,7 +70,8 @@ class SaAlbumMosaicCard extends StatelessWidget {
                     Positioned(left: 8, top: 8, child: SaNewBadge(count: data.newCount)),
                   // 주인장(대장) 뱃지 — 표지 우측 상단.
                   if (c.isOwner) const Positioned(top: 8, right: 8, child: SaOwnerBadge()),
-                ],
+                  ],
+                ),
               ),
             ),
             Padding(

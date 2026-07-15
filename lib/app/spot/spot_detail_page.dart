@@ -91,7 +91,7 @@ class _SpotDetailPageState extends State<SpotDetailPage> {
       'lat': s.lat,
       'lon': s.lon,
     })?.then((created) {
-      if (created == true) _loadCommunities();
+      if (created == true || created is Map) _loadCommunities();
     });
   }
 

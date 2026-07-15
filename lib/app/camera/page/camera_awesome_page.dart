@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:project1/app/camera/page/photo_reg_page.dart';
 import 'package:project1/app/camera/page/video_reg_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// 카메라 권한 화면 상태.
 enum _CamPermState { checking, granted, denied, permanentlyDenied }
@@ -56,6 +57,7 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     _cameraState = state;
     _zoomSub?.cancel();
     _zoomSub = state.sensorConfig.zoom$.listen((z) => _lastZoom = z);
+    _scheduleGestureHint();
   }
 
   void _onScaleStart() {
@@ -124,33 +126,46 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
   final ValueNotifier<bool> _gaugeVN = ValueNotifier<bool>(false);
   Timer? _gaugeHideTimer;
 
-  // 제스처 힌트는 앱 실행당 1번만 노출한다(카메라 재진입 시 생략).
+  // 제스처 힌트는 사용자당 1번만 노출한다. 앱 재실행 후에도 반복하지 않는다.
+  static const String _gestureHintPrefKey = 'CAMERA_GESTURE_HINT_V3_SEEN';
   static bool _gestureHintShownThisRun = false;
+  bool _gestureHintChecked = false;
+  late final Future<SharedPreferences> _gesturePrefsFuture;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // 권한 확인과 동시에 안내 노출 여부를 미리 읽어 카메라 준비 후 지연이 없게 한다.
+    _gesturePrefsFuture = SharedPreferences.getInstance();
     _checkCameraPermission();
     // 촬영 화면 경고 문구를 5초 뒤 페이드아웃시킨다.
     _warningTimer = Timer(const Duration(seconds: 3), () {
       if (mounted) setState(() => _showContentWarning = false);
     });
-    // 손가락 왕복 스와이프 애니메이션(0→1→0 반복, 끝에서 살짝 튕김) — 힌트 노출 중에만 구동.
-    _swipeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
-    _swipeAnim = CurvedAnimation(parent: _swipeCtrl, curve: Curves.easeInOutBack);
-    // 다음 프레임에 페이드인 → 4.2초 후 페이드아웃(스와이프 왕복이 여러 번 보이도록)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _gestureHintShownThisRun) return;
-      _gestureHintShownThisRun = true;
-      _swipeCtrl.repeat(reverse: true);
-      setState(() => _showGestureHint = true);
-      _hintTimer = Timer(const Duration(milliseconds: 4200), () {
-        if (!mounted) return;
-        setState(() => _showGestureHint = false);
-        _swipeCtrl.stop();
-      });
-    });
+    // 과한 튕김 없이 방향만 또렷하게 읽히는 왕복 모션.
+    _swipeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100));
+    _swipeAnim = CurvedAnimation(parent: _swipeCtrl, curve: Curves.easeInOutCubic);
+  }
+
+  Future<void> _scheduleGestureHint() async {
+    if (_gestureHintChecked || _gestureHintShownThisRun) return;
+    _gestureHintChecked = true;
+    final prefs = await _gesturePrefsFuture;
+    if (!mounted || prefs.getBool(_gestureHintPrefKey) == true) return;
+
+    // 실제 카메라가 준비되는 즉시 표시한다. 안내는 상단에만 있어 촬영 버튼을 막지 않는다.
+    _gestureHintShownThisRun = true;
+    unawaited(prefs.setBool(_gestureHintPrefKey, true));
+    _swipeCtrl.repeat(reverse: true);
+    setState(() => _showGestureHint = true);
+    _hintTimer = Timer(const Duration(milliseconds: 6000), _dismissGestureHint);
+  }
+
+  void _dismissGestureHint() {
+    _hintTimer?.cancel();
+    _swipeCtrl.stop();
+    if (mounted && _showGestureHint) setState(() => _showGestureHint = false);
   }
 
   @override
@@ -626,24 +641,22 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
               ),
             ),
           ),
-          // 초기화 시 조작 안내(앱 실행당 1회): 상하(밝기)=우측 측면, 좌우(줌)=중앙.
-          Positioned.fill(
+          // 카메라 조작 안내: 실제 프리뷰 위에서 핵심 제스처 2개만 한곳에 보여준다.
+          Positioned(
+            top: MediaQuery.paddingOf(context).top + 92,
+            left: 20,
+            right: 20,
             child: IgnorePointer(
-              child: AnimatedOpacity(
-                opacity: _showGestureHint ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 450),
-                curve: Curves.easeInOut,
-                child: Stack(
-                  children: [
-                    Center(child: _buildZoomHint()),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 14),
-                        child: _buildBrightnessHint(),
-                      ),
-                    ),
-                  ],
+              ignoring: !_showGestureHint,
+              child: AnimatedSlide(
+                offset: _showGestureHint ? Offset.zero : const Offset(0, -0.08),
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                child: AnimatedOpacity(
+                  opacity: _showGestureHint ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOut,
+                  child: _buildGestureGuide(),
                 ),
               ),
             ),
@@ -653,7 +666,7 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     );
   }
 
-  // ── 제스처 안내 (좌우=줌 / 상하=밝기) — 캡슐/보더 없이 손끝 점이 화면을 스와이프하는 모션 ──
+  // ── 제스처 안내 (좌우=줌 / 상하=밝기) ──
 
   // 반투명 유리 알약(블러 + 은은한 흰 테두리) — 밝기 게이지 표시에 사용.
   Widget _glassPill({required Widget child, EdgeInsets? padding}) {
@@ -674,60 +687,55 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     );
   }
 
-  // 손가락 아이콘이 궤적을 따라 왕복 스와이프 — 끝에서 살짝 튕기는 모션으로
-  // "이 방향으로 밀어라"를 직관적으로 전달한다.
+  // 손가락 아이콘이 짧은 궤적을 왕복해 방향을 텍스트보다 먼저 전달한다.
   Widget _swipeFinger({required bool horizontal}) {
     return AnimatedBuilder(
       animation: _swipeAnim,
       builder: (context, _) {
-        final double t = _swipeAnim.value; // 0~1 easeInOutBack 왕복
+        final double t = _swipeAnim.value;
         final double pos = (t * 2 - 1); // -1 ~ 1
-        final double travel = horizontal ? 58 : 44;
+        final double travel = horizontal ? 25 : 18;
         return Stack(
           alignment: Alignment.center,
           children: [
-            // 스와이프 궤적 선
             Container(
-              width: horizontal ? 144 : 3,
-              height: horizontal ? 3 : 108,
+              width: horizontal ? 76 : 2,
+              height: horizontal ? 2 : 54,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: horizontal ? Alignment.centerLeft : Alignment.topCenter,
                   end: horizontal ? Alignment.centerRight : Alignment.bottomCenter,
                   colors: [
-                    Colors.white.withValues(alpha: 0.06),
-                    Colors.white.withValues(alpha: 0.40),
-                    Colors.white.withValues(alpha: 0.06),
+                    Colors.white.withValues(alpha: 0.12),
+                    Colors.white.withValues(alpha: 0.55),
+                    Colors.white.withValues(alpha: 0.12),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            // 양쪽 방향 화살표
             if (horizontal) ...[
-              Positioned(left: 0, child: Icon(Icons.chevron_left, color: Colors.white.withValues(alpha: 0.55), size: 26)),
-              Positioned(right: 0, child: Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.55), size: 26)),
+              Positioned(left: 0, child: Icon(Icons.chevron_left, color: Colors.white.withValues(alpha: 0.72), size: 18)),
+              Positioned(right: 0, child: Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.72), size: 18)),
             ] else ...[
-              Positioned(top: 0, child: Icon(Icons.expand_less, color: Colors.white.withValues(alpha: 0.55), size: 26)),
-              Positioned(bottom: 0, child: Icon(Icons.expand_more, color: Colors.white.withValues(alpha: 0.55), size: 26)),
+              Positioned(top: 0, child: Icon(Icons.expand_less, color: Colors.white.withValues(alpha: 0.72), size: 18)),
+              Positioned(bottom: 0, child: Icon(Icons.expand_more, color: Colors.white.withValues(alpha: 0.72), size: 18)),
             ],
-            // 움직이는 손가락
             Transform.translate(
               offset: horizontal ? Offset(pos * travel, 0) : Offset(0, pos * travel),
               child: Container(
-                padding: const EdgeInsets.all(9),
+                width: 28,
+                height: 28,
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.20),
+                  color: const Color(0xFF7C6FF2),
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.45), width: 1),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 12, spreadRadius: 1),
-                  ],
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.8)),
                 ),
                 child: const Icon(
                   Icons.touch_app,
                   color: Colors.white,
-                  size: 22,
+                  size: 16,
                 ),
               ),
             ),
@@ -737,75 +745,89 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     );
   }
 
-  // 상하(밝기): 우측에서 손가락이 위아래로 크게 왕복 + 라벨.
-  Widget _buildBrightnessHint() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 54,
-          height: 136,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              const Positioned(top: 0, child: Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white60, size: 24)),
-              const Positioned(bottom: 0, child: Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white60, size: 24)),
-              _swipeFinger(horizontal: false),
-            ],
-          ),
+  Widget _buildGestureGuide() {
+    return Semantics(
+      label: '카메라 조작 안내. 좌우로 밀어 확대하고 위아래로 밀어 밝기를 조절할 수 있습니다.',
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 12, 14),
+        decoration: BoxDecoration(
+          color: const Color(0xE61A1B22),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
         ),
-        const SizedBox(height: 8),
-        const Row(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.wb_sunny_rounded, color: Colors.white, size: 14),
-            SizedBox(width: 4),
-            Text('밝기 · 상하 스와이프',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  shadows: [Shadow(color: Colors.black54, blurRadius: 8)],
-                )),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    '화면을 밀어 바로 조절하세요',
+                    style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _dismissGestureHint,
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white.withValues(alpha: 0.72),
+                    minimumSize: const Size(64, 44),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  child: const Text('알겠어요', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                ),
+              ],
+            ),
+            _gestureGuideRow(
+              horizontal: true,
+              title: '좌우로 밀어 확대',
+              description: '두 손가락으로 확대해도 돼요',
+            ),
+            Divider(height: 1, color: Colors.white.withValues(alpha: 0.12)),
+            _gestureGuideRow(
+              horizontal: false,
+              title: '위아래로 밀어 밝기 조절',
+              description: '위로 밀면 더 밝아져요',
+            ),
           ],
         ),
-      ],
+      ),
     );
   }
 
-  // 좌우(줌): 중앙에서 손가락이 좌우로 크게 왕복 + 라벨.
-  Widget _buildZoomHint() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 188,
-          height: 54,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              const Positioned(left: 0, child: Icon(Icons.chevron_left_rounded, color: Colors.white60, size: 24)),
-              const Positioned(right: 0, child: Icon(Icons.chevron_right_rounded, color: Colors.white60, size: 24)),
-              _swipeFinger(horizontal: true),
-            ],
+  Widget _gestureGuideRow({
+    required bool horizontal,
+    required String title,
+    required String description,
+  }) {
+    return SizedBox(
+      height: 68,
+      child: Row(
+        children: [
+          SizedBox(
+            width: 72,
+            height: 58,
+            child: Center(child: _swipeFinger(horizontal: horizontal)),
           ),
-        ),
-        const SizedBox(height: 8),
-        const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.zoom_in_rounded, color: Colors.white, size: 15),
-            SizedBox(width: 4),
-            Text('줌 · 좌우 스와이프',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  shadows: [Shadow(color: Colors.black54, blurRadius: 8)],
-                )),
-          ],
-        ),
-      ],
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 3),
+                Text(description,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.62), fontSize: 11.5)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

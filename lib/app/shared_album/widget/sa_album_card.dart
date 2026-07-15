@@ -3,6 +3,7 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/widget/sa_glass_chip.dart';
+import 'package:project1/app/shared_album/widget/sa_album_cover_hero.dart';
 import 'package:project1/app/shared_album/widget/sa_member_avatar_stack.dart';
 import 'package:project1/app/shared_album/widget/sa_new_badge.dart';
 import 'package:project1/app/shared_album/widget/sa_overlap_image_stack.dart';
@@ -65,6 +66,9 @@ class SaAlbumCard extends StatelessWidget {
                 leftUrl: data.thumbs.length > 1 ? data.thumbs[1] : null,
                 rightUrl: data.thumbs.length > 2 ? data.thumbs[2] : null,
                 gradientKey: _gradientKeyFor(c),
+                heroTag: (MediaQuery.maybeOf(context)?.disableAnimations ?? false)
+                    ? null
+                    : saAlbumCoverHeroTag(c.communityId),
                 overlay: Stack(
                   children: [
                     // +미디어수 칩은 좌측 상단으로(우측 상단은 대장 뱃지 자리).
