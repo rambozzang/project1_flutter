@@ -255,6 +255,15 @@ class _AlbumListPageState extends State<AlbumListPage> {
             }),
           ),
           const SizedBox(width: 8),
+          // 근처 사람의 앨범 초대 QR을 스캔해 바로 가입(폰 가까이 = QR 스캔)
+          _circleButton(
+            icon: PhosphorIconsBold.qrCode,
+            tooltip: 'QR 스캔으로 가입',
+            onTap: () => Get.toNamed('/AlbumScanPage')?.then((joined) {
+              if (joined == true) _reload();
+            }),
+          ),
+          const SizedBox(width: 8),
           // 보기 방식 토글: 1a 스택 피드 ↔ 1c 모자이크 그리드
           _circleButton(
             icon: _mosaic ? PhosphorIconsBold.rows : PhosphorIconsBold.squaresFour,
