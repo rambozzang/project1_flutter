@@ -703,6 +703,7 @@ class WeathgergogoPageState extends State<WeathgergogoPage>
                 name: data.id!.tagNm.toString(),
                 latLng: LatLng(double.parse(data.lat.toString()),
                     double.parse(data.lon.toString())),
+                addr: data.addr, // 시도 추출용 → 미세먼지 조회에서 카카오 역지오코딩 생략
               );
               Get.find<WeatherGogoCntr>().searchWeatherKakao(geocodeData);
             },

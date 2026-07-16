@@ -313,9 +313,12 @@ class WeatherGogoCntr extends GetxController {
 
       currentLocation.value.latLng = location;
       currentLocation.value.name = geocodeData.name;
+      currentLocation.value.addr = geocodeData.addr;
       currentLocation.refresh();
 
-      await getWeatherDataByLatLng(location, true);
+      // 관심지역/검색은 주소를 이미 알고 있으니 넘겨 카카오 역지오코딩을 생략시킨다.
+      await getWeatherDataByLatLng(location, true,
+          knownAddr: geocodeData.addr, knownName: geocodeData.name);
       // update();
     } catch (e) {
       handleError('searchWeatherKakao 실패', e);
@@ -323,7 +326,8 @@ class WeatherGogoCntr extends GetxController {
   }
 
   late Stopwatch stopwatch;
-  Future<void> getWeatherDataByLatLng(LatLng location, bool isAllSearch) async {
+  Future<void> getWeatherDataByLatLng(LatLng location, bool isAllSearch,
+      {String? knownAddr, String? knownName}) async {
     // 최초 진입·새로고침·현위치·지역검색이 겹쳐도 동일 컨트롤러에서는 한 번만 조회한다.
     if (_weatherLoadInFlight) {
       lo.g('날씨 조회 중복 요청 생략: $location');
@@ -364,30 +368,32 @@ class WeatherGogoCntr extends GetxController {
           ? Map<String, dynamic>.from(bundle['mid'] as Map)
           : null;
 
+      // ① 코어 날씨(현재·시간별·주간)는 번들만 있으면 완성된다 — 이 4개만 기다려 즉시 렌더한다.
+      //    카카오 역지오코딩(동네이름)·미세먼지·어제 시계열은 외부/부가라 크리티컬 경로에서 뺀다.
+      //    (서버 /weather/main은 ~수십ms인데, 예전엔 카카오 응답까지 기다려 화면이 늦게 떴다.)
       await Future.wait([
         fetchSuperNct(location, preloaded: (curItems != null && curItems.isNotEmpty) ? curItems : null),
         fetchSuperFct(location, preloaded: (superItems != null && superItems.isNotEmpty) ? superItems : null),
         fetchFct(location, preloaded: (fctItems != null && fctItems.isNotEmpty) ? fctItems : null),
         fetchMidlandWeather(location, preloaded: midMap),
-        fetchLocalNameAndMistinfo(location),
+      ]);
+      // 응답 순서와 무관하게 최종 시간축을 만들고 즉시 표시한다.
+      _composeForecast(location);
+      isLoading.value = false; // ★ 코어 렌더 완료 → 스피너 즉시 해제(부가 정보는 뒤에서 계속 로드)
+      _saveSnapshot(); // 코어 스냅샷 저장(다음 실행 즉시표시용)
+      lo.g('코어 날씨 렌더 완료: ${stopwatch.elapsedMilliseconds}ms');
+
+      // ② 부가 정보(느린 카카오 지오코딩·미세먼지·어제)는 화면 표시 뒤에 이어서 — 각자 reactive 갱신.
+      await Future.wait([
+        fetchLocalNameAndMistinfo(location, knownAddr: knownAddr, knownName: knownName),
         fetchYesterDayWeather(location),
         // fetchWeatherAlert(location),
       ]);
-
-      // 초단기·단기예보는 병렬로 완료되므로 응답 순서에 의존하지 않게 최종 시간축을 만든다.
-      // 현재 시간이 16:22라면 16시부터, 중복 없이 앞으로 24시간만 표시한다.
-      _composeForecast(location);
-
-      // 예보(hourlyWeather)와 어제 원본(_yesterdayRawList)이 모두 완료된 뒤,
-      // 예보 각 시각의 24시간 전(어제 동일 시각)을 매칭해 어제선을 예보와 같은 길이·순서로 정렬한다.
+      // 예보와 어제 원본이 모두 준비된 뒤: 어제선 정렬 + 어제대비 + 오늘 최고/최저.
       _alignYesterdayToForecast();
-
-      // 어제 비교(오늘 현재 vs 어제 같은 시각) + 오늘(0~23시) 최고/최저 — 데이터 준비 후 일괄 계산.
       _computeYesterdayCompare();
       _computeTodayHiLo();
-
-      // 최신 화면 상태를 저장 → 다음 앱 실행 시 즉시 표시(백그라운드 갱신 전까지의 stale 화면).
-      _saveSnapshot();
+      _saveSnapshot(); // 어제까지 반영된 완전본으로 갱신 저장
 
       // 뉴스는 날씨 렌더링과 무관하므로 크리티컬 경로에서 분리(로딩 대기시간에서 제외).
       // 실패해도 날씨엔 영향 없도록 fire-and-forget.
@@ -437,36 +443,36 @@ class WeatherGogoCntr extends GetxController {
   }
 
   // 동네 이름, 미세 먼지 정보 가져오기
-  Future<void> fetchLocalNameAndMistinfo(LatLng location) async {
+  Future<void> fetchLocalNameAndMistinfo(LatLng location, {String? knownAddr, String? knownName}) async {
     try {
       // ==========================================================
       // 동네이름, 미세먼지 가져오기
       // ==========================================================
-      LocationService locationService = LocationService();
-      final (onValue1, onValue2) = await locationService.getLocalName(location);
-      if (onValue1 == null || onValue1.isEmpty || onValue2 == null) {
-        lo.g(
-            '미세먼지 조회 생략: 주소 변환 실패 location=$location sido=$onValue1 local=$onValue2');
-        return;
+      // 관심지역/검색으로 진입하면 저장된 주소(knownAddr)가 있어, 그 첫 토큰(시도)으로 미세먼지를
+      // 바로 조회한다 → 카카오 역지오코딩(외부 호출) 생략. 주소 미상(GPS 현위치)만 카카오를 탄다.
+      String? sido = _sidoFromAddr(knownAddr);
+      String? name = knownName;
+      if (sido == null) {
+        final (onValue1, onValue2) = await LocationService().getLocalName(location);
+        if (onValue1 == null || onValue1.isEmpty || onValue2 == null) {
+          lo.g('미세먼지 조회 생략: 주소 변환 실패 location=$location sido=$onValue1 local=$onValue2');
+          return;
+        }
+        sido = onValue1;
+        name = onValue2;
+        currentLocation.value.addr = '$onValue1 $onValue2';
       }
-
-      // currentLocation.value!.name = onValue2!;
-      // 20241105 Getx5.0.1 버전
-      // currentLocation.update((val) {
-      //   val?.name = onValue2;
-      //   val?.addr = '$onValue1 $onValue2';
-      // });
-
-      currentLocation.value.name = onValue2;
-      currentLocation.value.addr = '$onValue1 $onValue2';
+      if (name != null && name.isNotEmpty) {
+        currentLocation.value.name = name;
+      }
       currentLocation.refresh();
 
       final MistRepo mistRepo = MistRepo();
-      final MistData? rawMistData = await mistRepo.getMistData(onValue1);
+      final MistData? rawMistData = await mistRepo.getMistData(sido);
       if (rawMistData == null ||
           rawMistData.items == null ||
           rawMistData.items!.isEmpty) {
-        lo.g('미세먼지 백엔드 빈응답: sido=$onValue1 location=$location');
+        lo.g('미세먼지 백엔드 빈응답: sido=$sido location=$location');
         return;
       }
       mistDetailData.value = rawMistData;
@@ -490,6 +496,19 @@ class WeatherGogoCntr extends GetxController {
     } catch (e) {
       lo.g('동네 이름/미세먼지 조회 오류: location=$location error=$e');
     }
+  }
+
+  /// 주소 문자열에서 시도(첫 토큰)를 추출한다. 예: "서울 강남구 역삼동" → "서울".
+  /// 관심지역/검색 결과의 addr는 카카오 주소(항상 시도로 시작)라 첫 토큰이 시도다.
+  /// 없거나 형식이 아니면 null → 호출부가 카카오 역지오코딩으로 폴백.
+  String? _sidoFromAddr(String? addr) {
+    if (addr == null) return null;
+    final t = addr.trim();
+    if (t.isEmpty) return null;
+    final first = t.split(RegExp(r'\s+')).first;
+    // 시도명은 최소 2자 한글(서울/경기/…). 숫자·영문·1자면 주소가 아니므로 폴백.
+    if (first.length < 2 || !RegExp(r'^[가-힣]+$').hasMatch(first)) return null;
+    return first;
   }
 
   String compareFcsTime(String? time1, String? time2) {
