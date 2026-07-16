@@ -257,7 +257,7 @@ class _AlbumListPageState extends State<AlbumListPage> {
           const SizedBox(width: 8),
           // 근처 사람의 앨범 초대 QR을 스캔해 바로 가입(폰 가까이 = QR 스캔)
           _circleButton(
-            icon: PhosphorIconsBold.qrCode,
+            materialIcon: Icons.qr_code_scanner,
             tooltip: 'QR 스캔으로 가입',
             onTap: () => Get.toNamed('/AlbumScanPage')?.then((joined) {
               if (joined == true) _reload();
@@ -294,7 +294,7 @@ class _AlbumListPageState extends State<AlbumListPage> {
     );
   }
 
-  Widget _circleButton({required IconData icon, required String tooltip, required VoidCallback onTap}) {
+  Widget _circleButton({IconData? icon, IconData? materialIcon, required String tooltip, required VoidCallback onTap}) {
     return Tooltip(
       message: tooltip,
       child: Semantics(
@@ -311,7 +311,9 @@ class _AlbumListPageState extends State<AlbumListPage> {
               shape: BoxShape.circle,
               border: Border.all(color: SaColors.borderStrong),
             ),
-            child: PhosphorIcon(icon, size: 17, color: SaColors.textPrimary),
+            child: materialIcon != null
+                ? Icon(materialIcon, size: 19, color: SaColors.textPrimary)
+                : PhosphorIcon(icon!, size: 17, color: SaColors.textPrimary),
           ),
         ),
       ),
