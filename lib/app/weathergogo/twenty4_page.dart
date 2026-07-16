@@ -447,5 +447,8 @@ class ChartPainterHour extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  // true — 데이터(오늘/어제 시계열)가 바뀌면 다시 그린다. false면 코어 분리로 어제 선이
+  // 나중에 도착해도 같은 CustomPaint가 repaint되지 않아 어제 그래프가 안 나타났다.
+  // 이 painter는 Obx가 데이터 변경 시에만 새로 만들어지므로 과도한 repaint는 없다.
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

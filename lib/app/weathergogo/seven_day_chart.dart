@@ -235,5 +235,6 @@ class TemperatureGraphPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  // 데이터(주간 기온) 변경 시 다시 그린다. Obx가 sevenDayWeather 변경 때만 리빌드하므로 안전.
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
