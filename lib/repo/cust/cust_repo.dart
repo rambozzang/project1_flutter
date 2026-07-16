@@ -2,6 +2,7 @@
 import 'package:project1/config/url_config.dart';
 import 'package:project1/repo/api/auth_dio.dart';
 import 'package:project1/repo/common/res_data.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/repo/cust/data/apple_join_data.dart';
 import 'package:project1/repo/cust/data/cust_tag_data.dart';
 import 'package:project1/repo/cust/data/cust_update_data.dart';
@@ -116,6 +117,29 @@ class CustRepo {
     try {
       var url = '${UrlConfig.baseURL}/auth/login';
       Response response = await dio.post(url, data: {'custId': custId, 'fcmId': fcmId});
+      return AuthDio.instance.dioResponse(response);
+    } on DioException catch (e) {
+      return AuthDio.instance.dioException(e);
+    } finally {}
+  }
+
+  // 프리미엄 구독 동기화(영수증/만료일 서버 갱신)
+  Future<ResData> syncPremium({
+    required String productId,
+    required String orderId,
+    required DateTime expireDate,
+    required bool active,
+  }) async {
+    final dio = await AuthDio.instance.getDio(debug: true);
+    try {
+      var url = '${UrlConfig.baseURL}/cust/premium/sync';
+      Response response = await dio.post(url, data: {
+        'custId': AuthCntr.to.custId.value,
+        'productId': productId,
+        'orderId': orderId,
+        'expireDate': expireDate.toIso8601String(),
+        'active': active,
+      });
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);

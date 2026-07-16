@@ -8,6 +8,7 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/theme/sa_weather_gradients.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/shared_album/widget/sa_album_card.dart';
 import 'package:project1/app/community/widget/cover_template.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
@@ -508,7 +509,14 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
           ),
           for (final t in kCoverTemplates)
             GestureDetector(
-              onTap: () => _selectTemplate(t.id),
+              onTap: () {
+                if (t.premium && !AuthCntr.to.isPremium.value) {
+                  // 프리미엄 전용 테마는 구독 페이지로 유도
+                  Get.toNamed('/PremiumPage', arguments: {'source': 'album_theme'});
+                  return;
+                }
+                _selectTemplate(t.id);
+              },
               child: Container(
                 width: 62,
                 margin: const EdgeInsets.only(right: 8),
@@ -529,6 +537,25 @@ class _AlbumCoverEditorPageState extends State<AlbumCoverEditorPage> {
                       placeholder: (_, __) => ColoredBox(color: SaColors.surfaceElevated),
                       errorWidget: (_, __, ___) => ColoredBox(color: SaColors.surfaceElevated),
                     ),
+                    if (t.premium)
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: const BoxDecoration(
+                            color: Colors.black54,
+                            shape: BoxShape.circle,
+                          ),
+                          child: PhosphorIcon(
+                            AuthCntr.to.isPremium.value
+                                ? PhosphorIconsFill.crown
+                                : PhosphorIconsFill.lock,
+                            size: 12,
+                            color: Colors.amber,
+                          ),
+                        ),
+                      ),
                     Positioned(
                       left: 0,
                       right: 0,

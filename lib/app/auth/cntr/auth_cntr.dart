@@ -34,6 +34,11 @@ class AuthCntr extends GetxController with SecureStorage {
   late String fcmId = "";
   String deviceId = "";
 
+  // 프리미엄 구독 상태(로그인 응답 premiumYn 기준). 광고 제거 + 프리미엄 날씨 unlock.
+  final RxBool isPremium = false.obs;
+  // 앨범 저장 용량 티어: 'FREE' | 'PRO'
+  final RxString storageTier = "FREE".obs;
+
   //개인정보 처리 동의
   RxBool privacyPolicyAgreed = false.obs;
   RxBool termsOfServiceAgreed = false.obs;
@@ -92,6 +97,7 @@ class AuthCntr extends GetxController with SecureStorage {
       }
       print("login success res.data: ${res.data}");
       resLoginData.value = LoginRes.fromMap(res.data);
+      _syncPremiumFromLogin(res.data);
       isLogged.value = true;
       update();
 
@@ -168,6 +174,7 @@ class AuthCntr extends GetxController with SecureStorage {
         return resData;
       }
       resLoginData.value = LoginRes.fromMap(res.data);
+      _syncPremiumFromLogin(res.data);
       isLogged.value = true;
 
       return resData;
@@ -186,6 +193,35 @@ class AuthCntr extends GetxController with SecureStorage {
       val!.nickNm = nickNm;
       val.custNm = custNm;
     });
+  }
+
+  /// 로그인 응답에서 premiumYn/storageTier를 읽어 프리미엄 상태를 갱신한다.
+  void _syncPremiumFromLogin(Map<String, dynamic> data) {
+    final bool premium = data['premiumYn'] == 'Y';
+    isPremium.value = premium;
+    storageTier.value = data['storageTier']?.toString() ?? (premium ? 'PRO' : 'FREE');
+  }
+
+  /// 구매/복원 확정 후 프리미엄 활성화(로컬 상태 + 로그인 데이터 반영).
+  void applyPremium() {
+    isPremium.value = true;
+    storageTier.value = 'PRO';
+    resLoginData.update((val) {
+      val?.premiumYn = 'Y';
+      val?.storageTier = 'PRO';
+    });
+    update();
+  }
+
+  /// 프리미엄 해지/만료 시 호출.
+  void applyFree() {
+    isPremium.value = false;
+    storageTier.value = 'FREE';
+    resLoginData.update((val) {
+      val?.premiumYn = 'N';
+      val?.storageTier = 'FREE';
+    });
+    update();
   }
 
   Future<void> leave() async {
@@ -228,6 +264,8 @@ class AuthCntr extends GetxController with SecureStorage {
       resLoginData.value = LoginRes();
       custId.value = '';
       isLogged.value = false;
+      isPremium.value = false;
+      storageTier.value = 'FREE';
 
       // 사용자에게 앱 재시작 알림
       await Get.dialog(
@@ -290,6 +328,8 @@ class AuthCntr extends GetxController with SecureStorage {
       resLoginData.value = LoginRes();
       custId.value = '';
       isLogged.value = false;
+      isPremium.value = false;
+      storageTier.value = 'FREE';
 
       // 진행 상황 다이얼로그 닫기
       Get.back();

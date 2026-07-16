@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/camera/page/camera_awesome_page.dart';
+import 'package:project1/app/premium/premium_page.dart';
 import 'package:project1/app/spot/spot_weather_page.dart';
 import 'package:project1/app/special_weather/special_weather_list_page.dart';
 import 'package:project1/app/special_weather/special_weather_detail_page.dart';
@@ -219,6 +220,11 @@ abstract class AppPages {
       name: '/MaketingPage',
       page: () => const MaketingPage(),
       //  transition: Transition.downToUp,
+    ),
+
+    GetPage(
+      name: '/PremiumPage',
+      page: () => const PremiumPage(),
     ),
 
     GetPage(

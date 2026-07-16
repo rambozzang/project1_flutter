@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:project1/admob/ad_manager.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 
 class BannerAdWidget extends StatefulWidget {
@@ -22,6 +23,10 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // 프리미엄(광고 제거) 구독자는 배너를永远 노출하지 않는다.
+    if (AuthCntr.to.isPremium.value) {
+      return const SizedBox.shrink();
+    }
     return Obx(() {
       final isLoaded = Get.find<RootCntr>().isAdLoaded(widget.screenName);
       final ad = AdManager().getBannerAd(widget.screenName);

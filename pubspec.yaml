@@ -110,6 +110,7 @@ dependencies:
   # syncfusion_flutter_gauges: ^26.1.39
   # flutter_inappwebview: ^6.1.2
   google_mobile_ads: ^5.2.0
+  in_app_purchase: ^3.1.11
   file_picker: ^8.0.3
   file_saver: ^0.2.13
   url_launcher: ^6.3.1

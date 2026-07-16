@@ -19,6 +19,7 @@ import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/route/app_route.dart';
 import 'package:project1/services/deep_link_service.dart';
 import 'package:project1/services/weather_notification_service.dart';
+import 'package:project1/subscript_service.dart';
 import 'package:project1/widget/global_upload_indicator.dart';
 import 'package:workmanager/workmanager.dart';
 // import 'package:project1/theme/app_theme.dart';
@@ -124,6 +125,8 @@ class TigerBk extends StatelessWidget {
         Get.put(AchievementService(), permanent: true);
         // Get.put(LifeCycleGetx());
         Get.put(WeatherGogoCntr());
+        // 프리미엄 구독(IAP) 상태 관리 — 앱 전역 상주.
+        Get.put(SubscriptionService.instance, permanent: true);
         // 앨범(커뮤니티) 초대 딥링크 - AuthCntr 등록 이후 초기화(로그인 상태 리스닝 필요).
         DeepLinkService.instance.initialize();
       }),

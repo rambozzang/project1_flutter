@@ -17,6 +17,8 @@ class LoginRes {
   String? accessToken;
   String? refreshToken;
   CustData? custData;
+  String? premiumYn; // 'Y'=프리미엄(광고제거+프리미엄 날씨), 'N'=무료
+  String? storageTier; // 'FREE'|'PRO' — 앨범 저장 용량 티어
   LoginRes({
     this.custId,
     this.nickNm,
@@ -31,6 +33,8 @@ class LoginRes {
     this.accessToken,
     this.refreshToken,
     this.custData,
+    this.premiumYn,
+    this.storageTier,
   });
 
   LoginRes copyWith({
@@ -47,6 +51,8 @@ class LoginRes {
     String? accessToken,
     String? refreshToken,
     CustData? custData,
+    String? premiumYn,
+    String? storageTier,
   }) {
     return LoginRes(
       custId: custId ?? this.custId,
@@ -62,6 +68,8 @@ class LoginRes {
       accessToken: accessToken ?? this.accessToken,
       refreshToken: refreshToken ?? this.refreshToken,
       custData: custData ?? this.custData,
+      premiumYn: premiumYn ?? this.premiumYn,
+      storageTier: storageTier ?? this.storageTier,
     );
   }
 
@@ -80,6 +88,8 @@ class LoginRes {
       'accessToken': accessToken,
       'refreshToken': refreshToken,
       'custData': custData?.toMap(),
+      'premiumYn': premiumYn,
+      'storageTier': storageTier,
     };
   }
 
@@ -98,6 +108,8 @@ class LoginRes {
       accessToken: map['accessToken'] != null ? map['accessToken'] as String : null,
       refreshToken: map['refreshToken'] != null ? map['refreshToken'] as String : null,
       custData: map['custData'] != null ? CustData.fromMap(map['custData'] as Map<String, dynamic>) : null,
+      premiumYn: map['premiumYn'] != null ? map['premiumYn'] as String : null,
+      storageTier: map['storageTier'] != null ? map['storageTier'] as String : null,
     );
   }
 

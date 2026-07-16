@@ -9,11 +9,12 @@ import 'package:project1/utils/utils.dart';
 /// 앨범 표지 템플릿 1개(테마 + 무료 스톡사진). 백엔드 CommunityCoverTemplates와 templateId·URL을 동일하게 유지해야 한다.
 @immutable
 class CoverTemplate {
-  const CoverTemplate(this.id, this.label, this.imageUrl);
+  const CoverTemplate(this.id, this.label, this.imageUrl, {this.premium = false});
 
   final String id;
   final String label;
   final String imageUrl;
+  final bool premium;
 
   @override
   bool operator ==(Object other) =>
@@ -22,10 +23,11 @@ class CoverTemplate {
           runtimeType == other.runtimeType &&
           id == other.id &&
           label == other.label &&
-          imageUrl == other.imageUrl;
+          imageUrl == other.imageUrl &&
+          premium == other.premium;
 
   @override
-  int get hashCode => Object.hash(id, label, imageUrl);
+  int get hashCode => Object.hash(id, label, imageUrl, premium);
 }
 
 /// Unsplash 원본 URL은 원본 해상도(수 MB)를 내려줘 그대로 쓰면 로딩이 수 초 걸린다.
@@ -41,8 +43,9 @@ String coverImageUrl(String url, {int width = 800}) {
 /// 위젯 크기에 따른 메모리 디코딩 크기는 `memCacheWidth`에서 별도로 줄인다.
 String albumCoverCacheUrl(String url) => coverImageUrl(url, width: 960);
 
-/// 표지 템플릿 10종(순서 중요 — 첫 항목이 앨범 생성 시 기본 선택값).
+/// 표지 템플릿(순서 중요 — 첫 항목이 앨범 생성 시 기본 선택값).
 /// 2026-07-03 전면 교체: 밝고 귀여운 캐릭터·토이 무드의 무료(Unsplash) 사진으로 통일(눈검수 완료).
+/// premium=true 항목은 프리미엄 구독자만 선택 가능(백엔드 CommunityCoverTemplates와 동일 유지).
 const List<CoverTemplate> kCoverTemplates = [
   CoverTemplate('wedding', '결혼식', 'https://images.unsplash.com/photo-1530092285049-1c42085fd395'), // 하늘 아래 흰 꽃(부케 무드)
   CoverTemplate('reunion', '동창회', 'https://images.unsplash.com/photo-1563396983906-b3795482a59a'), // 레트로 양철 로봇과 오리 친구들
@@ -54,6 +57,12 @@ const List<CoverTemplate> kCoverTemplates = [
   CoverTemplate('family', '가족모임', 'https://images.unsplash.com/photo-1602734846297-9299fc2d4703'), // 나비넥타이 테디베어
   CoverTemplate('friends', '친구모임', 'https://images.unsplash.com/photo-1585366119957-e9730b6d0f60'), // 레고 미니피규어 4인방 횡단보도
   CoverTemplate('couple', '연애', 'https://images.unsplash.com/photo-1518199266791-5375a83190b7'), // 하트 보케
+  // ── 프리미엄 전용 테마(+5종) ──
+  CoverTemplate('premium_gold', '골드 프리미엄', 'https://images.unsplash.com/photo-1534447677768-be436bb09401', premium: true),
+  CoverTemplate('premium_neon', '네온 프리미엄', 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853', premium: true),
+  CoverTemplate('premium_cinematic', '시네마틱 프리미엄', 'https://images.unsplash.com/photo-1478720568477-152d9b164e26', premium: true),
+  CoverTemplate('premium_minimal', '미니멀 프리미엄', 'https://images.unsplash.com/photo-1507371341162-763b5e419408', premium: true),
+  CoverTemplate('premium_aqua', '아쿠아 프리미엄', 'https://images.unsplash.com/photo-1439066615861-d1af74d74000', premium: true),
 ];
 
 /// 갤러리에서 사진을 골라 Cloudflare에 업로드하고 URL을 반환한다.
