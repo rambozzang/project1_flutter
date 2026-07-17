@@ -57,58 +57,72 @@ class WeatherLottie {
     return hour >= 19 || hour < 6;
   }
 
-  static Widget getWeatherAnimation(String weatherCondition) {
-    bool isNight = _isNight();
+  // optimized:true → 24시·주간처럼 아이콘 수십 개가 동시에 뜨는 목록용.
+  // 애니메이션은 그대로 유지하되 30fps 제한 + 래스터 캐시로 CPU 부하를 낮춘다.
+  // 기본 false는 기존 leaf 메서드(Lottie.asset(asset))와 완전히 동일 — 헤더 히어로·video·spot 등 무변경.
+  static Widget getWeatherAnimation(String weatherCondition, {bool optimized = false}) {
+    final String asset = _conditionAsset(weatherCondition);
+    if (!optimized) return Lottie.asset(asset);
+    return Lottie.asset(
+      asset,
+      frameRate: const FrameRate(30),
+      renderCache: RenderCache.raster,
+    );
+  }
+
+  // 조건 문자열 → 에셋 경로(야간 변형 포함). 기존 leaf 메서드들과 매핑 동일.
+  static String _conditionAsset(String weatherCondition) {
+    final bool isNight = _isNight();
     switch (weatherCondition.toLowerCase()) {
       case 'sun':
-        return isNight ? nightSun() : sun();
+        return isNight ? nightSunAsset : sunAsset;
       case 'cloudy':
-        return isNight ? nightDayCloudy() : dayCloudy();
+        return isNight ? nightDayCloudyAsset : dayCloudyAsset;
       case 'mostly_cloudy':
-        return isNight ? nightDayMostlyCloudy() : dayMostlyCloudy();
+        return isNight ? nightDayMostlyCloudyAsset : dayMostlyCloudyAsset;
       case 'rain':
-        return isNight ? nightDayRain() : dayRain();
+        return isNight ? nightDayRainAsset : dayRainAsset;
       case 'snow':
-        return isNight ? nightDaySnow() : daySnow();
+        return isNight ? nightDaySnowAsset : daySnowAsset;
       case 'storm':
-        return storm();
+        return stormAsset;
       case 'wind':
-        return wind();
+        return windAsset;
       default:
-        return isNight ? nightSun() : sun(); // 기본값으로 맑은 날씨 반환
+        return isNight ? nightSunAsset : sunAsset; // 기본값으로 맑은 날씨 반환
     }
   }
 
-  // 성능을 위해 사전 로딩
-  static Future<void> precacheAllAnimations(BuildContext context) async {
+  // 성능을 위해 사전 로딩 — main()에서 백그라운드로 1회 호출(첫 렌더 시 Lottie 파싱 지연 완화).
+  static Future<void> precacheAllAnimations() async {
     await Future.wait([
-      _precacheAnimation(context, backgroundAsset),
-      _precacheAnimation(context, dayBgAsset),
-      _precacheAnimation(context, dayMostlyCloudyAsset),
-      _precacheAnimation(context, dayCloudyAsset),
-      _precacheAnimation(context, dayCloudy1Asset),
-      _precacheAnimation(context, dayRainAsset),
-      _precacheAnimation(context, daySnowAsset),
-      _precacheAnimation(context, nightDayCloudyAsset),
-      _precacheAnimation(context, nightDayMostlyCloudyAsset),
-      _precacheAnimation(context, nightDayRainAsset),
-      _precacheAnimation(context, nightDaySnowAsset),
-      _precacheAnimation(context, nightSunAsset),
-      _precacheAnimation(context, rainAsset),
-      _precacheAnimation(context, stormAsset),
-      _precacheAnimation(context, sunAsset),
-      _precacheAnimation(context, sun1Asset),
-      _precacheAnimation(context, windAsset),
-      _precacheAnimation(context, loadingWeatherAsset),
-      _precacheAnimation(context, locationAsset),
-      _precacheAnimation(context, locationNotFoundAsset),
-      _precacheAnimation(context, locationServiceAsset),
-      _precacheAnimation(context, noInternetAsset),
-      _precacheAnimation(context, failureAsset),
+      _precacheAnimation(backgroundAsset),
+      _precacheAnimation(dayBgAsset),
+      _precacheAnimation(dayMostlyCloudyAsset),
+      _precacheAnimation(dayCloudyAsset),
+      _precacheAnimation(dayCloudy1Asset),
+      _precacheAnimation(dayRainAsset),
+      _precacheAnimation(daySnowAsset),
+      _precacheAnimation(nightDayCloudyAsset),
+      _precacheAnimation(nightDayMostlyCloudyAsset),
+      _precacheAnimation(nightDayRainAsset),
+      _precacheAnimation(nightDaySnowAsset),
+      _precacheAnimation(nightSunAsset),
+      _precacheAnimation(rainAsset),
+      _precacheAnimation(stormAsset),
+      _precacheAnimation(sunAsset),
+      _precacheAnimation(sun1Asset),
+      _precacheAnimation(windAsset),
+      _precacheAnimation(loadingWeatherAsset),
+      _precacheAnimation(locationAsset),
+      _precacheAnimation(locationNotFoundAsset),
+      _precacheAnimation(locationServiceAsset),
+      _precacheAnimation(noInternetAsset),
+      _precacheAnimation(failureAsset),
     ]);
   }
 
-  static Future<void> _precacheAnimation(BuildContext context, String asset) async {
+  static Future<void> _precacheAnimation(String asset) async {
     final provider = AssetLottie(asset);
     await provider.load();
   }

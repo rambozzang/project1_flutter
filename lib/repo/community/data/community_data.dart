@@ -4,6 +4,7 @@ class CommunityData {
   final String name;
   final String? description;
   final String? imageUrl;
+  final String? coverThumbnailUrl;
   final String? ownerCustId;
   final int? spotId;
   final String isPublic; // 'Y' | 'N'
@@ -24,6 +25,7 @@ class CommunityData {
   final Set<String>? cardOptions; // 카드 표시 옵션(member/media/avatars/new). null=전체 표시
   // ── 목록 카드 즉시 렌더용(_fillCard N콜 제거) ──
   final List<String> avatars; // 상위 멤버 프로필경로(최대 4, JOINED)
+  final List<String> coverThumbs; // 대표 미디어(montage) 썸네일 URL(순서 유지) — 목록 _fillCard N콜 제거
   final String? lastMediaDtm; // 최신 미디어 시각('yyyy-MM-dd HH:mm')
 
   CommunityData({
@@ -31,6 +33,7 @@ class CommunityData {
     required this.name,
     this.description,
     this.imageUrl,
+    this.coverThumbnailUrl,
     this.coverTemplateId,
     this.ownerCustId,
     this.spotId,
@@ -49,6 +52,7 @@ class CommunityData {
     this.coverMediaIds = const [],
     this.cardOptions,
     this.avatars = const [],
+    this.coverThumbs = const [],
     this.lastMediaDtm,
   });
 
@@ -61,6 +65,9 @@ class CommunityData {
   CommunityData copyWith({
     String? name,
     String? description,
+    String? imageUrl,
+    String? coverThumbnailUrl,
+    String? coverTemplateId,
     String? themeColor,
     List<int>? coverMediaIds,
     Set<String>? cardOptions,
@@ -69,8 +76,9 @@ class CommunityData {
       communityId: communityId,
       name: name ?? this.name,
       description: description ?? this.description,
-      imageUrl: imageUrl,
-      coverTemplateId: coverTemplateId,
+      imageUrl: imageUrl ?? this.imageUrl,
+      coverThumbnailUrl: coverThumbnailUrl ?? this.coverThumbnailUrl,
+      coverTemplateId: coverTemplateId ?? this.coverTemplateId,
       ownerCustId: ownerCustId,
       spotId: spotId,
       isPublic: isPublic,
@@ -96,12 +104,21 @@ class CommunityData {
   bool get isApproval => joinType == 'APPROVAL';
   bool get canEditCover => isOwner || isManager;
 
+  /// 앱에서는 경량 대문을 우선하고, 구버전 백엔드 응답은 원본으로 안전하게 폴백한다.
+  String? get coverDisplayUrl {
+    final thumbnail = coverThumbnailUrl?.trim();
+    if (thumbnail != null && thumbnail.isNotEmpty) return thumbnail;
+    final original = imageUrl?.trim();
+    return original == null || original.isEmpty ? null : original;
+  }
+
   factory CommunityData.fromMap(Map<String, dynamic> map) {
     return CommunityData(
       communityId: (map['communityId'] as num).toInt(),
       name: map['name']?.toString() ?? '',
       description: map['description']?.toString(),
       imageUrl: map['imageUrl']?.toString(),
+      coverThumbnailUrl: map['coverThumbnailUrl']?.toString(),
       ownerCustId: map['ownerCustId']?.toString(),
       spotId: map['spotId'] == null ? null : (map['spotId'] as num).toInt(),
       isPublic: map['isPublic']?.toString() ?? 'Y',
@@ -128,6 +145,11 @@ class CommunityData {
           ? null
           : map['cardOptions'].toString().split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toSet(),
       avatars: (map['avatars'] as List?)
+              ?.map((e) => e.toString())
+              .where((e) => e.isNotEmpty)
+              .toList() ??
+          const [],
+      coverThumbs: (map['coverThumbs'] as List?)
               ?.map((e) => e.toString())
               .where((e) => e.isNotEmpty)
               .toList() ??

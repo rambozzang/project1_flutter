@@ -7,7 +7,12 @@
 #   PLAY_AAB_PATH             : AAB 경로 (기본 build/app/outputs/bundle/release/app-release.aab)
 #   PLAY_RELEASE_NOTES_FILE   : 릴리즈 노트(ko-KR) 텍스트 파일 (기본 scripts/release_notes_ko.txt)
 import os
+import socket
 import sys
+
+# 대용량 AAB(130MB+)의 마지막 청크에서 서버가 번들 전체를 처리하는 동안
+# 기본 소켓 타임아웃으로 read가 끊기던 문제(2026-07-15) → 10분으로 연장.
+socket.setdefaulttimeout(600)
 
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -46,7 +51,7 @@ media = MediaFileUpload(AAB, mimetype="application/octet-stream",
 req = svc.edits().bundles().upload(packageName=PACKAGE, editId=edit_id, media_body=media)
 resp = None
 while resp is None:
-    status, resp = req.next_chunk()
+    status, resp = req.next_chunk(num_retries=5)  # 일시적 네트워크/5xx 재시도
     if status:
         print(f"   업로드 {int(status.progress() * 100)}%", flush=True)
 version_code = resp["versionCode"]

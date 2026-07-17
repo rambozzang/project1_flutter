@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/camera/page/camera_awesome_page.dart';
+import 'package:project1/app/premium/premium_page.dart';
 import 'package:project1/app/spot/spot_weather_page.dart';
 import 'package:project1/app/special_weather/special_weather_list_page.dart';
 import 'package:project1/app/special_weather/special_weather_detail_page.dart';
@@ -34,6 +35,7 @@ import 'package:project1/app/shared_album/album_cover_editor_page.dart';
 import 'package:project1/app/shared_album/album_create_page.dart';
 import 'package:project1/app/shared_album/album_detail_page.dart';
 import 'package:project1/app/shared_album/album_shell.dart';
+import 'package:project1/app/shared_album/album_scan_page.dart';
 import 'package:project1/app/shared_album/album_explore_page.dart';
 import 'package:project1/app/shared_album/album_invite_page.dart';
 import 'package:project1/app/shared_album/album_immersive_page.dart';
@@ -222,6 +224,11 @@ abstract class AppPages {
     ),
 
     GetPage(
+      name: '/PremiumPage',
+      page: () => const PremiumPage(),
+    ),
+
+    GetPage(
       name: '/ServicePage',
       page: () => const ServicePage(),
       //  transition: Transition.downToUp,
@@ -287,6 +294,10 @@ abstract class AppPages {
     GetPage(
       name: '/AlbumShellPage',
       page: () => const AlbumShellPage(),
+    ),
+    GetPage(
+      name: '/AlbumScanPage',
+      page: () => const AlbumScanPage(),
     ),
     // 공유앨범 상세(구 1d 갤러리 뷰) — 셸로 대체됐으나 롤백/직접 진입용으로 유지
     GetPage(

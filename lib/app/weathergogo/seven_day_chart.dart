@@ -18,7 +18,7 @@ class DailyWeatherChart extends StatefulWidget {
 class _DailyWeatherChartState extends State<DailyWeatherChart> {
   final double itemWidth = 95.0;
 
-  final double itemHeight = 310.0;
+  final double itemHeight = 330.0;
 
   final double graphHeight = 140.0;
 
@@ -130,19 +130,15 @@ class _DailyWeatherChartState extends State<DailyWeatherChart> {
 
   Widget _buildHalfDayWeather(int index, DayWeatherData data, String period) {
     // 2부터는 중기예보 아이콘으로 변경
+    // 주간은 하루×2 = 십수 개 아이콘 동시 표시 → optimized(30fps+래스터 캐시)로 애니 유지하며 부하만 낮춘다.
     final Widget weathIcon = index > 1
-        ? WeatherDataProcessor.instance.getWeatherIconForMidtermForecast(data.skyDesc.toString())
-        : WeatherDataProcessor.instance.getWeatherGogoImage(data.sky.toString(), data.rain.toString());
+        ? WeatherDataProcessor.instance.getWeatherIconForMidtermForecast(data.skyDesc.toString(), optimized: true)
+        : WeatherDataProcessor.instance.getWeatherGogoImage(data.sky.toString(), data.rain.toString(), optimized: true);
 
     return Column(
       children: [
         Text(period, style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.white)),
-        SizedBox(height: 40, width: 40, child: weathIcon
-            // child: Lottie.asset(
-            //   weathIcon,
-            //   fit: BoxFit.cover,
-            // ),
-            ),
+        SizedBox(height: 40, width: 40, child: RepaintBoundary(child: weathIcon)),
         Text('${data.rainPo ?? '0'}%',
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color.fromARGB(255, 204, 226, 240))),
         const SizedBox(
@@ -235,5 +231,6 @@ class TemperatureGraphPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  // 데이터(주간 기온) 변경 시 다시 그린다. Obx가 sevenDayWeather 변경 때만 리빌드하므로 안전.
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

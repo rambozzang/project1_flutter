@@ -97,6 +97,8 @@ class _NaverNewPageState extends State<NaverNewPage> {
                     children: [
                       Text(
                         codeRes.codeNm?.replaceAll('[날씨] ', '').replaceAll('[날씨]', '') ?? '',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w600),
                       ),
                       // const Spacer(),

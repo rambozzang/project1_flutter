@@ -1,10 +1,12 @@
 import 'package:bot_toast/bot_toast.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:get/get.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:project1/app/community/widget/cover_template.dart' show albumCoverCacheUrl;
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/widget/sa_album_card.dart';
@@ -15,6 +17,7 @@ import 'package:project1/repo/community/community_repo.dart';
 import 'package:project1/repo/community/data/community_data.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// 공유앨범 홈 — 1a 스택 피드.
 /// 내가 속한 앨범을 큰 카드 리스트로 보여준다. 카드 상단 겹침 스택은 앨범 최근 미디어
@@ -66,13 +69,58 @@ class _AlbumListPageState extends State<AlbumListPage> {
   }
 
   Future<void> _restoreViewMode() async {
-    final v = await _storage.read(key: _kViewModeKey);
+    // SharedPreferences 사용 — 이전엔 secure storage였는데 로그아웃 시 AuthCntr.removeAll()이
+    // deleteAll()로 전체를 지워 보기 방식도 함께 초기화됐다. UI 취향값이라 일반 저장소가 맞다.
+    final prefs = await SharedPreferences.getInstance();
+    String? v = prefs.getString(_kViewModeKey);
+    if (v == null) {
+      // 기존 사용자 마이그레이션: 예전 secure storage 값이 남아있으면 1회 이관.
+      v = await _storage.read(key: _kViewModeKey);
+      if (v != null) await prefs.setString(_kViewModeKey, v);
+    }
     if (mounted && v == 'mosaic') setState(() => _mosaic = true);
   }
 
   void _toggleViewMode() {
     setState(() => _mosaic = !_mosaic);
-    _storage.write(key: _kViewModeKey, value: _mosaic ? 'mosaic' : 'stack');
+    SharedPreferences.getInstance()
+        .then((p) => p.setString(_kViewModeKey, _mosaic ? 'mosaic' : 'stack'));
+  }
+
+  Future<void> _createAlbum() async {
+    final result = await Get.toNamed('/AlbumCreatePage');
+    if (!mounted) return;
+    if (result is! Map) {
+      if (result == true) await _reload();
+      return;
+    }
+
+    final id = int.tryParse(result['communityId']?.toString() ?? '');
+    if (id == null) {
+      await _reload();
+      return;
+    }
+
+    // 생성 직후 목록에서 다시 찾게 하지 않고, 새 앨범으로 곧바로 이어준다.
+    var community = await _repo.getDetail(id);
+    // 생성 직후 상세 조회 반영이 아주 잠깐 늦는 환경을 한 번 흡수한다.
+    if (community == null) {
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      community = await _repo.getDetail(id);
+    }
+    if (!mounted) return;
+    if (community == null) {
+      await _reload();
+      return;
+    }
+    await Get.toNamed(
+      '/AlbumShellPage',
+      arguments: {
+        'communityId': id,
+        'community': community,
+      },
+    );
+    if (mounted) await _reload();
   }
 
   Future<void> _load() async {
@@ -122,6 +170,11 @@ class _AlbumListPageState extends State<AlbumListPage> {
   }
 
   Future<void> _fillCard(SaAlbumCardData card) async {
+    // 백엔드 목록 응답이 대표 표지 썸네일(coverThumbs)을 함께 주면 추가 콜 없이 바로 사용 → 목록 N+1 제거.
+    if (card.community.coverThumbs.isNotEmpty) {
+      card.loadedThumbs = card.community.coverThumbs.take(3).toList();
+      return;
+    }
     final int id = card.community.communityId;
     // 아바타·최근 업데이트는 목록 응답(getMyCommunities)에 이미 포함되어 _load에서 세팅됨 →
     // 개별 getMembers 콜 완전 제거. 표지 모드(대표 미디어 미지정)는 앨범 표지(imageUrl)만 쓰므로
@@ -132,7 +185,7 @@ class _AlbumListPageState extends State<AlbumListPage> {
       return;
     }
     try {
-      // 대표 미디어 montage 모드만 실제 미디어를 조회해 지정 순서대로 썸네일을 구성한다.
+      // (폴백) 백엔드가 coverThumbs를 아직 안 주는 경우 — 기존 방식으로 대표 미디어 썸네일 조회.
       final feedRes = await _repo.getFeedRes(id, 0, 30) as dynamic;
       if (feedRes.code == '00' && feedRes.data is List) {
         final items = (feedRes.data as List).map((e) => BoardWeatherListData.fromMap(e)).toList();
@@ -169,7 +222,7 @@ class _AlbumListPageState extends State<AlbumListPage> {
       child: Scaffold(
         backgroundColor: SaColors.bgBase,
         body: SafeArea(
-          bottom: false,
+          bottom: true,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -201,7 +254,17 @@ class _AlbumListPageState extends State<AlbumListPage> {
           // 앨범 탐색(공개 앨범 검색 + 코드로 참여)
           _circleButton(
             icon: PhosphorIconsBold.magnifyingGlass,
+            tooltip: '앨범 찾기 또는 참여',
             onTap: () => Get.toNamed('/AlbumExplorePage')?.then((joined) {
+              if (joined == true) _reload();
+            }),
+          ),
+          const SizedBox(width: 8),
+          // 근처 사람의 앨범 초대 QR을 스캔해 바로 가입(폰 가까이 = QR 스캔)
+          _circleButton(
+            materialIcon: Icons.qr_code_scanner,
+            tooltip: 'QR 스캔으로 가입',
+            onTap: () => Get.toNamed('/AlbumScanPage')?.then((joined) {
               if (joined == true) _reload();
             }),
           ),
@@ -209,17 +272,26 @@ class _AlbumListPageState extends State<AlbumListPage> {
           // 보기 방식 토글: 1a 스택 피드 ↔ 1c 모자이크 그리드
           _circleButton(
             icon: _mosaic ? PhosphorIconsBold.rows : PhosphorIconsBold.squaresFour,
+            tooltip: _mosaic ? '목록으로 보기' : '모자이크로 보기',
             onTap: _toggleViewMode,
           ),
           const SizedBox(width: 8),
           // 앨범 만들기(teal 그라디언트 원형)
-          GestureDetector(
-            onTap: () => Get.toNamed('/AlbumCreatePage')?.then((_) => _reload()),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(gradient: SaColors.primaryGradient, shape: BoxShape.circle),
-              child: PhosphorIcon(PhosphorIconsBold.plus, size: 17, color: SaColors.onAccent),
+          Tooltip(
+            message: '새 앨범 만들기',
+            child: Semantics(
+              button: true,
+              label: '새 앨범 만들기',
+              child: GestureDetector(
+                onTap: _createAlbum,
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(gradient: SaColors.primaryGradient, shape: BoxShape.circle),
+                  child: PhosphorIcon(PhosphorIconsBold.plus, size: 17, color: SaColors.onAccent),
+                ),
+              ),
             ),
           ),
         ],
@@ -227,18 +299,28 @@ class _AlbumListPageState extends State<AlbumListPage> {
     );
   }
 
-  Widget _circleButton({required IconData icon, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: SaColors.surface,
-          shape: BoxShape.circle,
-          border: Border.all(color: SaColors.borderStrong),
+  Widget _circleButton({IconData? icon, IconData? materialIcon, required String tooltip, required VoidCallback onTap}) {
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        button: true,
+        label: tooltip,
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: SaColors.surface,
+              shape: BoxShape.circle,
+              border: Border.all(color: SaColors.borderStrong),
+            ),
+            child: materialIcon != null
+                ? Icon(materialIcon, size: 19, color: SaColors.textPrimary)
+                : PhosphorIcon(icon!, size: 17, color: SaColors.textPrimary),
+          ),
         ),
-        child: PhosphorIcon(icon, size: 17, color: SaColors.textPrimary),
       ),
     );
   }
@@ -265,7 +347,7 @@ class _AlbumListPageState extends State<AlbumListPage> {
               label: '첫 앨범 만들기',
               height: 46,
               glow: true,
-              onTap: () => Get.toNamed('/AlbumCreatePage')?.then((_) => _reload()),
+              onTap: _createAlbum,
             ),
             const SizedBox(height: 60),
           ],
@@ -283,7 +365,7 @@ class _AlbumListPageState extends State<AlbumListPage> {
   // 1a — 스택 피드(기본)
   Widget _buildStackFeed() {
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 152),
       physics: const AlwaysScrollableScrollPhysics(),
       itemCount: _cards.length,
       itemBuilder: (context, index) {
@@ -299,7 +381,7 @@ class _AlbumListPageState extends State<AlbumListPage> {
   // 1c — 모자이크 그리드(밀도 높음, 앨범 많은 사용자용)
   Widget _buildMosaicGrid() {
     return MasonryGridView.count(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 152),
       physics: const AlwaysScrollableScrollPhysics(),
       crossAxisCount: 2,
       mainAxisSpacing: 10,
@@ -319,8 +401,7 @@ class _AlbumListPageState extends State<AlbumListPage> {
   }
 
   void _openDetail(SaAlbumCardData card) {
-    // 앨범 진입 = 셸(2a 타임라인 + 하단 탭바). 구 1d 상세는 /AlbumDetailPage로 남겨둠.
-    // 이미 가진 카드 정보(community)를 함께 넘겨 셸이 즉시 렌더되게 한다(진입 지연 제거).
+    // 앨범 메인 = 셸(하단 메뉴바). community를 함께 넘겨 즉시 렌더(스피너 최소화).
     Get.toNamed('/AlbumShellPage',
         arguments: {'communityId': card.community.communityId, 'community': card.community})?.then((r) {
       // 상세에서 삭제·나가기 등 변경(result==true)이 있을 때만 목록 새로고침.
@@ -377,9 +458,12 @@ class _AlbumListPageState extends State<AlbumListPage> {
 
   Widget _inviteRow(CommunityData c) {
     final bool busy = _inviteBusy.contains(c.communityId);
+    // 제목이 비어 오는 경우에도 최소한 식별되도록 폴백.
+    final String title = c.name.trim().isEmpty ? '이름 없는 앨범' : c.name;
+    final String? dateText = _inviteDateText(c.crtDtm);
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: SaColors.surface,
         borderRadius: BorderRadius.circular(14),
@@ -387,16 +471,23 @@ class _AlbumListPageState extends State<AlbumListPage> {
       ),
       child: Row(
         children: [
+          // 앨범 표지 썸네일 — 어떤 앨범인지 시각적으로 식별.
+          _inviteThumb(c),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: SaText.bodyMedium.copyWith(fontSize: 13.5)),
-                Text('멤버 ${c.memberCnt}', style: SaText.mono(fontSize: 9.5)),
+                // 앨범 제목 — 어떤 앨범의 초대인지 한눈에.
+                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: SaText.bodyMedium.copyWith(fontSize: 14, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Text('멤버 ${c.memberCnt}${dateText != null ? ' · $dateText' : ''}',
+                    style: SaText.mono(fontSize: 9.5)),
               ],
             ),
           ),
+          const SizedBox(width: 8),
           if (busy)
             SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal))
           else ...[
@@ -417,6 +508,44 @@ class _AlbumListPageState extends State<AlbumListPage> {
           ],
         ],
       ),
+    );
+  }
+
+  // 앨범 생성일자 — 'yyyy.MM.dd'. 빈값/형식 미달이면 null(표시 생략).
+  String? _inviteDateText(String? dtm) {
+    if (dtm == null || dtm.length < 10) return null;
+    return dtm.substring(0, 10).replaceAll('-', '.');
+  }
+
+  // 앨범 표지 썸네일(없으면 이름 첫 글자 그라디언트).
+  Widget _inviteThumb(CommunityData c) {
+    const double size = 42;
+    final radius = BorderRadius.circular(12);
+    final coverUrl = c.coverDisplayUrl;
+    if (coverUrl != null) {
+      return ClipRRect(
+        borderRadius: radius,
+        child: CachedNetworkImage(
+          imageUrl: albumCoverCacheUrl(coverUrl),
+          memCacheWidth: 160,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorWidget: (_, __, ___) => _inviteThumbFallback(c, size, radius),
+        ),
+      );
+    }
+    return _inviteThumbFallback(c, size, radius);
+  }
+
+  Widget _inviteThumbFallback(CommunityData c, double size, BorderRadius radius) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(borderRadius: radius, gradient: SaColors.primaryGradient),
+      alignment: Alignment.center,
+      child: Text(c.name.trim().isNotEmpty ? c.name.characters.first : '?',
+          style: SaText.titleS.copyWith(color: SaColors.onAccent)),
     );
   }
 

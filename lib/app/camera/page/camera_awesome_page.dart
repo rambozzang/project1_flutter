@@ -109,57 +109,37 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     }
   }
 
-  // 카메라 초기화 시 조작 안내(↕밝기·↔줌)를 잠깐 띄웠다 사라지게 한다.
-  bool _showGestureHint = false;
-  Timer? _hintTimer;
   // 촬영 화면 경고 문구(음란물·불법촬영물 금지) — 5초 후 자동으로 사라진다.
-  bool _showContentWarning = true;
+  bool _showContentWarning = false;
   Timer? _warningTimer;
-  // 힌트 캡슐 내부의 손가락(점)이 왕복 스와이프하는 애니메이션(0↔1 반복).
-  late final AnimationController _swipeCtrl;
-  late final Animation<double> _swipeAnim;
 
   // 밝기 게이지: 상하 드래그로 밝기 조절 중에만 잠깐 표시.
   final ValueNotifier<double> _brightnessVN = ValueNotifier<double>(0.5);
   final ValueNotifier<bool> _gaugeVN = ValueNotifier<bool>(false);
   Timer? _gaugeHideTimer;
 
-  // 제스처 힌트는 앱 실행당 1번만 노출한다(카메라 재진입 시 생략).
-  static bool _gestureHintShownThisRun = false;
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _checkCameraPermission();
-    // 촬영 화면 경고 문구를 5초 뒤 페이드아웃시킨다.
-    _warningTimer = Timer(const Duration(seconds: 3), () {
+  }
+
+  /// 권한 승인과 같은 상태 변경 안에서 두 안내를 함께 활성화한다.
+  /// 카메라 상태/하단 컨트롤 초기화를 기다리지 않으므로 첫 카메라 프레임부터 동시에 보인다.
+  void _prepareCameraNotices() {
+    _warningTimer?.cancel();
+    _showContentWarning = true;
+    _warningTimer = Timer(const Duration(milliseconds: 2800), () {
       if (mounted) setState(() => _showContentWarning = false);
-    });
-    // 손가락 왕복 스와이프 애니메이션(0→1→0 반복, 끝에서 살짝 튕김) — 힌트 노출 중에만 구동.
-    _swipeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
-    _swipeAnim = CurvedAnimation(parent: _swipeCtrl, curve: Curves.easeInOutBack);
-    // 다음 프레임에 페이드인 → 4.2초 후 페이드아웃(스와이프 왕복이 여러 번 보이도록)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _gestureHintShownThisRun) return;
-      _gestureHintShownThisRun = true;
-      _swipeCtrl.repeat(reverse: true);
-      setState(() => _showGestureHint = true);
-      _hintTimer = Timer(const Duration(milliseconds: 4200), () {
-        if (!mounted) return;
-        setState(() => _showGestureHint = false);
-        _swipeCtrl.stop();
-      });
     });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _hintTimer?.cancel();
     _warningTimer?.cancel();
     _gaugeHideTimer?.cancel();
-    _swipeCtrl.dispose();
     _brightnessVN.dispose();
     _gaugeVN.dispose();
     _zoomSub?.cancel();
@@ -184,6 +164,7 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
       final status = await Permission.camera.status;
       if (!mounted) return;
       if (status.isGranted) {
+        _prepareCameraNotices();
         setState(() => _permState = _CamPermState.granted);
         return;
       }
@@ -204,6 +185,7 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
       status = await Permission.camera.request();
     }
     if (!mounted) return;
+    if (status.isGranted) _prepareCameraNotices();
     setState(() {
       _permState = status.isGranted
           ? _CamPermState.granted
@@ -219,6 +201,7 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     final status = await Permission.camera.status;
     if (!mounted) return;
     if (status.isGranted) {
+      _prepareCameraNotices();
       setState(() => _permState = _CamPermState.granted);
       return;
     }
@@ -523,7 +506,7 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
               bottomActionsBackgroundColor: Colors.transparent,
             ),
           ),
-          // 촬영 화면 경고 — 음란물·불법촬영물 촬영·게시 금지(배경 투명, 그림자로 가독성). 3초 후 페이드아웃.
+          // 촬영 화면 경고 — 제스처 안내와 동시에 나타나고 함께 사라진다.
           Positioned(
             top: MediaQuery.of(context).padding.top + 58,
             left: 0,
@@ -532,7 +515,8 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
               child: Center(
                 child: AnimatedOpacity(
                   opacity: _showContentWarning ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 500),
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeOut,
                   // 배경 투명(빨강 제거) — 카메라 위 가독성은 텍스트/아이콘 그림자로 확보.
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
@@ -626,34 +610,12 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
               ),
             ),
           ),
-          // 초기화 시 조작 안내(앱 실행당 1회): 상하(밝기)=우측 측면, 좌우(줌)=중앙.
-          Positioned.fill(
-            child: IgnorePointer(
-              child: AnimatedOpacity(
-                opacity: _showGestureHint ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 450),
-                curve: Curves.easeInOut,
-                child: Stack(
-                  children: [
-                    Center(child: _buildZoomHint()),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 14),
-                        child: _buildBrightnessHint(),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 
-  // ── 제스처 안내 (좌우=줌 / 상하=밝기) — 캡슐/보더 없이 손끝 점이 화면을 스와이프하는 모션 ──
+  // ── 제스처 안내 (좌우=줌 / 상하=밝기) ──
 
   // 반투명 유리 알약(블러 + 은은한 흰 테두리) — 밝기 게이지 표시에 사용.
   Widget _glassPill({required Widget child, EdgeInsets? padding}) {
@@ -671,141 +633,6 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
           child: child,
         ),
       ),
-    );
-  }
-
-  // 손가락 아이콘이 궤적을 따라 왕복 스와이프 — 끝에서 살짝 튕기는 모션으로
-  // "이 방향으로 밀어라"를 직관적으로 전달한다.
-  Widget _swipeFinger({required bool horizontal}) {
-    return AnimatedBuilder(
-      animation: _swipeAnim,
-      builder: (context, _) {
-        final double t = _swipeAnim.value; // 0~1 easeInOutBack 왕복
-        final double pos = (t * 2 - 1); // -1 ~ 1
-        final double travel = horizontal ? 58 : 44;
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            // 스와이프 궤적 선
-            Container(
-              width: horizontal ? 144 : 3,
-              height: horizontal ? 3 : 108,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: horizontal ? Alignment.centerLeft : Alignment.topCenter,
-                  end: horizontal ? Alignment.centerRight : Alignment.bottomCenter,
-                  colors: [
-                    Colors.white.withValues(alpha: 0.06),
-                    Colors.white.withValues(alpha: 0.40),
-                    Colors.white.withValues(alpha: 0.06),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            // 양쪽 방향 화살표
-            if (horizontal) ...[
-              Positioned(left: 0, child: Icon(Icons.chevron_left, color: Colors.white.withValues(alpha: 0.55), size: 26)),
-              Positioned(right: 0, child: Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.55), size: 26)),
-            ] else ...[
-              Positioned(top: 0, child: Icon(Icons.expand_less, color: Colors.white.withValues(alpha: 0.55), size: 26)),
-              Positioned(bottom: 0, child: Icon(Icons.expand_more, color: Colors.white.withValues(alpha: 0.55), size: 26)),
-            ],
-            // 움직이는 손가락
-            Transform.translate(
-              offset: horizontal ? Offset(pos * travel, 0) : Offset(0, pos * travel),
-              child: Container(
-                padding: const EdgeInsets.all(9),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.20),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.45), width: 1),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 12, spreadRadius: 1),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.touch_app,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // 상하(밝기): 우측에서 손가락이 위아래로 크게 왕복 + 라벨.
-  Widget _buildBrightnessHint() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 54,
-          height: 136,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              const Positioned(top: 0, child: Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white60, size: 24)),
-              const Positioned(bottom: 0, child: Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white60, size: 24)),
-              _swipeFinger(horizontal: false),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.wb_sunny_rounded, color: Colors.white, size: 14),
-            SizedBox(width: 4),
-            Text('밝기 · 상하 스와이프',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  shadows: [Shadow(color: Colors.black54, blurRadius: 8)],
-                )),
-          ],
-        ),
-      ],
-    );
-  }
-
-  // 좌우(줌): 중앙에서 손가락이 좌우로 크게 왕복 + 라벨.
-  Widget _buildZoomHint() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 188,
-          height: 54,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              const Positioned(left: 0, child: Icon(Icons.chevron_left_rounded, color: Colors.white60, size: 24)),
-              const Positioned(right: 0, child: Icon(Icons.chevron_right_rounded, color: Colors.white60, size: 24)),
-              _swipeFinger(horizontal: true),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.zoom_in_rounded, color: Colors.white, size: 15),
-            SizedBox(width: 4),
-            Text('줌 · 좌우 스와이프',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  shadows: [Shadow(color: Colors.black54, blurRadius: 8)],
-                )),
-          ],
-        ),
-      ],
     );
   }
 }

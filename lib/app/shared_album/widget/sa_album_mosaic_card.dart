@@ -1,11 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:project1/app/community/widget/cover_template.dart' show coverImageUrl;
+import 'package:project1/app/community/widget/cover_template.dart' show albumCoverCacheUrl;
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/theme/sa_weather_gradients.dart';
 import 'package:project1/app/shared_album/widget/sa_album_card.dart';
+import 'package:project1/app/shared_album/widget/sa_album_cover_hero.dart';
 import 'package:project1/app/shared_album/widget/sa_new_badge.dart';
 import 'package:project1/repo/community/data/community_data.dart';
 
@@ -29,7 +30,7 @@ class SaAlbumMosaicCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = data.community;
-    final String? thumb = data.thumbs.isNotEmpty ? data.thumbs.first : c.imageUrl;
+    final String? thumb = data.thumbs.isNotEmpty ? data.thumbs.first : c.coverDisplayUrl;
     final double imageH = tall ? 150 : 106;
     return Container(
       decoration: BoxDecoration(
@@ -43,16 +44,18 @@ class SaAlbumMosaicCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              height: imageH,
-              width: double.infinity,
-              child: Stack(
+            SaAlbumCoverHero(
+              communityId: c.communityId,
+              child: SizedBox(
+                height: imageH,
+                width: double.infinity,
+                child: Stack(
                 fit: StackFit.expand,
                 children: [
                   if (thumb != null && thumb.isNotEmpty)
                     CachedNetworkImage(
                       // Unsplash 표지 폴백은 원본(수 MB)이라 경량본으로 변환(다른 호스트는 no-op)
-                      imageUrl: coverImageUrl(thumb, width: 400),
+                      imageUrl: albumCoverCacheUrl(thumb),
                       memCacheWidth: 500,
                       fit: BoxFit.cover,
                       placeholder: (_, __) => DecoratedBox(
@@ -67,7 +70,8 @@ class SaAlbumMosaicCard extends StatelessWidget {
                     Positioned(left: 8, top: 8, child: SaNewBadge(count: data.newCount)),
                   // 주인장(대장) 뱃지 — 표지 우측 상단.
                   if (c.isOwner) const Positioned(top: 8, right: 8, child: SaOwnerBadge()),
-                ],
+                  ],
+                ),
               ),
             ),
             Padding(

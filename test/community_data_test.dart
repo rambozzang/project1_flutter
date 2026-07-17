@@ -43,5 +43,20 @@ void main() {
       final none = CommunityData.fromMap({'communityId': 1});
       expect(none.coverTemplateId, isNull);
     });
+
+    test('앱 대문은 coverThumbnailUrl을 우선하고 imageUrl로 폴백', () {
+      final optimized = CommunityData.fromMap({
+        'communityId': 1,
+        'imageUrl': 'https://cdn.example.com/original.jpg',
+        'coverThumbnailUrl': 'https://cdn.example.com/grid.jpg',
+      });
+      expect(optimized.coverDisplayUrl, 'https://cdn.example.com/grid.jpg');
+
+      final legacy = CommunityData.fromMap({
+        'communityId': 1,
+        'imageUrl': 'https://cdn.example.com/original.jpg',
+      });
+      expect(legacy.coverDisplayUrl, 'https://cdn.example.com/original.jpg');
+    });
   });
 }

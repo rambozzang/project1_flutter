@@ -249,6 +249,33 @@ class _SettingPageState extends State<SettingPage> {
                       return const BannerAdWidget(screenName: 'SettingPage');
                     }),
                 const Gap(30),
+                // 프리미엄 구독 진입(광고 제거·프리미엄 날씨·전용 테마)
+                Obx(() => SettingsGroup(
+                      settingsGroupTitle: "SkySnap Premium",
+                      settingsGroupTitleStyle: const TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16),
+                      items: [
+                        SettingsItem(
+                          onTap: () => Get.toNamed('/PremiumPage'),
+                          icons: Icons.star_rounded,
+                          backgroundColor: Colors.white,
+                          iconStyle: IconStyle(
+                            iconsColor: Colors.white,
+                            withBackground: true,
+                            backgroundColor: Colors.amber,
+                          ),
+                          title: AuthCntr.to.isPremium.value ? '프리미엄 이용 중' : '프리미엄 구독',
+                          subtitle: AuthCntr.to.isPremium.value
+                              ? '광고 없이 쾌적하게 이용 중이에요'
+                              : '광고 제거 · 프리미엄 날씨 · 전용 앨범 테마',
+                          titleMaxLine: 1,
+                          subtitleMaxLine: 1,
+                        ),
+                      ],
+                    )),
+                const Gap(30),
                 SettingsGroup(
                   settingsGroupTitle: "개인정 동의 및 약관",
                   settingsGroupTitleStyle: const TextStyle(

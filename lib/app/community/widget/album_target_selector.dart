@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:project1/app/community/widget/cover_template.dart' show albumCoverCacheUrl;
 import 'package:project1/repo/community/community_repo.dart';
 import 'package:project1/repo/community/data/community_data.dart';
 
@@ -194,10 +195,17 @@ class _AlbumTargetSelectorState extends State<AlbumTargetSelector> {
 
   Widget _albumThumb(CommunityData a, double size) {
     final radius = BorderRadius.circular(12);
-    if (a.imageUrl != null && a.imageUrl!.isNotEmpty) {
+    final coverUrl = a.coverDisplayUrl;
+    if (coverUrl != null) {
       return ClipRRect(
         borderRadius: radius,
-        child: CachedNetworkImage(imageUrl: a.imageUrl!, width: size, height: size, fit: BoxFit.cover),
+        child: CachedNetworkImage(
+          imageUrl: albumCoverCacheUrl(coverUrl),
+          memCacheWidth: (size * 3).round(),
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+        ),
       );
     }
     return Container(

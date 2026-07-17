@@ -20,6 +20,7 @@ class _CommunityMembersPageState extends State<CommunityMembersPage> {
   late final int _communityId;
   late final bool _isOwner;
   late final bool _isApproval;
+  late final String _communityName;
   late final String _myCustId;
 
   List<CommunityMemberData> _members = [];
@@ -33,6 +34,7 @@ class _CommunityMembersPageState extends State<CommunityMembersPage> {
     _communityId = (args['communityId'] as num).toInt();
     _isOwner = args['isOwner'] == true;
     _isApproval = args['isApproval'] == true;
+    _communityName = args['communityName']?.toString() ?? '이 앨범';
     _myCustId = Get.find<AuthCntr>().resLoginData.value.custId.toString();
     _load();
   }
@@ -56,6 +58,21 @@ class _CommunityMembersPageState extends State<CommunityMembersPage> {
     final (ok, msg) = await _repo.approve(_communityId, m.custId);
     Utils.alert(msg.isEmpty ? (ok ? '승인했습니다.' : '실패했습니다.') : msg);
     if (ok) _load();
+  }
+
+  Future<void> _leave() async {
+    final confirmed = await Get.dialog<bool>(AlertDialog(
+      title: const Text('앨범 탈퇴'),
+      content: Text('$_communityName에서 탈퇴하시겠어요?'),
+      actions: [
+        TextButton(onPressed: () => Get.back(result: false), child: const Text('취소')),
+        TextButton(onPressed: () => Get.back(result: true), child: const Text('탈퇴', style: TextStyle(color: Colors.red))),
+      ],
+    ));
+    if (confirmed != true) return;
+    final (ok, msg) = await _repo.leave(_communityId);
+    Utils.alert(msg.isEmpty ? (ok ? '탈퇴했습니다.' : '실패했습니다.') : msg);
+    if (ok) Get.back(result: true);
   }
 
   /// 내가 매니저(방장 포함)인지. 방장은 인자로 이미 확정되고, 아니면 멤버 목록에서 내 role로 판단.
@@ -165,7 +182,7 @@ class _CommunityMembersPageState extends State<CommunityMembersPage> {
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 30),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 150),
                 children: [
                   if (_pending.isNotEmpty) ...[
                     _sectionTitle('가입 승인 대기 ${_pending.length}'),
@@ -176,9 +193,19 @@ class _CommunityMembersPageState extends State<CommunityMembersPage> {
                   _sectionTitle('멤버 ${_members.length}'),
                   const SizedBox(height: 8),
                   if (_members.isEmpty)
-                    const Padding(padding: EdgeInsets.all(24), child: Center(child: Text('멤버가 없습니다.', style: TextStyle(color: Color(0xFF7A8291)))))
+                    const Padding(
+                        padding: EdgeInsets.all(24), child: Center(child: Text('멤버가 없습니다.', style: TextStyle(color: Color(0xFF7A8291)))))
                   else
                     ..._members.map((m) => _memberTile(m)),
+                  if (!_isOwner) ...[
+                    const SizedBox(height: 24),
+                    const Divider(height: 1),
+                    TextButton.icon(
+                      onPressed: _leave,
+                      icon: const Icon(Icons.logout, color: Colors.red),
+                      label: const Text('앨범 탈퇴', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -193,7 +220,8 @@ class _CommunityMembersPageState extends State<CommunityMembersPage> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFECEEF3))),
+        decoration:
+            BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFECEEF3))),
         child: Row(
           children: [
             CircleAvatar(
@@ -201,7 +229,8 @@ class _CommunityMembersPageState extends State<CommunityMembersPage> {
               backgroundColor: const Color(0xFFE6E8EF),
               backgroundImage: (m.profilePath != null && m.profilePath!.isNotEmpty) ? CachedNetworkImageProvider(m.profilePath!) : null,
               child: (m.profilePath == null || m.profilePath!.isEmpty)
-                  ? Text((m.nickNm ?? m.custId).characters.first, style: const TextStyle(color: Color(0xFF7A8291), fontWeight: FontWeight.bold))
+                  ? Text((m.nickNm ?? m.custId).characters.first,
+                      style: const TextStyle(color: Color(0xFF7A8291), fontWeight: FontWeight.bold))
                   : null,
             ),
             const SizedBox(width: 12),
@@ -211,8 +240,11 @@ class _CommunityMembersPageState extends State<CommunityMembersPage> {
                 children: [
                   Row(
                     children: [
-                      Flexible(child: Text(m.nickNm ?? m.custId, maxLines: 1, overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87))),
+                      Flexible(
+                          child: Text(m.nickNm ?? m.custId,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87))),
                       if (m.isOwner) ...[const SizedBox(width: 6), _roleTag('방장 👑', const Color(0xFFEC8B00))],
                       if (m.role == 'MANAGER') ...[const SizedBox(width: 6), _roleTag('매니저 ⭐', const Color(0xFF3B6FE0))],
                     ],
@@ -228,9 +260,11 @@ class _CommunityMembersPageState extends State<CommunityMembersPage> {
             if (pending)
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3B6FE0), elevation: 0,
+                  backgroundColor: const Color(0xFF3B6FE0),
+                  elevation: 0,
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), minimumSize: const Size(0, 34),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  minimumSize: const Size(0, 34),
                 ),
                 onPressed: () => _approve(m),
                 child: const Text('승인', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),

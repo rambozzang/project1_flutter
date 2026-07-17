@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:project1/app/community/widget/cover_template.dart' show coverImageUrl;
+import 'package:project1/app/community/widget/cover_template.dart' show albumCoverCacheUrl;
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_weather_gradients.dart';
 
@@ -19,6 +19,7 @@ class SaOverlapImageStack extends StatelessWidget {
     this.height = 208,
     this.leadHeight = 200,
     this.overlay,
+    this.heroTag,
   });
 
   final String? leadUrl;
@@ -32,6 +33,7 @@ class SaOverlapImageStack extends StatelessWidget {
 
   /// 리드 이미지 위 오버레이(날씨칩·미디어수칩·재생버튼·NEW뱃지 등) — Stack으로 얹힌다.
   final Widget? overlay;
+  final Object? heroTag;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +66,14 @@ class SaOverlapImageStack extends StatelessWidget {
                 ),
               ),
               // 중앙 리드
-              _media(leadUrl, leadW, leadHeight, radius: 20, shadow: true),
+              if (heroTag != null)
+                Hero(
+                  tag: heroTag!,
+                  transitionOnUserGestures: true,
+                  child: _media(leadUrl, leadW, leadHeight, radius: 20, shadow: true),
+                )
+              else
+                _media(leadUrl, leadW, leadHeight, radius: 20, shadow: true),
               if (overlay != null)
                 SizedBox(width: leadW, height: leadHeight, child: overlay),
             ],
@@ -79,7 +88,7 @@ class SaOverlapImageStack extends StatelessWidget {
         ? DecoratedBox(decoration: BoxDecoration(gradient: SaWeatherGradients.of(gradientKey)))
         : CachedNetworkImage(
             // Unsplash 표지 폴백은 원본(수 MB)이라 경량본으로 변환(다른 호스트는 no-op)
-            imageUrl: coverImageUrl(url, width: 600),
+            imageUrl: albumCoverCacheUrl(url),
             memCacheWidth: 600,
             fit: BoxFit.cover,
             placeholder: (_, __) =>

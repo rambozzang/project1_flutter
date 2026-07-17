@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:project1/admob/ad_manager.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 
 class BannerAdWidget extends StatefulWidget {
@@ -22,6 +23,10 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // 프리미엄(광고 제거) 구독자는 배너를永远 노출하지 않는다.
+    if (AuthCntr.to.isPremium.value) {
+      return const SizedBox.shrink();
+    }
     return Obx(() {
       final isLoaded = Get.find<RootCntr>().isAdLoaded(widget.screenName);
       final ad = AdManager().getBannerAd(widget.screenName);
@@ -29,6 +34,9 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
       if (!isLoaded || ad == null) {
         _adWidget = null;
         _cachedAd = null;
+        // 슬롯이 화면에 있는데 광고가 없으면 재로드를 요청한다(매니저에서 30초 디바운스).
+        // 날씨 메인처럼 initState가 1회뿐인 탭에서 콜드스타트 로드 실패를 자가치유.
+        Future.microtask(() => AdManager().ensureBannerAd(widget.screenName));
         return const SizedBox.shrink();
       }
 

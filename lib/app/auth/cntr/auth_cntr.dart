@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/auth/privacy_policy_dialog.dart';
+import 'package:project1/services/analytics_service.dart';
 import 'package:project1/repo/api/google_api.dart';
 import 'package:project1/repo/api/kakao_api.dart';
 import 'package:project1/repo/api/naver_api.dart';
@@ -33,6 +34,11 @@ class AuthCntr extends GetxController with SecureStorage {
   final RxString custId = "".obs;
   late String fcmId = "";
   String deviceId = "";
+
+  // 프리미엄 구독 상태(로그인 응답 premiumYn 기준). 광고 제거 + 프리미엄 날씨 unlock.
+  final RxBool isPremium = false.obs;
+  // 앨범 저장 용량 티어: 'FREE' | 'PRO'
+  final RxString storageTier = "FREE".obs;
 
   //개인정보 처리 동의
   RxBool privacyPolicyAgreed = false.obs;
@@ -92,7 +98,12 @@ class AuthCntr extends GetxController with SecureStorage {
       }
       print("login success res.data: ${res.data}");
       resLoginData.value = LoginRes.fromMap(res.data);
+      _syncPremiumFromLogin(res.data);
       isLogged.value = true;
+      // 로그인 성공 계측: 사용자 식별 + 속성(login_type/is_premium) + login 이벤트
+      AnalyticsService.instance
+          .setUser(custId: custId.value, loginType: resLoginData.value.provider, isPremium: isPremium.value);
+      AnalyticsService.instance.logLogin(resLoginData.value.provider ?? 'unknown');
       update();
 
       // 앱 실행 시 출석 체크 (비동기, 로그인 흐름 차단 안 함)
@@ -168,7 +179,12 @@ class AuthCntr extends GetxController with SecureStorage {
         return resData;
       }
       resLoginData.value = LoginRes.fromMap(res.data);
+      _syncPremiumFromLogin(res.data);
       isLogged.value = true;
+      // 회원가입 성공 계측: 사용자 식별 + 속성 + sign_up 이벤트
+      AnalyticsService.instance
+          .setUser(custId: this.custId.value, loginType: resLoginData.value.provider, isPremium: isPremium.value);
+      AnalyticsService.instance.logSignUp(resLoginData.value.provider ?? 'unknown');
 
       return resData;
     } catch (e) {
@@ -186,6 +202,35 @@ class AuthCntr extends GetxController with SecureStorage {
       val!.nickNm = nickNm;
       val.custNm = custNm;
     });
+  }
+
+  /// 로그인 응답에서 premiumYn/storageTier를 읽어 프리미엄 상태를 갱신한다.
+  void _syncPremiumFromLogin(Map<String, dynamic> data) {
+    final bool premium = data['premiumYn'] == 'Y';
+    isPremium.value = premium;
+    storageTier.value = data['storageTier']?.toString() ?? (premium ? 'PRO' : 'FREE');
+  }
+
+  /// 구매/복원 확정 후 프리미엄 활성화(로컬 상태 + 로그인 데이터 반영).
+  void applyPremium() {
+    isPremium.value = true;
+    storageTier.value = 'PRO';
+    resLoginData.update((val) {
+      val?.premiumYn = 'Y';
+      val?.storageTier = 'PRO';
+    });
+    update();
+  }
+
+  /// 프리미엄 해지/만료 시 호출.
+  void applyFree() {
+    isPremium.value = false;
+    storageTier.value = 'FREE';
+    resLoginData.update((val) {
+      val?.premiumYn = 'N';
+      val?.storageTier = 'FREE';
+    });
+    update();
   }
 
   Future<void> leave() async {
@@ -228,6 +273,8 @@ class AuthCntr extends GetxController with SecureStorage {
       resLoginData.value = LoginRes();
       custId.value = '';
       isLogged.value = false;
+      isPremium.value = false;
+      storageTier.value = 'FREE';
 
       // 사용자에게 앱 재시작 알림
       await Get.dialog(
@@ -290,6 +337,8 @@ class AuthCntr extends GetxController with SecureStorage {
       resLoginData.value = LoginRes();
       custId.value = '';
       isLogged.value = false;
+      isPremium.value = false;
+      storageTier.value = 'FREE';
 
       // 진행 상황 다이얼로그 닫기
       Get.back();

@@ -87,7 +87,10 @@ class _DarkCloudsAnimationState extends State<DarkCloudsAnimation> with TickerPr
     _controller = AnimationController(
       duration: const Duration(seconds: 10),
       vsync: this,
-    )..repeat();
+    );
+    // 보일 때만 Ticker 가동(안 보이면 stop → 상시 프레임 생성 방지, 페이지 idle 가능).
+    widget.isVisibleNotifier.addListener(_syncVisibility);
+    _syncVisibility();
 
     // 화면 크기를 가정합니다. 실제 사용시 MediaQuery를 사용하여 정확한 크기를 얻을 수 있습니다.
     Size assumedScreenSize = const Size(400, 600);
@@ -98,8 +101,18 @@ class _DarkCloudsAnimationState extends State<DarkCloudsAnimation> with TickerPr
 
   @override
   void dispose() {
+    widget.isVisibleNotifier.removeListener(_syncVisibility);
     _controller.dispose();
     super.dispose();
+  }
+
+  // 가시성에 따라 Ticker를 켜고 끈다.
+  void _syncVisibility() {
+    if (widget.isVisibleNotifier.value) {
+      if (!_controller.isAnimating) _controller.repeat();
+    } else {
+      if (_controller.isAnimating) _controller.stop();
+    }
   }
 
   @override

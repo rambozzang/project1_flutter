@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:project1/app/community/widget/cover_template.dart' show albumCoverCacheUrl;
 import 'package:project1/repo/community/community_repo.dart';
 import 'package:project1/repo/community/data/community_data.dart';
 
@@ -279,11 +280,16 @@ class _CommunityHubPageState extends State<CommunityHubPage> with AutomaticKeepA
 
   Widget _thumb(CommunityData c, double size) {
     final radius = BorderRadius.circular(14);
-    if (c.imageUrl != null && c.imageUrl!.isNotEmpty) {
+    final coverUrl = c.coverDisplayUrl;
+    if (coverUrl != null) {
       return ClipRRect(
         borderRadius: radius,
         child: CachedNetworkImage(
-          imageUrl: c.imageUrl!, width: size, height: size, fit: BoxFit.cover,
+          imageUrl: albumCoverCacheUrl(coverUrl),
+          memCacheWidth: (size * 3).round(),
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
           errorWidget: (_, __, ___) => _thumbFallback(c, size, radius),
         ),
       );

@@ -1,9 +1,7 @@
 import 'package:flutter/widgets.dart';
-import 'package:get/get.dart';
 import 'package:project1/app/weathergogo/cntr/data/current_weather_data.dart';
 import 'package:project1/app/weathergogo/cntr/data/daily_weather_data.dart';
 import 'package:project1/app/weathergogo/cntr/data/hourly_weather_data.dart';
-import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/weather_gogo/models/response/fct/fct_model.dart';
 import 'package:project1/repo/weather_gogo/models/response/midland_fct/midlan_fct_res.dart';
 import 'package:project1/repo/weather_gogo/models/response/midta_fct/midta_fct_res.dart';
@@ -18,7 +16,11 @@ class WeatherDataProcessor {
   // 정적 인스턴스
   static final WeatherDataProcessor instance = WeatherDataProcessor._();
 
-  List<SevenDayWeather> processShortTermForecastToDaily(List<ItemFct> forecastItems, {double? lat, double? lon, String? cityName}) {
+  List<SevenDayWeather> processShortTermForecastToDaily(
+      List<ItemFct> forecastItems,
+      {double? lat,
+      double? lon,
+      String? cityName}) {
     Map<String, SevenDayWeather> dailyMap = {};
 
     for (var item in forecastItems) {
@@ -39,7 +41,9 @@ class WeatherDataProcessor {
       }
 
       bool isMorning = int.parse(item.fcstTime!) < 1200;
-      DayWeatherData timeData = isMorning ? dailyMap[forecastDate]!.morning : dailyMap[forecastDate]!.afternoon;
+      DayWeatherData timeData = isMorning
+          ? dailyMap[forecastDate]!.morning
+          : dailyMap[forecastDate]!.afternoon;
 
       switch (item.category) {
         case 'TMP':
@@ -92,11 +96,13 @@ class WeatherDataProcessor {
   // LGT	낙뢰	kA(킬로암페어)
   // VEC	풍향	deg
   // WSD	풍속	m/s
-  List<HourlyWeatherData> processSuperShortTermForecast(List<ItemSuperFct> forecastItems) {
+  List<HourlyWeatherData> processSuperShortTermForecast(
+      List<ItemSuperFct> forecastItems) {
     Map<DateTime, HourlyWeatherData> hourlyMap = {};
 
     for (var item in forecastItems) {
-      DateTime forecastDate = DateTime.parse('${item.fcstDate} ${item.fcstTime}');
+      DateTime forecastDate =
+          DateTime.parse('${item.fcstDate} ${item.fcstTime}');
 
       // 껍데이 만들어놓구 아래서 셋팅
       if (!hourlyMap.containsKey(forecastDate)) {
@@ -129,21 +135,18 @@ class WeatherDataProcessor {
   }
 
   //7~ 24시가지 날씨 정보 파싱처리
-  List<HourlyWeatherData> processShortTermForecast(List<ItemFct> forecastItems) {
+  List<HourlyWeatherData> processShortTermForecast(
+    List<ItemFct> forecastItems, {
+    DateTime? now,
+  }) {
     Map<DateTime, HourlyWeatherData> hourlyMap = {};
-    // 현재시점의  강수확률 셋팅
-    int index = 0;
+    final cutoff = (now ?? DateTime.now()).add(const Duration(hours: 5));
     for (var item in forecastItems) {
-      DateTime forecastDate = DateTime.parse('${item.fcstDate} ${item.fcstTime}');
-
-      // 강수확률의 경우 현재시점의 데이터를 저장
-      if (index == 0 && item.category == 'POP') {
-        Get.find<WeatherGogoCntr>().currentWeather.value.rainPo = item.fcstValue!;
-      }
-      index++;
+      DateTime forecastDate =
+          DateTime.parse('${item.fcstDate} ${item.fcstTime}');
 
       // 6시간 이후의 데이터만 사용
-      if (forecastDate.isBefore(DateTime.now().add(const Duration(hours: 5)))) {
+      if (forecastDate.isBefore(cutoff)) {
         continue;
       }
 
@@ -165,9 +168,9 @@ class WeatherDataProcessor {
           break;
         case 'PTY':
           hourlyMap[forecastDate]!.rain = item.fcstValue!;
+          break;
         case 'POP':
           hourlyMap[forecastDate]!.rainPo = item.fcstValue!;
-
           break;
       }
     }
@@ -180,8 +183,23 @@ class WeatherDataProcessor {
     // return hourlyList.take(24).toList();
   }
 
+  /// 단기예보 원본에서 가장 이른 시각의 강수확률을 찾는다.
+  ///
+  /// 예전에는 이 값 설정을 위해 processor가 GetX controller를 직접 찾아
+  /// 변경했다. 같은 선택 규칙을 유지하되 값만 반환해 호출자가 상태를
+  /// 반영하도록 한다.
+  String? findCurrentRainProbability(List<ItemFct> forecastItems) {
+    final popItems = forecastItems
+        .where((item) => item.category == 'POP' && item.fcstValue != null)
+        .toList()
+      ..sort((a, b) =>
+          '${a.fcstDate}${a.fcstTime}'.compareTo('${b.fcstDate}${b.fcstTime}'));
+    return popItems.isEmpty ? null : popItems.first.fcstValue;
+  }
+
   // 중기 예보 조합 최종 sevendayWeather에 적재
-  List<SevenDayWeather> processMidTermForecast(MidLandFcstResponse landForecast, MidTaResponse taForecast,
+  List<SevenDayWeather> processMidTermForecast(
+      MidLandFcstResponse landForecast, MidTaResponse taForecast,
       {double? lat, double? lon, String? cityName}) {
     List<SevenDayWeather> midTermList = [];
 
@@ -191,7 +209,11 @@ class WeatherDataProcessor {
 
     for (int i = 0; i < 6; i++) {
       // 중기 예보는 5일치 데이터를 제공 (3일 후부터 7일 후까지)
-      String fcstDate = startDate.add(Duration(days: i)).toString().substring(0, 10).replaceAll('-', '');
+      String fcstDate = startDate
+          .add(Duration(days: i))
+          .toString()
+          .substring(0, 10)
+          .replaceAll('-', '');
 
       SevenDayWeather weatherData = SevenDayWeather(
         lat: lat,
@@ -203,14 +225,22 @@ class WeatherDataProcessor {
       );
 
       // 아침 데이터 설정
-      weatherData.morning.skyDesc = _getSkyState(landForecast, i + afterday, isAm: true);
-      weatherData.morning.rainPo = _getRainProbability(landForecast, i + afterday, isAm: true).toString();
-      weatherData.morning.minTemp = _getTemperature(taForecast, 'taMin${i + afterday}');
+      weatherData.morning.skyDesc =
+          _getSkyState(landForecast, i + afterday, isAm: true);
+      weatherData.morning.rainPo =
+          _getRainProbability(landForecast, i + afterday, isAm: true)
+              .toString();
+      weatherData.morning.minTemp =
+          _getTemperature(taForecast, 'taMin${i + afterday}');
 
       // 오후 데이터 설정
-      weatherData.afternoon.skyDesc = _getSkyState(landForecast, i + afterday, isAm: false);
-      weatherData.afternoon.rainPo = _getRainProbability(landForecast, i + afterday, isAm: false).toString();
-      weatherData.afternoon.maxTemp = _getTemperature(taForecast, 'taMax${i + afterday}');
+      weatherData.afternoon.skyDesc =
+          _getSkyState(landForecast, i + afterday, isAm: false);
+      weatherData.afternoon.rainPo =
+          _getRainProbability(landForecast, i + afterday, isAm: false)
+              .toString();
+      weatherData.afternoon.maxTemp =
+          _getTemperature(taForecast, 'taMax${i + afterday}');
 
       // 공통 데이터 설정
       weatherData.morning.temp = weatherData.morning.minTemp;
@@ -259,7 +289,8 @@ class WeatherDataProcessor {
   }
 
 // 헬퍼 함수들
-  String _getSkyState(MidLandFcstResponse landForecast, int day, {bool isAm = true}) {
+  String _getSkyState(MidLandFcstResponse landForecast, int day,
+      {bool isAm = true}) {
     switch (day) {
       // case 3:
       //   return isAm ? landForecast.wf3Am : landForecast.wf3Pm;
@@ -282,7 +313,8 @@ class WeatherDataProcessor {
     }
   }
 
-  int _getRainProbability(MidLandFcstResponse landForecast, int day, {bool isAm = true}) {
+  int _getRainProbability(MidLandFcstResponse landForecast, int day,
+      {bool isAm = true}) {
     switch (day) {
       // case 3:
       //   return isAm ? landForecast.rnSt3Am : landForecast.rnSt3Pm;
@@ -422,7 +454,8 @@ class WeatherDataProcessor {
     }
   }
 
-  Widget getWeatherGogoImage(String skyCode, String ptyCode) {
+  // optimized:true → 주간 목록 등 다수 아이콘. 애니 유지 + 30fps/래스터 캐시. 기본 false(video/spot 등 무변경).
+  Widget getWeatherGogoImage(String skyCode, String ptyCode, {bool optimized = false}) {
     int sky = int.tryParse(skyCode) ?? 0;
     int pty = int.tryParse(ptyCode) ?? 0;
 
@@ -430,106 +463,108 @@ class WeatherDataProcessor {
     switch (pty) {
       case 1: // 비
       case 2: // 비/눈
-        return WeatherLottie.getWeatherAnimation('rain');
+        return WeatherLottie.getWeatherAnimation('rain', optimized: optimized);
       case 3: // 눈
-        return WeatherLottie.getWeatherAnimation('snow');
+        return WeatherLottie.getWeatherAnimation('snow', optimized: optimized);
       case 4: // 소나기
-        return WeatherLottie.getWeatherAnimation('rain');
+        return WeatherLottie.getWeatherAnimation('rain', optimized: optimized);
     }
 
     // 하늘 상태
     switch (sky) {
       case 1: // 맑음
-        return WeatherLottie.getWeatherAnimation('sun');
+        return WeatherLottie.getWeatherAnimation('sun', optimized: optimized);
       case 3: // 구름많음
-        return WeatherLottie.getWeatherAnimation('mostly_cloudy');
+        return WeatherLottie.getWeatherAnimation('mostly_cloudy', optimized: optimized);
       case 4: // 흐림
-        return WeatherLottie.getWeatherAnimation('cloudy');
+        return WeatherLottie.getWeatherAnimation('cloudy', optimized: optimized);
       default: // 기본값 (알 수 없는 상태)
-        return WeatherLottie.getWeatherAnimation('mostly_cloudy');
+        return WeatherLottie.getWeatherAnimation('mostly_cloudy', optimized: optimized);
     }
   }
 
 //초단기예보, 단기예보 모두 수용 가능한 함수
-  Widget getFinalWeatherIcon(int hour, String skyCode, String ptyCode) {
-    Widget ptyIcon = getWeatherIcon(hour, 'PTY', ptyCode);
+  // optimized:true → 24시 목록처럼 다수 아이콘. 애니 유지 + 30fps/래스터 캐시. 기본 false는 기존 동작.
+  Widget getFinalWeatherIcon(int hour, String skyCode, String ptyCode, {bool optimized = false}) {
+    Widget ptyIcon = getWeatherIcon(hour, 'PTY', ptyCode, optimized: optimized);
     if (ptyCode != '0') {
       return ptyIcon; // 강수가 있으면 PTY 아이콘 사용
     } else {
-      return getWeatherIcon(hour, 'SKY', skyCode); // 강수가 없으면 SKY 아이콘 사용
+      return getWeatherIcon(hour, 'SKY', skyCode, optimized: optimized); // 강수가 없으면 SKY 아이콘 사용
     }
   }
 
   //초단기예보, 단기예보 모두 수용 가능한 함수
-  Widget getWeatherIcon(int hour, String category, String code) {
+  Widget getWeatherIcon(int hour, String category, String code, {bool optimized = false}) {
     int value = int.tryParse(code) ?? 0;
 
     switch (category) {
       case 'PTY': // 강수형태 (Precipitation type)
         switch (value) {
           case 0:
-            return WeatherLottie.getWeatherAnimation('sun');
+            return WeatherLottie.getWeatherAnimation('sun', optimized: optimized);
           case 1:
-            return WeatherLottie.getWeatherAnimation('rain');
+            return WeatherLottie.getWeatherAnimation('rain', optimized: optimized);
           case 2:
-            return WeatherLottie.getWeatherAnimation('snow');
+            return WeatherLottie.getWeatherAnimation('snow', optimized: optimized);
           case 3:
-            return WeatherLottie.getWeatherAnimation('snow');
+            return WeatherLottie.getWeatherAnimation('snow', optimized: optimized);
           case 4:
-            return WeatherLottie.getWeatherAnimation('rain');
+            return WeatherLottie.getWeatherAnimation('rain', optimized: optimized);
           case 5:
-            return WeatherLottie.getWeatherAnimation('rain');
+            return WeatherLottie.getWeatherAnimation('rain', optimized: optimized);
           case 6:
-            return WeatherLottie.getWeatherAnimation('snow');
+            return WeatherLottie.getWeatherAnimation('snow', optimized: optimized);
           case 7:
-            return WeatherLottie.getWeatherAnimation('snow');
+            return WeatherLottie.getWeatherAnimation('snow', optimized: optimized);
           default:
-            return WeatherLottie.getWeatherAnimation('cloudy');
+            return WeatherLottie.getWeatherAnimation('cloudy', optimized: optimized);
         }
 
       case 'SKY': // 하늘상태 (Sky condition)
         switch (value) {
           case 1:
-            return WeatherLottie.getWeatherAnimation('sun');
+            return WeatherLottie.getWeatherAnimation('sun', optimized: optimized);
           case 3:
-            return WeatherLottie.getWeatherAnimation('mostly_cloudy');
+            return WeatherLottie.getWeatherAnimation('mostly_cloudy', optimized: optimized);
           case 4:
-            return WeatherLottie.getWeatherAnimation('cloudy');
+            return WeatherLottie.getWeatherAnimation('cloudy', optimized: optimized);
           default:
-            return WeatherLottie.getWeatherAnimation('cloudy');
+            return WeatherLottie.getWeatherAnimation('cloudy', optimized: optimized);
         }
 
       default:
-        return WeatherLottie.getWeatherAnimation('cloudy');
+        return WeatherLottie.getWeatherAnimation('cloudy', optimized: optimized);
     }
   }
 
   // 중기 예보에서만 사용가능한 아이콘 가져오기
-  Widget getWeatherIconForMidtermForecast(String forecastState) {
+  // optimized:true → 주간 목록(하루×2). 애니 유지 + 30fps/래스터 캐시. 기본 false는 기존 동작.
+  Widget getWeatherIconForMidtermForecast(String forecastState, {bool optimized = false}) {
     // 예보 상태에 따른 아이콘 매핑
     switch (forecastState.toLowerCase()) {
       case '맑음':
-        return WeatherLottie.getWeatherAnimation('sun');
+        return WeatherLottie.getWeatherAnimation('sun', optimized: optimized);
       case '구름많음':
-        return WeatherLottie.getWeatherAnimation('mostly_cloudy');
+        return WeatherLottie.getWeatherAnimation('mostly_cloudy', optimized: optimized);
       case '구름많고 비':
       case '구름많고 비/눈':
       case '구름많고 소나기':
-        return WeatherLottie.getWeatherAnimation('rain');
+        return WeatherLottie.getWeatherAnimation('rain', optimized: optimized);
       case '구름많고 눈':
       case '구름많고 진눈깨비':
-        return WeatherLottie.getWeatherAnimation('snow');
+        return WeatherLottie.getWeatherAnimation('snow', optimized: optimized);
       case '흐림':
-        return WeatherLottie.getWeatherAnimation('cloudy');
+        return WeatherLottie.getWeatherAnimation('cloudy', optimized: optimized);
       case '흐리고 비':
       case '흐리고 비/눈':
       case '흐리고 소나기':
-        return WeatherLottie.getWeatherAnimation('rain');
+        return WeatherLottie.getWeatherAnimation('rain', optimized: optimized);
       case '흐리고 눈':
       case '흐리고 진눈깨비':
-        return WeatherLottie.getWeatherAnimation('snow');
+        return WeatherLottie.getWeatherAnimation('snow', optimized: optimized);
       default:
-        return WeatherLottie.getWeatherAnimation('cloudy');
+        return WeatherLottie.getWeatherAnimation('cloudy', optimized: optimized);
     }
   }
 

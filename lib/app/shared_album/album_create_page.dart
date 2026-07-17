@@ -34,6 +34,8 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
   bool _isPublic = true;
   String _joinType = 'AUTO';
   bool _saving = false;
+  bool _advancedExpanded = false;
+  bool _coverCacheWarmed = false;
 
   // 표지: 템플릿 or 커스텀 업로드(둘 중 하나만)
   String? _coverTemplateId = kCoverTemplates.first.id;
@@ -62,14 +64,9 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
       _spotLat = lat is double ? lat : double.tryParse(lat?.toString() ?? '');
       _spotLon = lon is double ? lon : double.tryParse(lon?.toString() ?? '');
       if ((_spotName ?? '').isNotEmpty) _spotSearchCtrl.text = _spotName!;
+      _advancedExpanded = _spotLat != null && _spotLon != null;
     }
-    // 템플릿 미리보기(w=800)를 미리 받아둬 선택 즉시 전환되게 한다(총 ~1-2MB, 백그라운드).
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      for (final t in kCoverTemplates) {
-        precacheImage(CachedNetworkImageProvider(coverImageUrl(t.imageUrl)), context);
-      }
-    });
+    if (_advancedExpanded) WidgetsBinding.instance.addPostFrameCallback((_) => _warmCoverCache());
   }
 
   @override
@@ -155,6 +152,19 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
 
   // ── 생성 ────────────────────────────────────────────────
 
+  void _toggleAdvanced() {
+    setState(() => _advancedExpanded = !_advancedExpanded);
+    if (_advancedExpanded) _warmCoverCache();
+  }
+
+  void _warmCoverCache() {
+    if (!mounted || _coverCacheWarmed) return;
+    _coverCacheWarmed = true;
+    for (final t in kCoverTemplates) {
+      precacheImage(CachedNetworkImageProvider(coverImageUrl(t.imageUrl)), context);
+    }
+  }
+
   Future<void> _submit() async {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
@@ -163,7 +173,7 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
     }
     if (_saving) return;
     setState(() => _saving = true);
-    final (ok, msg, _) = await _repo.create(
+    final (ok, msg, communityId) = await _repo.create(
       name: name,
       description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
       isPublic: _isPublic ? 'Y' : 'N',
@@ -177,7 +187,7 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
     if (!mounted) return;
     setState(() => _saving = false);
     BotToast.showText(text: msg.isEmpty ? (ok ? '앨범이 생성되었습니다.' : '생성에 실패했습니다.') : msg);
-    if (ok) Get.back(result: true);
+    if (ok) Get.back(result: {'communityId': communityId, 'name': name});
   }
 
   // ── UI ──────────────────────────────────────────────────
@@ -202,21 +212,29 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
                   children: [
-                    _buildCoverPreview(),
-                    const SizedBox(height: 10),
-                    _buildTemplateStrip(),
-                    const SizedBox(height: 22),
+                    Text('이름만 입력하면 바로 만들 수 있어요.',
+                        style: SaText.body.copyWith(fontSize: 13, color: SaColors.textSecondary)),
+                    const SizedBox(height: 18),
                     _sectionLabel('이름'),
-                    _input(_nameCtrl, hint: '예) 장마의 기록', maxLines: 1),
-                    const SizedBox(height: 14),
-                    _sectionLabel('소개'),
-                    _input(_descCtrl, hint: '어떤 순간을 모으는 앨범인가요?', maxLines: 3),
-                    const SizedBox(height: 22),
-                    _sectionLabel('공개 범위 · 가입 방식'),
-                    _buildOptions(),
-                    const SizedBox(height: 22),
-                    _sectionLabel('장소 연결 (선택)'),
-                    if (spotSelected) _buildSelectedSpot() else _buildSpotSearch(),
+                    _input(_nameCtrl, hint: '예) 장마의 기록', maxLines: 1, onSubmitted: (_) => _submit()),
+                    const SizedBox(height: 16),
+                    _buildAdvancedToggle(),
+                    if (_advancedExpanded) ...[
+                      const SizedBox(height: 16),
+                      _sectionLabel('표지'),
+                      _buildCoverPreview(),
+                      const SizedBox(height: 10),
+                      _buildTemplateStrip(),
+                      const SizedBox(height: 22),
+                      _sectionLabel('소개 (선택)'),
+                      _input(_descCtrl, hint: '어떤 순간을 모으는 앨범인가요?', maxLines: 3),
+                      const SizedBox(height: 22),
+                      _sectionLabel('공개 범위 · 가입 방식'),
+                      _buildOptions(),
+                      const SizedBox(height: 22),
+                      _sectionLabel('장소 연결 (선택)'),
+                      if (spotSelected) _buildSelectedSpot() else _buildSpotSearch(),
+                    ],
                   ],
                 ),
               ),
@@ -264,6 +282,48 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(text, style: SaText.mono(fontSize: 11, color: SaColors.accentTeal)),
+    );
+  }
+
+  Widget _buildAdvancedToggle() {
+    final summary = _spotName?.isNotEmpty == true
+        ? '기본값: 공개 · 바로 참여 · ${_spotName!}'
+        : '기본값: 공개 · 바로 참여';
+    return Material(
+      color: SaColors.surface,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: _toggleAdvanced,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            border: Border.all(color: SaColors.borderStrong),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              PhosphorIcon(PhosphorIconsBold.slidersHorizontal, size: 17, color: SaColors.textSecondary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('표지 · 공개 · 장소 설정', style: SaText.bodyMedium.copyWith(fontSize: 13.5)),
+                    const SizedBox(height: 2),
+                    Text(summary, maxLines: 1, overflow: TextOverflow.ellipsis, style: SaText.mono(fontSize: 9.5)),
+                  ],
+                ),
+              ),
+              PhosphorIcon(
+                _advancedExpanded ? PhosphorIconsBold.caretUp : PhosphorIconsBold.caretDown,
+                size: 15,
+                color: SaColors.textTertiary,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -381,10 +441,17 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
     );
   }
 
-  Widget _input(TextEditingController ctrl, {required String hint, required int maxLines}) {
+  Widget _input(
+    TextEditingController ctrl, {
+    required String hint,
+    required int maxLines,
+    ValueChanged<String>? onSubmitted,
+  }) {
     return TextField(
       controller: ctrl,
       maxLines: maxLines,
+      textInputAction: maxLines == 1 ? TextInputAction.done : TextInputAction.newline,
+      onSubmitted: onSubmitted,
       style: SaText.bodyMedium,
       decoration: InputDecoration(
         hintText: hint,
@@ -500,12 +567,12 @@ class _AlbumCreatePageState extends State<AlbumCreatePage> {
             hintText: '장소·명소 검색 (예: 남산타워)',
             hintStyle: SaText.body.copyWith(fontSize: 13, color: SaColors.textTertiary),
             prefixIcon: Padding(
-              padding: EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
               child: PhosphorIcon(PhosphorIconsFill.mapPin, size: 15, color: SaColors.textSecondary),
             ),
             suffixIcon: _spotSearching
                 ? Padding(
-                    padding: EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(12),
                     child: SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: SaColors.accentTeal)),
                   )
                 : null,

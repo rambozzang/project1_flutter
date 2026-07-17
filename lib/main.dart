@@ -17,8 +17,11 @@ import 'package:project1/config/app_theme.dart';
 import 'package:project1/firebase/firebase_service.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/route/app_route.dart';
+import 'package:project1/services/analytics_service.dart';
 import 'package:project1/services/deep_link_service.dart';
 import 'package:project1/services/weather_notification_service.dart';
+import 'package:project1/subscript_service.dart';
+import 'package:project1/utils/WeatherLottie.dart';
 import 'package:project1/widget/global_upload_indicator.dart';
 import 'package:workmanager/workmanager.dart';
 // import 'package:project1/theme/app_theme.dart';
@@ -44,6 +47,9 @@ void main() async {
   final firebaseService = FirebaseService();
   await firebaseService.initialize();
 
+  // Firebase 초기화 직후 Analytics 수집 활성화(백그라운드). 화면 추적은 GetMaterialApp observer가 담당.
+  unawaited(AnalyticsService.instance.init());
+
   // MediaKit.ensureInitialized();
 
   // 카카오개발자센터 네이티브 앱키
@@ -57,6 +63,9 @@ void main() async {
   if (Platform.isAndroid) {
     unawaited(Workmanager().initialize(weatherNotiDispatcher));
   }
+
+  // 날씨 Lottie 아이콘 사전 로딩(백그라운드) — 24시·주간 진입 시 첫 파싱 지연 완화. 시작을 막지 않도록 비대기.
+  unawaited(WeatherLottie.precacheAllAnimations());
 
   /// flutter run --dart-define=apiKey='Your Api Key'
 //  Gemini.init(  apiKey: const String.fromEnvironment('apiKey'), enableDebugging: true);
@@ -88,6 +97,8 @@ class TigerBk extends StatelessWidget {
       title: "SkySnap",
       useInheritedMediaQuery: true,
       debugShowCheckedModeBanner: false,
+      // 네임드 라우트 진입을 자동 screen_view 로 기록(Firebase Analytics).
+      navigatorObservers: [AnalyticsService.instance.observer],
       builder: (context, child) {
         // 1) bot_toast 초기화 유지
         final Widget content = BotToastInit()(context, child);
@@ -124,6 +135,8 @@ class TigerBk extends StatelessWidget {
         Get.put(AchievementService(), permanent: true);
         // Get.put(LifeCycleGetx());
         Get.put(WeatherGogoCntr());
+        // 프리미엄 구독(IAP) 상태 관리 — 앱 전역 상주.
+        Get.put(SubscriptionService.instance, permanent: true);
         // 앨범(커뮤니티) 초대 딥링크 - AuthCntr 등록 이후 초기화(로그인 상태 리스닝 필요).
         DeepLinkService.instance.initialize();
       }),

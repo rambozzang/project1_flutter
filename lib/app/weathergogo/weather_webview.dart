@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
 import 'package:project1/app/webview/common_webview.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 class WeatherWEbviewPage extends StatelessWidget {
   const WeatherWEbviewPage({super.key});
@@ -223,6 +224,35 @@ class RealtimeSatellitePage extends StatelessWidget {
 })();
 ''';
 
+  // 로드 완료 후 타임랩스 애니메이션을 자동 재생한다.
+  // 재생 버튼은 재생 중이면 aria-label이 '일시정지'로 바뀌므로, '재생' 상태일 때만 한 번 누른다.
+  // 타임라인이 비동기로 붙을 수 있어 짧게 폴링하고, 한 번 눌렀으면 즉시 종료한다(사용자가 다시 멈추면 재개하지 않음).
+  static const String _autoPlayJs = r'''
+(() => {
+  if (window.__skySnapAutoPlaySatellite) return;
+  window.__skySnapAutoPlaySatellite = true;
+
+  let started = false;
+  const clickPlay = () => {
+    if (started) return true;
+    const playBtn = document.querySelector('button.play[aria-label*="재생"]');
+    if (playBtn) {
+      playBtn.click();
+      started = true;
+      return true;
+    }
+    return false;
+  };
+
+  clickPlay();
+  let attempts = 0;
+  const timer = setInterval(() => {
+    attempts += 1;
+    if (clickPlay() || attempts >= 40) clearInterval(timer);
+  }, 500);
+})();
+''';
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -231,7 +261,8 @@ class RealtimeSatellitePage extends StatelessWidget {
           title: '실시간 위성영상',
           url: _url,
           icon: Icons.satellite_alt,
-          injectJs: _dismissContinuePopupJs,
+          // 팝업 자동 닫기 + 타임랩스 자동 재생을 함께 주입한다.
+          injectJs: '$_dismissContinuePopupJs\n$_autoPlayJs',
           touchToggleBelow: true,
         ),
         const Gap(40),
@@ -271,10 +302,9 @@ class _RadarPanelState extends State<_RadarPanel> {
     if (widget.touchToggleBelow) {
       _externalTouchEnabled = ValueNotifier<bool>(false);
     }
-    // 초기 페이지 렌더 부담을 줄이려 웹뷰는 2초 지연 후 생성(그 전엔 스피너).
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) setState(() => _showWeb = true);
-    });
+    // 웹뷰는 화면에 처음 보일 때만 생성하고 이후 유지한다(아래 VisibilityDetector).
+    // 라디오/위성까지 스크롤하지 않으면 아예 로드하지 않아 초기 렌더 부담을 줄인다.
+    // (한번 로드하면 재로드하지 않아 스크롤 시 깜빡임이 없다.)
   }
 
   @override
@@ -308,26 +338,37 @@ class _RadarPanelState extends State<_RadarPanel> {
             ],
           ),
           const Gap(15),
-          SizedBox(
-            height: 600,
-            child: _showWeb
-                ? CommonWebView(
-                    isBackBtn: false,
-                    url: widget.url,
-                    denyLocation: widget.denyLocation,
-                    injectJs: widget.injectJs,
-                    touchToggle: true, // 기본 스크롤 통과, 하단 버튼으로 조작 on/off
-                    externalTouchEnabled: _externalTouchEnabled,
-                  )
-                : Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white10,
-                      borderRadius: BorderRadius.circular(8),
+          VisibilityDetector(
+            key: Key('radar_webview_${widget.title}'),
+            onVisibilityChanged: (info) {
+              if (!mounted || _showWeb) return;
+              // 처음 화면에 들어올 때만 로드하고 이후 유지한다(스크롤로 다시 보여도 재로드 없음).
+              // 페이지 열자마자 로드하던 blind 2초만 없애 초기 렌더 부담을 줄이는 게 목적.
+              if (info.visibleFraction > 0.05) {
+                setState(() => _showWeb = true);
+              }
+            },
+            child: SizedBox(
+              height: 600,
+              child: _showWeb
+                  ? CommonWebView(
+                      isBackBtn: false,
+                      url: widget.url,
+                      denyLocation: widget.denyLocation,
+                      injectJs: widget.injectJs,
+                      touchToggle: true, // 기본 스크롤 통과, 하단 버튼으로 조작 on/off
+                      externalTouchEnabled: _externalTouchEnabled,
+                    )
+                  : Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white10,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Center(
+                        child: CircularProgressIndicator(color: Colors.white70),
+                      ),
                     ),
-                    child: const Center(
-                      child: CircularProgressIndicator(color: Colors.white70),
-                    ),
-                  ),
+            ),
           ),
           if (_showWeb && _externalTouchEnabled != null) ...[
             const Gap(10),
