@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/auth/privacy_policy_dialog.dart';
+import 'package:project1/services/analytics_service.dart';
 import 'package:project1/repo/api/google_api.dart';
 import 'package:project1/repo/api/kakao_api.dart';
 import 'package:project1/repo/api/naver_api.dart';
@@ -99,6 +100,10 @@ class AuthCntr extends GetxController with SecureStorage {
       resLoginData.value = LoginRes.fromMap(res.data);
       _syncPremiumFromLogin(res.data);
       isLogged.value = true;
+      // 로그인 성공 계측: 사용자 식별 + 속성(login_type/is_premium) + login 이벤트
+      AnalyticsService.instance
+          .setUser(custId: custId.value, loginType: resLoginData.value.provider, isPremium: isPremium.value);
+      AnalyticsService.instance.logLogin(resLoginData.value.provider ?? 'unknown');
       update();
 
       // 앱 실행 시 출석 체크 (비동기, 로그인 흐름 차단 안 함)
@@ -176,6 +181,10 @@ class AuthCntr extends GetxController with SecureStorage {
       resLoginData.value = LoginRes.fromMap(res.data);
       _syncPremiumFromLogin(res.data);
       isLogged.value = true;
+      // 회원가입 성공 계측: 사용자 식별 + 속성 + sign_up 이벤트
+      AnalyticsService.instance
+          .setUser(custId: this.custId.value, loginType: resLoginData.value.provider, isPremium: isPremium.value);
+      AnalyticsService.instance.logSignUp(resLoginData.value.provider ?? 'unknown');
 
       return resData;
     } catch (e) {

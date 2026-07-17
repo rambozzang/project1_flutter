@@ -7,6 +7,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:project1/services/analytics_service.dart';
 import 'package:get/get.dart';
 import 'package:hashtagable_v3/hashtagable.dart';
 import 'package:like_button/like_button.dart';
@@ -259,6 +260,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     BoardRepo boardRepo = BoardRepo();
     try {
       await boardRepo.updateBoardCount(widget.data.boardId.toString());
+      AnalyticsService.instance.logVideoView(boardId: widget.data.boardId.toString());
     } catch (e) {
       lo.g('@@@ VideoScreenPage  updateCount error : $e');
     }
@@ -278,6 +280,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
       Get.find<VideoListCntr>().list[inx].likeCnt = (Get.find<VideoListCntr>().list[inx].likeCnt! + 1);
       // 현재 리스트에 좋아요 여부 변경
       Get.find<VideoListCntr>().list[inx].likeYn = 'Y';
+      AnalyticsService.instance.logLike(widget.data.boardId.toString());
     } catch (e) {
       // Utils.alert('좋아요 실패! 다시 시도해주세요');
     }
@@ -312,6 +315,8 @@ class VideoScreenPageState extends State<VideoScreenPage> {
       // mp4 우선, 없으면 썸네일 이미지로 폴백(SNS는 HLS를 못 받음).
       await SnsShare.shareMedia(context, videoUrl: d.mp4, imageUrl: d.thumbnailPath, text: text);
     }
+    AnalyticsService.instance
+        .logShare(boardId: d.boardId.toString(), contentType: isPhotoPost ? 'photo' : 'video');
   }
 
   @override
@@ -776,6 +781,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
                       if (widget.data.followYn.toString() == 'N') {
                         widget.data.followYn = 'Y';
                         Get.find<VideoListCntr>().follow(widget.data.custId.toString());
+                        AnalyticsService.instance.logFollow(widget.data.custId.toString());
                       } else {
                         widget.data.followYn = 'N';
                         Get.find<VideoListCntr>().followCancle(widget.data.custId.toString());

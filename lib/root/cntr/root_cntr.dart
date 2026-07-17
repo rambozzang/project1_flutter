@@ -17,6 +17,8 @@ import 'package:project1/repo/challenge/data/challenge_complete_data.dart';
 import 'package:project1/repo/cloudflare/cloudflare_repo.dart';
 import 'package:project1/repo/cloudflare/data/cloudflare_req_save_data.dart';
 import 'package:project1/repo/cloudflare/direct_upload_repo.dart';
+import 'package:project1/services/analytics_service.dart';
+import 'package:project1/services/review_service.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/exif_util.dart';
@@ -255,6 +257,9 @@ class RootCntr extends GetxController {
         return;
       }
       isFileUploading.value = UploadingType.SUCCESS;
+      // 영상 업로드 성공 계측 + 긍정적 순간 리뷰 요청(게이팅)
+      AnalyticsService.instance.logContentUpload(contentType: 'video', feel: boardSaveData.boardWeatherVo?.feelCd);
+      ReviewService.instance.onPositiveMoment();
       // Utils.alert('정상 등록되었습니다!');
       Future.delayed(const Duration(milliseconds: 2000), () {
         isFileUploading.value = UploadingType.NONE;
@@ -352,6 +357,10 @@ class RootCntr extends GetxController {
       }
 
       isFileUploading.value = UploadingType.SUCCESS;
+
+      // 사진 업로드 성공 계측 + 긍정적 순간 리뷰 요청(게이팅)
+      AnalyticsService.instance.logContentUpload(contentType: 'photo', feel: boardSaveData.boardWeatherVo?.feelCd);
+      ReviewService.instance.onPositiveMoment();
 
       // 사진 게시도 영상 업로드와 동일하게 오늘 챌린지를 완료 처리한다.
       _completeTodayChallengeAfterUpload();

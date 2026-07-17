@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:project1/services/analytics_service.dart';
 import 'package:project1/utils/log_utils.dart';
 
 class PermissionHandler {
@@ -13,6 +14,7 @@ class PermissionHandler {
 
   Future<void> handleNotificationPermission() async {
     var status = await Permission.notification.request();
+    AnalyticsService.instance.logPermission('notification', status.isGranted);
     if (status.isDenied) {
       // Utils.alert('알림 권한이 거부되었습니다. 일부 기능이 제한될 수 있습니다.');
     }
@@ -31,8 +33,10 @@ class PermissionHandler {
       locationPermission = await Geolocator.requestPermission();
     }
 
-    return locationPermission == LocationPermission.always ||
+    final bool granted = locationPermission == LocationPermission.always ||
         locationPermission == LocationPermission.whileInUse;
+    AnalyticsService.instance.logPermission('location', granted);
+    return granted;
   }
 
   Future<bool> handleMicrophonePermission() async {

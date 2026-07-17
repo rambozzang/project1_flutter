@@ -17,6 +17,7 @@ import 'package:project1/config/app_theme.dart';
 import 'package:project1/firebase/firebase_service.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/route/app_route.dart';
+import 'package:project1/services/analytics_service.dart';
 import 'package:project1/services/deep_link_service.dart';
 import 'package:project1/services/weather_notification_service.dart';
 import 'package:project1/subscript_service.dart';
@@ -45,6 +46,9 @@ void main() async {
   // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   final firebaseService = FirebaseService();
   await firebaseService.initialize();
+
+  // Firebase 초기화 직후 Analytics 수집 활성화(백그라운드). 화면 추적은 GetMaterialApp observer가 담당.
+  unawaited(AnalyticsService.instance.init());
 
   // MediaKit.ensureInitialized();
 
@@ -93,6 +97,8 @@ class TigerBk extends StatelessWidget {
       title: "SkySnap",
       useInheritedMediaQuery: true,
       debugShowCheckedModeBanner: false,
+      // 네임드 라우트 진입을 자동 screen_view 로 기록(Firebase Analytics).
+      navigatorObservers: [AnalyticsService.instance.observer],
       builder: (context, child) {
         // 1) bot_toast 초기화 유지
         final Widget content = BotToastInit()(context, child);
