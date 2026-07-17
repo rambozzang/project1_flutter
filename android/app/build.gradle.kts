@@ -101,6 +101,16 @@ flutter {
     source = "../.."
 }
 
+// ── 16KB 페이지 크기 호환 ──
+// mobile_scanner(^5.2.3)가 전이 의존으로 끌어오는 MLKit 바코드 17.2.0은
+// libbarhopper_v3.so 가 4KB(2**12) 정렬이라 Android 15+ 16KB 페이지 기기에서 비호환.
+// 16KB(2**14) 정렬이 적용된 17.3.0+ 로 강제한다. (Play는 2025-11-01부터 targetSdk 35+ 앱에 16KB 지원 의무화)
+configurations.all {
+    resolutionStrategy {
+        force("com.google.mlkit:barcode-scanning:17.3.0")
+    }
+}
+
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.24")
     implementation("androidx.core:core-ktx:1.13.1")
