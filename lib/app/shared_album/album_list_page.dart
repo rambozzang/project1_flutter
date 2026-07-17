@@ -170,6 +170,11 @@ class _AlbumListPageState extends State<AlbumListPage> {
   }
 
   Future<void> _fillCard(SaAlbumCardData card) async {
+    // 백엔드 목록 응답이 대표 표지 썸네일(coverThumbs)을 함께 주면 추가 콜 없이 바로 사용 → 목록 N+1 제거.
+    if (card.community.coverThumbs.isNotEmpty) {
+      card.loadedThumbs = card.community.coverThumbs.take(3).toList();
+      return;
+    }
     final int id = card.community.communityId;
     // 아바타·최근 업데이트는 목록 응답(getMyCommunities)에 이미 포함되어 _load에서 세팅됨 →
     // 개별 getMembers 콜 완전 제거. 표지 모드(대표 미디어 미지정)는 앨범 표지(imageUrl)만 쓰므로
@@ -180,7 +185,7 @@ class _AlbumListPageState extends State<AlbumListPage> {
       return;
     }
     try {
-      // 대표 미디어 montage 모드만 실제 미디어를 조회해 지정 순서대로 썸네일을 구성한다.
+      // (폴백) 백엔드가 coverThumbs를 아직 안 주는 경우 — 기존 방식으로 대표 미디어 썸네일 조회.
       final feedRes = await _repo.getFeedRes(id, 0, 30) as dynamic;
       if (feedRes.code == '00' && feedRes.data is List) {
         final items = (feedRes.data as List).map((e) => BoardWeatherListData.fromMap(e)).toList();

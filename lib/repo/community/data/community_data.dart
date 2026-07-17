@@ -25,6 +25,7 @@ class CommunityData {
   final Set<String>? cardOptions; // 카드 표시 옵션(member/media/avatars/new). null=전체 표시
   // ── 목록 카드 즉시 렌더용(_fillCard N콜 제거) ──
   final List<String> avatars; // 상위 멤버 프로필경로(최대 4, JOINED)
+  final List<String> coverThumbs; // 대표 미디어(montage) 썸네일 URL(순서 유지) — 목록 _fillCard N콜 제거
   final String? lastMediaDtm; // 최신 미디어 시각('yyyy-MM-dd HH:mm')
 
   CommunityData({
@@ -51,6 +52,7 @@ class CommunityData {
     this.coverMediaIds = const [],
     this.cardOptions,
     this.avatars = const [],
+    this.coverThumbs = const [],
     this.lastMediaDtm,
   });
 
@@ -143,6 +145,11 @@ class CommunityData {
           ? null
           : map['cardOptions'].toString().split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toSet(),
       avatars: (map['avatars'] as List?)
+              ?.map((e) => e.toString())
+              .where((e) => e.isNotEmpty)
+              .toList() ??
+          const [],
+      coverThumbs: (map['coverThumbs'] as List?)
               ?.map((e) => e.toString())
               .where((e) => e.isNotEmpty)
               .toList() ??
