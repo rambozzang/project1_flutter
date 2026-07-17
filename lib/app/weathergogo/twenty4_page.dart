@@ -199,16 +199,8 @@ class _Twenty4PageState extends State<Twenty4Page> {
   }
 
   Widget _buildHourlyWeatherItem(HourlyWeatherData data, int index) {
-    final yesterdayData = controller.yesterdayHourlyWeather.firstWhere(
-      (element) => element.date.hour == data.date.hour && element.date.day == (data.date.subtract(const Duration(days: 1))).day,
-      orElse: () => HourlyWeatherData(temp: double.infinity, sky: '', rain: '', date: DateTime.now()),
-    );
-
-    // 어제 데이터가 없거나 gap(무한대)인 시각은 '-' 로 표시.
-    final bool hasYesterday = yesterdayData.temp.isFinite;
-    final tempDiff = hasYesterday ? data.temp - yesterdayData.temp : 0.0;
-    final String yesterDayDesc = hasYesterday ? _getYesterdayDescription(tempDiff) : '-';
-
+    // 이 위젯(아이콘 포함)은 hourlyWeather에만 의존한다. 어제 비교는 아래 Obx로 분리해
+    // '어제' 데이터가 나중에 도착해도 24개 아이콘 행 전체가 재빌드되지 않게 한다(#4 재빌드 최적화).
     return Column(
       children: [
         data.date.hour == 0 || index == 0
@@ -238,12 +230,11 @@ class _Twenty4PageState extends State<Twenty4Page> {
               SizedBox(
                   height: weatherIconSize,
                   width: weatherIconSize,
-                  child: WeatherDataProcessor.instance.getFinalWeatherIcon(data.date.hour, data.sky.toString(), data.rain.toString())
-                  // child: Lottie.asset(
-                  //   WeatherDataProcessor.instance.getFinalWeatherIcon(data.date.hour, data.sky.toString(), data.rain.toString()),
-                  //   fit: BoxFit.cover,
-                  // ),
-                  ),
+                  // 24시 목록 24개 → optimized(30fps+래스터 캐시)로 애니 유지하며 부하만 낮춤. RepaintBoundary로 스크롤 격리.
+                  child: RepaintBoundary(
+                    child: WeatherDataProcessor.instance
+                        .getFinalWeatherIcon(data.date.hour, data.sky.toString(), data.rain.toString(), optimized: true),
+                  )),
               const SizedBox(height: 4.0),
 
               FittedBox(
@@ -276,7 +267,20 @@ class _Twenty4PageState extends State<Twenty4Page> {
               ),
               const SizedBox(height: 4.0),
 
-              _buildYesterdayComparisonRow(tempDiff, yesterDayDesc),
+              // 어제 비교만 별도 Obx로 구독 → 어제 도착 시 이 작은 텍스트만 갱신(아이콘 Lottie 재빌드 없음).
+              Obx(() {
+                final yesterdayData = controller.yesterdayHourlyWeather.firstWhere(
+                  (element) =>
+                      element.date.hour == data.date.hour &&
+                      element.date.day == (data.date.subtract(const Duration(days: 1))).day,
+                  orElse: () => HourlyWeatherData(temp: double.infinity, sky: '', rain: '', date: DateTime.now()),
+                );
+                // 어제 데이터가 없거나 gap(무한대)인 시각은 '-' 로 표시.
+                final bool hasYesterday = yesterdayData.temp.isFinite;
+                final tempDiff = hasYesterday ? data.temp - yesterdayData.temp : 0.0;
+                final String yesterDayDesc = hasYesterday ? _getYesterdayDescription(tempDiff) : '-';
+                return _buildYesterdayComparisonRow(tempDiff, yesterDayDesc);
+              }),
               const SizedBox(height: 4.0),
               SizedBox(height: chartHeight + 5), // 차트를 위한 공간
             ],

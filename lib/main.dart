@@ -20,6 +20,7 @@ import 'package:project1/route/app_route.dart';
 import 'package:project1/services/deep_link_service.dart';
 import 'package:project1/services/weather_notification_service.dart';
 import 'package:project1/subscript_service.dart';
+import 'package:project1/utils/WeatherLottie.dart';
 import 'package:project1/widget/global_upload_indicator.dart';
 import 'package:workmanager/workmanager.dart';
 // import 'package:project1/theme/app_theme.dart';
@@ -58,6 +59,9 @@ void main() async {
   if (Platform.isAndroid) {
     unawaited(Workmanager().initialize(weatherNotiDispatcher));
   }
+
+  // 날씨 Lottie 아이콘 사전 로딩(백그라운드) — 24시·주간 진입 시 첫 파싱 지연 완화. 시작을 막지 않도록 비대기.
+  unawaited(WeatherLottie.precacheAllAnimations());
 
   /// flutter run --dart-define=apiKey='Your Api Key'
 //  Gemini.init(  apiKey: const String.fromEnvironment('apiKey'), enableDebugging: true);
