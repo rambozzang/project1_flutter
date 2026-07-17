@@ -22,7 +22,10 @@ class _SnowAnimationState extends State<SnowAnimation2> with TickerProviderState
     _controller = AnimationController(
       duration: const Duration(seconds: 10),
       vsync: this,
-    )..repeat();
+    );
+    // 보일 때만 Ticker 가동(안 보이면 stop → 상시 프레임 생성 방지, 페이지 idle 가능).
+    widget.isVisibleNotifier.addListener(_syncVisibility);
+    _syncVisibility();
 
     for (int i = 0; i < 100; i++) {
       snowflakes.add(Snowflake());
@@ -31,8 +34,18 @@ class _SnowAnimationState extends State<SnowAnimation2> with TickerProviderState
 
   @override
   void dispose() {
+    widget.isVisibleNotifier.removeListener(_syncVisibility);
     _controller.dispose();
     super.dispose();
+  }
+
+  // 가시성에 따라 Ticker를 켜고 끈다.
+  void _syncVisibility() {
+    if (widget.isVisibleNotifier.value) {
+      if (!_controller.isAnimating) _controller.repeat();
+    } else {
+      if (_controller.isAnimating) _controller.stop();
+    }
   }
 
   @override

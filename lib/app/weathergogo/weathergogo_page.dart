@@ -305,24 +305,14 @@ class WeathgergogoPageState extends State<WeathgergogoPage>
     return ValueListenableBuilder<List<TwinklingStar>>(
       valueListenable: starsNotifier,
       builder: (context, stars, child) {
-        return Stack(
-          children: stars
-              .map((star) => Positioned(
-                    left: star.x,
-                    top: star.y,
-                    child: Opacity(
-                      opacity: star.opacity,
-                      child: Container(
-                        width: star.opacity * 5,
-                        height: star.opacity * 5,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                  ))
-              .toList(),
+        if (stars.isEmpty) return const SizedBox.shrink();
+        // 별 100개를 위젯 100개(Opacity+Container)로 그리던 것을 단일 CustomPaint로 대체.
+        // 100ms 타이머가 리스트를 갱신해도 이 painter 1개만 repaint → 위젯 100개 재빌드 제거.
+        return RepaintBoundary(
+          child: CustomPaint(
+            size: Size.infinite,
+            painter: _StarFieldPainter(stars),
+          ),
         );
       },
     );
@@ -732,4 +722,25 @@ class WeathgergogoPageState extends State<WeathgergogoPage>
           ),
         ));
   }
+}
+
+/// 야간 트윙클 별 렌더러 — 별 리스트를 단일 캔버스에 그린다(기존 위젯 100개 대체).
+class _StarFieldPainter extends CustomPainter {
+  final List<TwinklingStar> stars;
+  _StarFieldPainter(this.stars);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final star in stars) {
+      final double o = star.opacity.clamp(0.0, 1.0).toDouble();
+      if (o <= 0) continue;
+      final paint = Paint()..color = Colors.white.withOpacity(o);
+      // 기존: width/height = opacity*5(지름) → 반지름 = opacity*2.5
+      canvas.drawCircle(Offset(star.x, star.y), o * 2.5, paint);
+    }
+  }
+
+  // 타이머가 매 틱 새 리스트를 넘겨 별 밝기가 바뀌므로 항상 repaint.
+  @override
+  bool shouldRepaint(covariant _StarFieldPainter oldDelegate) => true;
 }

@@ -75,7 +75,10 @@ class _RainDropAnimationState extends State<RainDropAnimation> with TickerProvid
     _controller = AnimationController(
       duration: const Duration(seconds: 2), // 애니메이션 주기를 늘림
       vsync: this,
-    )..repeat();
+    );
+    // 보일 때만 Ticker 가동(안 보이면 stop → 상시 프레임 생성 방지, 페이지 idle 가능).
+    widget.isVisibleNotifier.addListener(_syncVisibility);
+    _syncVisibility();
 
     for (int i = 0; i < 50; i++) {
       // 빗방울의 수를 50개로 줄임
@@ -85,8 +88,18 @@ class _RainDropAnimationState extends State<RainDropAnimation> with TickerProvid
 
   @override
   void dispose() {
+    widget.isVisibleNotifier.removeListener(_syncVisibility);
     _controller.dispose();
     super.dispose();
+  }
+
+  // 가시성에 따라 Ticker를 켜고 끈다.
+  void _syncVisibility() {
+    if (widget.isVisibleNotifier.value) {
+      if (!_controller.isAnimating) _controller.repeat();
+    } else {
+      if (_controller.isAnimating) _controller.stop();
+    }
   }
 
   @override
