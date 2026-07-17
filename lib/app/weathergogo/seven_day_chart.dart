@@ -130,15 +130,19 @@ class _DailyWeatherChartState extends State<DailyWeatherChart> {
 
   Widget _buildHalfDayWeather(int index, DayWeatherData data, String period) {
     // 2부터는 중기예보 아이콘으로 변경
-    // 주간은 하루×2 = 십수 개 아이콘이 동시에 뜨므로 animate:false로 정적 렌더(래스터 캐시).
     final Widget weathIcon = index > 1
-        ? WeatherDataProcessor.instance.getWeatherIconForMidtermForecast(data.skyDesc.toString(), animate: false)
-        : WeatherDataProcessor.instance.getWeatherGogoImage(data.sky.toString(), data.rain.toString(), animate: false);
+        ? WeatherDataProcessor.instance.getWeatherIconForMidtermForecast(data.skyDesc.toString())
+        : WeatherDataProcessor.instance.getWeatherGogoImage(data.sky.toString(), data.rain.toString());
 
     return Column(
       children: [
         Text(period, style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.white)),
-        SizedBox(height: 40, width: 40, child: RepaintBoundary(child: weathIcon)),
+        SizedBox(height: 40, width: 40, child: weathIcon
+            // child: Lottie.asset(
+            //   weathIcon,
+            //   fit: BoxFit.cover,
+            // ),
+            ),
         Text('${data.rainPo ?? '0'}%',
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color.fromARGB(255, 204, 226, 240))),
         const SizedBox(
