@@ -57,25 +57,37 @@ class WeatherLottie {
     return hour >= 19 || hour < 6;
   }
 
-  static Widget getWeatherAnimation(String weatherCondition) {
-    bool isNight = _isNight();
+  // animate:false → 정지 프레임 + 래스터 캐시. 24시 목록처럼 아이콘이 수십 개 동시에 뜨는 곳은
+  // 애니메이션을 끄면 매 프레임 벡터 재래스터화가 사라져 렌더 부하가 크게 준다.
+  // 기본 animate:true(+캐시 없음)라 헤더 히어로 등 기존 호출부는 동작이 완전히 동일하다.
+  static Widget getWeatherAnimation(String weatherCondition, {bool animate = true}) {
+    return Lottie.asset(
+      _conditionAsset(weatherCondition),
+      animate: animate,
+      renderCache: animate ? null : RenderCache.raster,
+    );
+  }
+
+  // 조건 문자열 → 에셋 경로(야간 변형 포함). 기존 leaf 메서드들과 매핑 동일.
+  static String _conditionAsset(String weatherCondition) {
+    final bool isNight = _isNight();
     switch (weatherCondition.toLowerCase()) {
       case 'sun':
-        return isNight ? nightSun() : sun();
+        return isNight ? nightSunAsset : sunAsset;
       case 'cloudy':
-        return isNight ? nightDayCloudy() : dayCloudy();
+        return isNight ? nightDayCloudyAsset : dayCloudyAsset;
       case 'mostly_cloudy':
-        return isNight ? nightDayMostlyCloudy() : dayMostlyCloudy();
+        return isNight ? nightDayMostlyCloudyAsset : dayMostlyCloudyAsset;
       case 'rain':
-        return isNight ? nightDayRain() : dayRain();
+        return isNight ? nightDayRainAsset : dayRainAsset;
       case 'snow':
-        return isNight ? nightDaySnow() : daySnow();
+        return isNight ? nightDaySnowAsset : daySnowAsset;
       case 'storm':
-        return storm();
+        return stormAsset;
       case 'wind':
-        return wind();
+        return windAsset;
       default:
-        return isNight ? nightSun() : sun(); // 기본값으로 맑은 날씨 반환
+        return isNight ? nightSunAsset : sunAsset; // 기본값으로 맑은 날씨 반환
     }
   }
 

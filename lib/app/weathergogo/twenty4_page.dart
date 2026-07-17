@@ -238,12 +238,12 @@ class _Twenty4PageState extends State<Twenty4Page> {
               SizedBox(
                   height: weatherIconSize,
                   width: weatherIconSize,
-                  child: WeatherDataProcessor.instance.getFinalWeatherIcon(data.date.hour, data.sky.toString(), data.rain.toString())
-                  // child: Lottie.asset(
-                  //   WeatherDataProcessor.instance.getFinalWeatherIcon(data.date.hour, data.sky.toString(), data.rain.toString()),
-                  //   fit: BoxFit.cover,
-                  // ),
-                  ),
+                  // 24시 목록은 아이콘이 24개 동시에 뜬다 → animate:false로 정적 렌더(래스터 캐시).
+                  // 애니메이션 Lottie 24개가 매 프레임 재래스터화되던 부하 제거. RepaintBoundary로 스크롤 시 개별 격리.
+                  child: RepaintBoundary(
+                    child: WeatherDataProcessor.instance
+                        .getFinalWeatherIcon(data.date.hour, data.sky.toString(), data.rain.toString(), animate: false),
+                  )),
               const SizedBox(height: 4.0),
 
               FittedBox(
