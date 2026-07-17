@@ -29,6 +29,10 @@ class CommunityHomeBody extends StatelessWidget {
     this.showMemberAction = true,
     this.controller,
     this.bottomPadding = 120,
+    this.myCustId,
+    this.onlyMine = false,
+    this.onToggleOnlyMine,
+    this.onLongPressItem,
   });
 
   final CommunityData community;
@@ -51,6 +55,13 @@ class CommunityHomeBody extends StatelessWidget {
   final ScrollController? controller;
   // 하단 바/FAB에 마지막 콘텐츠가 가리지 않도록 확보할 여백.
   final double bottomPadding;
+  // 로그인 사용자 ID — 내가 올린 미디어 판별(MY 배지·롱프레스 대상).
+  final String? myCustId;
+  // '내 사진만' 필터 상태(호스트 소유). onToggleOnlyMine이 있을 때만 필터 칩 노출.
+  final bool onlyMine;
+  final VoidCallback? onToggleOnlyMine;
+  // 내가 올린 미디어 롱프레스(수정·삭제 시트) — 내 카드에만 연결된다.
+  final void Function(BoardWeatherListData item)? onLongPressItem;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +75,7 @@ class CommunityHomeBody extends StatelessWidget {
           if (!canViewFeed)
             SliverFillRemaining(hasScrollBody: false, child: _privateGate())
           else ...[
-            if (tags.isNotEmpty) SliverToBoxAdapter(child: _tagSection()),
+            if (tags.isNotEmpty || onToggleOnlyMine != null) SliverToBoxAdapter(child: _tagSection()),
             if (visibleFeed.isEmpty && !feedLoading)
               SliverFillRemaining(hasScrollBody: false, child: _emptyFeed())
             else
@@ -271,23 +282,27 @@ class CommunityHomeBody extends StatelessWidget {
   }
 
   Widget _tagSection() {
+    // '내 사진만' 필터 칩(토글 콜백이 있을 때만)을 태그 칩 앞에 함께 배치한다.
+    final bool showMine = onToggleOnlyMine != null;
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(left: 4, bottom: 8),
-            child: Text('인기 태그', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)),
-          ),
+          if (tags.isNotEmpty)
+            const Padding(
+              padding: EdgeInsets.only(left: 4, bottom: 8),
+              child: Text('인기 태그', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)),
+            ),
           SizedBox(
             height: 34,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: tags.length,
+              itemCount: tags.length + (showMine ? 1 : 0),
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (context, i) {
-                final t = tags[i];
+                if (showMine && i == 0) return _mineFilterChip();
+                final t = tags[i - (showMine ? 1 : 0)];
                 final selected = activeTag == t.tag;
                 return GestureDetector(
                   onTap: () => onTagTap(t.tag),
@@ -312,8 +327,46 @@ class CommunityHomeBody extends StatelessWidget {
     );
   }
 
+  // '내 사진만' 토글 칩 — 태그 칩과 동일 톤, 선택 시 파랑 채움 + 체크 아이콘.
+  Widget _mineFilterChip() {
+    return GestureDetector(
+      onTap: onToggleOnlyMine,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: onlyMine ? const Color(0xFF3B6FE0) : const Color(0xFFF1F5FF),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: onlyMine ? const Color(0xFF3B6FE0) : const Color(0xFFD6E0FA)),
+        ),
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(onlyMine ? Icons.check_circle : Icons.person_outline,
+                size: 15, color: onlyMine ? Colors.white : const Color(0xFF3B6FE0)),
+            const SizedBox(width: 4),
+            Text('내 사진만',
+                style: TextStyle(
+                    fontSize: 12.5, fontWeight: FontWeight.bold, color: onlyMine ? Colors.white : const Color(0xFF3B6FE0))),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _emptyFeed() {
-    final filtered = activeTag != null;
+    final bool tagFiltered = activeTag != null;
+    // 내 사진만 필터가 켜져 있으면 그 안내를 우선한다(태그 동시 선택 시 포함).
+    final String title = onlyMine
+        ? '내가 올린 사진·영상이 없어요'
+        : tagFiltered
+            ? "'$activeTag' 태그 게시물이 없어요"
+            : '아직 게시물이 없어요';
+    final String subtitle = onlyMine
+        ? '＋ 로 나의 첫 순간을 올려보세요!'
+        : tagFiltered
+            ? '다른 태그를 선택해보세요.'
+            : '첫 게시물을 올려보세요!';
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(30),
@@ -322,11 +375,10 @@ class CommunityHomeBody extends StatelessWidget {
           children: [
             const Icon(Icons.photo_library_outlined, size: 46, color: Color(0xFF9AA3B2)),
             const SizedBox(height: 12),
-            Text(filtered ? "'$activeTag' 태그 게시물이 없어요" : '아직 게시물이 없어요',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
             const SizedBox(height: 4),
-            Text(filtered ? '다른 태그를 선택해보세요.' : '첫 게시물을 올려보세요!', style: const TextStyle(fontSize: 12.5, color: Color(0xFF7A8291))),
-            if (!filtered && onCreatePost != null) ...[
+            Text(subtitle, style: const TextStyle(fontSize: 12.5, color: Color(0xFF7A8291))),
+            if (!tagFiltered && onCreatePost != null) ...[
               const SizedBox(height: 16),
               SizedBox(
                 height: 42,
@@ -350,8 +402,11 @@ class CommunityHomeBody extends StatelessWidget {
   }
 
   Widget _feedCard(BoardWeatherListData item) {
+    // 내가 올린 미디어 — MY 배지 표시 + 꾹 눌러(롱프레스) 수정·삭제 시트.
+    final bool isMine = (myCustId ?? '').isNotEmpty && myCustId == item.custId;
     return GestureDetector(
       onTap: () => onTapItem(item),
+      onLongPress: (isMine && onLongPressItem != null) ? () => onLongPressItem!(item) : null,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Stack(
@@ -371,6 +426,22 @@ class CommunityHomeBody extends StatelessWidget {
                 ),
               ),
             ),
+            // 좌상단 MY 배지 — 내가 올린 미디어 표시(롱프레스 관리 대상 안내).
+            if (isMine)
+              Positioned(
+                top: 8,
+                left: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3B6FE0).withValues(alpha: 0.92),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Text('MY',
+                      style: TextStyle(
+                          color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w800, letterSpacing: 0.6)),
+                ),
+              ),
             Positioned(
               left: 8,
               right: 8,
