@@ -4,13 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/camera/page/camera_awesome_page.dart';
 import 'package:project1/app/community/community_home_body.dart';
 import 'package:project1/app/shared_album/activity_view.dart';
 import 'package:project1/app/shared_album/recap_view.dart';
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
+import 'package:project1/repo/board/board_repo.dart';
+import 'package:project1/repo/board/data/board_update_data.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
+import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/community/community_repo.dart';
 import 'package:project1/repo/community/data/community_data.dart';
 import 'package:project1/repo/community/data/community_tag_data.dart';
@@ -44,6 +48,7 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
   // 홈 탭(첫 탭 = CommunityHomePage 디자인) — 인기 태그 필터 & 무한 스크롤 컨트롤러
   List<CommunityTagData> _tags = [];
   String? _activeTag; // 선택된 인기 태그(탭하면 이미 로드된 피드에서 클라이언트 필터링)
+  bool _onlyMine = false; // '내 사진만' 필터 — 내가 올린 미디어만 표시
   final ScrollController _homeScrollCtrl = ScrollController();
 
   int _tab = 0; // 0 홈 / 1 회고 / 2 활동 (멤버는 별도 화면으로 바로 진입)
@@ -178,11 +183,163 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
     return !c.isPrivate || c.isJoined || c.isOwner; // 공개거나, 비공개+멤버/방장
   }
 
-  // 태그 필터가 적용된 피드(선택된 인기 태그가 있으면 해당 해시태그 포함분만).
+  // 태그·'내 사진만' 필터가 적용된 피드(이미 로드된 피드에서 클라이언트 필터링).
   List<BoardWeatherListData> get _visibleFeed {
+    Iterable<BoardWeatherListData> feed = _items;
+    if (_onlyMine) feed = feed.where(_isMine);
     final tag = _activeTag;
-    if (tag == null) return _items;
-    return _items.where((e) => (e.contents ?? '').contains(tag)).toList();
+    if (tag != null) feed = feed.where((e) => (e.contents ?? '').contains(tag));
+    return feed.toList();
+  }
+
+  // 로그인 사용자 ID — 내가 올린 미디어 판별용.
+  String get _myCustId => AuthCntr.to.resLoginData.value.custId?.toString() ?? '';
+
+  // 본인 게시물 여부 — custId 일치(몰입뷰와 동일 기준).
+  bool _isMine(BoardWeatherListData item) => _myCustId.isNotEmpty && _myCustId == item.custId;
+
+  // 내가 올린 미디어 롱프레스 → 수정·삭제 바텀시트(몰입뷰 진입 없이 그리드에서 바로 관리).
+  void _onLongPressMedia(BoardWeatherListData item) {
+    if (!_isMine(item)) return;
+    HapticFeedback.mediumImpact();
+    _showMyMediaSheet(item);
+  }
+
+  void _showMyMediaSheet(BoardWeatherListData item) {
+    final bool isVideo = item.typeDtCd == 'V';
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: SaColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            // 어떤 항목인지 컨텍스트 — 종류(영상/사진) + 올린 시점.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 6, 20, 10),
+              child: Row(
+                children: [
+                  Icon(isVideo ? Icons.videocam_outlined : Icons.photo_outlined,
+                      size: 16, color: SaColors.textSecondary),
+                  const SizedBox(width: 6),
+                  Text('내가 올린 ${isVideo ? '영상' : '사진'}',
+                      style: SaText.bodyMedium.copyWith(color: SaColors.textSecondary, fontSize: 13)),
+                  const Spacer(),
+                  if ((item.crtDtm ?? '').isNotEmpty)
+                    Text(Utils.timeage(item.crtDtm!), style: SaText.mono(fontSize: 10, color: SaColors.textTertiary)),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: Icon(Icons.edit_outlined, size: 22, color: SaColors.textPrimary),
+              title: Text('문구 수정', style: SaText.bodyMedium),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _editMyCaption(item);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, size: 22, color: Colors.red),
+              title: Text('삭제', style: SaText.bodyMedium.copyWith(color: Colors.red)),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _deleteMyMedia(item);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 문구(캡션) 수정 — /board/updateBoard contents 갱신 후 즉시 반영(몰입뷰와 동일 API).
+  Future<void> _editMyCaption(BoardWeatherListData item) async {
+    final TextEditingController ctrl = TextEditingController(text: item.contents ?? '');
+    final String? result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: SaColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text('문구 수정', style: SaText.titleS),
+        content: TextField(
+          controller: ctrl,
+          minLines: 1,
+          maxLines: 5,
+          style: SaText.body.copyWith(color: SaColors.textPrimary),
+          decoration: InputDecoration(
+            hintText: '문구를 입력하세요',
+            hintStyle: SaText.body.copyWith(color: SaColors.textTertiary),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('취소', style: SaText.bodyMedium.copyWith(color: SaColors.textTertiary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()),
+            child: Text('저장', style: SaText.bodyMedium.copyWith(color: SaColors.accentTeal)),
+          ),
+        ],
+      ),
+    );
+    if (result == null) return; // 취소
+    try {
+      final ResData res = await BoardRepo().updateBoard(
+        BoardUpdateData(boardId: (item.boardId ?? 0).toString(), contents: result),
+      );
+      if (res.code == '00') {
+        item.contents = result;
+        _changed = true; // 뒤로 갈 때 앨범 목록에도 반영 신호
+        if (mounted) setState(() {});
+      } else if (mounted) {
+        Utils.alert(res.msg.toString());
+      }
+    } catch (_) {
+      if (mounted) Utils.alert('문구 수정 중 오류가 발생했습니다.');
+    }
+  }
+
+  // 게시물 삭제 — del_yn='Y' 후 피드 재조회(몰입뷰와 동일 API).
+  Future<void> _deleteMyMedia(BoardWeatherListData item) async {
+    final bool? ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: SaColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text('게시물 삭제', style: SaText.titleS),
+        content: Text('이 게시물을 삭제할까요? 되돌릴 수 없습니다.',
+            style: SaText.body.copyWith(color: SaColors.textSecondary)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('취소', style: SaText.bodyMedium.copyWith(color: SaColors.textTertiary)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('삭제', style: SaText.bodyMedium.copyWith(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      final ResData res = await BoardRepo().updateBoard(
+        BoardUpdateData(boardId: (item.boardId ?? 0).toString(), delYn: 'Y'),
+      );
+      if (res.code == '00') {
+        _changed = true; // 앨범 목록(미디어 수)에도 반영 신호
+        _loadFeed(reset: true); // 서버 기준으로 피드 재조회
+      } else if (mounted) {
+        Utils.alert(res.msg.toString());
+      }
+    } catch (_) {
+      if (mounted) Utils.alert('삭제 중 오류가 발생했습니다.');
+    }
   }
 
   Future<void> _loadTags() async {
@@ -404,6 +561,11 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
             onRefresh: () => _load(), // 당겨서 새로고침 — 상세·멤버·피드·태그 재조회
             onTagTap: _onTagTap,
             onTapItem: _openHomeItem,
+            // 내가 올린 미디어 — MY 배지 · '내 사진만' 필터 · 롱프레스 수정/삭제(로그인 시에만).
+            myCustId: _myCustId,
+            onlyMine: _onlyMine,
+            onToggleOnlyMine: _myCustId.isEmpty ? null : () => setState(() => _onlyMine = !_onlyMine),
+            onLongPressItem: _onLongPressMedia,
             onJoin: _join,
             onOpenMembers: _openMembersPage,
             onOpenCoverEditor: _openCoverEditor,
