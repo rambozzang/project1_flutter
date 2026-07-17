@@ -109,32 +109,19 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     }
   }
 
-  // 카메라 초기화 시 조작 안내(↕밝기·↔줌)를 잠깐 띄웠다 사라지게 한다.
-  bool _showGestureHint = false;
-  Timer? _hintTimer;
   // 촬영 화면 경고 문구(음란물·불법촬영물 금지) — 5초 후 자동으로 사라진다.
   bool _showContentWarning = false;
   Timer? _warningTimer;
-  // 힌트 캡슐 내부의 손가락(점)이 왕복 스와이프하는 애니메이션(0↔1 반복).
-  late final AnimationController _swipeCtrl;
-  late final Animation<double> _swipeAnim;
 
   // 밝기 게이지: 상하 드래그로 밝기 조절 중에만 잠깐 표시.
   final ValueNotifier<double> _brightnessVN = ValueNotifier<double>(0.5);
   final ValueNotifier<bool> _gaugeVN = ValueNotifier<bool>(false);
   Timer? _gaugeHideTimer;
 
-  // 저장소 조회 없이 앱 실행당 한 번만 노출한다. 카메라 진입 경로에는 I/O를 두지 않는다.
-  static bool _gestureHintShownThisRun = false;
-  bool _gestureHintScheduled = false;
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // 과한 튕김 없이 방향만 또렷하게 읽히는 왕복 모션.
-    _swipeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100));
-    _swipeAnim = CurvedAnimation(parent: _swipeCtrl, curve: Curves.easeInOutCubic);
     _checkCameraPermission();
   }
 
@@ -146,29 +133,13 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     _warningTimer = Timer(const Duration(milliseconds: 2800), () {
       if (mounted) setState(() => _showContentWarning = false);
     });
-
-    if (!_gestureHintScheduled && !_gestureHintShownThisRun) {
-      _gestureHintScheduled = true;
-      _gestureHintShownThisRun = true;
-      _swipeCtrl.repeat(reverse: true);
-      _showGestureHint = true;
-      _hintTimer = Timer(const Duration(milliseconds: 2800), _dismissGestureHint);
-    }
-  }
-
-  void _dismissGestureHint() {
-    _hintTimer?.cancel();
-    _swipeCtrl.stop();
-    if (mounted && _showGestureHint) setState(() => _showGestureHint = false);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _hintTimer?.cancel();
     _warningTimer?.cancel();
     _gaugeHideTimer?.cancel();
-    _swipeCtrl.dispose();
     _brightnessVN.dispose();
     _gaugeVN.dispose();
     _zoomSub?.cancel();
@@ -639,27 +610,6 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
               ),
             ),
           ),
-          // 카메라 조작 안내: 실제 프리뷰 위에서 핵심 제스처 2개만 한곳에 보여준다.
-          Positioned(
-            // 상단 금지 문구(top + 58) 아래에 고정 간격을 둬 서로 겹치지 않는다.
-            top: MediaQuery.paddingOf(context).top + 96,
-            left: 20,
-            right: 20,
-            child: IgnorePointer(
-              ignoring: !_showGestureHint,
-              child: AnimatedSlide(
-                offset: _showGestureHint ? Offset.zero : const Offset(0, -0.08),
-                duration: const Duration(milliseconds: 280),
-                curve: Curves.easeOutCubic,
-                child: AnimatedOpacity(
-                  opacity: _showGestureHint ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOut,
-                  child: _buildGestureGuide(),
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -682,150 +632,6 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
           ),
           child: child,
         ),
-      ),
-    );
-  }
-
-  // 손가락 아이콘이 짧은 궤적을 왕복해 방향을 텍스트보다 먼저 전달한다.
-  Widget _swipeFinger({required bool horizontal}) {
-    return AnimatedBuilder(
-      animation: _swipeAnim,
-      builder: (context, _) {
-        final double t = _swipeAnim.value;
-        final double pos = (t * 2 - 1); // -1 ~ 1
-        final double travel = horizontal ? 25 : 18;
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              width: horizontal ? 76 : 2,
-              height: horizontal ? 2 : 54,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: horizontal ? Alignment.centerLeft : Alignment.topCenter,
-                  end: horizontal ? Alignment.centerRight : Alignment.bottomCenter,
-                  colors: [
-                    Colors.white.withValues(alpha: 0.12),
-                    Colors.white.withValues(alpha: 0.55),
-                    Colors.white.withValues(alpha: 0.12),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            if (horizontal) ...[
-              Positioned(left: 0, child: Icon(Icons.chevron_left, color: Colors.white.withValues(alpha: 0.72), size: 18)),
-              Positioned(right: 0, child: Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.72), size: 18)),
-            ] else ...[
-              Positioned(top: 0, child: Icon(Icons.expand_less, color: Colors.white.withValues(alpha: 0.72), size: 18)),
-              Positioned(bottom: 0, child: Icon(Icons.expand_more, color: Colors.white.withValues(alpha: 0.72), size: 18)),
-            ],
-            Transform.translate(
-              offset: horizontal ? Offset(pos * travel, 0) : Offset(0, pos * travel),
-              child: Container(
-                width: 28,
-                height: 28,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF7C6FF2),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.8)),
-                ),
-                child: const Icon(
-                  Icons.touch_app,
-                  color: Colors.white,
-                  size: 16,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildGestureGuide() {
-    return Semantics(
-      label: '카메라 조작 안내. 좌우로 밀어 확대하고 위아래로 밀어 밝기를 조절할 수 있습니다.',
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 12, 14),
-        decoration: BoxDecoration(
-          color: const Color(0xE61A1B22),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    '화면을 밀어 바로 조절하세요',
-                    style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
-                  ),
-                ),
-                TextButton(
-                  onPressed: _dismissGestureHint,
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.white.withValues(alpha: 0.72),
-                    minimumSize: const Size(64, 44),
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                  ),
-                  child: const Text('알겠어요', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
-                ),
-              ],
-            ),
-            _gestureGuideRow(
-              horizontal: true,
-              title: '좌우로 밀어 확대',
-              description: '두 손가락으로 확대해도 돼요',
-            ),
-            Divider(height: 1, color: Colors.white.withValues(alpha: 0.12)),
-            _gestureGuideRow(
-              horizontal: false,
-              title: '위아래로 밀어 밝기 조절',
-              description: '위로 밀면 더 밝아져요',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _gestureGuideRow({
-    required bool horizontal,
-    required String title,
-    required String description,
-  }) {
-    return SizedBox(
-      height: 68,
-      child: Row(
-        children: [
-          SizedBox(
-            width: 72,
-            height: 58,
-            child: Center(child: _swipeFinger(horizontal: horizontal)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 3),
-                Text(description,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.62), fontSize: 11.5)),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
