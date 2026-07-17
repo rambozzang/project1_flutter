@@ -4,6 +4,17 @@
 
 ---
 
+## 2026-07-17
+
+### 22:39 | claude | ✅ 완료 (공유앨범 — 내 미디어 MY 배지 · '내 사진만' 필터 · 롱프레스 수정/삭제 시트)
+**작업**: 앨범 홈 그리드에서 내가 올린 사진·영상을 한눈에 구분하고 즉시 관리할 수 있게 개선
+- **MY 배지**: 그리드 카드 좌상단에 파란 MY 필 — 로그인 custId == 업로더 custId(몰입뷰와 동일 기준)
+- **'내 사진만' 필터**: 인기 태그 칩 행 맨 앞에 토글 칩 추가(로그인 시에만 노출). 태그 필터와 중첩 적용, 결과 없음 시 전용 안내 문구
+- **롱프레스 바텀시트**: 내 카드 꾹 누르면(햅틱) 시트 — 종류(영상/사진)·올린 시점 헤더 + 문구 수정 + 삭제. 몰입뷰 소유자 메뉴와 동일 API(`/board/updateBoard` contents / delYn='Y') 재사용, 삭제 후 피드 재조회·목록 반영 신호(_changed)
+- 변경 파일: `community_home_body.dart`(표시·콜백), `album_shell.dart`(상태·시트·API)
+- 검증: flutter analyze 신규 에러/워닝 0(신규 코드 withValues 사용), debug APK 빌드
+- 브랜치: `feature/album-my-media-actions` (베이스 `feature/weather-perf-album-2026-07-15`)
+
 ## 2026-07-11
 
 ### 00:55 | claude | ✅ 완료 (Android release 빌드 실패 수정 — firebase_auth 컴파일 에러 + 서명설정 복원)
