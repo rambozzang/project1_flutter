@@ -838,7 +838,7 @@ class WeatherGogoCntr extends GetxController {
   }
 
   // 중기 날씨 가져오기
-  // 3일치 이후 데이터 셋팅
+  // 4일차~10일차 데이터 셋팅(1~3일차는 단기예보가 담당)
   Future<void> fetchMidlandWeather(LatLng location, {Map<String, dynamic>? preloaded}) async {
     try {
       // 백엔드 /weather/mid는 육상+기온을 한 응답으로 제공한다.
@@ -857,6 +857,15 @@ class WeatherGogoCntr extends GetxController {
         Map<String, dynamic>.from(data['ta'] as Map),
       );
 
+      // 중기 날짜는 발표일(tmFc) 기준으로 매긴다.
+      // DateTime.now() 기준이면 자정~06:10 사이(캐시가 전일 18시 발표분) 날짜가 하루씩 밀린다.
+      DateTime? annDate;
+      final tmFc = data['tmFc']?.toString();
+      if (tmFc != null && tmFc.length >= 8) {
+        annDate = DateTime.tryParse(
+            '${tmFc.substring(0, 4)}-${tmFc.substring(4, 6)}-${tmFc.substring(6, 8)}');
+      }
+
       // 날씨 데이터 처리
       List<SevenDayWeather> tmpList =
           WeatherDataProcessor.instance.processMidTermForecast(
@@ -865,6 +874,7 @@ class WeatherGogoCntr extends GetxController {
         lat: location.latitude,
         lon: location.longitude,
         cityName: currentLocation.value.name,
+        now: annDate,
       );
 
       // 불완전한 백엔드 응답은 현재 화면을 유지하고 다음 사용자 갱신 때 다시 조회한다.

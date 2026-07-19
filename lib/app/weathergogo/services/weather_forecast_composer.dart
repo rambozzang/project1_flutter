@@ -39,10 +39,19 @@ class WeatherForecastComposer {
     required String? cityName,
   }) {
     final today = _dateKey(now);
-    final result = <SevenDayWeather>[
-      ...shortTerm.where((item) => item.fcstDate != today),
-      ...midTerm,
-    ];
+    // 날짜가 겹치면 더 정확한 단기예보가 남는다(중기를 먼저 깔고 단기로 덮는다).
+    // 23시 발표 단기예보는 4일차까지 제공되는 시각대가 있어 중기 D+4와 겹칠 수 있다.
+    final byDate = <String, SevenDayWeather>{};
+    for (final item in midTerm) {
+      final key = item.fcstDate;
+      if (key != null) byDate[key] = item;
+    }
+    for (final item in shortTerm) {
+      final key = item.fcstDate;
+      if (key == null || key == today) continue;
+      byDate[key] = item;
+    }
+    final result = byDate.values.toList();
     for (final item in result) {
       item
         ..lat = lat
