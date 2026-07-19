@@ -101,7 +101,7 @@ class _AlbumScanPageState extends State<AlbumScanPage> {
           MobileScanner(
             controller: _controller,
             onDetect: _onDetect,
-            errorBuilder: (context, error, child) => Center(
+            errorBuilder: (context, error) => Center(
               child: Padding(
                 padding: const EdgeInsets.all(30),
                 child: Text('카메라를 열 수 없습니다.\n권한을 확인해 주세요.\n(${error.errorCode.name})',
