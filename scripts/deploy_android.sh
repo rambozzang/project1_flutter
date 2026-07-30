@@ -56,15 +56,23 @@ info "버전 $VER 빌드 시작"
 $DO_CLEAN && { info "flutter clean"; flutter clean; }
 flutter pub get
 
+# Dart 심볼을 .so 밖으로 분리(--split-debug-info) + 난독화(--obfuscate)해 libapp.so 크기를 줄인다.
+# ⚠️ 크래시 리포트 역난독화에 이 심볼이 필요하다. 릴리즈마다 SYMBOLS_DIR을 보관할 것.
+#    (Play Console 스택트레이스 → `flutter symbolize -i <stack> -d <SYMBOLS_DIR>/app.android-arm64.symbols`)
+#    build/ 아래에 두면 다음 `--clean` 실행 때 과거 릴리즈 심볼까지 지워지므로 루트에 보관한다.
+SYMBOLS_DIR="symbols/android/$VER"
+mkdir -p "$SYMBOLS_DIR"
+
 info "AAB(App Bundle) 빌드 — Google Play 제출용"
-flutter build appbundle --release
+flutter build appbundle --release --obfuscate --split-debug-info="$SYMBOLS_DIR"
 AAB="build/app/outputs/bundle/release/app-release.aab"
 [ -f "$AAB" ] || die "AAB 생성 실패"
 ok "AAB: $AAB ($(du -h "$AAB" | cut -f1))"
+ok "심볼: $SYMBOLS_DIR — 크래시 역난독화용, 이 릴리즈와 함께 보관하세요"
 
 if $DO_APK; then
   info "APK 빌드 — 직접 설치/테스트용"
-  flutter build apk --release
+  flutter build apk --release --obfuscate --split-debug-info="$SYMBOLS_DIR"
   ok "APK: build/app/outputs/flutter-apk/app-release.apk"
 fi
 

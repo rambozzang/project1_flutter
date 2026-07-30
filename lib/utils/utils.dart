@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:giffy_dialog/giffy_dialog.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
@@ -21,8 +20,6 @@ import 'package:project1/widget/no_data_widget.dart';
 // import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-// Image 2개  오류  : https://github.com/xsahil03x/giffy_dialog/issues/110
-// giffy_model.dart 에서 import 'package:rive/rive.dart' as rive; 로 수정.
 abstract class Utils {
   Utils._();
 
@@ -159,30 +156,55 @@ abstract class Utils {
         ),
       ),
       builder: (BuildContext context) {
-        return GiffyBottomSheet.image(
-          flutterWidgets.Image.asset(
-            'assets/images/1.jpg',
-            height: 200,
-            fit: BoxFit.cover,
+        // [giffy_dialog 제거 2026-07-30] GiffyBottomSheet.image 를 기본 위젯 조합으로 대체.
+        // giffy_dialog가 rive를 전이 의존으로 끌고 와 librive_text.so(3.4MB)가 APK에 실렸는데,
+        // 정작 이 함수 한 곳에서만 쓰였다(호출처도 라우트 미등록 test_dio_page). 레이아웃은 동일하게 유지.
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              flutterWidgets.Image.asset(
+                'assets/images/1.jpg',
+                height: 200,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const Gap(10),
+                    Text(
+                      content,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, 'CANCEL'),
+                      child: const Text('CANCEL'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, 'OK'),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          title: Text(
-            title,
-            textAlign: TextAlign.center,
-          ),
-          content: Text(
-            content,
-            textAlign: TextAlign.center,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, 'CANCEL'),
-              child: const Text('CANCEL'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, 'OK'),
-              child: const Text('OK'),
-            ),
-          ],
         );
       },
     );

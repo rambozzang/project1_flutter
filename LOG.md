@@ -4,6 +4,34 @@
 
 ---
 
+## 2026-07-30
+
+### 11:20 | claude | ✅ 완료 (앱 용량 절감 — 배포 전 46.4MB → 43.0MB, −7.3%)
+**작업**: 스토어 배포 전 앱 크기 축소. AAB를 실제로 빌드해 압축 기준으로 측정 후 진행
+- **먼저 정정**: AAB 파일 크기(145MB)는 사용자 다운로드가 아님. 배포 제외 디버그 심볼(50.8MB)과 미사용 ABI가 포함된 업로드 크기. **arm64 단말 실제 다운로드는 46.4MB**였음
+- **기저 구성(압축)**: dex 15.3MB(33%) / libnavermap 6.7MB / libapp 5.6MB / libflutter 5.2MB(고정) / 폰트 5.1MB / libbarhopper 2.0MB / librive_text 1.3MB
+- **적용 A — `giffy_dialog` 제거 (−1.3MB)**: rive를 전이 의존으로 끌고 와 `librive_text.so`(3.4MB)가 실렸는데, 정작 `Utils.bottomNotiAlert` 한 곳에서만 쓰였고 그 호출처도 **라우트 미등록 `test_dio_page.dart`**였음. `GiffyBottomSheet.image`를 동일 레이아웃의 기본 위젯으로 대체. 덤으로 `gradle.properties`의 `rive.ndk.version`(16KB 정렬 우회)도 제거
+- **적용 B — `--obfuscate --split-debug-info` (−1.1MB)**: deploy 스크립트 3곳(android AAB/APK, ios IPA)에 추가. `libapp.so` 5.6→4.52MB. ⚠️ 심볼은 `symbols/<platform>/<버전>`에 보관(`build/` 아래 두면 `--clean`에 소실되므로 루트). 크래시 역난독화에 필수 → `.gitignore` 추가, 외부 아카이브 권장
+- **적용 C — 폰트 ExtraBold(w800) 제거 (−1.1MB)**: 폰트 5.1→4.0MB. w800(61곳)·w900(6곳)은 Flutter 폰트 매칭으로 Bold(700) 렌더 → **시각 확인 필요**
+- **배제한 통념 — 폰트 서브셋**: 실측 결과 Pretendard에 한자 0개, 14,336자 중 11,172자가 한글 음절. 뺄 수 있는 건 가나·키릴 559자(4%)뿐이라 절감 대비 두부현상 위험만 큼
+- **결과**: arm64 46.4→**43.0MB**, armv7 44.9→**41.5MB**, AAB 145.2→128.5MB
+- 검증: `flutter test` 20개 통과, 변경 파일 analyze error/warning 0, AAB 재빌드 후 `librive_text.so` 부재 확인
+- **미적용(트레이드오프 있음)**: mobile_scanner ML Kit 언번들화(−2.0MB, 16KB 정렬 재검증 필요) / R8 fullMode 재활성화(−0.8~2.3MB, 리플렉션 회귀 테스트 필요) / x86_64 제외(사용자 체감 0, AAB만 −61MB) / libnavermap 6.7MB(기능 제거 판단 필요)
+- **후속 과제**: `lib/oss_licenses.dart`에 제거된 giffy_dialog·rive 항목이 남음(과다표기라 무해). 생성기 `flutter_oss_licenses`가 Flutter SDK의 `version` 파일 부재로 실패 — 별개 사유이며 도구 업데이트 후 재생성 필요
+
+### 10:00 | claude | ✅ 완료 (발표시각이 하루 종일 23:30으로 고착되던 문제 수정)
+**작업**: 날씨 상세 화면의 '발표시각'이 23:30으로 멈춰 신뢰도가 떨어진다는 신고 처리
+- **증상**: 기온·습도 등 다른 값은 정상인데 발표시각만 23:30 고정. 앱을 껐다 켜도 유지
+- **원인**: 백엔드는 정상(캐시 확인 결과 superNct `0900`/superFct `0930`/fct `0800`, `cache_data LIKE '%2330%'` **0건**). 실제 원인은 앱의 `compareFcsTime`이 여러 API의 baseTime 중 **숫자가 큰 쪽**을 발표시각으로 삼은 것. 초단기예보 발표시각은 `HH30`이라 23:30~00:44에 들어온 `"2330"`이 이후 값(`0130`~`2230`)보다 항상 커서 고착됐다. 자정 보정(`t1>=2300 && t2<100`)은 새 값이 `0030`일 때만 동작해 **00:45~01:44에 갱신될 때만** 풀렸고, `_saveSnapshot`/`_restoreFromCache`가 `currentWeather`를 저장·복원해 앱 재시작 후에도 남았다
+- **수정**: 발표시각을 초단기실황(superNct) baseTime만 사용하도록 단일화
+  - `fetchSuperNct`: `compareFcsTime(...)` → `value.fcsTime` 직접 대입
+  - `fetchSuperFct`: 초단기예보 baseTime을 발표시각에 섞던 줄 제거 (여기가 `2330` 진입점)
+  - `compareFcsTime` 삭제 — HHmm만 비교해 날짜를 보지 않는 로직이라 남겨두면 재사용 위험
+  - 화면에 함께 뜨는 기온·습도·풍향이 모두 실황 값이므로 의미상으로도 실황 기준이 맞음
+- **자동 복구**: 저장된 스냅샷의 옛 `2330`은 첫 정상 조회 때 덮어써지므로 별도 마이그레이션 불필요
+- 변경 파일: `lib/app/weathergogo/cntr/weather_gogo_cntr.dart`
+- 검증: 회귀 테스트 3개 신규(`test/weathergogo/current_weather_fcs_time_test.dart`) — 전체 20개 통과. `flutter analyze` 변경 파일 이슈 0
+
 ## 2026-07-17
 
 ### 22:39 | claude | ✅ 완료 (공유앨범 — 내 미디어 MY 배지 · '내 사진만' 필터 · 롱프레스 수정/삭제 시트)
