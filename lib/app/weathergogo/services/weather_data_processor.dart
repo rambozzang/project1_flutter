@@ -197,18 +197,20 @@ class WeatherDataProcessor {
     return popItems.isEmpty ? null : popItems.first.fcstValue;
   }
 
-  // 중기 예보 조합 최종 sevendayWeather에 적재
+  // 중기 예보 조합 최종 sevendayWeather에 적재.
+  // 단기예보 일별은 오늘 포함 4일치(take(4) → 오늘 제외 최대 3일치)만 쓰므로,
+  // 중기는 4일 후부터 이어 붙여야 날짜 공백이 생기지 않는다.
   List<SevenDayWeather> processMidTermForecast(
       MidLandFcstResponse landForecast, MidTaResponse taForecast,
-      {double? lat, double? lon, String? cityName}) {
+      {double? lat, double? lon, String? cityName, DateTime? now}) {
     List<SevenDayWeather> midTermList = [];
 
-    int afterday = 5;
-    // 시작 날짜 계산 (오늘로부터 3일 후)
-    DateTime startDate = DateTime.now().add(Duration(days: afterday));
+    int afterday = 4;
+    // 시작 날짜 계산 (오늘로부터 4일 후)
+    DateTime startDate = (now ?? DateTime.now()).add(Duration(days: afterday));
 
-    for (int i = 0; i < 6; i++) {
-      // 중기 예보는 5일치 데이터를 제공 (3일 후부터 7일 후까지)
+    for (int i = 0; i < 7; i++) {
+      // 중기 예보는 7일치 데이터를 제공 (4일 후부터 10일 후까지)
       String fcstDate = startDate
           .add(Duration(days: i))
           .toString()
@@ -292,10 +294,8 @@ class WeatherDataProcessor {
   String _getSkyState(MidLandFcstResponse landForecast, int day,
       {bool isAm = true}) {
     switch (day) {
-      // case 3:
-      //   return isAm ? landForecast.wf3Am : landForecast.wf3Pm;
-      // case 4:
-      //   return isAm ? landForecast.wf4Am : landForecast.wf4Pm;
+      case 4:
+        return (isAm ? landForecast.wf4Am : landForecast.wf4Pm) ?? '';
       case 5:
         return isAm ? landForecast.wf5Am : landForecast.wf5Pm;
       case 6:
@@ -316,10 +316,8 @@ class WeatherDataProcessor {
   int _getRainProbability(MidLandFcstResponse landForecast, int day,
       {bool isAm = true}) {
     switch (day) {
-      // case 3:
-      //   return isAm ? landForecast.rnSt3Am : landForecast.rnSt3Pm;
-      // case 4:
-      //   return isAm ? landForecast.rnSt4Am : landForecast.rnSt4Pm;
+      case 4:
+        return (isAm ? landForecast.rnSt4Am : landForecast.rnSt4Pm) ?? 0;
       case 5:
         return isAm ? landForecast.rnSt5Am : landForecast.rnSt5Pm;
       case 6:
@@ -340,14 +338,10 @@ class WeatherDataProcessor {
   String _getTemperature(MidTaResponse taForecast, String key) {
     // MidTaResponse 클래스의 구조에 따라 이 함수를 구현해야 합니다.
     switch (key) {
-      // case 'taMin3':
-      //   return taForecast.taMin3.toString();
-      // case 'taMax3':
-      //   return taForecast.taMax3.toString();
-      // case 'taMin4':
-      //   return taForecast.taMin4.toString();
-      // case 'taMax4':
-      //   return taForecast.taMax4.toString();
+      case 'taMin4':
+        return taForecast.taMin4?.toString() ?? '';
+      case 'taMax4':
+        return taForecast.taMax4?.toString() ?? '';
       case 'taMin5':
         return taForecast.taMin5.toString();
       case 'taMax5':

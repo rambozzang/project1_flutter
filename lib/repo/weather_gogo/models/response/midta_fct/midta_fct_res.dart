@@ -5,6 +5,13 @@ import 'dart:convert';
 class MidTaResponse {
   final String regId;
 
+  // 4일차는 발표 시각에 따라 값이 비어 올 수 있어 nullable 로 둔다(5일차 이상은 기존처럼 필수).
+  final int? taMin4;
+  final int? taMin4Low;
+  final int? taMin4High;
+  final int? taMax4;
+  final int? taMax4Low;
+  final int? taMax4High;
   final int taMin5;
   final int taMin5Low;
   final int taMin5High;
@@ -43,6 +50,12 @@ class MidTaResponse {
   final int taMax10High;
   MidTaResponse({
     required this.regId,
+    this.taMin4,
+    this.taMin4Low,
+    this.taMin4High,
+    this.taMax4,
+    this.taMax4Low,
+    this.taMax4High,
     required this.taMin5,
     required this.taMin5Low,
     required this.taMin5High,
@@ -83,6 +96,12 @@ class MidTaResponse {
 
   MidTaResponse copyWith({
     String? regId,
+    int? taMin4,
+    int? taMin4Low,
+    int? taMin4High,
+    int? taMax4,
+    int? taMax4Low,
+    int? taMax4High,
     int? taMin5,
     int? taMin5Low,
     int? taMin5High,
@@ -122,6 +141,12 @@ class MidTaResponse {
   }) {
     return MidTaResponse(
       regId: regId ?? this.regId,
+      taMin4: taMin4 ?? this.taMin4,
+      taMin4Low: taMin4Low ?? this.taMin4Low,
+      taMin4High: taMin4High ?? this.taMin4High,
+      taMax4: taMax4 ?? this.taMax4,
+      taMax4Low: taMax4Low ?? this.taMax4Low,
+      taMax4High: taMax4High ?? this.taMax4High,
       taMin5: taMin5 ?? this.taMin5,
       taMin5Low: taMin5Low ?? this.taMin5Low,
       taMin5High: taMin5High ?? this.taMin5High,
@@ -164,6 +189,12 @@ class MidTaResponse {
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'regId': regId,
+      'taMin4': taMin4,
+      'taMin4Low': taMin4Low,
+      'taMin4High': taMin4High,
+      'taMax4': taMax4,
+      'taMax4Low': taMax4Low,
+      'taMax4High': taMax4High,
       'taMin5': taMin5,
       'taMin5Low': taMin5Low,
       'taMin5High': taMin5High,
@@ -206,6 +237,12 @@ class MidTaResponse {
   factory MidTaResponse.fromMap(Map<String, dynamic> map) {
     return MidTaResponse(
       regId: map['regId'] as String,
+      taMin4: map['taMin4'] as int?,
+      taMin4Low: map['taMin4Low'] as int?,
+      taMin4High: map['taMin4High'] as int?,
+      taMax4: map['taMax4'] as int?,
+      taMax4Low: map['taMax4Low'] as int?,
+      taMax4High: map['taMax4High'] as int?,
       taMin5: map['taMin5'] as int,
       taMin5Low: map['taMin5Low'] as int,
       taMin5High: map['taMin5High'] as int,
@@ -251,7 +288,7 @@ class MidTaResponse {
 
   @override
   String toString() {
-    return 'MidTaResponse(regId: $regId, taMin5: $taMin5, taMin5Low: $taMin5Low, taMin5High: $taMin5High, taMax5: $taMax5, taMax5Low: $taMax5Low, taMax5High: $taMax5High, taMin6: $taMin6, taMin6Low: $taMin6Low, taMin6High: $taMin6High, taMax6: $taMax6, taMax6Low: $taMax6Low, taMax6High: $taMax6High, taMin7: $taMin7, taMin7Low: $taMin7Low, taMin7High: $taMin7High, taMax7: $taMax7, taMax7Low: $taMax7Low, taMax7High: $taMax7High, taMin8: $taMin8, taMin8Low: $taMin8Low, taMin8High: $taMin8High, taMax8: $taMax8, taMax8Low: $taMax8Low, taMax8High: $taMax8High, taMin9: $taMin9, taMin9Low: $taMin9Low, taMin9High: $taMin9High, taMax9: $taMax9, taMax9Low: $taMax9Low, taMax9High: $taMax9High, taMin10: $taMin10, taMin10Low: $taMin10Low, taMin10High: $taMin10High, taMax10: $taMax10, taMax10Low: $taMax10Low, taMax10High: $taMax10High)';
+    return 'MidTaResponse(regId: $regId, taMin4: $taMin4, taMin4Low: $taMin4Low, taMin4High: $taMin4High, taMax4: $taMax4, taMax4Low: $taMax4Low, taMax4High: $taMax4High, taMin5: $taMin5, taMin5Low: $taMin5Low, taMin5High: $taMin5High, taMax5: $taMax5, taMax5Low: $taMax5Low, taMax5High: $taMax5High, taMin6: $taMin6, taMin6Low: $taMin6Low, taMin6High: $taMin6High, taMax6: $taMax6, taMax6Low: $taMax6Low, taMax6High: $taMax6High, taMin7: $taMin7, taMin7Low: $taMin7Low, taMin7High: $taMin7High, taMax7: $taMax7, taMax7Low: $taMax7Low, taMax7High: $taMax7High, taMin8: $taMin8, taMin8Low: $taMin8Low, taMin8High: $taMin8High, taMax8: $taMax8, taMax8Low: $taMax8Low, taMax8High: $taMax8High, taMin9: $taMin9, taMin9Low: $taMin9Low, taMin9High: $taMin9High, taMax9: $taMax9, taMax9Low: $taMax9Low, taMax9High: $taMax9High, taMin10: $taMin10, taMin10Low: $taMin10Low, taMin10High: $taMin10High, taMax10: $taMax10, taMax10Low: $taMax10Low, taMax10High: $taMax10High)';
   }
 
   @override
@@ -259,6 +296,12 @@ class MidTaResponse {
     if (identical(this, other)) return true;
 
     return other.regId == regId &&
+        other.taMin4 == taMin4 &&
+        other.taMin4Low == taMin4Low &&
+        other.taMin4High == taMin4High &&
+        other.taMax4 == taMax4 &&
+        other.taMax4Low == taMax4Low &&
+        other.taMax4High == taMax4High &&
         other.taMin5 == taMin5 &&
         other.taMin5Low == taMin5Low &&
         other.taMin5High == taMin5High &&
@@ -300,6 +343,12 @@ class MidTaResponse {
   @override
   int get hashCode {
     return regId.hashCode ^
+        taMin4.hashCode ^
+        taMin4Low.hashCode ^
+        taMin4High.hashCode ^
+        taMax4.hashCode ^
+        taMax4Low.hashCode ^
+        taMax4High.hashCode ^
         taMin5.hashCode ^
         taMin5Low.hashCode ^
         taMin5High.hashCode ^

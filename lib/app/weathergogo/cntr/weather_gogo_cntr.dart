@@ -511,35 +511,10 @@ class WeatherGogoCntr extends GetxController {
     return first;
   }
 
-  String compareFcsTime(String? time1, String? time2) {
-    if (time1 == null) {
-      return time2!;
-    }
-    if (time2 == null) {
-      return time1;
-    }
-
-    time1 = time1.replaceAll(':', '');
-    time2 = time2.replaceAll(':', '');
-    int t1 = int.parse(time1);
-    int t2 = int.parse(time2);
-
-    // time1 이 23:00 이며 time2 가 01:00 이면 time2 를 리턴
-    if (t1 >= 2300 && t2 < 100) {
-      return time2;
-    }
-    if (t1 >= 2300 && t2 == 0) {
-      return time2;
-    }
-
-    if (t1 > t2) {
-      return time1;
-    } else if (t1 < t2) {
-      return time2;
-    } else {
-      return time2;
-    }
-  }
+  // [삭제 2026-07-30] compareFcsTime — 여러 API의 baseTime 중 숫자가 큰 쪽을 발표시각으로 삼던 로직.
+  // HHmm만 비교해 날짜를 보지 않았고 자정 보정도 t2 < 0100 구간에서만 동작했기 때문에,
+  // 초단기예보의 HH30 발표시각 "2330"이 한 번 들어오면 이후 값(0130~2230)이 전부 더 작아
+  // 하루 종일 23:30으로 고착됐다. 발표시각은 이제 실황(fetchSuperNct)에서만 대입한다.
 
   // 초단기 실황 가져오기
   Future<void> fetchSuperNct(LatLng location, {List<ItemSuperNct>? preloaded}) async {
@@ -578,8 +553,12 @@ class WeatherGogoCntr extends GetxController {
       // currentWeather.value.rain = value.rain;
       // currentWeather.value.rainDesc = value.rainDesc;
       // currentWeather.value.rain1h = value.rain1h;
-      currentWeather.value.fcsTime =
-          compareFcsTime(currentWeather.value.fcsTime, value.fcsTime!);
+      // 발표시각은 실황(superNct) 값을 그대로 쓴다.
+      // 예전에는 compareFcsTime으로 여러 API의 baseTime 중 '숫자가 큰 쪽'을 취했는데,
+      // 초단기예보 발표시각이 HH30이라 23:30~00:44에 들어온 "2330"이 이후 모든 값(0130~2230)보다
+      // 커서 하루 종일 고착됐다(스냅샷 저장까지 돼 앱을 껐다 켜도 유지). 화면에 함께 표시되는
+      // 기온·습도·풍향이 모두 실황 값이므로 발표시각도 실황 기준이 맞다.
+      currentWeather.value.fcsTime = value.fcsTime;
       currentWeather.value.fcstDate = value.fcstDate;
       currentWeather.refresh();
 
@@ -657,8 +636,9 @@ class WeatherGogoCntr extends GetxController {
       currentWeather.value.rain1h = rain1h == '강수없음' ? '0' : rain1h;
       currentWeather.value.rain = data[0].rain;
       currentWeather.value.rainDesc = weatherDesc;
-      currentWeather.value.fcsTime = compareFcsTime(
-          currentWeather.value.fcsTime, itemFctList[0].baseTime); // 발표시간
+      // 발표시각은 실황(fetchSuperNct)에서만 설정한다.
+      // 초단기예보 baseTime은 HH30이라 여기서 섞으면 23:30~00:44의 "2330"이 최댓값으로 남아
+      // 하루 종일 발표시각이 23:30으로 굳는다(2026-07-30 신고 건).
       currentWeather.refresh();
 
       resultList.addAll(data);
@@ -838,7 +818,7 @@ class WeatherGogoCntr extends GetxController {
   }
 
   // 중기 날씨 가져오기
-  // 3일치 이후 데이터 셋팅
+  // 4일차~10일차 데이터 셋팅(1~3일차는 단기예보가 담당)
   Future<void> fetchMidlandWeather(LatLng location, {Map<String, dynamic>? preloaded}) async {
     try {
       // 백엔드 /weather/mid는 육상+기온을 한 응답으로 제공한다.
@@ -857,6 +837,15 @@ class WeatherGogoCntr extends GetxController {
         Map<String, dynamic>.from(data['ta'] as Map),
       );
 
+      // 중기 날짜는 발표일(tmFc) 기준으로 매긴다.
+      // DateTime.now() 기준이면 자정~06:10 사이(캐시가 전일 18시 발표분) 날짜가 하루씩 밀린다.
+      DateTime? annDate;
+      final tmFc = data['tmFc']?.toString();
+      if (tmFc != null && tmFc.length >= 8) {
+        annDate = DateTime.tryParse(
+            '${tmFc.substring(0, 4)}-${tmFc.substring(4, 6)}-${tmFc.substring(6, 8)}');
+      }
+
       // 날씨 데이터 처리
       List<SevenDayWeather> tmpList =
           WeatherDataProcessor.instance.processMidTermForecast(
@@ -865,6 +854,7 @@ class WeatherGogoCntr extends GetxController {
         lat: location.latitude,
         lon: location.longitude,
         cityName: currentLocation.value.name,
+        now: annDate,
       );
 
       // 불완전한 백엔드 응답은 현재 화면을 유지하고 다음 사용자 갱신 때 다시 조회한다.

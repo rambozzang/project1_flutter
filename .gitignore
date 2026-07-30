@@ -66,3 +66,6 @@ lib/.omc/
 .superpowers/
 .worktrees/
 scripts/.venv-play/
+
+# Flutter --split-debug-info 산출물 (크래시 역난독화용, 외부 아카이브 권장)
+symbols/

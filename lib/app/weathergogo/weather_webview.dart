@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
 import 'package:project1/app/webview/common_webview.dart';
-import 'package:visibility_detector/visibility_detector.dart';
 
 class WeatherWEbviewPage extends StatelessWidget {
   const WeatherWEbviewPage({super.key});
@@ -140,6 +139,7 @@ class RealtimeRadarPage extends StatelessWidget {
           url: _rainviewerUrl,
           denyLocation: true,
           touchToggleBelow: true,
+          loadDelay: Duration(seconds: 2),
         ),
         Gap(40),
       ],
@@ -264,6 +264,7 @@ class RealtimeSatellitePage extends StatelessWidget {
           // 팝업 자동 닫기 + 타임랩스 자동 재생을 함께 주입한다.
           injectJs: '$_dismissContinuePopupJs\n$_autoPlayJs',
           touchToggleBelow: true,
+          loadDelay: const Duration(seconds: 4),
         ),
         const Gap(40),
       ],
@@ -272,7 +273,8 @@ class RealtimeSatellitePage extends StatelessWidget {
 }
 
 /// 레이더 패널 한 개 — 제목 + 600px WebView + 전체화면 버튼.
-/// 웹뷰 초기화를 잠시 지연(동시 로드 스파이크 완화)하고, 로드 전엔 스피너를 보인다.
+/// 웹뷰는 패널 생성 후 loadDelay 뒤에 로드한다(페이지 오픈 직후 동시 로드 스파이크 완화).
+/// 로드 전엔 스피너를 보인다.
 class _RadarPanel extends StatefulWidget {
   final String title;
   final String url;
@@ -280,13 +282,15 @@ class _RadarPanel extends StatefulWidget {
   final IconData icon; // 헤더 아이콘(레이더/대기흐름 등)
   final String? injectJs; // 페이지 로드 완료 후 실행할 선택적 JS.
   final bool touchToggleBelow; // 지도 조작 버튼을 WebView 아래에 표시.
+  final Duration loadDelay; // 패널 생성 후 웹뷰 로드까지의 지연 시간.
   const _RadarPanel(
       {required this.title,
       required this.url,
       this.denyLocation = false,
       this.icon = Icons.radar,
       this.injectJs,
-      this.touchToggleBelow = false});
+      this.touchToggleBelow = false,
+      this.loadDelay = const Duration(seconds: 2)});
 
   @override
   State<_RadarPanel> createState() => _RadarPanelState();
@@ -302,9 +306,13 @@ class _RadarPanelState extends State<_RadarPanel> {
     if (widget.touchToggleBelow) {
       _externalTouchEnabled = ValueNotifier<bool>(false);
     }
-    // 웹뷰는 화면에 처음 보일 때만 생성하고 이후 유지한다(아래 VisibilityDetector).
-    // 라디오/위성까지 스크롤하지 않으면 아예 로드하지 않아 초기 렌더 부담을 줄인다.
-    // (한번 로드하면 재로드하지 않아 스크롤 시 깜빡임이 없다.)
+    // 스크롤 진입을 기다리지 않고, 패널 생성 후 일정 시간 뒤에 웹뷰를 로드한다.
+    // 부모 ListView의 cacheExtent(5000) 덕에 이 패널은 페이지 오픈 직후 만들어지므로
+    // 타이머는 사실상 페이지 오픈 기준으로 동작하고, 사용자가 아래로 스크롤할 때쯤엔 로드가 끝나 있다.
+    // (한번 로드하면 keepAlive로 유지돼 스크롤 시 깜빡임이 없다.)
+    Future.delayed(widget.loadDelay, () {
+      if (mounted) setState(() => _showWeb = true);
+    });
   }
 
   @override
@@ -338,37 +346,26 @@ class _RadarPanelState extends State<_RadarPanel> {
             ],
           ),
           const Gap(15),
-          VisibilityDetector(
-            key: Key('radar_webview_${widget.title}'),
-            onVisibilityChanged: (info) {
-              if (!mounted || _showWeb) return;
-              // 처음 화면에 들어올 때만 로드하고 이후 유지한다(스크롤로 다시 보여도 재로드 없음).
-              // 페이지 열자마자 로드하던 blind 2초만 없애 초기 렌더 부담을 줄이는 게 목적.
-              if (info.visibleFraction > 0.05) {
-                setState(() => _showWeb = true);
-              }
-            },
-            child: SizedBox(
-              height: 600,
-              child: _showWeb
-                  ? CommonWebView(
-                      isBackBtn: false,
-                      url: widget.url,
-                      denyLocation: widget.denyLocation,
-                      injectJs: widget.injectJs,
-                      touchToggle: true, // 기본 스크롤 통과, 하단 버튼으로 조작 on/off
-                      externalTouchEnabled: _externalTouchEnabled,
-                    )
-                  : Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white10,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Center(
-                        child: CircularProgressIndicator(color: Colors.white70),
-                      ),
+          SizedBox(
+            height: 600,
+            child: _showWeb
+                ? CommonWebView(
+                    isBackBtn: false,
+                    url: widget.url,
+                    denyLocation: widget.denyLocation,
+                    injectJs: widget.injectJs,
+                    touchToggle: true, // 기본 스크롤 통과, 하단 버튼으로 조작 on/off
+                    externalTouchEnabled: _externalTouchEnabled,
+                  )
+                : Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white10,
+                      borderRadius: BorderRadius.circular(8),
                     ),
-            ),
+                    child: const Center(
+                      child: CircularProgressIndicator(color: Colors.white70),
+                    ),
+                  ),
           ),
           if (_showWeb && _externalTouchEnabled != null) ...[
             const Gap(10),

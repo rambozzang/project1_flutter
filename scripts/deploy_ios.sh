@@ -39,8 +39,16 @@ $DO_CLEAN && { info "flutter clean"; flutter clean; }
 flutter pub get
 ( cd ios && pod install >/dev/null 2>&1 || true )
 
-info "IPA 빌드 (flutter build ipa --release)"
-flutter build ipa --release
+# Dart 심볼 분리 + 난독화로 App.framework 크기를 줄인다.
+# ⚠️ 크래시 역난독화에 필요하므로 릴리즈마다 SYMBOLS_DIR을 보관할 것.
+#    (`flutter symbolize -i <stack> -d <SYMBOLS_DIR>/app.ios-arm64.symbols`)
+#    build/ 아래에 두면 다음 `--clean` 실행 때 과거 릴리즈 심볼까지 지워지므로 루트에 보관한다.
+SYMBOLS_DIR="symbols/ios/$VER_LINE"
+mkdir -p "$SYMBOLS_DIR"
+
+info "IPA 빌드 (flutter build ipa --release --obfuscate)"
+flutter build ipa --release --obfuscate --split-debug-info="$SYMBOLS_DIR"
+ok "심볼: $SYMBOLS_DIR — 크래시 역난독화용, 이 릴리즈와 함께 보관하세요"
 
 IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -n 1)
 [ -n "$IPA_PATH" ] || die "IPA 파일을 찾을 수 없습니다. Xcode 자동 서명 설정을 확인하세요."
