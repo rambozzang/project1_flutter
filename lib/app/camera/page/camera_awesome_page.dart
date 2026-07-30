@@ -9,6 +9,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:project1/app/camera/page/photo_reg_page.dart';
 import 'package:project1/app/camera/page/video_reg_page.dart';
+import 'package:project1/app/camera/page/widgets/record_progress_ring.dart';
+import 'package:project1/utils/utils.dart';
 
 /// 카메라 권한 화면 상태.
 enum _CamPermState { checking, granted, denied, permanentlyDenied }
@@ -661,8 +663,25 @@ class CamerAwesomeBottomActions extends StatefulWidget {
 }
 
 class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
+  // ── 타이머 촬영 ────────────────────────────────────────────
+  // 예전 촬영 화면(CameraBloc + RecordingProgressIndicator)의 방식을 그대로 옮긴 것:
+  // 셔터를 누르면 제한시간까지 카운트업하며 링이 차오르고, 다 차면 자동으로 녹화가 끝난다.
+  // 최소 길이(2초) 미만에서 누른 정지는 무시하고 안내만 띄운다.
+  static const List<int> _limitOptions = [15, 30, 60];
+  static const int _minRecordSec = 2;
+
+  /// 선택된 녹화 제한시간(초). 기본 15초.
+  int _limitSec = _limitOptions.first;
+
+  /// 경과 시간(초, 소수 포함). 링/시간 표시만 다시 그리도록 ValueNotifier로 둔다
+  /// (하단 컨트롤 전체를 50ms마다 setState 하면 줌/플래시 위젯까지 매번 리빌드됨).
+  final ValueNotifier<double> _elapsedVN = ValueNotifier<double>(0);
+  final Stopwatch _watch = Stopwatch();
+
+  /// 정지 요청 중복 방지(자동 종료와 사용자 탭이 겹치는 경우).
+  bool _stopRequested = false;
+
   Timer? _timer;
-  int _seconds = 0;
 
   // ── 줌 배율 캡 — 초광각(0.5x)을 렌즈 전환 없이 "줌아웃"으로 처리 ──
   // camerawesome 2.5.0의 Android getBackSensors()는 미구현(TODO)이라 물리 렌즈 전환이 불가능.
@@ -782,26 +801,64 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
   void _checkRecordingState() {
     final isRecording = widget.state is VideoRecordingCameraState;
     if (isRecording) {
+      // _timer가 살아있으면 이미 카운트 중. 자동 종료 후에는 _timer를 null로 만들지
+      // 않으므로(취소만) 종료 대기 중 didUpdateWidget이 와도 다시 시작되지 않는다.
       if (_timer == null) {
-        _seconds = 0;
-        _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-          if (mounted) {
-            setState(() {
-              _seconds++;
-            });
-          }
-        });
+        _stopRequested = false;
+        _elapsedVN.value = 0;
+        _watch
+          ..reset()
+          ..start();
+        _startTicker();
       }
     } else {
       _timer?.cancel();
       _timer = null;
-      _seconds = 0;
+      _watch
+        ..stop()
+        ..reset();
+      _elapsedVN.value = 0;
+      _stopRequested = false;
+    }
+  }
+
+  /// 50ms(≈20fps)마다 경과시간을 갱신하고 제한시간에 도달하면 자동으로 녹화를 끝낸다.
+  /// 누적 오차가 없도록 Timer 호출 횟수가 아니라 Stopwatch 실측값을 쓴다.
+  void _startTicker() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(milliseconds: 50), (_) {
+      final double sec = _watch.elapsedMilliseconds / 1000.0;
+      _elapsedVN.value = sec;
+      if (sec >= _limitSec) _stopRecording();
+    });
+  }
+
+  /// 녹화 종료(자동/수동 공용). 최소 길이 검사는 호출부에서 한다.
+  Future<void> _stopRecording() async {
+    if (_stopRequested) return;
+    final CameraState state = widget.state;
+    if (state is! VideoRecordingCameraState) return;
+
+    _stopRequested = true;
+    _watch.stop();
+    _timer?.cancel(); // 참조는 남겨둔다 — 종료 처리 중 티커가 재시작되지 않도록
+    HapticFeedback.mediumImpact();
+    try {
+      await state.stopRecording();
+    } catch (e) {
+      debugPrint('[CAM] stopRecording 실패: $e');
+      if (!mounted) return;
+      // 실패하면 녹화가 계속되므로 타이머를 되살려 다시 멈출 수 있게 한다.
+      _stopRequested = false;
+      _watch.start();
+      _startTicker();
     }
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _elapsedVN.dispose();
     super.dispose();
   }
 
@@ -842,6 +899,11 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
             ],
             if (!isRecording) ...[
               _buildModeToggle(widget.state),
+              // 녹화 제한시간 선택 — 영상 모드에서 대기 중일 때만 (사진 모드엔 불필요)
+              if (widget.state is VideoCameraState) ...[
+                const SizedBox(height: 10),
+                _buildDurationSelector(),
+              ],
               const SizedBox(height: 16),
             ],
             _buildMainCaptureRow(widget.state),
@@ -1118,6 +1180,56 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
     );
   }
 
+  // ── 녹화 제한시간 선택(15/30/60초) ──
+  // 모드 토글과 같은 캡슐 세그먼트 형태로 맞춰 하단 컨트롤의 결을 유지한다.
+  Widget _buildDurationSelector() {
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.30),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 0.8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(left: 10, right: 2),
+            child: Icon(Icons.timer_outlined, size: 14, color: Colors.white60),
+          ),
+          for (final int sec in _limitOptions) _buildDurationChip(sec),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDurationChip(int sec) {
+    final bool isSelected = _limitSec == sec;
+    return GestureDetector(
+      onTap: () {
+        if (isSelected) return;
+        HapticFeedback.selectionClick();
+        setState(() => _limitSec = sec);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Text(
+          '$sec초',
+          style: TextStyle(
+            color: isSelected ? Colors.black : Colors.white70,
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildModeChip(CameraState state, String label, bool isSelected, CaptureMode mode) {
     final IconData icon = mode == CaptureMode.photo ? Icons.photo_camera_rounded : Icons.videocam_rounded;
     return GestureDetector(
@@ -1214,11 +1326,13 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
     );
   }
 
-  Widget _buildRecordingTimer() {
-    final minutes = _seconds ~/ 60;
-    final seconds = _seconds % 60;
-    final timeStr = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  static String _mmss(int totalSec) {
+    final int m = totalSec ~/ 60;
+    final int s = totalSec % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
 
+  Widget _buildRecordingTimer() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
@@ -1237,14 +1351,21 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
         children: [
           _BlinkingDot(),
           const SizedBox(width: 8),
-          Text(
-            timeStr,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              fontFeatures: [ui.FontFeature.tabularFigures()],
-            ),
+          // 경과 / 제한 — 남은 시간을 숫자로도 알 수 있게 함께 표기
+          ValueListenableBuilder<double>(
+            valueListenable: _elapsedVN,
+            builder: (context, sec, _) {
+              final int elapsed = sec.floor().clamp(0, _limitSec);
+              return Text(
+                '${_mmss(elapsed)} / ${_mmss(_limitSec)}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  fontFeatures: [ui.FontFeature.tabularFigures()],
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -1269,6 +1390,7 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
       ),
       onVideoMode: (videoState) => GestureDetector(
         onTap: () async {
+          HapticFeedback.mediumImpact();
           await videoState.startRecording();
         },
         child: _shutterButtonDecoration(
@@ -1276,9 +1398,15 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
           isRecording: false,
         ),
       ),
+      // 녹화 중 탭 = 조기 종료. 단, 예전 촬영 화면과 동일하게 최소 2초는 채워야 한다.
       onVideoRecordingMode: (recordingState) => GestureDetector(
-        onTap: () async {
-          await recordingState.stopRecording();
+        onTap: () {
+          if (_elapsedVN.value < _minRecordSec) {
+            HapticFeedback.lightImpact();
+            Utils.alert('$_minRecordSec초 이상 촬영해주세요!');
+            return;
+          }
+          _stopRecording();
         },
         child: _shutterButtonDecoration(
           innerColor: Colors.redAccent,
@@ -1289,25 +1417,45 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
   }
 
   Widget _shutterButtonDecoration({required Color innerColor, required bool isRecording}) {
-    return Container(
+    // 녹화 시에는 작은 사각형(정지 버튼)을 중앙에 그려 흰 원 안에 들어오게 한다.
+    // (사각형을 원 크기만큼 크게 그리면 모서리가 원 밖으로 삐져나옴)
+    final Widget inner = AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      width: isRecording ? 30 : 60,
+      height: isRecording ? 30 : 60,
+      decoration: BoxDecoration(
+        color: innerColor,
+        borderRadius: BorderRadius.circular(isRecording ? 8 : 40),
+      ),
+    );
+
+    if (!isRecording) {
+      return Container(
+        width: 76,
+        height: 76,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 4.5),
+        ),
+        child: inner,
+      );
+    }
+
+    // 녹화 중: 흰 테두리를 진행 링으로 대체 — 제한시간까지 남은 양이 한눈에 보인다.
+    return SizedBox(
       width: 76,
       height: 76,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 4.5),
-      ),
-      // 녹화 시에는 작은 사각형(정지 버튼)을 중앙에 그려 흰 원 안에 들어오게 한다.
-      // (사각형을 원 크기만큼 크게 그리면 모서리가 원 밖으로 삐져나옴)
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOut,
-        width: isRecording ? 30 : 60,
-        height: isRecording ? 30 : 60,
-        decoration: BoxDecoration(
-          color: innerColor,
-          borderRadius: BorderRadius.circular(isRecording ? 8 : 40),
-        ),
+      child: ValueListenableBuilder<double>(
+        valueListenable: _elapsedVN,
+        builder: (context, sec, child) {
+          return CustomPaint(
+            painter: RecordProgressRingPainter(progress: sec / _limitSec),
+            child: child,
+          );
+        },
+        child: Center(child: inner),
       ),
     );
   }
