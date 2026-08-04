@@ -43,9 +43,10 @@
         android:maxSdkVersion="32"/>
     <uses-permission
         android:name="android.permission.USE_EXACT_ALARM"/>
-    <uses-sdk
-        android:minSdkVersion="26"
-        android:targetSdkVersion="34"/>
+    <!-- minSdk / targetSdk 는 android/app/build.gradle.kts 에서만 관리한다.
+         예전에는 이 자리에 uses-sdk 선언이 직접 박혀 있었고 그 값이 build.gradle 과
+         달랐다. AGP 가 DSL 값으로 덮어써서 실제 배포에는 영향이 없었지만, 두 곳에
+         서로 다른 값이 적혀 있으면 Play 정책 점검 때 오판하기 쉬워 제거했다. -->
     <!-- android:debuggable="false" -->
     <application
         android:label="SkySnap"

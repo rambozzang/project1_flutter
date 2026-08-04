@@ -45,7 +45,13 @@ android {
         applicationId = "com.codelabtiger.skysnap"
         // 마이그레이션 후 flutter 기본값(21)으로 하향됐던 것을 26으로 복원(검증 범위 일치).
         minSdk = 26
-        targetSdk = 35  // Android 15의 16KB 페이지 정렬 요구사항 회피
+        // Google Play 요구: 2026-08-31 부터 최신 안드로이드 출시 1년 이내 타겟만 업데이트 가능.
+        // Android 16(API 36) 이상이어야 앱 업데이트를 계속 올릴 수 있다.
+        //
+        // 이전 주석에 "35 = 16KB 페이지 정렬 요구사항 회피"라고 적혀 있었으나 사실과 다르다.
+        // 16KB 호환은 targetSdk 로 회피하는 것이 아니라 .so 의 ELF 정렬로 결정된다.
+        // 실제로 NDK 28 + MLKit 17.3.0 강제로 전 라이브러리가 이미 16KB 이상 정렬돼 있다.
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
