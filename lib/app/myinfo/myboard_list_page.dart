@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
+import 'package:project1/widget/video_processing_badge.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/utils/utils.dart';
@@ -167,6 +168,9 @@ class _MyboardListPageState extends State<MyboardListPage> {
                     ),
                   ),
                   child: Stack(children: [
+                    // 인코딩이 끝나지 않은 영상은 눌러도 재생되지 않는다.
+                    // 목록에서 미리 알려 "고장났나" 하는 오해를 막는다.
+                    if (list[index].isVideoProcessing) const VideoProcessingBadge(compact: true),
                     // 좌상단: 앨범 소속이면 '앨범' 배지(전체 피드는 배지 없음) → 한눈에 구분.
                     if (list[index].communityId != null)
                       Positioned(

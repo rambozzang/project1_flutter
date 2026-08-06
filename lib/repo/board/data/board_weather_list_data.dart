@@ -63,6 +63,21 @@ class BoardWeatherListData {
   int? viewCnt;
   String? icon;
   String? videoId;
+
+  /// 영상 인코딩 완료 여부. 'Y'=재생 가능, 'N'=아직 처리중.
+  ///
+  /// Cloudflare Stream 은 업로드 후 인코딩을 마쳐야 재생된다. 그런데 재생 URL 은
+  /// uid 만으로 만들어지므로 인코딩 전에도 게시물이 목록에 뜬다. 그 구간에
+  /// 재생을 시도하면 실패하므로 [isVideoProcessing] 으로 걸러 "처리중"을 표시한다.
+  ///
+  /// 서버가 이 필드를 안 내려주는 경우(구버전 서버, 영상 없는 게시물)는 null 이고,
+  /// 이때는 기존과 동일하게 바로 재생을 시도한다.
+  String? videoReadyYn;
+
+  /// 영상이 아직 인코딩 중이라 재생할 수 없는 상태인지.
+  /// null 은 판단 불가이므로 재생 가능으로 본다(기존 동작 유지).
+  bool get isVideoProcessing => videoReadyYn == 'N';
+
   int? communityId; // 소속 앨범(모임)ID. null=전체 피드, 값 있으면 해당 앨범 소속
   int? size1;
   String? thumbnail;
@@ -112,6 +127,7 @@ class BoardWeatherListData {
     this.viewCnt,
     this.icon,
     this.videoId,
+    this.videoReadyYn,
     this.communityId,
     this.size1,
     this.thumbnail,
@@ -162,6 +178,7 @@ class BoardWeatherListData {
     int? viewCnt,
     String? icon,
     String? videoId,
+    String? videoReadyYn,
     int? size1,
     String? thumbnail,
     String? preview,
@@ -210,6 +227,7 @@ class BoardWeatherListData {
       viewCnt: viewCnt ?? this.viewCnt,
       icon: icon ?? this.icon,
       videoId: videoId ?? this.videoId,
+      videoReadyYn: videoReadyYn ?? this.videoReadyYn,
       size1: size1 ?? this.size1,
       thumbnail: thumbnail ?? this.thumbnail,
       preview: preview ?? this.preview,
@@ -261,6 +279,7 @@ class BoardWeatherListData {
       'viewCnt': viewCnt,
       'icon': icon,
       'videoId': videoId,
+      'videoReadyYn': videoReadyYn,
       'size1': size1,
       'thumbnail': thumbnail,
       'preview': preview,
@@ -313,6 +332,7 @@ class BoardWeatherListData {
       viewCnt: map['viewCnt'] != null ? map['viewCnt'] as int : null,
       icon: map['icon'] != null ? map['icon'] as String : null,
       videoId: map['videoId'] != null ? map['videoId'] as String : null,
+      videoReadyYn: map['videoReadyYn'] != null ? map['videoReadyYn'] as String : null,
       communityId: map['communityId'] != null ? (map['communityId'] as num).toInt() : null,
       size1: map['size1'] != null ? map['size1'] as int : null,
       thumbnail: map['thumbnail'] != null ? map['thumbnail'] as String : null,

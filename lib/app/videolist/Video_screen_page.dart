@@ -90,11 +90,19 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   // 운영계에서 false 로 변경
   bool isUpdateCount = false;
 
+  /// Cloudflare 인코딩이 끝나지 않아 아직 재생할 수 없는 상태.
+  /// 서버가 videoReadyYn='N' 을 내려준 경우다.
+  bool get isVideoProcessing => widget.data.isVideoProcessing;
+
   @override
   void initState() {
     super.initState();
     // 사진 게시물은 VideoPlayer를 초기화하지 않는다(videoPath가 null이라 크래시 방지).
-    if (!isPhotoPost) {
+    //
+    // 인코딩이 끝나지 않은 영상도 초기화하지 않는다. 매니페스트가 아직 없어서
+    // 반드시 실패하고, 실패 → 재시도 경로를 태워봤자 사용자에겐 '느리게 로딩'으로만
+    // 보인다. 대신 buildProcessing() 으로 "준비 중"임을 분명히 알린다.
+    if (!isPhotoPost && !isVideoProcessing) {
       initiliazeVideo();
     }
     // initialized.value = false;
@@ -392,10 +400,13 @@ class VideoScreenPageState extends State<VideoScreenPage> {
                             child: child,
                           );
                         },
-                        child: value == false
-                            // 영상 버퍼링 동안 썸네일을 즉시 표시 → 스와이프 시 즉각 보이는 체감 속도 확보
-                            ? buildLoading(ValueKey('${widget.data.boardId.toString()}loading'))
-                            : buildVideoScreen(ValueKey('${widget.data.boardId.toString()}videoScreen'), value));
+                        child: isVideoProcessing
+                            // 인코딩 대기 중 — 재생을 시도하지 않고 준비 중임을 알린다
+                            ? buildProcessing(ValueKey('${widget.data.boardId.toString()}processing'))
+                            : value == false
+                                // 영상 버퍼링 동안 썸네일을 즉시 표시 → 스와이프 시 즉각 보이는 체감 속도 확보
+                                ? buildLoading(ValueKey('${widget.data.boardId.toString()}loading'))
+                                : buildVideoScreen(ValueKey('${widget.data.boardId.toString()}videoScreen'), value));
                   },
                 ),
               ),
@@ -587,6 +598,57 @@ class VideoScreenPageState extends State<VideoScreenPage> {
             cacheKey: imgPath,
           ),
           fit: BoxFit.fill,
+        ),
+      ),
+    );
+  }
+
+  /// 인코딩 대기 화면.
+  ///
+  /// Cloudflare Stream 은 업로드 후 인코딩을 마쳐야 재생된다. 실측상 보통 20초 안팎이지만
+  /// 12분 가까이 걸린 적도 있다. 그 사이 재생을 시도하면 무조건 실패하는데, 예전에는
+  /// 그냥 로딩처럼 보여서 "영상이 안 나온다"는 오해를 샀다.
+  ///
+  /// 썸네일은 인코딩 전에도 나오는 경우가 있어 배경으로 깔되, 어둡게 덮고
+  /// 준비 중임을 명시한다.
+  Widget buildProcessing(Key key) {
+    final String imgPath =
+        (widget.data.videoPath ?? '').replaceAll('/manifest/video.m3u8', '/thumbnails/thumbnail.jpg');
+
+    return Container(
+      key: key,
+      decoration: imgPath.isEmpty
+          ? const BoxDecoration(color: Colors.black)
+          : BoxDecoration(
+              image: DecorationImage(
+                image: CachedNetworkImageProvider(imgPath, cacheKey: imgPath),
+                fit: BoxFit.fill,
+              ),
+            ),
+      child: Container(
+        color: Colors.black.withOpacity(0.55),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(
+                width: 34,
+                height: 34,
+                child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                '영상을 준비하고 있어요',
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '업로드는 끝났습니다.\n잠시 후 새로고침하면 재생할 수 있어요.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 13, height: 1.5),
+              ),
+            ],
+          ),
         ),
       ),
     );
