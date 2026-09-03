@@ -109,7 +109,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
       lo.g(
           '@@@  VideoScreenPage init(${Get.find<VideoMyinfoListCntr>().currentIndex.value}) ${widget.index} : ${widget.data.boardId} : 1.Start ');
 
-      _controller = VideoPlayerController.networkUrl(Uri.parse(finalUrl),
+      final ctrl = VideoPlayerController.networkUrl(Uri.parse(finalUrl),
           httpHeaders: {
             'Connection': 'keep-alive',
             'Cache-Control': 'max-age=3600, stale-while-revalidate=86400',
@@ -123,42 +123,96 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
             mixWithOthers: true,
             allowBackgroundPlayback: false,
           ),
-          formatHint: format)
-        ..initialize().then((_) {
-          if (mounted) {
-            lo.g('VideoScreenPage initialization time: ${stopwatch.elapsedMilliseconds}ms');
-            timeDesc.value = '${stopwatch.elapsedMilliseconds}ms';
+          formatHint: format);
+      _controller = ctrl;
 
-            lo.g(
-                '@@@  VideoScreenPage init(${Get.find<VideoMyinfoListCntr>().currentIndex.value}) ${widget.index} : ${widget.data.boardId} : 2.Mounted =>. ${stopwatch.elapsed}');
-            setState(() {
-              _controller.setLooping(true);
-              _controller.pause();
-              initialized = true;
-            });
-            //   Get.find<VideoListCntr>().onPageMounted(widget.data.boardId!);
-          }
-        });
+      // await 로 초기화 완료/실패를 직접 받는다.
+      // 기존 ..initialize().then() 캐스케이드는 async 실패가 try/catch 밖으로 새어
+      // 아예 잡히지 않았다(메인 피드에서 이미 고친 문제).
+      await ctrl.initialize().timeout(_initializeTimeout);
 
-      _controller.addListener(() {
-        isPlay.value = _controller.value.isPlaying;
-        int max = _controller.value.duration.inSeconds;
-        position = _controller.value.position;
-        progress.value = (position.inSeconds / max * 100).isNaN ? 0 : position.inSeconds / max * 100;
-        if (isPlay.value) {
-          updateCount();
-        }
-        if (_controller.value.hasError) {
-          lo.g('Video error: ${_controller.value.errorDescription}');
-          // 4. 재시도 로직
-          // _retryInitialization();
-        }
+      // 초기화하는 동안 화면이 사라졌거나, 재시도로 컨트롤러가 교체됐을 수 있다.
+      // 그대로 진행하면 주인 없는 디코더가 남는다.
+      if (!mounted || !identical(_controller, ctrl)) {
+        ctrl.dispose();
+        return;
+      }
+
+      lo.g('VideoScreenPage initialization time: ${stopwatch.elapsedMilliseconds}ms');
+      timeDesc.value = '${stopwatch.elapsedMilliseconds}ms';
+
+      lo.g(
+          '@@@  VideoScreenPage init(${Get.find<VideoMyinfoListCntr>().currentIndex.value}) ${widget.index} : ${widget.data.boardId} : 2.Mounted =>. ${stopwatch.elapsed}');
+
+      ctrl.setLooping(true);
+      ctrl.pause();
+      setState(() {
+        initialized = true;
       });
+
+      // 리스너는 초기화 성공이 확인된 뒤에 붙인다.
+      _setupVideoListener(ctrl);
     } catch (e) {
       lo.g('initiliazeMyVideo error : ${e.toString()}');
-      Utils.alert('영상 초기화 실패! ${e.toString()}');
-      initiliazeVideo();
-    } finally {}
+      // 알럿은 띄우지 않는다 — 피드를 넘기는 도중의 알럿은 방해만 된다.
+      if (mounted) {
+        await _handleInitializationError(e);
+      }
+    }
+  }
+
+  /// 재생 상태·진행률 리스너.
+  ///
+  /// 재시도로 컨트롤러 인스턴스가 교체될 수 있으므로 필드가 아니라 지역 변수를 캡처한다.
+  void _setupVideoListener(VideoPlayerController ctrl) {
+    ctrl.addListener(() {
+      // dispose 이후 도착하는 플랫폼 이벤트가 해제된 ValueNotifier 를 건드리지 않게 한다.
+      if (!mounted) return;
+
+      isPlay.value = ctrl.value.isPlaying;
+      int max = ctrl.value.duration.inSeconds;
+      position = ctrl.value.position;
+      progress.value = (position.inSeconds / max * 100).isNaN ? 0 : position.inSeconds / max * 100;
+      if (isPlay.value) {
+        updateCount();
+      }
+      if (ctrl.value.hasError) {
+        lo.g('Video error: ${ctrl.value.errorDescription}');
+      }
+    });
+  }
+
+  /// 초기화 실패 재시도 — 신규 업로드는 Cloudflare 인코딩이 끝나기 전이라
+  /// 매니페스트가 잠시 미준비(404/빈 응답)일 수 있다. 백오프로 몇 번만 다시 시도하고,
+  /// 한도를 넘으면 조용히 포기한다(썸네일이 그대로 남는다).
+  int _retryCount = 0;
+  static const List<Duration> _retryDelays = [
+    Duration(seconds: 2),
+    Duration(seconds: 4),
+    Duration(seconds: 7),
+    Duration(seconds: 12),
+  ];
+
+  /// 인코딩 지연·네트워크 문제로 무기한 대기하지 않게 한다.
+  /// 타임아웃이 없으면 실패로 떨어지지 않아 재시도 경로조차 타지 않는다.
+  static const Duration _initializeTimeout = Duration(seconds: 15);
+
+  Future<void> _handleInitializationError(dynamic error) async {
+    if (_retryCount >= _retryDelays.length) {
+      lo.g('영상 초기화 재시도 한도 초과($_retryCount): $error');
+      return;
+    }
+    final delay = _retryDelays[_retryCount];
+    _retryCount++;
+    lo.g('영상 초기화 재시도 $_retryCount/${_retryDelays.length} (${delay.inSeconds}s 후): $error');
+    await Future.delayed(delay);
+    if (!mounted) return;
+
+    // 실패한 컨트롤러를 먼저 놓아준다. 그대로 두고 새로 만들면 디코더가 샌다.
+    try {
+      await _controller.dispose();
+    } catch (_) {}
+    await initiliazeVideo();
   }
 
   String _formatHttpDate(DateTime date) {
@@ -230,19 +284,24 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
     );
   }
 
-  final TransformationController _transformationController = TransformationController();
   @override
   void dispose() {
     initialized = false;
-    _photoController.dispose();
-    _photoIndex.dispose();
+    // 컨트롤러를 먼저 놓는다. setVolume/pause 가 리스너를 한 번 더 깨우는데,
+    // 그 리스너가 아래 ValueNotifier 들을 건드리기 때문이다(해제 후면 터진다).
     // 사진 게시물은 _controller(late)를 초기화하지 않았으므로 접근 금지.
     if (!isPhotoPost) {
-      _controller.removeListener(() {});
       _controller.setVolume(0);
       _controller.pause();
       _controller.dispose();
     }
+    _photoController.dispose();
+    _photoIndex.dispose();
+    soundOff.dispose();
+    isPlay.dispose();
+    progress.dispose();
+    isFollowed.dispose();
+    timeDesc.dispose();
     super.dispose();
   }
 
