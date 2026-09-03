@@ -201,7 +201,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
       // await 로 초기화 완료/실패를 직접 받는다.
       // 기존 ..initialize().then() 은 async 실패가 try/catch 밖으로 새어 재시도가 걸리지 않았다
       // (신규 업로드가 Cloudflare 인코딩 중이라 매니페스트 미준비면 그대로 멈춰 '느리게 로딩'처럼 보임).
-      await ctrl.initialize();
+      await ctrl.initialize().timeout(_initializeTimeout);
 
       // 초기화하는 동안 페이지가 멀어져 해제됐을 수 있다. 그때 _controller 는
       // null 이거나 다른 인스턴스다 — 계속하면 해제된 플레이어를 만지고,
@@ -286,6 +286,11 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     Duration(seconds: 7),
     Duration(seconds: 12),
   ];
+
+  /// 인접 페이지가 인코딩 지연이나 네트워크 문제로 무기한 대기하지 않게 한다.
+  /// 타임아웃이 없으면 실패로 떨어지지 않아 재시도 경로조차 타지 않는다.
+  static const Duration _initializeTimeout = Duration(seconds: 15);
+
   Future<void> _handleInitializationError(dynamic error) async {
     if (_retryCount >= _retryDelays.length) {
       lo.e("영상 초기화 재시도 한도 초과($_retryCount): $error");
@@ -311,7 +316,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
       }
       final ctrl = VideoPlayerController.networkUrl(Uri.parse(finalUrl), formatHint: format);
       _controller = ctrl;
-      await ctrl.initialize();
+      await ctrl.initialize().timeout(_initializeTimeout);
       if (!mounted || !identical(_controller, ctrl)) {
         ctrl.dispose();
         return;
