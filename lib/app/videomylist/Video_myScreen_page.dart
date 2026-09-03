@@ -344,16 +344,22 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
     );
   }
 
-  final TransformationController _transformationController = TransformationController();
   @override
   void dispose() {
     initialized = false;
-    _photoController.dispose();
-    _photoIndex.dispose();
-    // 컨트롤러 유무가 곧 진실이다. isPhotoPost / videoActive 를 여기서 다시
+    // 컨트롤러를 가장 먼저 놓는다. 해제 과정이 리스너를 한 번 더 깨우는데,
+    // 그 리스너가 아래 ValueNotifier 들을 건드리기 때문이다(해제 후면 터진다).
+    // 컨트롤러 유무가 곧 진실이다 — isPhotoPost / videoActive 를 여기서 다시
     // 조합하면 initState 조건과 어긋날 때 누수가 난다.
     _controller?.dispose();
     _controller = null;
+    _photoController.dispose();
+    _photoIndex.dispose();
+    soundOff.dispose();
+    isPlay.dispose();
+    progress.dispose();
+    isFollowed.dispose();
+    timeDesc.dispose();
     super.dispose();
   }
 

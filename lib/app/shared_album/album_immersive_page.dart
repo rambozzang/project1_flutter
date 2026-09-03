@@ -70,6 +70,7 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
 
   // "↑ 다음" 힌트: 첫 진입 시에만 잠깐 표시(bob 애니메이션)
   bool _showSwipeHint = true;
+  Timer? _hintTimer; // 자동 숨김 예약 — dispose에서 취소한다
 
   // ── 1번째 상세(MediaDetail)에서 이관한 상태 ──
   final MediaInteractionRepo _viewRepo = MediaInteractionRepo();
@@ -95,7 +96,7 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
     if (_items.isEmpty) {
       _loadMore(first: true);
     }
-    Timer(const Duration(seconds: 4), () {
+    _hintTimer = Timer(const Duration(seconds: 4), () {
       if (mounted) setState(() => _showSwipeHint = false);
     });
     // 넘겨받은 미디어가 있으면 첫 화면의 관람 기록.
@@ -104,6 +105,7 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
 
   @override
   void dispose() {
+    _hintTimer?.cancel();
     _activeVideo.dispose();
     _pageCtrl.dispose();
     _heartCtrl.dispose();
@@ -284,34 +286,40 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
   // 문구(캡션) 수정 — /board/updateBoard contents 갱신 후 즉시 반영.
   Future<void> _editCaption(BoardWeatherListData item) async {
     final TextEditingController ctrl = TextEditingController(text: item.contents ?? '');
-    final String? result = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: SaColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Text('문구 수정', style: SaText.titleS),
-        content: TextField(
-          controller: ctrl,
-          minLines: 1,
-          maxLines: 5,
-          style: SaText.body.copyWith(color: SaColors.textPrimary),
-          decoration: InputDecoration(
-            hintText: '문구를 입력하세요',
-            hintStyle: SaText.body.copyWith(color: SaColors.textTertiary),
+    final String? result;
+    // 다이얼로그가 예외로 닫혀도 컨트롤러가 남지 않도록 finally에서 해제한다.
+    try {
+      result = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: SaColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: Text('문구 수정', style: SaText.titleS),
+          content: TextField(
+            controller: ctrl,
+            minLines: 1,
+            maxLines: 5,
+            style: SaText.body.copyWith(color: SaColors.textPrimary),
+            decoration: InputDecoration(
+              hintText: '문구를 입력하세요',
+              hintStyle: SaText.body.copyWith(color: SaColors.textTertiary),
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text('취소', style: SaText.bodyMedium.copyWith(color: SaColors.textTertiary)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()),
+              child: Text('저장', style: SaText.bodyMedium.copyWith(color: SaColors.accentTeal)),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('취소', style: SaText.bodyMedium.copyWith(color: SaColors.textTertiary)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()),
-            child: Text('저장', style: SaText.bodyMedium.copyWith(color: SaColors.accentTeal)),
-          ),
-        ],
-      ),
-    );
+      );
+    } finally {
+      ctrl.dispose();
+    }
     if (result == null) return; // 취소
     try {
       final ResData res = await BoardRepo().updateBoard(
@@ -940,6 +948,10 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
     Duration(seconds: 12),
   ];
 
+  /// 인접 페이지가 인코딩 지연이나 네트워크 문제로 무기한 대기하지 않게 한다.
+  /// 타임아웃이 없으면 실패로 떨어지지 않아 재시도 경로조차 타지 않는다.
+  static const Duration _initializeTimeout = Duration(seconds: 15);
+
   /// 기본 피드(VideoScreenPage.initiliazeVideo)와 동일 구성:
   /// Android=DASH(.mpd)+formatHint / iOS=HLS, 캐시 헤더, mixWithOthers.
   Future<void> _initVideo() async {
@@ -978,7 +990,8 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
         formatHint: format,
       );
       _controller = ctrl;
-      await ctrl.initialize();
+      // 타임아웃이 없으면 응답 없는 네트워크에서 영구 pending 되어 아래 재시도조차 타지 않는다.
+      await ctrl.initialize().timeout(_initializeTimeout);
       // 초기화하는 동안 페이지가 멀어져 해제됐을 수 있다. 그때 _controller 는
       // null 이거나 다른 인스턴스다 — 계속하면 해제된 플레이어를 만지고,
       // 방금 만든 이 디코더는 주인 없이 남는다.
