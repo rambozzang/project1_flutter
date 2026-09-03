@@ -40,7 +40,9 @@ class VideoScreenPage extends StatefulWidget {
 }
 
 class VideoScreenPageState extends State<VideoScreenPage> {
-  late VideoPlayerController _controller;
+  // videoActive=false 인 먼 페이지는 컨트롤러를 아예 만들지 않는다.
+  // late 로 두면 그 상태의 모든 접근이 LateInitializationError 가 되므로 nullable 로 둔다.
+  VideoPlayerController? _controller;
 
   final TransformationController transformationController = TransformationController();
   final double scale = 1.0;
@@ -131,7 +133,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
       final lastModified = _formatHttpDate(sevenDaysAgo);
 
       // VideoMyScreen과 동일한 캐싱 헤더 적용 + VideoPlayerOptions
-      _controller = VideoPlayerController.networkUrl(
+      final ctrl = VideoPlayerController.networkUrl(
         Uri.parse(finalUrl),
         httpHeaders: {
           'Connection': 'keep-alive',
@@ -148,18 +150,27 @@ class VideoScreenPageState extends State<VideoScreenPage> {
         ),
         formatHint: format,
       );
+      _controller = ctrl;
+
       // await 로 초기화 완료/실패를 직접 받는다.
       // 기존 ..initialize().then() 은 async 실패가 try/catch 밖으로 새어 재시도가 걸리지 않았다
       // (신규 업로드가 Cloudflare 인코딩 중이라 매니페스트 미준비면 그대로 멈춰 '느리게 로딩'처럼 보임).
-      await _controller.initialize();
-      if (mounted) {
-        lo.g('VideoScreenPage init time: ${stopwatch.elapsedMilliseconds}ms');
-        timeDesc.value = '${stopwatch.elapsedMilliseconds}ms';
-        _controller.setLooping(true);
-        _controller.pause();
-        initialized.value = true;
-        _setupVideoListener();
+      await ctrl.initialize();
+
+      // 초기화하는 동안 페이지가 멀어져 해제됐을 수 있다. 그때 _controller 는
+      // null 이거나 다른 인스턴스다 — 계속하면 해제된 플레이어를 만지고,
+      // 방금 만든 이 디코더는 주인 없이 남는다.
+      if (!mounted || !identical(_controller, ctrl)) {
+        ctrl.dispose();
+        return;
       }
+
+      lo.g('VideoScreenPage init time: ${stopwatch.elapsedMilliseconds}ms');
+      timeDesc.value = '${stopwatch.elapsedMilliseconds}ms';
+      ctrl.setLooping(true);
+      ctrl.pause();
+      initialized.value = true;
+      _setupVideoListener();
     } catch (e) {
       lo.e("=== Video Player Initialization Failed ===");
       lo.e("Error: $e");
@@ -182,16 +193,20 @@ class VideoScreenPageState extends State<VideoScreenPage> {
 
   /// 단순화된 비디오 리스너 설정
   void _setupVideoListener() {
-    _controller.addListener(() {
+    // 리스너는 이 인스턴스에 붙는다. 나중에 콜백이 돌 때 _controller 가
+    // 교체됐거나 해제됐을 수 있으므로 필드가 아니라 지역 변수를 캡처한다.
+    final ctrl = _controller;
+    if (ctrl == null) return;
+    ctrl.addListener(() {
       if (!mounted) return;
 
-      final isCurrentlyPlaying = _controller.value.isPlaying;
-      final duration = _controller.value.duration;
-      final position = _controller.value.position;
+      final isCurrentlyPlaying = ctrl.value.isPlaying;
+      final duration = ctrl.value.duration;
+      final position = ctrl.value.position;
 
       // 에러 체크
-      if (_controller.value.hasError) {
-        lo.e("Video player error: ${_controller.value.errorDescription}");
+      if (ctrl.value.hasError) {
+        lo.e("Video player error: ${ctrl.value.errorDescription}");
         return;
       }
 
@@ -237,8 +252,10 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     if (!mounted) return;
     try {
       try {
-        await _controller.dispose();
+        await _controller?.dispose();
       } catch (_) {}
+      _controller = null;
+      initialized.value = false;
 
       String finalUrl = widget.data.videoPath.toString();
       VideoFormat format = VideoFormat.hls;
@@ -246,15 +263,18 @@ class VideoScreenPageState extends State<VideoScreenPage> {
         finalUrl = finalUrl.replaceAll('.m3u8', '.mpd');
         format = VideoFormat.dash;
       }
-      _controller = VideoPlayerController.networkUrl(Uri.parse(finalUrl), formatHint: format);
-      await _controller.initialize();
-      if (mounted) {
-        _controller.setLooping(true);
-        _controller.pause();
-        initialized.value = true;
-        _setupVideoListener();
-        lo.g("영상 초기화 재시도 성공($_retryCount)");
+      final ctrl = VideoPlayerController.networkUrl(Uri.parse(finalUrl), formatHint: format);
+      _controller = ctrl;
+      await ctrl.initialize();
+      if (!mounted || !identical(_controller, ctrl)) {
+        ctrl.dispose();
+        return;
       }
+      ctrl.setLooping(true);
+      ctrl.pause();
+      initialized.value = true;
+      _setupVideoListener();
+      lo.g("영상 초기화 재시도 성공($_retryCount)");
     } catch (retryError) {
       if (mounted) await _handleInitializationError(retryError);
     }
@@ -333,12 +353,10 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     initialized.dispose();
     _photoController.dispose();
     _photoIndex.dispose();
-    // 사진 게시물은 _controller(late)를 초기화하지 않았으므로 접근하면 안 된다.
-    if (!isPhotoPost) {
-      _controller.removeListener(() {});
-      _controller.pause();
-      _controller.dispose();
-    }
+    // 컨트롤러 유무가 곧 진실이다. isPhotoPost / isVideoProcessing / videoActive
+    // 세 조건을 여기서 다시 조합하면 initState 조건과 어긋날 때 누수가 난다.
+    _controller?.dispose();
+    _controller = null;
     super.dispose();
   }
 
@@ -362,14 +380,18 @@ class VideoScreenPageState extends State<VideoScreenPage> {
             Positioned.fill(
               child: GestureDetector(
                 onTap: () {
-                  lo.g("Video tapped - current playing state: ${_controller.value.isPlaying}");
+                  final ctrl = _controller;
+                  if (ctrl == null) return; // 먼 페이지/사진/인코딩중 — 조작 대상 없음
+                  lo.g("Video tapped - current playing state: ${ctrl.value.isPlaying}");
                   initPlay = true;
-                  if (_controller.value.isPlaying) {
+                  if (ctrl.value.isPlaying) {
                     lo.g("Pausing video via tap");
-                    _controller.pause();
+                    isPlay.value = false;
+                    ctrl.pause();
                   } else {
                     lo.g("Playing video via tap");
-                    _controller.play();
+                    isPlay.value = true;
+                    ctrl.play();
                   }
                 },
                 onHorizontalDragEnd: (DragEndDetails details) {
@@ -522,26 +544,29 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   }
 
   Widget buildVideoScreen(Key key, bool init) {
+    final ctrl = _controller;
+    if (ctrl == null) return const SizedBox.shrink();
     return Container(
       key: key, // key를 상위 Container에 적용
       child: VisibilityDetector(
         key: key,
         onVisibilityChanged: (info) {
+          if (!mounted) return;
           lo.g("Video visibility changed: ${info.visibleFraction}");
           initPlay = false;
           if (info.visibleFraction > 0.1) {
             if (init) {
               lo.g("Starting video playback");
-              _controller.play();
-              Get.find<VideoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
+              ctrl.play();
+              Get.find<VideoListCntr>().soundOff.value ? ctrl.setVolume(0) : ctrl.setVolume(1);
             }
           } else if (info.visibleFraction < 0.3) {
             // } else {
             if (init) {
               lo.g("Pausing video playback");
-              _controller.pause();
-              _controller.seekTo(Duration.zero);
-              Get.find<VideoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
+              ctrl.pause();
+              ctrl.seekTo(Duration.zero);
+              Get.find<VideoListCntr>().soundOff.value ? ctrl.setVolume(0) : ctrl.setVolume(1);
             }
           }
         },
@@ -552,9 +577,9 @@ class VideoScreenPageState extends State<VideoScreenPage> {
               fit: BoxFit.cover,
               clipBehavior: Clip.hardEdge,
               child: SizedBox(
-                width: _controller.value.size.width,
-                height: _controller.value.size.height,
-                child: VideoPlayer(_controller),
+                width: ctrl.value.size.width,
+                height: ctrl.value.size.height,
+                child: VideoPlayer(ctrl),
               ),
             ),
           ),
@@ -1003,10 +1028,10 @@ class VideoScreenPageState extends State<VideoScreenPage> {
               ),
               child: value
                   ? IconButton(
-                      onPressed: () => _controller.pause(),
+                      onPressed: () => _controller?.pause(),
                       icon: Icon(Icons.play_arrow_outlined, color: Colors.white.withOpacity(0.5), size: 40))
                   : IconButton(
-                      onPressed: () => _controller.play(), icon: Icon(Icons.pause, color: Colors.white.withOpacity(0.5), size: 40)),
+                      onPressed: () => _controller?.play(), icon: Icon(Icons.pause, color: Colors.white.withOpacity(0.5), size: 40)),
             ),
           );
         },
@@ -1058,9 +1083,9 @@ class VideoScreenPageState extends State<VideoScreenPage> {
             onPressed: () {
               Get.find<VideoListCntr>().soundOff.value = !Get.find<VideoListCntr>().soundOff.value;
               if (Get.find<VideoListCntr>().soundOff.value) {
-                _controller.setVolume(0);
+                _controller?.setVolume(0);
               } else {
-                _controller.setVolume(1);
+                _controller?.setVolume(1);
               }
             },
             icon: Get.find<VideoListCntr>().soundOff.value
