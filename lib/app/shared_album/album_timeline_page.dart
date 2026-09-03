@@ -200,10 +200,11 @@ class AlbumTimelineView extends StatelessWidget {
   }
 
   String _thumbOf(BoardWeatherListData item) {
+    // GIF→JPG 정규화는 MediaThumbnail 안의 CfMediaUrl 이 맡는다.
+    // 여기서 또 하면 규칙이 두 벌로 갈린다 — 예전 땜질은 .gif 로 끝나는 경우만
+    // 처리해서 manifest URL 과 GIF 전용 쿼리를 놓쳤고, 그게 이번 증상의 원인이었다.
     if ((item.thumbnailPath ?? '').isNotEmpty) {
-      String t = item.thumbnailPath!;
-      if (t.endsWith('thumbnail.gif')) t = t.replaceAll('thumbnail.gif', 'thumbnail.jpg');
-      return t;
+      return item.thumbnailPath!;
     }
     if (item.imageUrls?.isNotEmpty ?? false) return item.imageUrls!.first;
     return '';
