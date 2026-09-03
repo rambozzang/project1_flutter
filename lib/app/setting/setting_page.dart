@@ -1,17 +1,18 @@
 // import 'package:babstrap_settings_screen/babstrap_settings_screen.dart';
 import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/admob/banner_ad_widget.dart';
 import 'package:project1/app/auth/agree_page.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
+import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 // import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 import 'package:project1/root/cntr/root_cntr.dart';
@@ -19,6 +20,12 @@ import 'package:project1/utils/log_utils.dart';
 import 'package:project1/widget/custom_button.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
 
+/// 설정 화면 — "우리의 앨범"(shared_album)과 같은 디자인 토큰(SaColors/SaText)을 쓴다.
+///
+/// 이 화면은 **라이트 고정**이다. 앨범 페이지와 달리 `SaColors.syncWith(context)`를 호출하지
+/// 않으므로 `SaColors.isLight` 기본값(true)의 라이트 팔레트가 그대로 적용된다.
+/// (다크 대응은 별도 과제. 여기서 syncWith를 부르면 설정 화면 자체가 앨범 테마 설정값을
+///  따라가 버려서, 앨범 테마를 고르는 화면이 함께 어두워지는 혼란이 생긴다.)
 class SettingPage extends StatefulWidget {
   const SettingPage({super.key});
 
@@ -59,27 +66,78 @@ class _SettingPageState extends State<SettingPage> {
   void _showAlbumThemeSheet() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: SaColors.surface,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(18))),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(26))),
       builder: (context) {
         Widget option(
             SaThemeMode mode, IconData icon, String label, String desc) {
           final bool selected = SaColors.themeMode == mode;
-          return ListTile(
-            leading:
-                Icon(icon, color: selected ? Colors.teal : Colors.grey[600]),
-            title: Text(label,
-                style: TextStyle(
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
-            subtitle: Text(desc,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-            trailing:
-                selected ? const Icon(Icons.check, color: Colors.teal) : null,
-            onTap: () async {
-              await SaColors.saveMode(mode);
-              if (mounted) setState(() {});
-              if (context.mounted) Navigator.of(context).pop();
-            },
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+            child: Material(
+              color: selected
+                  ? SaColors.accentTeal.withValues(alpha: 0.08)
+                  : SaColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () async {
+                  await SaColors.saveMode(mode);
+                  if (mounted) setState(() {});
+                  if (context.mounted) Navigator.of(context).pop();
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                        color: selected
+                            ? SaColors.accentTeal
+                            : SaColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      // 아이콘 칩 — pill(원형)
+                      Container(
+                        width: 36,
+                        height: 36,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? SaColors.accentTeal
+                              : SaColors.surfaceElevated,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: PhosphorIcon(icon,
+                            size: 18,
+                            color: selected
+                                ? SaColors.onAccent
+                                : SaColors.textSecondary),
+                      ),
+                      const Gap(12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(label,
+                                style: SaText.titleS.copyWith(
+                                    fontWeight: selected
+                                        ? FontWeight.w700
+                                        : FontWeight.w500)),
+                            const Gap(2),
+                            Text(desc, style: SaText.caption),
+                          ],
+                        ),
+                      ),
+                      if (selected)
+                        PhosphorIcon(PhosphorIconsBold.check,
+                            size: 18, color: SaColors.accentTeal),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           );
         }
 
@@ -87,21 +145,19 @@ class _SettingPageState extends State<SettingPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 16, 20, 4),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 8),
                 child: Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('앨범 테마',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  child: Text('앨범 테마', style: SaText.titleS),
                 ),
               ),
-              option(SaThemeMode.system, CupertinoIcons.circle_lefthalf_fill,
+              option(SaThemeMode.system, PhosphorIconsBold.circleHalf,
                   '시스템 설정 따름', '휴대폰 다크모드 설정에 맞춰 자동 전환'),
-              option(SaThemeMode.light, CupertinoIcons.sun_max, '라이트',
+              option(SaThemeMode.light, PhosphorIconsBold.sun, '라이트',
                   '앨범 화면을 항상 밝게'),
-              option(
-                  SaThemeMode.dark, CupertinoIcons.moon, '다크', '앨범 화면을 항상 어둡게'),
+              option(SaThemeMode.dark, PhosphorIconsBold.moon, '다크',
+                  '앨범 화면을 항상 어둡게'),
               const Gap(8),
             ],
           ),
@@ -126,60 +182,70 @@ class _SettingPageState extends State<SettingPage> {
     return Stack(
       children: [
         Scaffold(
-          //  backgroundColor: Colors.white.withOpacity(.94),
+          backgroundColor: SaColors.bgBase,
           appBar: AppBar(
             forceMaterialTransparency: true,
             automaticallyImplyLeading: false,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios),
-              onPressed: () => Navigator.pop(context),
+            // 앨범 홈의 원형 surface 버튼과 같은 톤(pill). 화면 좌측 패딩 16에 맞춘다.
+            leadingWidth: 72,
+            leading: Padding(
+              padding: const EdgeInsets.only(left: 16),
+              child: Center(
+                child: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Material(
+                    color: SaColors.surface,
+                    shape: CircleBorder(
+                        side: BorderSide(color: SaColors.borderStrong)),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: () => Navigator.pop(context),
+                      child: Center(
+                        child: PhosphorIcon(PhosphorIconsBold.caretLeft,
+                            size: 17, color: SaColors.textPrimary),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
-            title: const Text(
-              "설정",
-              style:
-                  TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-            ),
+            title: Text("설정", style: SaText.titleS),
             centerTitle: true,
             // backgroundColor: Colors.transparent,
             elevation: 0,
           ),
           body: SingleChildScrollView(
             // controller:
-            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Column(
               children: [
                 SettingsGroup(
                   settingsGroupTitle: "문의",
-                  settingsGroupTitleStyle: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16),
+                  settingsGroupTitleStyle: SaText.titleS,
                   items: [
                     SettingsItem(
                       onTap: () => Get.toNamed('/NotiPage'),
-                      icons: Icons.exit_to_app_rounded,
-                      backgroundColor: Colors.white,
+                      icons: PhosphorIconsBold.signOut,
+                      backgroundColor: SaColors.surface,
                       title: "공지사항",
                     ),
                     SettingsItem(
                       onTap: () => Get.toNamed('/FaqPage'),
-                      icons: CupertinoIcons.repeat,
+                      icons: PhosphorIconsBold.repeat,
                       title: "FAQ",
                     ),
                   ],
                 ),
                 SettingsGroup(
                   settingsGroupTitle: "커뮤니티",
-                  settingsGroupTitleStyle: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16),
+                  settingsGroupTitleStyle: SaText.titleS,
                   items: [
                     SettingsItem(
                       // 라운지 하단탭이 새 앨범 허브(CommunityHubPage)로 바뀌어,
                       // 기존 라운지(게시판 등 '스카이 라운지')는 설정에서 진입하도록 링크 제공.
                       onTap: () => Get.toNamed('/AlramPage'),
-                      icons: Icons.groups,
+                      icons: PhosphorIconsFill.usersThree,
                       iconStyle: IconStyle(
                         iconsColor: Colors.white,
                         withBackground: true,
@@ -194,14 +260,11 @@ class _SettingPageState extends State<SettingPage> {
                 ),
                 SettingsGroup(
                   settingsGroupTitle: "설정",
-                  settingsGroupTitleStyle: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16),
+                  settingsGroupTitleStyle: SaText.titleS,
                   items: [
                     SettingsItem(
                       onTap: () => Get.toNamed('/AlramSettingPage'),
-                      icons: CupertinoIcons.bell,
+                      icons: PhosphorIconsFill.bell,
                       iconStyle: IconStyle(
                         iconsColor: Colors.white,
                         withBackground: true,
@@ -216,7 +279,7 @@ class _SettingPageState extends State<SettingPage> {
                     if (Platform.isAndroid)
                       SettingsItem(
                         onTap: () => Get.toNamed('/WeatherNotiSettingPage'),
-                        icons: CupertinoIcons.sun_max,
+                        icons: PhosphorIconsFill.sun,
                         iconStyle: IconStyle(
                           iconsColor: Colors.white,
                           withBackground: true,
@@ -229,7 +292,7 @@ class _SettingPageState extends State<SettingPage> {
                       ),
                     SettingsItem(
                       onTap: _showAlbumThemeSheet,
-                      icons: CupertinoIcons.moon_stars,
+                      icons: PhosphorIconsFill.moonStars,
                       iconStyle: IconStyle(
                         iconsColor: Colors.white,
                         withBackground: true,
@@ -252,15 +315,12 @@ class _SettingPageState extends State<SettingPage> {
                 // 프리미엄 구독 진입(광고 제거·프리미엄 날씨·전용 테마)
                 Obx(() => SettingsGroup(
                       settingsGroupTitle: "SkySnap Premium",
-                      settingsGroupTitleStyle: const TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16),
+                      settingsGroupTitleStyle: SaText.titleS,
                       items: [
                         SettingsItem(
                           onTap: () => Get.toNamed('/PremiumPage'),
-                          icons: Icons.star_rounded,
-                          backgroundColor: Colors.white,
+                          icons: PhosphorIconsFill.star,
+                          backgroundColor: SaColors.surface,
                           iconStyle: IconStyle(
                             iconsColor: Colors.white,
                             withBackground: true,
@@ -278,16 +338,13 @@ class _SettingPageState extends State<SettingPage> {
                 const Gap(30),
                 SettingsGroup(
                   settingsGroupTitle: "개인정 동의 및 약관",
-                  settingsGroupTitleStyle: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16),
+                  settingsGroupTitleStyle: SaText.titleS,
                   items: [
                     if (kDebugMode) ...[
                       SettingsItem(
                         onTap: () => Get.toNamed('/MaketingPage'),
-                        icons: CupertinoIcons.pencil_outline,
-                        backgroundColor: Colors.white,
+                        icons: PhosphorIconsBold.pencilSimple,
+                        backgroundColor: SaColors.surface,
                         iconStyle: IconStyle(),
                         title: '마케팅 수신 동의 설정',
                         subtitle:
@@ -298,8 +355,8 @@ class _SettingPageState extends State<SettingPage> {
                     ],
                     SettingsItem(
                       onTap: () => Get.toNamed('/ServicePage'),
-                      icons: Icons.info_rounded,
-                      backgroundColor: Colors.white,
+                      icons: PhosphorIconsFill.info,
+                      backgroundColor: SaColors.surface,
                       iconStyle: IconStyle(
                         iconsColor: Colors.white,
                         withBackground: true,
@@ -310,8 +367,8 @@ class _SettingPageState extends State<SettingPage> {
                     ),
                     SettingsItem(
                       onTap: () => Get.toNamed('/PrivecyPage'),
-                      backgroundColor: Colors.white,
-                      icons: Icons.info_rounded,
+                      backgroundColor: SaColors.surface,
+                      icons: PhosphorIconsFill.info,
                       iconStyle: IconStyle(
                         backgroundColor: Colors.purple,
                       ),
@@ -320,7 +377,7 @@ class _SettingPageState extends State<SettingPage> {
                     ),
                     SettingsItem(
                       onTap: () => Get.toNamed('/LocatinServicePage'),
-                      icons: Icons.location_on_rounded,
+                      icons: PhosphorIconsFill.mapPin,
                       iconStyle: IconStyle(
                         backgroundColor: Colors.green,
                       ),
@@ -329,7 +386,7 @@ class _SettingPageState extends State<SettingPage> {
                     ),
                     SettingsItem(
                       onTap: () => Get.toNamed('/OpenSourcePage'),
-                      icons: Icons.insert_chart,
+                      icons: PhosphorIconsFill.chartBar,
                       iconStyle: IconStyle(
                         backgroundColor: Colors.deepOrange,
                       ),
@@ -365,20 +422,21 @@ class _SettingPageState extends State<SettingPage> {
                               MaterialPageRoute(
                                   builder: (context) => const AgreePage()));
                         },
-                        icons: Icons.exit_to_app_rounded,
+                        icons: PhosphorIconsBold.signOut,
                         iconStyle: IconStyle(
                           backgroundColor: Colors.deepOrange,
                         ),
                         title: "회원동의",
-                        titleStyle: const TextStyle(
+                        // 위험(탈퇴 계열) 강조 — SaColors에 대응 토큰이 없어 원본 red 유지.
+                        titleStyle: SaText.titleS.copyWith(
                           color: Colors.red,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       SettingsItem(
                         onTap: () => Get.toNamed('/SaPreviewPage'),
-                        icons: CupertinoIcons.photo_on_rectangle,
-                        backgroundColor: Colors.white,
+                        icons: PhosphorIconsFill.images,
+                        backgroundColor: SaColors.surface,
                         iconStyle: IconStyle(),
                         title: '공유앨범 위젯 미리보기 (디자인 검수)',
                         titleMaxLine: 1,
@@ -386,8 +444,8 @@ class _SettingPageState extends State<SettingPage> {
                       ),
                       SettingsItem(
                         onTap: () => Get.toNamed('/AlbumListPage'),
-                        icons: CupertinoIcons.rectangle_stack,
-                        backgroundColor: Colors.white,
+                        icons: PhosphorIconsBold.stack,
+                        backgroundColor: SaColors.surface,
                         iconStyle: IconStyle(),
                         title: '공유앨범 홈 1a (디자인 검수)',
                         titleMaxLine: 1,
@@ -422,34 +480,38 @@ class _SettingPageState extends State<SettingPage> {
 
   Widget buildCompany() {
     return Padding(
-      padding: const EdgeInsets.all(20.0),
+      // 좌우는 스크롤뷰의 화면 패딩 16을 그대로 쓴다(중복 인셋 제거).
+      padding: const EdgeInsets.symmetric(vertical: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             "코드랩타이거(CodeLabTiger)\n사업자등록번호 : 770-50-01045",
-            style: TextStyle(fontSize: 13, color: Colors.black54),
+            style: SaText.caption.copyWith(color: SaColors.textSecondary),
           ),
           const Gap(20),
-          const Align(
+          Align(
             alignment: Alignment.centerRight,
             child: Text(
               'Copyright 2024 TIGER Group',
-              style: TextStyle(fontSize: 13, color: Colors.black),
+              style: SaText.caption.copyWith(color: SaColors.textTertiary),
             ),
           ),
-          const Align(
+          Align(
             alignment: Alignment.centerRight,
             child: Text(
               'All rights reserved',
-              style: TextStyle(fontSize: 13, color: Colors.black),
+              style: SaText.caption.copyWith(color: SaColors.textTertiary),
             ),
           ),
           const Gap(20),
           Stack(
             children: [
-              Image.asset('assets/images/5124556.jpg',
-                  fit: BoxFit.cover, width: double.infinity, height: 75),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.asset('assets/images/5124556.jpg',
+                    fit: BoxFit.cover, width: double.infinity, height: 75),
+              ),
               // Positioned(
               //   right: 0,
               //   bottom: 0,
@@ -485,9 +547,10 @@ class _SettingPageState extends State<SettingPage> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(26),
+                  color: SaColors.surface,
                   shape: BoxShape.rectangle,
+                  border: Border.all(color: SaColors.border),
                   boxShadow: const [
                     BoxShadow(
                         color: Colors.black,
@@ -498,23 +561,24 @@ class _SettingPageState extends State<SettingPage> {
                 child: Column(
                   children: [
                     const Gap(20),
-                    const Icon(Icons.warning, size: 50, color: Colors.red),
+                    // 위험(탈퇴) 강조 — SaColors에 대응 토큰이 없어 원본 red 유지.
+                    const PhosphorIcon(PhosphorIconsFill.warning,
+                        size: 50, color: Colors.red),
                     const Gap(20),
-                    const Text(
+                    Text(
                       "정말 탈퇴하시겠습니까?",
-                      style: TextStyle(
+                      style: SaText.titleM.copyWith(
                           fontSize: 20,
                           color: Colors.red,
                           fontWeight: FontWeight.bold),
                     ),
                     const Gap(20),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 18.0),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18.0),
                       child: Text(
                         "1년간 재가입 불가합니다. 데이터는 모두 삭제되어 복구 불가능합니다.",
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.black87,
+                        style: SaText.caption.copyWith(
+                            color: SaColors.textPrimary,
                             fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -528,11 +592,10 @@ class _SettingPageState extends State<SettingPage> {
                                 checkValue = vlue!;
                               });
                             }),
-                        const Text(
+                        Text(
                           '진짜 다시 확인해주세요!!',
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.black87,
+                          style: SaText.caption.copyWith(
+                              color: SaColors.textPrimary,
                               fontWeight: FontWeight.bold),
                         ),
                       ],
@@ -607,33 +670,41 @@ class SettingsGroup extends StatelessWidget {
           // The title
           (settingsGroupTitle != null)
               ? Padding(
-                  padding: const EdgeInsets.only(bottom: 5),
+                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
                   child: Text(
                     settingsGroupTitle!,
                     style: (settingsGroupTitleStyle == null)
-                        ? const TextStyle(
-                            fontSize: 25, fontWeight: FontWeight.bold)
+                        ? SaText.titleM
                         : settingsGroupTitleStyle,
                   ),
                 )
               : Container(),
-          // The SettingsGroup sections
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: ListView.separated(
-              separatorBuilder: (context, index) {
-                return const Divider();
-              },
-              itemCount: items.length,
-              itemBuilder: (BuildContext context, int index) {
-                return items[index];
-              },
-              shrinkWrap: true,
-              padding: EdgeInsets.zero,
-              physics: const ScrollPhysics(),
+          // The SettingsGroup sections — 핸드오프 규격: 카드 r26 / surface / border / 내부 패딩 14
+          // 카드 배경은 Container가 아니라 Material이 그린다. Container에 색을 주면 그 위에
+          // 얹힌 ListTile의 잉크 리플이 가려진다(프레임워크 assert).
+          Material(
+            color: SaColors.surface,
+            borderRadius: BorderRadius.circular(26),
+            clipBehavior: Clip.antiAlias,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(color: SaColors.border),
+              ),
+              padding: const EdgeInsets.all(14),
+              child: ListView.separated(
+                separatorBuilder: (context, index) {
+                  return Divider(
+                      color: SaColors.border, height: 13, thickness: 1);
+                },
+                itemCount: items.length,
+                itemBuilder: (BuildContext context, int index) {
+                  return items[index];
+                },
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
+                physics: const ScrollPhysics(),
+              ),
             ),
           ),
         ],
@@ -679,9 +750,11 @@ class SettingsItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(15),
+      borderRadius: BorderRadius.circular(14),
       child: ListTile(
         onTap: onTap,
+        // 카드가 이미 내부 패딩 14를 가지므로 ListTile 기본 인셋은 제거한다.
+        contentPadding: const EdgeInsets.symmetric(vertical: 2),
         leading: (iconStyle != null && iconStyle!.withBackground!)
             ? Container(
                 decoration: BoxDecoration(
@@ -689,7 +762,7 @@ class SettingsItem extends StatelessWidget {
                   borderRadius: BorderRadius.circular(iconStyle!.borderRadius!),
                 ),
                 padding: const EdgeInsets.all(5),
-                child: Icon(
+                child: PhosphorIcon(
                   icons,
                   size: SettingsScreenUtils.settingsGroupIconSize,
                   color: iconStyle!.iconsColor,
@@ -697,28 +770,31 @@ class SettingsItem extends StatelessWidget {
               )
             : Padding(
                 padding: const EdgeInsets.all(5),
-                child: Icon(
+                child: PhosphorIcon(
                   icons,
                   size: SettingsScreenUtils.settingsGroupIconSize,
+                  color: SaColors.textPrimary,
                 ),
               ),
         title: Text(
           title,
-          style: titleStyle ?? const TextStyle(fontWeight: FontWeight.bold),
+          style: titleStyle ?? SaText.titleS,
           maxLines: titleMaxLine,
           overflow: titleMaxLine != null ? overflow : null,
         ),
         subtitle: (subtitle != null)
             ? Text(
                 subtitle!,
-                style: subtitleStyle ?? Theme.of(context).textTheme.bodyMedium!,
+                style: subtitleStyle ?? SaText.body.copyWith(fontSize: 13),
                 maxLines: subtitleMaxLine,
                 overflow:
                     subtitleMaxLine != null ? TextOverflow.ellipsis : null,
               )
             : null,
-        trailing:
-            (trailing != null) ? trailing : const Icon(Icons.navigate_next),
+        trailing: (trailing != null)
+            ? trailing
+            : PhosphorIcon(PhosphorIconsBold.caretRight,
+                size: 16, color: SaColors.textTertiary),
       ),
     );
   }
@@ -734,7 +810,8 @@ class IconStyle {
     iconsColor = Colors.white,
     withBackground = true,
     backgroundColor = Colors.blue,
-    borderRadius = 8,
+    // 칩은 pill — 핸드오프 규격(칩/버튼 999). 아이콘 칩 배경색은 항목 구분용이라 원본 유지.
+    borderRadius = 999,
   })  : iconsColor = iconsColor,
         withBackground = withBackground,
         backgroundColor = backgroundColor,
