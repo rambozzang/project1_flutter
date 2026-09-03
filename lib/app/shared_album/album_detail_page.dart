@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -14,8 +13,10 @@ import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/community/community_repo.dart';
 import 'package:project1/repo/community/data/community_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
+import 'package:project1/utils/cf_media_url.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
+import 'package:project1/widget/media_thumbnail.dart';
 
 /// 앨범 상세 — 1d 갤러리 뷰.
 /// 커버 스트립(미니 겹침스택+멤버/스탯) + 필터 칩(전체/영상 N/사진 N) + 뷰 전환 세그먼트
@@ -329,7 +330,13 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
   // 커버 스트립: 미니 겹침스택 + 멤버/스탯 + mono 메타
   Widget _buildCoverStrip() {
     final c = _community;
-    final thumbs = _items.map((e) => e.thumbnailPath ?? '').where((p) => p.isNotEmpty).take(3).toList();
+    // 겹침 스택도 애니메이션 GIF 대신 정적 포스터를 받도록 URL 을 정규화한다(작게 요청).
+    final thumbs = _items
+        .map((e) => e.thumbnailPath ?? '')
+        .where((p) => p.isNotEmpty)
+        .map((p) => CfMediaUrl.streamPoster(p, width: 300))
+        .take(3)
+        .toList();
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
       child: Row(
@@ -492,7 +499,6 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
   }
 
   Widget _gridCell(BoardWeatherListData item, int index) {
-    final bool isVideo = item.typeDtCd == 'V';
     return GestureDetector(
       onTap: () => _openImmersive(initialIndex: index),
       child: ClipRRect(
@@ -500,23 +506,14 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if ((item.thumbnailPath ?? '').isNotEmpty)
-              CachedNetworkImage(
-                imageUrl: item.thumbnailPath!,
-                fit: BoxFit.cover,
-                placeholder: (_, __) => ColoredBox(color: SaColors.surfaceElevated),
-                errorWidget: (_, __, ___) => ColoredBox(color: SaColors.surfaceElevated),
-              )
-            else
-              ColoredBox(color: SaColors.surfaceElevated),
-            Positioned(
-              right: 6,
-              bottom: 6,
-              child: PhosphorIcon(
-                isVideo ? PhosphorIconsFill.playCircle : PhosphorIconsFill.image,
-                size: 15,
-                color: Colors.white.withOpacity(0.9),
-              ),
+            // 썸네일 정규화(GIF→JPG)와 플레이 배지를 한 위젯에서 처리한다.
+            // 사진에는 배지를 붙이지 않는다 — 기존의 image 아이콘은 제거.
+            MediaThumbnail(
+              url: item.thumbnailPath,
+              isVideo: _isVideoPost(item),
+              placeholder: ColoredBox(color: SaColors.surfaceElevated),
+              badgeSize: 24,
+              posterWidth: 400,
             ),
             // 안 본 콘텐츠 pink 점(마지막 열람 이후 올라온 것)
             if (_isNew(item)) const Positioned(left: 6, top: 6, child: SaNewDot(size: 7)),
@@ -532,3 +529,10 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
     return dt != null && dt.isAfter(_lastSeen!);
   }
 }
+
+/// 영상 게시물 여부 — 플레이 배지를 붙일지 판단한다.
+///
+/// 판별식은 `Video_screen_page` 의 `isPhotoPost`(= `typeDtCd == 'I' ||
+/// imageUrls 있음`)를 그대로 뒤집은 것이다. 위 `_MediaFilter` 는 서버 집계
+/// (videoCnt/photoCnt)와 짝을 맞추려고 `typeDtCd` 값을 그대로 쓰므로 그대로 둔다.
+bool _isVideoPost(BoardWeatherListData d) => !(d.typeDtCd == 'I' || (d.imageUrls?.isNotEmpty ?? false));

@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
@@ -8,6 +7,7 @@ import 'package:project1/repo/community/data/community_data.dart';
 import 'package:project1/repo/spot/data/spot_data.dart';
 import 'package:project1/repo/spot/spot_repo.dart';
 import 'package:project1/utils/utils.dart';
+import 'package:project1/widget/media_thumbnail.dart';
 
 /// 스팟 상세 — 현재 날씨 헤더 + 이 장소의 앨범 섹션 + 그 스팟 커뮤니티 영상 썸네일 그리드.
 /// 썸네일 탭 → 기존 단일 영상 뷰어(/VideoMyinfoListPage) 재사용.
@@ -98,9 +98,9 @@ class _SpotDetailPageState extends State<SpotDetailPage> {
   String _thumb(BoardWeatherListData d) {
     if (d.imageUrls != null && d.imageUrls!.isNotEmpty) return d.imageUrls!.first;
     if (d.thumbnailPath != null && d.thumbnailPath!.isNotEmpty) return d.thumbnailPath!;
-    final v = d.videoPath ?? '';
-    if (v.contains('/manifest/video.m3u8')) return v.replaceAll('/manifest/video.m3u8', '/thumbnails/thumbnail.jpg');
-    return v;
+    // 썸네일이 없으면 재생 URL 을 넘긴다 — manifest → 포스터 변환은 MediaThumbnail
+    // (CfMediaUrl.streamPoster)이 처리하므로 여기서 문자열을 손대지 않는다.
+    return d.videoPath ?? '';
   }
 
   @override
@@ -307,15 +307,13 @@ class _SpotDetailPageState extends State<SpotDetailPage> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            url.isEmpty
-                ? Container(color: _thumbBg)
-                : CachedNetworkImage(
-                    imageUrl: url,
-                    cacheKey: url,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) => Container(color: _thumbBg),
-                    errorWidget: (_, __, ___) => Container(color: _thumbBg, child: const Icon(Icons.broken_image, color: _textLo, size: 20)),
-                  ),
+            MediaThumbnail(
+              url: url,
+              isVideo: _isVideoPost(d),
+              placeholder: Container(color: _thumbBg),
+              badgeSize: 24,
+              posterWidth: 400,
+            ),
             Positioned(
               left: 4,
               bottom: 4,
@@ -334,3 +332,10 @@ class _SpotDetailPageState extends State<SpotDetailPage> {
     );
   }
 }
+
+/// 영상 게시물 여부 — 플레이 배지를 붙일지 판단한다.
+///
+/// 판별식은 `Video_screen_page` 의 `isPhotoPost`(= `typeDtCd == 'I' ||
+/// imageUrls 있음`)를 그대로 뒤집은 것이다. `/spot/board` 응답은 두 값을 모두
+/// 내려준다(백엔드 `searchBoardByDistince` + `enrichWithImages`).
+bool _isVideoPost(BoardWeatherListData d) => !(d.typeDtCd == 'I' || (d.imageUrls?.isNotEmpty ?? false));

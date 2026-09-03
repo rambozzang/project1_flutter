@@ -4,6 +4,7 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/repo/media/activity_repo.dart';
+import 'package:project1/utils/cf_media_url.dart';
 import 'package:project1/utils/utils.dart';
 
 /// 2d · 활동 피드 — 업로드·댓글·반응·가입 소식(시간 그룹: 오늘/이번 주/이전).
@@ -95,7 +96,10 @@ class _ActivityViewState extends State<ActivityView> {
     final String type = a['type']?.toString() ?? '';
     final String nick = a['actorNick']?.toString() ?? '';
     final String profile = a['actorProfile']?.toString() ?? '';
-    final String thumb = a['thumbnail']?.toString() ?? '';
+    // 활동 피드 응답에는 미디어 종류(typeDtCd)가 없어 영상/사진을 구분할 수 없다.
+    // 그래서 배지는 붙이지 않고 URL 정규화(GIF·manifest → 정적 JPG)만 한다.
+    // 44pt 자리이므로 포스터도 작게 요청한다.
+    final String thumb = CfMediaUrl.streamPoster(a['thumbnail']?.toString() ?? '', width: 150);
     final String extra = a['extra']?.toString() ?? '';
     final int? boardId = (a['boardId'] as num?)?.toInt();
 
@@ -131,7 +135,8 @@ class _ActivityViewState extends State<ActivityView> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: CachedNetworkImage(
-                  imageUrl: thumb.endsWith('thumbnail.gif') ? thumb.replaceAll('thumbnail.gif', 'thumbnail.jpg') : thumb,
+                  imageUrl: thumb,
+                  cacheKey: thumb,
                   width: 44,
                   height: 44,
                   fit: BoxFit.cover,

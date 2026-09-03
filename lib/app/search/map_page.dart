@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart'; // 임시 주석 처리
 import 'package:get/get.dart';
@@ -14,8 +13,10 @@ import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/StringUtils.dart';
+import 'package:project1/utils/cf_media_url.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
+import 'package:project1/widget/media_thumbnail.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
@@ -198,16 +199,10 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
-  // 마커 아이콘은 작게 표시되므로 Cloudflare Stream 썸네일을 축소(≈120px)해 받는다.
+  // 마커 아이콘은 작게 표시되므로 Cloudflare Stream 썸네일을 축소(120px)해 받는다.
   // 풀사이즈(피드용)를 그대로 쓰면 다운로드·디코드·메모리가 마커 수만큼 낭비된다.
-  String _markerThumbUrl(String url) {
-    if (url.isEmpty) return url;
-    if (url.contains('cloudflarestream.com') && url.contains('/thumbnails/')) {
-      final sep = url.contains('?') ? '&' : '?';
-      return '$url${sep}width=120&height=120&fit=crop';
-    }
-    return url;
-  }
+  // streamPoster 는 축소와 함께 GIF → 정적 JPG 정규화도 해준다(움직이는 마커 방지).
+  String _markerThumbUrl(String url) => CfMediaUrl.streamPoster(url, width: 120, height: 120);
 
   // 마커 1개 생성(아이콘은 캐시 우선, 없으면 다운로드해 캐시).
   // 대량 마커 대응: NClusterableMarker 로 만들어 줌아웃 시 자동 병합(클러스터링)되게 한다.
@@ -673,15 +668,13 @@ class _MapPageState extends State<MapPage> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              thumb.isEmpty
-                  ? Container(color: Colors.grey.shade300)
-                  : CachedNetworkImage(
-                      imageUrl: thumb,
-                      cacheKey: thumb,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) => Container(color: Colors.grey.shade300),
-                      errorWidget: (_, __, ___) => Container(color: Colors.grey.shade300),
-                    ),
+              MediaThumbnail(
+                url: thumb,
+                isVideo: _isVideoPost(item),
+                placeholder: Container(color: Colors.grey.shade300),
+                badgeSize: 22,
+                posterWidth: 300,
+              ),
               Positioned(
                 left: 0,
                 right: 0,
@@ -740,3 +733,12 @@ class _MapPageState extends State<MapPage> {
   }
 
 }
+
+/// 영상 게시물 여부 — 플레이 배지를 붙일지 판단한다.
+///
+/// 판별식은 `Video_screen_page` 의 `isPhotoPost`(= `typeDtCd == 'I' ||
+/// imageUrls 있음`)를 그대로 뒤집은 것이다. 지도 조회
+/// (`/board/searchBoardListByMaplonlatAndDay`)는 imageUrls 를 내려주지 않으므로
+/// 실질적으로 `typeDtCd` 만으로 판별한다 — 사진 게시물은 등록 시 항상 'I' 가
+/// 박히므로(photo_reg_page·album_upload_page) 사진에 배지가 붙지는 않는다.
+bool _isVideoPost(BoardWeatherListData d) => !(d.typeDtCd == 'I' || (d.imageUrls?.isNotEmpty ?? false));

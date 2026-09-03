@@ -5,6 +5,7 @@ import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/community/data/community_data.dart';
 import 'package:project1/repo/community/data/community_tag_data.dart';
 import 'package:project1/app/shared_album/widget/sa_album_cover_hero.dart';
+import 'package:project1/widget/media_thumbnail.dart';
 
 /// 앨범 홈 본문(커버 배너 · 앨범정보/가입버튼 헤더 · 인기태그 · 2열 그리드 피드).
 /// `/CommunityHomePage`(초대링크 가입 랜딩)와 `/AlbumShellPage` 첫 탭(앨범 메인)이 함께 사용한다.
@@ -412,11 +413,12 @@ class CommunityHomeBody extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (item.thumbnailPath != null && item.thumbnailPath!.isNotEmpty)
-              CachedNetworkImage(
-                  imageUrl: item.thumbnailPath!, fit: BoxFit.cover, errorWidget: (_, __, ___) => Container(color: const Color(0xFFE6E8EF)))
-            else
-              Container(color: const Color(0xFFE6E8EF)),
+            // GIF 썸네일 정규화 + 영상 배지를 한 곳에서 처리(URL 손질은 MediaThumbnail 내부).
+            MediaThumbnail(
+              url: item.thumbnailPath,
+              isVideo: _isVideoPost(item),
+              placeholder: Container(color: const Color(0xFFE6E8EF)),
+            ),
             const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -505,3 +507,10 @@ class CommunityHomeBody extends StatelessWidget {
     );
   }
 }
+
+/// 영상 게시물 여부 — 플레이 배지를 붙일지 판단한다.
+///
+/// 판별식은 `Video_screen_page` 의 `isPhotoPost`(= `typeDtCd == 'I' ||
+/// imageUrls 있음`)를 그대로 뒤집은 것이다. 앨범 피드 응답은 두 값을 모두
+/// 내려주므로(백엔드 `boardListByCommunityId` + `enrichWithImages`) 신뢰할 수 있다.
+bool _isVideoPost(BoardWeatherListData d) => !(d.typeDtCd == 'I' || (d.imageUrls?.isNotEmpty ?? false));

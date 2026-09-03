@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
@@ -6,6 +5,7 @@ import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/theme/sa_weather_gradients.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
+import 'package:project1/widget/media_thumbnail.dart';
 
 /// 2a · 월별 타임라인(촬영일 자동 정리) — 1d 그리드를 대체하는 앨범 기본 화면.
 /// v1: 업로드일(crtDtm) 기준으로 일/월 그룹핑(EXIF capturedAt은 후속). 날씨칩은 기존 저장 데이터 사용.
@@ -154,7 +154,6 @@ class AlbumTimelineView extends StatelessWidget {
 
   Widget _tile(_TimelineItem ti) {
     final item = ti.item;
-    final bool isVideo = item.typeDtCd == 'V';
     final String thumb = _thumbOf(item);
     return GestureDetector(
       onTap: () => onTapItem(ti.feedIndex),
@@ -163,40 +162,18 @@ class AlbumTimelineView extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (thumb.isNotEmpty)
-              CachedNetworkImage(
-                imageUrl: thumb,
-                cacheKey: thumb,
-                memCacheWidth: 400,
-                fit: BoxFit.cover,
-                placeholder: (_, __) => DecoratedBox(
-                    decoration: BoxDecoration(gradient: SaWeatherGradients.of(_gradientKey(item)))),
-                errorWidget: (_, __, ___) => DecoratedBox(
-                    decoration: BoxDecoration(gradient: SaWeatherGradients.of(_gradientKey(item)))),
-              )
-            else
-              DecoratedBox(decoration: BoxDecoration(gradient: SaWeatherGradients.of(_gradientKey(item)))),
+            // 썸네일 정규화(GIF→JPG)와 우상단 플레이 배지를 한 위젯에서 처리한다.
+            MediaThumbnail(
+              url: thumb,
+              isVideo: _isVideoPost(item),
+              placeholder: DecoratedBox(decoration: BoxDecoration(gradient: SaWeatherGradients.of(_gradientKey(item)))),
+              badgeSize: 24,
+              posterWidth: 400,
+            ),
 
             // 좌상단 NEW 점(안 본 것)
             if (ti.isNew)
               const Positioned(left: 7, top: 7, child: _Dot()),
-
-            // 좌하단 영상 표시
-            if (isVideo)
-              Positioned(
-                left: 7,
-                bottom: 7,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(color: Colors.black.withOpacity(0.42), borderRadius: BorderRadius.circular(999)),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      PhosphorIcon(PhosphorIconsFill.play, size: 9, color: Colors.white),
-                    ],
-                  ),
-                ),
-              ),
 
             // 우하단 댓글 수
             if ((item.replyCnt ?? 0) > 0)
@@ -312,3 +289,10 @@ class _Dot extends StatelessWidget {
     );
   }
 }
+
+/// 영상 게시물 여부 — 플레이 배지를 붙일지 판단한다.
+///
+/// 판별식은 `Video_screen_page` 의 `isPhotoPost`(= `typeDtCd == 'I' ||
+/// imageUrls 있음`)를 그대로 뒤집은 것이다. 기존 `typeDtCd == 'V'` 는
+/// typeDtCd 가 비어 있는 레거시 영상을 사진으로 오인해 배지를 놓쳤다.
+bool _isVideoPost(BoardWeatherListData d) => !(d.typeDtCd == 'I' || (d.imageUrls?.isNotEmpty ?? false));

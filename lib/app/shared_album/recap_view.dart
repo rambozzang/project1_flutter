@@ -5,6 +5,7 @@ import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/theme/sa_weather_gradients.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
+import 'package:project1/utils/cf_media_url.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// 2c · 회고 — 앨범 미디어를 날씨/기간 테마로 자동 큐레이션한 컬렉션.
@@ -111,12 +112,10 @@ class RecapView extends StatelessWidget {
     return 'clear';
   }
 
+  /// 컬렉션 표지용 썸네일. Cloudflare Stream 의 애니메이션 GIF 썸네일은
+  /// [CfMediaUrl.streamPoster] 로 정적 JPG 포스터로 바꿔 받는다(manifest URL 도 처리).
   String _thumb(BoardWeatherListData e) {
-    if ((e.thumbnailPath ?? '').isNotEmpty) {
-      String t = e.thumbnailPath!;
-      if (t.endsWith('thumbnail.gif')) t = t.replaceAll('thumbnail.gif', 'thumbnail.jpg');
-      return t;
-    }
+    if ((e.thumbnailPath ?? '').isNotEmpty) return CfMediaUrl.streamPoster(e.thumbnailPath!);
     if (e.imageUrls?.isNotEmpty ?? false) return e.imageUrls!.first;
     return '';
   }
