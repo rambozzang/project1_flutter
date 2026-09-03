@@ -7,6 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
+import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/app/weather/widgets/customShimmer.dart';
 import 'package:project1/repo/board/board_repo.dart';
@@ -31,6 +34,10 @@ import 'package:rxdart/rxdart.dart';
 // 사진촬영
 // https://dariadobszai.medium.com/set-profile-photo-with-flutter-bloc-or-how-to-bloc-backward-9fb16faa56ed
 
+/// 다른 사용자 프로필 — "우리의 앨범"(shared_album)과 같은 디자인 토큰(SaColors/SaText)을 쓴다.
+///
+/// 설정 화면과 마찬가지로 **라이트 고정**이다. `SaColors.syncWith(context)`를 호출하지
+/// 않으므로 `SaColors.isLight` 기본값(true)의 라이트 팔레트가 그대로 적용된다.
 class OtherInfoPage extends StatefulWidget {
   const OtherInfoPage({super.key});
 
@@ -297,6 +304,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
+      backgroundColor: SaColors.bgBase,
       resizeToAvoidBottomInset: true,
       appBar: _appBar(),
       body: RefreshIndicator.adaptive(
@@ -351,7 +359,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
             String followyn = data.followYn.toString();
 
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -362,10 +370,13 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                       type: 'S',
                       heightValue: 40,
                       isEnable: true,
+                      // '팔로우 하기'(주요 액션)만 accent 그라디언트(teal→blue)로. 이미 팔로잉 중일 때의
+                      // 취소 버튼은 중립이어야 하는데 CustomButton 이 글자색을 흰색으로 고정해서
+                      // 밝은 토큰을 쓰면 글자가 안 보인다 → 원본 짙은 남색을 유지한다.
                       listColors: [
-                        followyn == 'Y' ? const Color(0xFF3A3F65) : const Color.fromARGB(255, 169, 175, 214),
+                        followyn == 'Y' ? const Color(0xFF3A3F65) : SaColors.accentTeal,
                         // followyn == 'Y' ? const Color(0xFF1E2238) : const Color.fromARGB(255, 188, 195, 233),
-                        followyn == 'Y' ? const Color(0xFF414766) : const Color.fromARGB(255, 171, 175, 193),
+                        followyn == 'Y' ? const Color(0xFF414766) : SaColors.accentBlue,
                       ],
                       onPressed: () => followyn == 'Y' ? cancleFollow(data.custId.toString()) : addFollow(data.custId.toString()),
                     ),
@@ -397,12 +408,13 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                             },
                             suffixIcon: const Padding(
                               padding: EdgeInsets.only(left: 3.0),
-                              child: Icon(
-                                Icons.warning,
+                              child: PhosphorIcon(
+                                PhosphorIconsFill.warning,
                                 color: Colors.white,
                                 size: 19,
                               ),
                             ),
+                            // 차단(위험) 액션 강조색 — SaColors 에 대응 토큰이 없어 원본 주황 유지.
                             listColors: const [
                               Color(0xFFFF9900),
                               Color(0xFFFF9900),
@@ -420,14 +432,15 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
   }
 
   Widget _info() {
+    // 카드 규격: 좌우 화면 패딩 16 / radius 26 / surface / border / 내부 패딩 14.
     return Container(
-        margin: const EdgeInsets.all(10.0),
-        padding: const EdgeInsets.all(10),
+        margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: SaColors.surface,
           shape: BoxShape.rectangle,
-          border: Border.all(color: Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(10.0),
+          border: Border.all(color: SaColors.border),
+          borderRadius: BorderRadius.circular(26),
         ),
         child: Utils.commonStreamBody<CustCountData>(
           myCountCntr,
@@ -448,7 +461,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
           margin: const EdgeInsets.only(left: 3),
           decoration: BoxDecoration(
             // color: Colors.transparent,
-            color: Colors.grey.shade200,
+            color: SaColors.surfaceElevated,
             borderRadius: BorderRadius.circular(40),
           ),
           child: CustomShimmer(
@@ -538,8 +551,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                           height: 70,
                           width: 70,
                           decoration: BoxDecoration(
-                            color: Colors.transparent,
-                            // color: Colors.grey.shade200,
+                            color: SaColors.surfaceElevated,
                             borderRadius: BorderRadius.circular(25),
                             image: DecorationImage(
                               image: CachedNetworkImageProvider(
@@ -554,14 +566,14 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                       height: 70,
                       width: 70,
                       decoration: BoxDecoration(
-                        color: Colors.green,
-                        // color: Colors.grey.shade200,
+                        // 프로필 사진이 없을 때의 이니셜 아바타 — accent 그라디언트로.
+                        gradient: SaColors.primaryGradient,
                         borderRadius: BorderRadius.circular(25),
                       ),
                       child: Center(
                         child: Text(
                           data.custInfo!.nickNm.toString().substring(0, 1),
-                          style: const TextStyle(fontSize: 19, color: Colors.white, fontWeight: FontWeight.bold),
+                          style: SaText.titleM.copyWith(fontSize: 19, color: SaColors.onAccent),
                         ),
                       ),
                     ),
@@ -618,13 +630,13 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
         ),
         const Gap(5),
         data.custInfo!.custNm == 'null' || data.custInfo!.custNm == null || data.custInfo!.custNm == ''
-            ? const Text(
+            ? Text(
                 '-',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                style: SaText.titleS.copyWith(fontSize: 15),
               )
             : Text(
                 data.custInfo!.custNm.toString(),
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                style: SaText.titleS.copyWith(fontSize: 15),
               ),
         // Container(
         //   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -639,22 +651,22 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
         // ),
         const Gap(5),
         data.custInfo!.selfIntro == 'null' || data.custInfo!.selfIntro == null || data.custInfo!.selfIntro == ''
-            ? const Text(
+            ? Text(
                 '자기 소개 내용이 없습니다.',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                style: SaText.caption.copyWith(color: SaColors.textTertiary),
               )
             : Text(
                 data.custInfo!.selfIntro.toString(),
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                style: SaText.caption,
               ),
         const Gap(5),
 
         Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            const Text('👍좋아요', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
+            Text('👍좋아요', style: SaText.caption.copyWith(fontWeight: FontWeight.w500)),
             const Gap(5),
-            Text('${data.likeCnt}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+            Text('${data.likeCnt}', style: SaText.caption.copyWith(fontWeight: FontWeight.w700, color: SaColors.textPrimary)),
           ],
         ),
         const Gap(15),
@@ -675,7 +687,8 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
 
   Widget _myFeeds(List<BoardWeatherListData> list) {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      // 좌우 화면 패딩 16.
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: list.isNotEmpty
           ? GridView.builder(
               shrinkWrap: false,
@@ -694,7 +707,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                 },
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.grey,
+                    color: SaColors.surfaceElevated,
                     borderRadius: BorderRadius.circular(10.0),
                   ),
                   child: Stack(
@@ -753,10 +766,11 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                         ),
                       ),
                       list[index].hideYn == 'Y'
+                          // 비공개 표시 — 경고색이라 SaColors 에 대응 토큰이 없어 원본 red 유지.
                           ? const Positioned(
                               top: 10,
                               left: 10,
-                              child: Icon(Icons.lock, color: Colors.red, size: 20),
+                              child: PhosphorIcon(PhosphorIconsFill.lock, color: Colors.red, size: 20),
                             )
                           : const SizedBox.shrink(),
                     ],
@@ -770,7 +784,8 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
 
   Widget _followFeeds(List<BoardWeatherListData> list) {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      // 좌우 화면 패딩 16.
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: MasonryGridView.count(
         crossAxisCount: 3,
         mainAxisSpacing: 4,
@@ -785,7 +800,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
           child: Container(
             height: (index % 5 + 1) * 60,
             decoration: BoxDecoration(
-              color: Colors.grey.shade300,
+              color: SaColors.surfaceElevated,
               borderRadius: BorderRadius.circular(10.0),
             ),
             child: Stack(
@@ -857,30 +872,38 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
   }
 
   Widget _tabs() {
-    return TabBar(controller: _tabController, indicatorColor: Colors.black, indicatorPadding: const EdgeInsets.symmetric(horizontal: 50), tabs: const [
-      Tab(
-        // child: Icon(Icons.grid_on),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.grid_on),
-            Gap(10),
-            Text('게시물'),
-          ],
-        ),
-      ),
-      Tab(
-        // child: Icon(Icons.person_pin),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.person_pin),
-            Gap(10),
-            Text('팔로우'),
-          ],
-        ),
-      ),
-    ]);
+    return TabBar(
+        controller: _tabController,
+        indicatorColor: SaColors.accentTeal,
+        labelColor: SaColors.textPrimary,
+        unselectedLabelColor: SaColors.textTertiary,
+        labelStyle: SaText.titleS.copyWith(fontSize: 14),
+        unselectedLabelStyle: SaText.body.copyWith(fontSize: 14),
+        indicatorPadding: const EdgeInsets.symmetric(horizontal: 50),
+        tabs: const [
+          Tab(
+            // child: Icon(Icons.grid_on),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                PhosphorIcon(PhosphorIconsBold.gridFour, size: 18),
+                Gap(10),
+                Text('게시물'),
+              ],
+            ),
+          ),
+          Tab(
+            // child: Icon(Icons.person_pin),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                PhosphorIcon(PhosphorIconsFill.userCircle, size: 18),
+                Gap(10),
+                Text('팔로우'),
+              ],
+            ),
+          ),
+        ]);
   }
 
   PreferredSizeWidget _appBar() {
@@ -897,15 +920,19 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
               builder: (context, value, child) {
                 return Text(
                   value.toString(),
-                  style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                  // 프로필 주인공 이름이라 화면에서 가장 큰 제목 — 원래 크기(25)를 유지한 채 토큰 서체로.
+                  style: SaText.titleM.copyWith(fontSize: 25),
                 );
               }),
         ],
       ),
       actions: [
         Padding(
-          padding: const EdgeInsets.all(4.0),
-          child: IconButton(icon: const Icon(Icons.close), onPressed: () => Get.back()),
+          padding: const EdgeInsets.only(right: 16.0, top: 4, bottom: 4),
+          child: IconButton(
+            icon: PhosphorIcon(PhosphorIconsBold.x, size: 20, color: SaColors.textPrimary),
+            onPressed: () => Get.back(),
+          ),
         ),
       ],
     );
@@ -974,27 +1001,27 @@ class OtherInfoPageInfo extends StatelessWidget {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
         minimumSize: Size.zero,
-        //   backgroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
-        backgroundColor: Colors.grey.shade100,
-        foregroundColor: Colors.grey.shade100,
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 14),
+        backgroundColor: SaColors.surfaceElevated,
+        foregroundColor: SaColors.textPrimary,
         elevation: 0,
-        side: const BorderSide(color: Colors.white, width: 0.0),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+        side: BorderSide(color: SaColors.border, width: 0.0),
+        // 스탯 칩은 pill.
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       ),
       onPressed: onTap,
       child: Column(
         children: [
           Text(
             count.toString(),
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black),
+            style: SaText.titleS.copyWith(fontSize: 15),
           ),
           const SizedBox(
             height: 4,
           ),
           Text(
             label,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black54),
+            style: SaText.caption.copyWith(fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -1065,17 +1092,18 @@ class ProfileImagePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: SaColors.bgBase,
       appBar: AppBar(
         forceMaterialTransparency: true,
         centerTitle: false,
-        title: Hero(tag: nickNm, child: Text(nickNm, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
+        title: Hero(tag: nickNm, child: Text(nickNm, style: SaText.titleM.copyWith(fontSize: 20))),
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            icon: const Icon(
-              Icons.close,
-              color: Colors.black,
-              // size: 11,
+            icon: PhosphorIcon(
+              PhosphorIconsBold.x,
+              size: 20,
+              color: SaColors.textPrimary,
             ),
             onPressed: () => Get.back(),
           ),
@@ -1096,7 +1124,7 @@ class ProfileImagePage extends StatelessWidget {
                 fadeInDuration: const Duration(milliseconds: 100),
                 fadeOutDuration: const Duration(milliseconds: 100),
                 // placeholder: (context, url) => const CircularProgressIndicator(),
-                errorWidget: (context, url, error) => const Icon(Icons.error),
+                errorWidget: (context, url, error) => PhosphorIcon(PhosphorIconsFill.warning, color: SaColors.textTertiary),
               ),
             ),
           ),

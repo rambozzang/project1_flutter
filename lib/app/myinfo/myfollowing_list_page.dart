@@ -5,6 +5,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/widget/media_thumbnail.dart';
@@ -13,6 +14,10 @@ import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:rxdart/rxdart.dart';
 
+/// 팔로잉 게시물 그리드 — "우리의 앨범"(shared_album)과 같은 디자인 토큰(SaColors/SaText)을 쓴다.
+///
+/// 설정 화면과 마찬가지로 **라이트 고정**이다. `SaColors.syncWith(context)`를 호출하지
+/// 않으므로 `SaColors.isLight` 기본값(true)의 라이트 팔레트가 그대로 적용된다.
 class MyFollowingListPage extends StatefulWidget {
   const MyFollowingListPage({super.key});
 
@@ -88,7 +93,7 @@ class _MyFollowingListPageState extends State<MyFollowingListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white.withOpacity(.94),
+      backgroundColor: SaColors.bgBase,
       // appBar: AppBar(
       //   forceMaterialTransparency: true,
       //   automaticallyImplyLeading: false,
@@ -105,27 +110,24 @@ class _MyFollowingListPageState extends State<MyFollowingListPage> {
         onRefresh: () async {
           getInitFollowBoard();
         },
-        child: Container(
-          // color: Colors.white.withOpacity(.94),
-          padding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 8.0),
-          child: SingleChildScrollView(
-            controller: followboardScrollCtrl,
-            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
-            child: Expanded(
-              child: Column(
-                children: [
-                  Container(
-                      //    height: 200,
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      margin: const EdgeInsets.symmetric(vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(40),
-                      ),
-                      child: Utils.commonStreamList<BoardWeatherListData>(followVideoListCntr, followFeeds, getInitFollowBoard))
-                ],
-              ),
+        // 화면 좌우 패딩 16 — 중복 인셋(바깥 Container 8 + 안쪽 8)을 한 곳으로 모았다.
+        child: SingleChildScrollView(
+          controller: followboardScrollCtrl,
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: Expanded(
+            child: Column(
+              children: [
+                Container(
+                    //    height: 200,
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(26),
+                    ),
+                    child: Utils.commonStreamList<BoardWeatherListData>(followVideoListCntr, followFeeds, getInitFollowBoard))
+              ],
             ),
           ),
         ),
@@ -135,7 +137,8 @@ class _MyFollowingListPageState extends State<MyFollowingListPage> {
 
   Widget followFeeds(List<BoardWeatherListData> list) {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      // 좌우는 스크롤뷰의 화면 패딩 16을 그대로 쓴다(중복 인셋 제거).
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: MasonryGridView.count(
           crossAxisCount: 3,
           mainAxisSpacing: 4,
@@ -154,7 +157,7 @@ class _MyFollowingListPageState extends State<MyFollowingListPage> {
               child: Container(
                 height: (index % 5 + 1) * 60,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: SaColors.surfaceElevated,
                   borderRadius: BorderRadius.circular(10.0),
                 ),
                 child: Stack(

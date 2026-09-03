@@ -4,7 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
+import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
@@ -15,6 +18,10 @@ import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_button.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
 
+/// 내 정보 수정 — "우리의 앨범"(shared_album)과 같은 디자인 토큰(SaColors/SaText)을 쓴다.
+///
+/// 설정 화면과 마찬가지로 **라이트 고정**이다. `SaColors.syncWith(context)`를 호출하지
+/// 않으므로 `SaColors.isLight` 기본값(true)의 라이트 팔레트가 그대로 적용된다.
 class MyinfoModifyPage extends StatefulWidget {
   const MyinfoModifyPage({super.key});
 
@@ -108,13 +115,32 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
+      backgroundColor: SaColors.bgBase,
       appBar: AppBar(
         forceMaterialTransparency: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios),
-          onPressed: () => Navigator.pop(context),
+        // 앨범 홈의 원형 surface 버튼과 같은 톤(pill). 화면 좌측 패딩 16에 맞춘다.
+        leadingWidth: 72,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Center(
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Material(
+                color: SaColors.surface,
+                shape: CircleBorder(side: BorderSide(color: SaColors.borderStrong)),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => Navigator.pop(context),
+                  child: Center(
+                    child: PhosphorIcon(PhosphorIconsBold.caretLeft, size: 17, color: SaColors.textPrimary),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
-        title: const Text('내 정보 수정'),
+        title: Text('내 정보 수정', style: SaText.titleS),
         centerTitle: true,
         elevation: 0,
       ),
@@ -173,36 +199,35 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('계정 Email', style: TextStyle(color: Colors.black38, fontSize: 14)),
+                Text('계정 Email', style: SaText.caption.copyWith(color: SaColors.textTertiary)),
+                const Gap(4),
                 TextFormField(
                   controller: emailController,
                   // focusNode: textFocus,
                   readOnly: true,
                   maxLines: 1,
                   // cursorHeight: 14,
-                  style: const TextStyle(decorationThickness: 0), // 한글밑줄제거
+                  // 한글밑줄제거 + 본문 타이포는 토큰(bodyMedium)으로
+                  style: SaText.bodyMedium.copyWith(decorationThickness: 0),
                   decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                    counterStyle: const TextStyle(color: Colors.grey),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    counterStyle: SaText.caption.copyWith(color: SaColors.textTertiary),
                     filled: true,
-                    // fillColor: Colors.grey[100],
+                    fillColor: SaColors.surface,
                     // suffixIcon: const Icon(Icons.search, color: Colors.grey),
                     enabledBorder: OutlineInputBorder(
-                      // width: 0.0 produces a thin "hairline" border
-                      borderSide: const BorderSide(color: Colors.grey, width: 0.2),
-                      borderRadius: BorderRadius.circular(2),
+                      borderSide: BorderSide(color: SaColors.borderStrong),
+                      borderRadius: BorderRadius.circular(13),
                     ),
                     border: OutlineInputBorder(
-                      // width: 0.0 produces a thin "hairline" border
-                      //  borderSide: const BorderSide(color: Colors.grey, width: 0.1),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(13),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: Colors.grey, width: 0.2),
-                      borderRadius: BorderRadius.circular(2),
+                      borderSide: BorderSide(color: SaColors.accentTeal),
+                      borderRadius: BorderRadius.circular(13),
                     ),
                     // label: const Text("계정 Email - 수정불가"),
-                    labelStyle: const TextStyle(color: Colors.black38),
+                    labelStyle: SaText.body.copyWith(fontSize: 13, color: SaColors.textTertiary),
                   ),
                   onFieldSubmitted: (text) {},
                 ),
@@ -215,35 +240,35 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 0),
             padding: const EdgeInsets.only(top: 5),
-            height: 70,
+            // 토큰 본문 글자(14.5/height 1.45)와 내부 패딩 12가 글자 수 카운터와 함께 들어갈 높이.
+            height: 86,
             child: TextFormField(
               controller: nickNmController,
               // focusNode: textFocus,
               maxLines: 1,
               // cursorHeight: 14,
               maxLength: 15,
-              style: const TextStyle(decorationThickness: 0), // 한글밑줄제거
+              // 한글밑줄제거 + 본문 타이포는 토큰(bodyMedium)으로
+              style: SaText.bodyMedium.copyWith(decorationThickness: 0),
               decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                counterStyle: SaText.caption.copyWith(color: SaColors.textTertiary),
                 filled: true,
-                fillColor: Colors.grey[100],
+                fillColor: SaColors.surface,
                 // suffixIcon: const Icon(Icons.search, color: Colors.grey),
                 enabledBorder: OutlineInputBorder(
-                  // width: 0.0 produces a thin "hairline" border
-                  borderSide: const BorderSide(color: Colors.grey, width: 0.2),
-                  borderRadius: BorderRadius.circular(2),
+                  borderSide: BorderSide(color: SaColors.borderStrong),
+                  borderRadius: BorderRadius.circular(13),
                 ),
                 border: OutlineInputBorder(
-                  // width: 0.0 produces a thin "hairline" border
-                  //  borderSide: const BorderSide(color: Colors.grey, width: 0.1),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(13),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.grey, width: 0.2),
-                  borderRadius: BorderRadius.circular(2),
+                  borderSide: BorderSide(color: SaColors.accentTeal),
+                  borderRadius: BorderRadius.circular(13),
                 ),
                 label: const Text("낙네임를 입력해주세요"),
-                labelStyle: const TextStyle(color: Colors.black38),
+                labelStyle: SaText.body.copyWith(fontSize: 13, color: SaColors.textTertiary),
               ),
               onFieldSubmitted: (text) {
                 // Perform search
@@ -256,35 +281,35 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 0),
             padding: const EdgeInsets.only(top: 5),
-            height: 70,
+            // 토큰 본문 글자(14.5/height 1.45)와 내부 패딩 12가 글자 수 카운터와 함께 들어갈 높이.
+            height: 86,
             child: TextFormField(
               controller: custNmController,
               // focusNode: textFocus,
               maxLines: 1,
               // cursorHeight: 14,
               maxLength: 15,
-              style: const TextStyle(decorationThickness: 0), // 한글밑줄제거
+              // 한글밑줄제거 + 본문 타이포는 토큰(bodyMedium)으로
+              style: SaText.bodyMedium.copyWith(decorationThickness: 0),
               decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                counterStyle: SaText.caption.copyWith(color: SaColors.textTertiary),
                 filled: true,
-                fillColor: Colors.grey[100],
+                fillColor: SaColors.surface,
                 // suffixIcon: const Icon(Icons.search, color: Colors.grey),
                 enabledBorder: OutlineInputBorder(
-                  // width: 0.0 produces a thin "hairline" border
-                  borderSide: const BorderSide(color: Colors.grey, width: 0.2),
-                  borderRadius: BorderRadius.circular(2),
+                  borderSide: BorderSide(color: SaColors.borderStrong),
+                  borderRadius: BorderRadius.circular(13),
                 ),
                 border: OutlineInputBorder(
-                  // width: 0.0 produces a thin "hairline" border
-                  //  borderSide: const BorderSide(color: Colors.grey, width: 0.1),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(13),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.grey, width: 0.2),
-                  borderRadius: BorderRadius.circular(2),
+                  borderSide: BorderSide(color: SaColors.accentTeal),
+                  borderRadius: BorderRadius.circular(13),
                 ),
                 label: const Text("고객명을 입력해주세요"),
-                labelStyle: const TextStyle(color: Colors.black38),
+                labelStyle: SaText.body.copyWith(fontSize: 13, color: SaColors.textTertiary),
               ),
               onFieldSubmitted: (text) {
                 // Perform search
@@ -335,36 +360,36 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 0),
           padding: const EdgeInsets.only(top: 15),
-          height: 200,
+          // 7줄 * 토큰 본문 행높이(14.5*1.45) + 내부 패딩 12 + 글자 수 카운터가 들어갈 높이.
+          height: 225,
           child: TextFormField(
             controller: selfIntroController,
             // focusNode: textFocus,
             // cursorHeight: 12,
             maxLines: 7,
             maxLength: 100,
-            style: const TextStyle(decorationThickness: 0), // 한글밑줄제거
+            // 한글밑줄제거 + 본문 타이포는 토큰(bodyMedium)으로
+            style: SaText.bodyMedium.copyWith(decorationThickness: 0),
             decoration: InputDecoration(
               alignLabelWithHint: true, // label 과 입력창을 같은 높이로 맞춤
-              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              counterStyle: SaText.caption.copyWith(color: SaColors.textTertiary),
               filled: true,
-              fillColor: Colors.grey[100],
+              fillColor: SaColors.surface,
               // suffixIcon: const Icon(Icons.search, color: Colors.grey),
               enabledBorder: OutlineInputBorder(
-                // width: 0.0 produces a thin "hairline" border
-                borderSide: const BorderSide(color: Colors.grey, width: 0.2),
-                borderRadius: BorderRadius.circular(2),
+                borderSide: BorderSide(color: SaColors.borderStrong),
+                borderRadius: BorderRadius.circular(13),
               ),
               border: OutlineInputBorder(
-                // width: 0.0 produces a thin "hairline" border
-                //  borderSide: const BorderSide(color: Colors.grey, width: 0.1),
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(13),
               ),
               focusedBorder: OutlineInputBorder(
-                borderSide: const BorderSide(color: Colors.grey, width: 0.2),
-                borderRadius: BorderRadius.circular(2),
+                borderSide: BorderSide(color: SaColors.accentTeal),
+                borderRadius: BorderRadius.circular(13),
               ),
               label: const Text("자기소개를 입력해주세요"),
-              labelStyle: const TextStyle(color: Colors.black38),
+              labelStyle: SaText.body.copyWith(fontSize: 13, color: SaColors.textTertiary),
             ),
             onFieldSubmitted: (text) {
               // Perform search
@@ -384,14 +409,15 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
             onPressed: () async {
               await AuthCntr.to.logout();
             },
-            child: const Text('로그아웃'),
+            child: Text('로그아웃', style: SaText.caption.copyWith(color: SaColors.textSecondary)),
           ),
         ],
 
         Align(
             alignment: Alignment.centerRight,
             child: InkWell(
-                onTap: () => outAlertDialog(context), child: const Text('회원 탈퇴하기', style: TextStyle(color: Colors.black38, fontSize: 14)))),
+                onTap: () => outAlertDialog(context),
+                child: Text('회원 탈퇴하기', style: SaText.caption.copyWith(color: SaColors.textTertiary)))),
 
         const Gap(70),
       ],
@@ -423,9 +449,10 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
                 height: 390,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(26),
+                  color: SaColors.surface,
                   shape: BoxShape.rectangle,
+                  border: Border.all(color: SaColors.border),
                   boxShadow: const [
                     BoxShadow(color: Colors.black, offset: Offset(0, 10), blurRadius: 10),
                   ],
@@ -433,18 +460,19 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
                 child: Column(
                   children: [
                     const Gap(20),
-                    const Icon(Icons.warning, size: 50, color: Colors.red),
+                    // 위험(탈퇴) 강조 — SaColors 에 대응 토큰이 없어 원본 red 유지.
+                    const PhosphorIcon(PhosphorIconsFill.warning, size: 50, color: Colors.red),
                     const Gap(20),
-                    const Text(
+                    Text(
                       "정말 탈퇴하시겠습니까?",
-                      style: TextStyle(fontSize: 20, color: Colors.red, fontWeight: FontWeight.bold),
+                      style: SaText.titleM.copyWith(fontSize: 20, color: Colors.red, fontWeight: FontWeight.bold),
                     ),
                     const Gap(20),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 18.0),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18.0),
                       child: Text(
                         "1년간 재가입 불가합니다. 데이터는 모두 삭제되어 복구 불가능합니다.",
-                        style: TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.bold),
+                        style: SaText.caption.copyWith(color: SaColors.textPrimary, fontWeight: FontWeight.bold),
                       ),
                     ),
                     Row(
@@ -457,9 +485,9 @@ class _MyinfoModifyPageState extends State<MyinfoModifyPage> with AutomaticKeepA
                                 checkValue = vlue!;
                               });
                             }),
-                        const Text(
+                        Text(
                           '진짜 다시 확인해주세요!!',
-                          style: TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.bold),
+                          style: SaText.caption.copyWith(color: SaColors.textPrimary, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
