@@ -32,6 +32,7 @@ import 'package:image_picker/image_picker.dart';
 
 import 'package:project1/widget/custom_button.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
+import 'package:project1/widget/media_thumbnail.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -1693,20 +1694,13 @@ class _MyPageState extends State<MyPage>
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        CachedNetworkImage(
-                          key: Key(list[index].thumbnailPath!),
-                          imageUrl: list[index].thumbnailPath!,
-                          fit: BoxFit.cover,
-                          // placeholder: (context, url) => const Center(
-                          //   child: CircularProgressIndicator(
-                          //     strokeWidth: 1.0,
-                          //     valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
-                          //   ),
-                          // ),
-                          fadeInDuration: const Duration(milliseconds: 100),
-                          fadeOutDuration: const Duration(milliseconds: 100),
-                          errorWidget: (context, url, error) =>
-                              const Icon(Icons.error),
+                        // 썸네일은 MediaThumbnail 로 통일 — GIF 썸네일을 정적 JPG 로
+                        // 정규화하고, 영상이면 우측 상단에 플레이 배지를 붙인다.
+                        MediaThumbnail(
+                          key: ValueKey(list[index].thumbnailPath),
+                          url: list[index].thumbnailPath,
+                          isVideo: _isVideoPost(list[index]),
+                          placeholder: const SizedBox.shrink(),
                         ),
                         Align(
                           alignment: Alignment.bottomRight,
@@ -1849,16 +1843,17 @@ class _MyPageState extends State<MyPage>
                 decoration: BoxDecoration(
                   color: Colors.grey.shade300,
                   borderRadius: BorderRadius.circular(10.0),
-                  image: DecorationImage(
-                    image: CachedNetworkImageProvider(
-                      cacheKey: list[index].thumbnailPath!,
-                      list[index].thumbnailPath!,
-                    ),
-                    fit: BoxFit.cover,
-                  ),
                 ),
                 child: Stack(
                   children: [
+                    Positioned.fill(
+                      child: MediaThumbnail(
+                        url: list[index].thumbnailPath,
+                        isVideo: _isVideoPost(list[index]),
+                        borderRadius: BorderRadius.circular(10.0),
+                        placeholder: const SizedBox.shrink(),
+                      ),
+                    ),
                     Align(
                       alignment: Alignment.bottomRight,
                       child: Row(
@@ -2268,3 +2263,10 @@ class MyPageInfo extends StatelessWidget {
     );
   }
 }
+
+/// 영상 게시물인가.
+///
+/// 판별식은 `Video_screen_page` 의 `isPhotoPost`(= `typeDtCd == 'I' ||
+/// imageUrls 있음`)를 그대로 뒤집은 것이다. `typeDtCd` 가 비어 있는 레거시
+/// 게시물이 있어 사진 URL 유무까지 함께 봐야 사진에 재생 배지가 붙지 않는다.
+bool _isVideoPost(BoardWeatherListData d) => !(d.typeDtCd == 'I' || (d.imageUrls?.isNotEmpty ?? false));

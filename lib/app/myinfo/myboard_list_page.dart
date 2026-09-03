@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
+import 'package:project1/widget/media_thumbnail.dart';
 import 'package:project1/widget/video_processing_badge.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
@@ -162,12 +162,19 @@ class _MyboardListPageState extends State<MyboardListPage> {
                   decoration: BoxDecoration(
                     color: Colors.grey[300],
                     borderRadius: BorderRadius.circular(10.0),
-                    image: DecorationImage(
-                      image: CachedNetworkImageProvider(cacheKey: list[index].thumbnailPath.toString(), list[index].thumbnailPath!),
-                      fit: BoxFit.cover,
-                    ),
                   ),
                   child: Stack(children: [
+                    // 썸네일은 MediaThumbnail 로 통일 — GIF 썸네일을 정적 JPG 로 정규화하고,
+                    // 영상이면 우측 상단에 플레이 배지를 붙인다. 로딩·실패 시에는 아무것도
+                    // 그리지 않아 위 Container 의 회색이 그대로 보인다(기존 동작 유지).
+                    Positioned.fill(
+                      child: MediaThumbnail(
+                        url: list[index].thumbnailPath,
+                        isVideo: _isVideoPost(list[index]),
+                        borderRadius: BorderRadius.circular(10.0),
+                        placeholder: const SizedBox.shrink(),
+                      ),
+                    ),
                     // 인코딩이 끝나지 않은 영상은 눌러도 재생되지 않는다.
                     // 목록에서 미리 알려 "고장났나" 하는 오해를 막는다.
                     if (list[index].isVideoProcessing) const VideoProcessingBadge(compact: true),
@@ -236,3 +243,10 @@ class _MyboardListPageState extends State<MyboardListPage> {
     );
   }
 }
+
+/// 영상 게시물인가.
+///
+/// 판별식은 `Video_screen_page` 의 `isPhotoPost`(= `typeDtCd == 'I' ||
+/// imageUrls 있음`)를 그대로 뒤집은 것이다. `typeDtCd` 가 비어 있는 레거시
+/// 게시물이 있어 사진 URL 유무까지 함께 봐야 사진에 재생 배지가 붙지 않는다.
+bool _isVideoPost(BoardWeatherListData d) => !(d.typeDtCd == 'I' || (d.imageUrls?.isNotEmpty ?? false));
