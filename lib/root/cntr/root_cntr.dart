@@ -207,7 +207,9 @@ class RootCntr extends GetxController {
       cloudSaveData.uid = ticket.uid;
       cloudSaveData.preview = ticket.preview;
       cloudSaveData.size = pickedFile.filesize;
-      cloudSaveData.thumbnail = ticket.animatedThumbnail;
+      // 썸네일은 정적 JPG 로 저장한다. animatedThumbnail(GIF)은 한 장이 수 MB 라
+      // 목록 화면에서 데이터·메모리를 크게 먹고, 정지 화면이어야 할 그리드에서 혼자 움직인다.
+      cloudSaveData.thumbnail = ticket.thumbnail;
       cloudSaveData.dash = ticket.dash;
       cloudSaveData.hls = ticket.hls;
       cloudSaveData.mp4 = '';
@@ -231,7 +233,8 @@ class RootCntr extends GetxController {
       BoardRepo boardRepo = BoardRepo();
       // 업로드가 진행되는 동안 이미 날씨를 받아두었으므로 거의 즉시 반환된다.
       final BoardSaveWeatherData weatherVo = await weatherFuture;
-      weatherVo.thumbnailPath = ticket.animatedThumbnail;
+      // 게시물 목록·지도·상세가 모두 참조하는 대표 썸네일 — 정적 JPG 로 저장한다(위와 동일한 이유).
+      weatherVo.thumbnailPath = ticket.thumbnail;
       weatherVo.thumbnailId = ticket.thumbnail;
       weatherVo.videoPath = ticket.hls;
       weatherVo.videoId = ticket.uid;
