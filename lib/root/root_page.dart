@@ -12,6 +12,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:project1/app/shared_album/album_list_page.dart';
 import 'package:project1/app/camera/page/camera_awesome_page.dart';
 import 'package:project1/app/camera/utils/camera_utils.dart';
+import 'package:project1/app/home/pending_upload_prompt.dart';
 import 'package:project1/app/myinfo/myinfo_page.dart';
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/app/videolist/video_list_page.dart';
@@ -70,10 +71,30 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
     super.initState();
 
     Get.put(VideoListCntr());
-    checkAppVersion();
+    // 부트 시퀀스: 버전 확인(업데이트 안내 포함)이 끝난 뒤에 대기 업로드를 묻는다.
+    // 다이얼로그가 겹치면 사용자가 업데이트 안내를 놓친다.
+    checkAppVersion().whenComplete(_askPendingUploads);
 
     // 카메라 목록을 미리 열거해 두어 첫 촬영 화면 진입을 빠르게 한다(비동기).
     CameraUtils.warmUp();
+  }
+
+  /// 업데이트 안내 다이얼로그를 띄웠는지. 띄웠으면 그 위에 또 묻지 않는다.
+  bool _updateDialogShown = false;
+
+  /// 올리다 만 업로드가 있으면 이어서 올릴지 묻는다.
+  ///
+  /// 여기(RootPage.initState)에 붙인 이유:
+  /// - `main.dart` 는 로그인 전에 돈다. 큐의 게시물을 올리려면 토큰이 필요하고,
+  ///   `AppPages.INITIAL` 은 `/AuthPage` 라 거기서 물으면 로그인 화면 위에 뜬다.
+  /// - RootPage 는 인증을 통과한 뒤 처음 서는 하단탭 메인 컨테이너이고, 이미
+  ///   `checkAppVersion()` 같은 부트 시퀀스를 여기서 돌린다. 같은 자리에 잇는 게 맞다.
+  Future<void> _askPendingUploads() async {
+    if (_updateDialogShown) return;
+    // 첫 프레임과 진입 애니메이션이 끝난 뒤에 띄운다.
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+    await PendingUploadPrompt.showIfAny();
   }
 
   Future<void> checkAppVersion() async {
@@ -84,6 +105,8 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
       try {
         final info = await InAppUpdate.checkForUpdate();
         if (info.updateAvailability == UpdateAvailability.updateAvailable) {
+          // 네이티브 업데이트 UI가 뜬다 — 그 위에 대기 업로드를 묻지 않는다.
+          _updateDialogShown = true;
           if (info.immediateUpdateAllowed) {
             await InAppUpdate.performImmediateUpdate();
           } else if (info.flexibleUpdateAllowed) {
@@ -135,6 +158,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
           // 스크래핑이 URL을 못 채워주는 경우가 있어 공식 스토어 URL로 폴백을 보장한다.
           final String url =
               (data.storeUrl != null && data.storeUrl!.startsWith('http')) ? data.storeUrl! : _storeUrl();
+          _updateDialogShown = true;
           Utils.appUpdateAlert(context, url);
         }
       }
@@ -172,6 +196,7 @@ class RootPageState extends State<RootPage> with TickerProviderStateMixin {
       return;
     }
     // 빈 URL을 넘기면 닫을 수 없는 다이얼로그에 갇힌다 — 반드시 유효한 스토어 URL 전달.
+    _updateDialogShown = true;
     Utils.appUpdateAlert(context, _storeUrl());
   }
 

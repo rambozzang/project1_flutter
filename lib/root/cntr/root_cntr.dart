@@ -18,6 +18,7 @@ import 'package:project1/repo/cloudflare/cloudflare_repo.dart';
 import 'package:project1/repo/cloudflare/data/cloudflare_req_save_data.dart';
 import 'package:project1/repo/cloudflare/direct_upload_repo.dart';
 import 'package:project1/services/analytics_service.dart';
+import 'package:project1/services/pending_upload_store.dart';
 import 'package:project1/services/review_service.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/utils/log_utils.dart';
@@ -150,8 +151,17 @@ class RootCntr extends GetxController {
   }
 
   // Cloudflare STREAM 파일 업로드 (Direct Creator Upload — 앱은 백엔드가 발급한 일회용 URL로만 업로드)
-  void uploadCloudflare(File videoFile, BoardSaveData boardSaveData) async {
+  //
+  // [resume] 가 있으면 영속 큐에서 되살린 재시도다. 이때는 큐에 다시 적지 않는다 —
+  // 다시 적으면 같은 영상의 사본이 두 벌 쌓인다.
+  Future<void> uploadCloudflare(File videoFile, BoardSaveData boardSaveData, {PendingUpload? resume}) async {
     isFileUploading.value = UploadingType.UPLOADING;
+
+    // 바이트를 한 개도 보내기 전에 먼저 적어둔다. 압축 중이든 전송 중이든 여기서
+    // 앱이 죽으면, 다음 실행이 이 기록과 큐 폴더의 사본을 보고 이어 올린다.
+    final PendingUpload? job =
+        resume ?? await PendingUploadStore.enqueue(files: [videoFile], data: boardSaveData, isVideo: true);
+    if (job != null) await PendingUploadStore.touch(job.id);
 
     // 날씨는 영상 업로드와 "병렬"로 가져온다.
     // 사용자는 게시 버튼을 누른 즉시 백그라운드 업로드로 넘어가고,
@@ -196,11 +206,8 @@ class RootCntr extends GetxController {
 
       if (ticket == null) {
         Utils.alert('파일 업로드에 실패했습니다.');
-        isFileUploading.value = UploadingType.FAIL;
-        if (needsCompression) {
-          // VideoCompress.deleteAllCache();
-          // VideoCompress.cancelCompression();
-        }
+        // 실패 — job 과 사본을 남긴다. 지우면 이어올릴 게 없어진다.
+        _markUploadFailed('영상 업로드 티켓 발급/전송 실패', job);
         return;
       }
       CloudflareReqSaveData cloudSaveData = CloudflareReqSaveData();
@@ -219,13 +226,8 @@ class RootCntr extends GetxController {
       ResData resCloudData = await cloudflare.save(cloudSaveData);
       if (resCloudData.code != '00') {
         Utils.alert(resCloudData.msg.toString());
-        isFileUploading.value = UploadingType.FAIL;
-        File(pickedFile.path.toString()).delete();
-        File(videoFile.path.toString()).delete();
-        if (needsCompression) {
-          // VideoCompress.deleteAllCache();
-          // VideoCompress.cancelCompression();
-        }
+        // 실패 경로에서는 원본/압축본을 지우지 않는다(이전엔 여기서 지워 재개 근거가 사라졌다).
+        _markUploadFailed('cloudflare.save 실패: ${resCloudData.msg}', job);
         return;
       }
 
@@ -250,32 +252,31 @@ class RootCntr extends GetxController {
 
       if (resData.code != '00') {
         Utils.alert(resData.msg.toString());
-        isFileUploading.value = UploadingType.FAIL;
-        File(pickedFile.path.toString()).delete();
-        File(videoFile.path.toString()).delete();
-        if (needsCompression) {
-          // VideoCompress.deleteAllCache();
-          // VideoCompress.cancelCompression();
-        }
+        // 실패 경로에서는 원본/압축본을 지우지 않는다(이전엔 여기서 지워 재개 근거가 사라졌다).
+        _markUploadFailed('boardRepo.save 실패: ${resData.msg}', job);
         return;
       }
       isFileUploading.value = UploadingType.SUCCESS;
+      // 게시까지 끝났다 — 이제서야 큐에서 지운다(사본도 같이 사라진다).
+      if (job != null) await PendingUploadStore.remove(job.id);
       // 영상 업로드 성공 계측 + 긍정적 순간 리뷰 요청(게이팅)
       AnalyticsService.instance.logContentUpload(contentType: 'video', feel: boardSaveData.boardWeatherVo?.feelCd);
       ReviewService.instance.onPositiveMoment();
       // Utils.alert('정상 등록되었습니다!');
+      final String compressedPath = pickedFile.path.toString();
       Future.delayed(const Duration(milliseconds: 2000), () {
         isFileUploading.value = UploadingType.NONE;
-        File(pickedFile!.path.toString()).delete();
-        File(videoFile.path.toString()).delete();
+        // 성공 경로에서만 지운다. 큐 정리로 이미 사라졌을 수 있어 조용히 처리한다.
+        _deleteQuietly(compressedPath);
+        _deleteQuietly(videoFile.path);
         if (needsCompression) {
           // VideoCompress.deleteAllCache();
           // VideoCompress.cancelCompression();
         }
       });
     } catch (e) {
-      isFileUploading.value = UploadingType.FAIL;
-      lo.g("ERRRRRRR=> $e");
+      // 예외로 빠져나와도 job 은 남긴다 — 다음 실행에서 이어 올린다.
+      _markUploadFailed('영상 업로드 예외: $e', job);
       // VideoCompress.deleteAllCache();
       // VideoCompress.cancelCompression();
     }
@@ -312,8 +313,15 @@ class RootCntr extends GetxController {
 
   // 사진(다중)을 Cloudflare Images에 업로드하고 typeDtCd='I'로 게시한다.
   // 영상 업로드(uploadCloudflare)와 동일하게 날씨는 병렬로 수집해 저장 직전에 합친다.
-  void uploadPhotos(List<File> photoFiles, BoardSaveData boardSaveData) async {
+  //
+  // [resume] 가 있으면 영속 큐에서 되살린 재시도다(영상과 동일).
+  Future<void> uploadPhotos(List<File> photoFiles, BoardSaveData boardSaveData, {PendingUpload? resume}) async {
     isFileUploading.value = UploadingType.UPLOADING;
+
+    // 영상과 같은 규칙 — 첫 바이트를 보내기 전에 먼저 적어둔다.
+    final PendingUpload? job =
+        resume ?? await PendingUploadStore.enqueue(files: photoFiles, data: boardSaveData, isVideo: false);
+    if (job != null) await PendingUploadStore.touch(job.id);
 
     final Future<BoardSaveWeatherData> weatherFuture = WeatherForBoard.fetch();
 
@@ -328,7 +336,8 @@ class RootCntr extends GetxController {
         final ImageUploadResult? res = await directUpload.uploadImageFile(f);
         if (res == null) {
           Utils.alert('사진 업로드에 실패했습니다.');
-          isFileUploading.value = UploadingType.FAIL;
+          // 실패 — job 과 사본을 남긴다. 재개 시 처음부터 다시 올린다.
+          _markUploadFailed('사진 업로드 실패(${f.path})', job);
           return;
         }
         imageUrls.add(res.url);
@@ -355,11 +364,13 @@ class RootCntr extends GetxController {
       ResData resData = await boardRepo.save(boardSaveData);
       if (resData.code != '00') {
         Utils.alert(resData.msg.toString());
-        isFileUploading.value = UploadingType.FAIL;
+        _markUploadFailed('사진 boardRepo.save 실패: ${resData.msg}', job);
         return;
       }
 
       isFileUploading.value = UploadingType.SUCCESS;
+      // 게시까지 끝났다 — 이제서야 큐에서 지운다(사본도 같이 사라진다).
+      if (job != null) await PendingUploadStore.remove(job.id);
 
       // 사진 업로드 성공 계측 + 긍정적 순간 리뷰 요청(게이팅)
       AnalyticsService.instance.logContentUpload(contentType: 'photo', feel: boardSaveData.boardWeatherVo?.feelCd);
@@ -372,8 +383,67 @@ class RootCntr extends GetxController {
         isFileUploading.value = UploadingType.NONE;
       });
     } catch (e) {
-      isFileUploading.value = UploadingType.FAIL;
-      lo.g("uploadPhotos ERR => $e");
+      // 예외로 빠져나와도 job 은 남긴다 — 다음 실행에서 이어 올린다.
+      _markUploadFailed('사진 업로드 예외: $e', job);
+    }
+  }
+
+  // ───────────────────────── 업로드 영속 큐(재개) ─────────────────────────
+
+  /// 실패 공통 처리. **job 과 큐 폴더의 사본은 절대 지우지 않는다** —
+  /// 그게 아직 서버 어디에도 없는 유일본이고, 이어올릴 유일한 근거다.
+  void _markUploadFailed(String reason, PendingUpload? job) {
+    isFileUploading.value = UploadingType.FAIL;
+    lo.g('업로드 실패 → 대기 큐 보존(job=${job?.id ?? '기록없음'}): $reason');
+  }
+
+  /// 성공 경로 전용 파일 정리. 큐 정리(remove)로 이미 사라졌거나 OS 가 먼저 지운
+  /// 파일이 섞여 있어도 예외를 밖으로 내보내지 않는다 — 지우기 실패가 게시 성공을
+  /// 되돌리면 안 된다. (이전에는 await/catch 없이 delete() 를 불러 파일이 없으면
+  /// 처리되지 않은 비동기 예외가 났다.)
+  Future<void> _deleteQuietly(String? path) async {
+    if (path == null || path.isEmpty) return;
+    try {
+      final f = File(path);
+      if (await f.exists()) await f.delete();
+    } catch (e) {
+      lo.g('임시 파일 삭제 실패(무시): $path / $e');
+    }
+  }
+
+  /// 재개가 겹쳐 돌지 않게 하는 빗장. 같은 job 을 두 번 올리면 게시물이 두 개 생긴다.
+  bool _resumingPending = false;
+
+  /// 대기 큐에 남은 업로드를 **순차로** 재시도한다.
+  ///
+  /// 순차인 이유: [isFileUploading] 이 전역 인디케이터 하나를 공유하므로 동시에
+  /// 돌리면 상태가 서로를 덮어쓴다. 오래된 것부터(=[PendingUploadStore.list] 정렬)
+  /// 올려야 찍은 순서대로 게시된다.
+  Future<void> resumeAllPending() async {
+    if (_resumingPending) return;
+    if (isFileUploading.value == UploadingType.UPLOADING) return;
+    _resumingPending = true;
+    try {
+      final jobs = await PendingUploadStore.list();
+      lo.g('업로드 재개 시작: ${jobs.length}건');
+      for (final job in jobs) {
+        if (job.isVideo) {
+          await uploadCloudflare(job.files.first, job.data, resume: job);
+        } else {
+          await uploadPhotos(job.files, job.data, resume: job);
+        }
+        // 한 건이 실패하면 멈춘다. 대개 네트워크가 없는 상황이라 남은 건까지
+        // 줄줄이 실패시켜봐야 시도 횟수만 올라가고 사용자만 기다린다.
+        // 남은 job 은 큐에 그대로 있으니 다음 실행에서 다시 묻는다.
+        if (isFileUploading.value == UploadingType.FAIL) {
+          lo.g('업로드 재개 중단 — 실패한 건이 있어 나머지는 다음 기회에');
+          break;
+        }
+      }
+    } catch (e) {
+      lo.g('업로드 재개 중 오류: $e');
+    } finally {
+      _resumingPending = false;
     }
   }
 

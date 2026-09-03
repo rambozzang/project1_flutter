@@ -78,6 +78,11 @@ class BoardSaveMainData {
       depthNo: map['depthNo'] != null ? map['depthNo'] as String : null,
       anonyYn: map['anonyYn'] != null ? map['anonyYn'] as String : null,
       hideYn: map['hideYn'] != null ? map['hideYn'] as String : null,
+      // toMap 은 내보내는데 fromMap 이 안 읽어서 왕복 시 사라지던 값들.
+      // 업로드 영속 큐(PendingUploadStore)가 이 왕복으로 게시물을 복원하므로,
+      // 빠지면 이어올릴 때 모임 게시물이 전체 피드로 새고 촬영일 그룹핑이 어긋난다.
+      communityId: (map['communityId'] as num?)?.toInt(),
+      capturedAt: map['capturedAt'] != null ? map['capturedAt'] as String : null,
     );
   }
 
