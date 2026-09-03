@@ -6,7 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
 import 'package:permission_handler/permission_handler.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
+import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/repo/alram/alram_deny_repo.dart';
 import 'package:project1/repo/alram/alram_repo.dart';
 import 'package:project1/repo/common/code_data.dart';
@@ -18,6 +21,8 @@ import 'package:project1/repo/cust/data/cust_data.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 
+/// 알림(PUSH) 설정 — 설정 화면(setting_page)과 같은 디자인 토큰(SaColors/SaText)을 쓴다.
+/// 라이트 고정: `SaColors.syncWith(context)`를 부르지 않는다.
 class AlramSettingPage extends StatefulWidget {
   const AlramSettingPage({super.key});
 
@@ -208,24 +213,59 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
     super.dispose();
   }
 
+  /// 카드 — 핸드오프 규격: r26 / surface / border / 내부 패딩 14.
+  /// 배경은 Container가 아니라 Material이 그린다(잉크 리플이 가려지지 않도록).
+  Widget _card({required Widget child}) => Material(
+        color: SaColors.surface,
+        borderRadius: BorderRadius.circular(26),
+        clipBehavior: Clip.antiAlias,
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: SaColors.border),
+          ),
+          padding: const EdgeInsets.all(14),
+          child: child,
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         forceMaterialTransparency: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios),
-          onPressed: () => Navigator.pop(context),
+        automaticallyImplyLeading: false,
+        // 뒤로가기 — setting_page와 같은 원형 surface 버튼(pill). 화면 좌측 패딩 16에 맞춘다.
+        leadingWidth: 72,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Center(
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Material(
+                color: SaColors.surface,
+                shape: CircleBorder(side: BorderSide(color: SaColors.borderStrong)),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => Navigator.pop(context),
+                  child: Center(
+                    child: PhosphorIcon(PhosphorIconsBold.caretLeft, size: 17, color: SaColors.textPrimary),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
-        title: const Text('알림 설정', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: Text('알림 설정', style: SaText.titleS),
         centerTitle: true,
         elevation: 0,
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: SaColors.bgBase,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
         child: Column(children: [
-          const Gap(10),
           ValueListenableBuilder<bool>(
               valueListenable: isPermisstion,
               builder: (context, val, snapshot) {
@@ -234,32 +274,19 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
                 }
                 return GestureDetector(
                   onTap: () => request(),
-                  child: Container(
-                    height: 60,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: Colors.grey[200],
-                    ),
+                  child: _card(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        const Text(
-                          '기기 알림이 꺼져있습니다.',
-                          style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
+                        Text('기기 알림이 꺼져있습니다.', style: SaText.titleS),
                         const Spacer(),
                         TextButton(
                           onPressed: () => request(),
-                          child: Text(val ? '끄기' : '켜기', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                          child: Text(val ? '끄기' : '켜기',
+                              style: SaText.caption.copyWith(color: SaColors.accentTeal, fontWeight: FontWeight.w800)),
                         ),
                         const Gap(5),
-                        const Icon(
-                          Icons.arrow_forward_ios,
-                          size: 19,
-                        ),
+                        PhosphorIcon(PhosphorIconsBold.caretRight, size: 16, color: SaColors.textTertiary),
                       ],
                     ),
                   ),
@@ -275,28 +302,18 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
                 return Column(
                   children: [
                     buildItem(),
-                    Divider(
-                      height: 15,
-                      thickness: 3,
-                      color: Colors.grey.withOpacity(0.3),
-                    ),
+                    const Gap(20),
                     Utils.commonStreamList<Map<String, String>>(streamController, buildAlramList, searchAlram,
-                        noDataWidget: const Center(
+                        noDataWidget: Center(
                           child: Padding(
-                            padding: EdgeInsets.all(40.0),
-                            child: Text(
-                              '전체 알람이 꺼져있습니다.',
-                              style: TextStyle(color: Colors.grey, fontSize: 14, fontWeight: FontWeight.w500),
-                            ),
+                            padding: const EdgeInsets.all(40.0),
+                            child: Text('전체 알람이 꺼져있습니다.', style: SaText.body),
                           ),
                         )),
                     // 기상특보 알림 범위는 맨 아래 '기상특보 알림' 토글과 함께 배치(혼동 방지).
-                    Divider(
-                      height: 15,
-                      thickness: 3,
-                      color: Colors.grey.withOpacity(0.3),
-                    ),
+                    const Gap(20),
                     buildWarnScope(),
+                    const Gap(40),
                   ],
                 );
               }),
@@ -307,10 +324,7 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
 
   // 고객 전체 알람설정
   Widget buildItem() {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        vertical: 10,
-      ),
+    return _card(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -318,13 +332,13 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              const Icon(
-                Icons.notifications_active_outlined,
-                color: Colors.grey,
+              PhosphorIcon(
+                PhosphorIconsBold.bellRinging,
+                color: SaColors.textSecondary,
                 size: 27,
               ),
               const Gap(7),
-              const Text("알람설정", style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
+              Text("알람설정", style: SaText.titleS),
               const Spacer(),
               Transform.scale(
                 scale: 0.8,
@@ -333,6 +347,7 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
                     builder: (context, value, child) {
                       Lo.g('isCheckedPush.value : $value');
                       if (isCheckedPush.value == null) return const SizedBox.shrink();
+                      // 스위치 on 색은 OS 관례(iOS 초록)라 SaColors로 치환하지 않고 원본 유지.
                       return CupertinoSwitch(
                         value: isCheckedPush.value ?? false,
                         activeTrackColor: CupertinoColors.activeGreen,
@@ -346,10 +361,10 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
               ),
             ],
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 15.0, vertical: 0.0),
-            child: Text("개인별 설정은 내정보 > 팔로잉 갯수 > 팔로잉 리스트에서 설정이 가능합니다.",
-                style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w600)),
+          const Gap(6),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 0.0),
+            child: Text("개인별 설정은 내정보 > 팔로잉 갯수 > 팔로잉 리스트에서 설정이 가능합니다.", style: SaText.caption),
           ),
         ],
       ),
@@ -366,16 +381,16 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
           opacity: enabled ? 1.0 : 0.4,
           child: IgnorePointer(
             ignoring: !enabled,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 10),
+            child: _card(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    children: const [
-                      Icon(Icons.warning_amber_rounded, color: Colors.grey, size: 25),
-                      Gap(7),
-                      Text("기상특보 알림 범위", style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
+                    children: [
+                      // 섹션 구분 아이콘 — 경고 상태가 아니라 '기상특보' 항목 표시라 중립색 유지.
+                      PhosphorIcon(PhosphorIconsBold.warning, color: SaColors.textSecondary, size: 25),
+                      const Gap(7),
+                      Text("기상특보 알림 범위", style: SaText.titleS),
                     ],
                   ),
                   const Gap(10),
@@ -397,7 +412,7 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
                       enabled
                           ? '전체: 모든 지역 특보 수신 · 관심지역만: 등록한 관심지역 특보만 수신'
                           : '기상특보 알림을 켜면 범위를 설정할 수 있어요.',
-                      style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w500),
+                      style: SaText.caption,
                     ),
                   ),
                 ],
@@ -421,13 +436,15 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 11),
           alignment: Alignment.center,
+          // 칩은 pill(999) — 핸드오프 규격
           decoration: BoxDecoration(
-            color: selected ? CupertinoColors.activeBlue : Colors.grey[200],
-            borderRadius: BorderRadius.circular(10),
+            color: selected ? SaColors.accentTeal : SaColors.surfaceElevated,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: selected ? SaColors.accentTeal : SaColors.border),
           ),
           child: Text(label,
-              style: TextStyle(
-                color: selected ? Colors.white : Colors.black87,
+              style: SaText.caption.copyWith(
+                color: selected ? SaColors.onAccent : SaColors.textSecondary,
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
               )),
@@ -437,22 +454,27 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
   }
 
   Widget buildAlramList(List<Map<String, String>> list) {
-    return ListView.builder(
-      shrinkWrap: true,
-      itemCount: list.length,
-      physics: const BouncingScrollPhysics(),
-      itemBuilder: (BuildContext context, int index) {
-        return buildAlramListItem(list[index], list[index]['denyYn'] == 'N' ? ValueNotifier<bool>(true) : ValueNotifier<bool>(false));
-      },
+    return _card(
+      child: ListView.separated(
+        shrinkWrap: true,
+        itemCount: list.length,
+        padding: EdgeInsets.zero,
+        physics: const BouncingScrollPhysics(),
+        separatorBuilder: (context, index) => Divider(color: SaColors.border, height: 13, thickness: 1),
+        itemBuilder: (BuildContext context, int index) {
+          return buildAlramListItem(list[index], list[index]['denyYn'] == 'N' ? ValueNotifier<bool>(true) : ValueNotifier<bool>(false));
+        },
+      ),
     );
   }
 
   // Alram Deny 테이블 알람 설정
   Widget buildAlramListItem(Map<String, String> data, ValueNotifier<bool> isChecked) {
     return Container(
+      // 카드가 이미 내부 패딩 14를 가지므로 좌우 인셋은 두지 않는다.
       padding: const EdgeInsets.symmetric(
-        horizontal: 16.0,
-        vertical: 7,
+        horizontal: 0.0,
+        vertical: 2,
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -468,13 +490,15 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
               //   size: 27,
               // ),
               // const Gap(7),
-              Text(
-                data['alramNm2'] ?? '',
-                style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w600),
+              Expanded(
+                child: Text(
+                  data['alramNm2'] ?? '',
+                  style: SaText.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+                ),
               ),
-              const Spacer(),
               Transform.scale(
                 scale: 0.75,
+                // 스위치 on 색(주황)은 항목 구분용이라 SaColors로 치환하지 않고 원본 유지.
                 child: CupertinoSwitch(
                   value: isChecked.value,
                   activeTrackColor: CupertinoColors.activeOrange,

@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
+import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_main_detail_data.dart';
 import 'package:project1/repo/common/paging_data.dart';
@@ -11,6 +14,8 @@ import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/custom_sec_button.dart';
 
+/// 자주 찾는 질문(FAQ) — 설정 화면(setting_page)과 같은 디자인 토큰(SaColors/SaText)을 쓴다.
+/// 라이트 고정: `SaColors.syncWith(context)`를 부르지 않는다. Q&A 본문은 서버 값 그대로 노출한다.
 class FaqPage extends StatefulWidget {
   const FaqPage({super.key});
 
@@ -181,76 +186,77 @@ class _FaqPageState extends State<FaqPage> {
     return Scaffold(
       appBar: AppBar(
         forceMaterialTransparency: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios),
-          onPressed: () => Navigator.pop(context),
+        automaticallyImplyLeading: false,
+        // 뒤로가기 — setting_page와 같은 원형 surface 버튼(pill). 화면 좌측 패딩 16에 맞춘다.
+        leadingWidth: 72,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Center(
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Material(
+                color: SaColors.surface,
+                shape: CircleBorder(side: BorderSide(color: SaColors.borderStrong)),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => Navigator.pop(context),
+                  child: Center(
+                    child: PhosphorIcon(PhosphorIconsBold.caretLeft, size: 17, color: SaColors.textPrimary),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
-        title: const Text('자주 찾는 질문'),
+        title: Text('자주 찾는 질문', style: SaText.titleS),
         centerTitle: true,
         elevation: 0,
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: SaColors.bgBase,
       body: SingleChildScrollView(
         //  padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(children: [
-          const Gap(10),
+          const Gap(8),
           buildSearchInputBox(),
 
           //buildBadgeList(),
-          const Gap(20),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: Divider(
-              height: 1,
-              thickness: 2,
-              color: Colors.grey,
-            ),
+          const Gap(16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Utils.commonStreamList<BoardDetailData>(listCtrl, buildList, getDataInit),
           ),
-          const Gap(10),
-          Utils.commonStreamList<BoardDetailData>(listCtrl, buildList, getDataInit),
+          const Gap(40),
         ]),
       ),
     );
   }
 
-  // 검색창
+  // 검색창 — 앨범 탐색(album_explore_page)의 검색창과 같은 규격
   Widget buildSearchInputBox() {
-    return Container(
-        height: 62,
-        width: double.infinity,
-        color: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+    return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
         child: TextField(
           controller: controller,
           textInputAction: TextInputAction.search,
-          style: const TextStyle(decorationThickness: 0), // 한글밑줄제거
+          style: SaText.bodyMedium.copyWith(decorationThickness: 0), // 한글밑줄제거
           decoration: InputDecoration(
             hintText: '궁금한 것을 빠르게 검색해보세요.',
-            // hintStyle: KosStyle.bodyB1,
-            //  prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 4),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Colors.grey, width: 1),
+            hintStyle: SaText.body.copyWith(fontSize: 13, color: SaColors.textTertiary),
+            filled: true,
+            fillColor: SaColors.surface,
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(13),
+              borderSide: BorderSide(color: SaColors.borderStrong),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(width: 2),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(width: 1),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(width: 1),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(width: 1),
+              borderRadius: BorderRadius.circular(13),
+              borderSide: BorderSide(color: SaColors.accentTeal),
             ),
             suffixIcon: IconButton(
-              icon: const Icon(Icons.search_rounded, color: Colors.grey),
+              icon: PhosphorIcon(PhosphorIconsBold.magnifyingGlass, size: 16, color: SaColors.textSecondary),
               onPressed: () {
                 SearchData(controller.text);
               },
@@ -336,18 +342,30 @@ class _FaqPageState extends State<FaqPage> {
   }
 
   // 자주 찾는 질문 리스트
+  // 카드 r26 / surface / border / 내부 패딩 14 — setting_page의 SettingsGroup과 같은 규격.
+  // 배경은 Container가 아니라 Material이 그린다(항목의 잉크 리플이 가려지지 않도록).
   Widget buildList(List<BoardDetailData> list) {
-    return SizedBox(
-      width: double.infinity,
-      //   height: 322,
-      // padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: ListView.builder(
-        shrinkWrap: true,
-        itemCount: list.length,
-        physics: const BouncingScrollPhysics(),
-        itemBuilder: (BuildContext context, int index) {
-          return buildItem(list[index]);
-        },
+    return Material(
+      color: SaColors.surface,
+      borderRadius: BorderRadius.circular(26),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(26),
+          border: Border.all(color: SaColors.border),
+        ),
+        padding: const EdgeInsets.all(14),
+        child: ListView.separated(
+          shrinkWrap: true,
+          itemCount: list.length,
+          padding: EdgeInsets.zero,
+          physics: const BouncingScrollPhysics(),
+          separatorBuilder: (context, index) => Divider(color: SaColors.border, height: 13, thickness: 1),
+          itemBuilder: (BuildContext context, int index) {
+            return buildItem(list[index]);
+          },
+        ),
       ),
     );
   }
@@ -358,32 +376,30 @@ class _FaqPageState extends State<FaqPage> {
       children: [
         ExpansionTile(
           leading: null,
-          backgroundColor: Colors.white,
-          collapsedBackgroundColor: Colors.white,
+          backgroundColor: SaColors.surface,
+          collapsedBackgroundColor: SaColors.surface,
+          iconColor: SaColors.textTertiary,
+          collapsedIconColor: SaColors.textTertiary,
 
           //  maintainState: true,
           clipBehavior: Clip.antiAlias,
 
           // dense: true,
           // visualDensity: VisualDensity.compact,
-          tilePadding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 0.0),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 0.0),
           title: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6.0),
+            padding: const EdgeInsets.symmetric(horizontal: 2.0),
             child: Text(
               data.subject.toString(),
               softWrap: true,
-              //  style: KosStyle.bodyB4,
+              style: SaText.titleS,
             ),
           ),
 
-          shape: const Border(
-            top: BorderSide(color: Colors.white, width: 0),
-            bottom: BorderSide(color: Colors.white, width: 0),
-          ),
+          // 확장/축소 시 나타나는 기본 외곽선 제거(카드가 이미 테두리를 갖는다).
+          shape: const Border(),
           childrenPadding: const EdgeInsets.symmetric(horizontal: .0, vertical: 0.0),
-          collapsedShape: const RoundedRectangleBorder(
-            side: BorderSide.none,
-          ),
+          collapsedShape: const Border(),
 
           children: [
             ListTile(
@@ -397,31 +413,27 @@ class _FaqPageState extends State<FaqPage> {
               visualDensity: VisualDensity.compact,
 
               trailing: null,
+              // selected가 항상 false라 실제로 그려지지 않는 값 — 위험색이라 원본 유지.
               selectedTileColor: Colors.red,
               selected: false,
               horizontalTitleGap: 0,
               minVerticalPadding: 0,
               title: Container(
-                color: Colors.grey[100],
+                decoration: BoxDecoration(
+                  color: SaColors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(14),
+                ),
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Text(
-                    data.contents.toString(),
-                    softWrap: true,
-                    // overflow: TextOverflow.fade,
-                    //  style: KosStyle.bodyB1,
-                  ),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                child: Text(
+                  data.contents.toString(),
+                  softWrap: true,
+                  // overflow: TextOverflow.fade,
+                  style: SaText.body.copyWith(color: SaColors.textPrimary),
                 ),
               ),
             ),
           ],
-        ),
-        Divider(
-          height: 1,
-          thickness: 1,
-          color: Colors.grey[300],
         ),
       ],
     );

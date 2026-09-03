@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:project1/app/setting/open_source_detail_page.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
+import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/oss_licenses.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_main_detail_data.dart';
@@ -12,6 +15,8 @@ import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 
+/// 오픈소스 라이선스 목록 — 설정 화면(setting_page)과 같은 디자인 토큰(SaColors/SaText)을 쓴다.
+/// 라이트 고정: `SaColors.syncWith(context)`를 부르지 않는다. 라이선스 원문/패키지 정보는 손대지 않는다.
 class OpenSourcePage extends StatefulWidget {
   const OpenSourcePage({super.key});
 
@@ -105,17 +110,36 @@ class _OpenSourcePageState extends State<OpenSourcePage> {
     return Scaffold(
       appBar: AppBar(
         forceMaterialTransparency: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios),
-          onPressed: () => Navigator.pop(context),
+        automaticallyImplyLeading: false,
+        // 뒤로가기 — setting_page와 같은 원형 surface 버튼(pill). 화면 좌측 패딩 16에 맞춘다.
+        leadingWidth: 72,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Center(
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Material(
+                color: SaColors.surface,
+                shape: CircleBorder(side: BorderSide(color: SaColors.borderStrong)),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => Navigator.pop(context),
+                  child: Center(
+                    child: PhosphorIcon(PhosphorIconsBold.caretLeft, size: 17, color: SaColors.textPrimary),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
-        title: const Text('오픈소스 라이센스'),
+        title: Text('오픈소스 라이센스', style: SaText.titleS),
         centerTitle: true,
         elevation: 0,
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: SaColors.bgBase,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           Utils.commonStreamList<BoardDetailData>(listCtrl, buildList, getData, noDataWidget: const SizedBox.shrink()),
@@ -136,16 +160,39 @@ class _OpenSourcePageState extends State<OpenSourcePage> {
     );
   }
 
+  // 카드 r26 / surface / border / 내부 패딩 14 — setting_page의 SettingsGroup과 같은 규격.
+  // 배경은 Container가 아니라 Material이 그린다(항목의 잉크 리플이 가려지지 않도록).
+  Widget _listCard({required Widget child}) {
+    return Material(
+      color: SaColors.surface,
+      borderRadius: BorderRadius.circular(26),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(26),
+          border: Border.all(color: SaColors.border),
+        ),
+        padding: const EdgeInsets.all(14),
+        child: child,
+      ),
+    );
+  }
+
   // pub.dev 오픈 소스 리스트
   Widget buildPubDevList(List<Package> list) {
-    return ListView.builder(
-      shrinkWrap: true,
-      itemCount: list.length,
-      padding: EdgeInsets.zero,
-      physics: const NeverScrollableScrollPhysics(),
-      itemBuilder: (BuildContext context, int index) {
-        return buildPubDevItem(list[index]);
-      },
+    if (list.isEmpty) return const SizedBox.shrink();
+    return _listCard(
+      child: ListView.separated(
+        shrinkWrap: true,
+        itemCount: list.length,
+        padding: EdgeInsets.zero,
+        physics: const NeverScrollableScrollPhysics(),
+        separatorBuilder: (context, index) => Divider(color: SaColors.border, height: 13, thickness: 1),
+        itemBuilder: (BuildContext context, int index) {
+          return buildPubDevItem(list[index]);
+        },
+      ),
     );
   }
 
@@ -153,24 +200,18 @@ class _OpenSourcePageState extends State<OpenSourcePage> {
   Widget buildPubDevItem(Package package) {
     return Column(
       children: [
-        // Divider(
-        //   height: 1,
-        //   thickness: 1,
-        //   color: Colors.grey[300],
-        // ),
-        const Gap(2),
         ElevatedButton(
           clipBehavior: Clip.none,
           style: ElevatedButton.styleFrom(
-            shadowColor: Colors.grey[50],
+            shadowColor: Colors.transparent,
             // fixedSize: Size(0, 0),
             minimumSize: Size.zero, // Set this
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             visualDensity: const VisualDensity(horizontal: 0, vertical: 0),
             elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-            backgroundColor: Colors.grey[200],
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            backgroundColor: Colors.transparent,
           ),
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute(
@@ -190,18 +231,18 @@ class _OpenSourcePageState extends State<OpenSourcePage> {
                       '${package.name} ${package.version}',
                       // softWrap: true,
                       overflow: TextOverflow.clip,
-                      style: const TextStyle(fontSize: 14),
+                      style: SaText.bodyMedium,
                     ),
                     const Gap(5),
                     Text(
                       package.description.isNotEmpty ? package.description : '',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                      style: SaText.body,
                     ),
                   ],
                 ),
               ),
               // const Spacer(),
-              const Icon(Icons.chevron_right),
+              PhosphorIcon(PhosphorIconsBold.caretRight, size: 16, color: SaColors.textTertiary),
             ],
           ),
         ),
@@ -211,14 +252,20 @@ class _OpenSourcePageState extends State<OpenSourcePage> {
 
 // 오픈 소스 리스트
   Widget buildList(List<BoardDetailData> list) {
-    return ListView.builder(
-      shrinkWrap: true,
-      itemCount: list.length,
-      padding: EdgeInsets.zero,
-      physics: const NeverScrollableScrollPhysics(),
-      itemBuilder: (BuildContext context, int index) {
-        return buildItem(list[index]);
-      },
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: _listCard(
+        child: ListView.separated(
+          shrinkWrap: true,
+          itemCount: list.length,
+          padding: EdgeInsets.zero,
+          physics: const NeverScrollableScrollPhysics(),
+          separatorBuilder: (context, index) => Divider(color: SaColors.border, height: 13, thickness: 1),
+          itemBuilder: (BuildContext context, int index) {
+            return buildItem(list[index]);
+          },
+        ),
+      ),
     );
   }
 
@@ -228,24 +275,18 @@ class _OpenSourcePageState extends State<OpenSourcePage> {
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Column(
         children: [
-          // Divider(
-          //   height: 1,
-          //   thickness: 1,
-          //   color: Colors.grey[300],
-          // ),
-          const Gap(2),
           ElevatedButton(
             clipBehavior: Clip.none,
             style: ElevatedButton.styleFrom(
-              shadowColor: Colors.grey[50],
+              shadowColor: Colors.transparent,
               // fixedSize: Size(0, 0),
               minimumSize: Size.zero, // Set this
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               visualDensity: const VisualDensity(horizontal: 0, vertical: 0),
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-              backgroundColor: Colors.grey[200],
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              backgroundColor: Colors.transparent,
             ),
             onPressed: () => Lo.g('data.ptupSeq'),
             child: Row(
@@ -261,18 +302,18 @@ class _OpenSourcePageState extends State<OpenSourcePage> {
                         data.subject.toString(),
                         // softWrap: true,
                         overflow: TextOverflow.clip,
-                        style: const TextStyle(fontSize: 14),
+                        style: SaText.bodyMedium,
                       ),
                       const Gap(5),
                       Text(
                         data.contents.toString().substring(0, data.contents!.length > 30 ? 30 : data.contents!.length),
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                        style: SaText.body,
                       ),
                     ],
                   ),
                 ),
                 // const Spacer(),
-                const Icon(Icons.chevron_right),
+                PhosphorIcon(PhosphorIconsBold.caretRight, size: 16, color: SaColors.textTertiary),
               ],
             ),
           ),

@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
+import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/webview/common_webview.dart';
 import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_main_detail_data.dart';
@@ -8,6 +11,9 @@ import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/common/res_stream.dart';
 import 'package:project1/utils/utils.dart';
 
+/// 위치기반 서비스 이용약관 — 설정 화면(setting_page)과 같은 디자인 토큰(SaColors/SaText)을 쓴다.
+/// 라이트 고정: `SaColors.syncWith(context)`를 부르지 않는다.
+/// 약관 본문은 웹뷰(skysnap.co.kr)가 그리므로 앱에서 바꾸는 건 앱바/배경뿐이다.
 class LocatinServicePage extends StatefulWidget {
   const LocatinServicePage({super.key});
 
@@ -85,15 +91,34 @@ class _LocatinServicePageState extends State<LocatinServicePage> {
     return Scaffold(
       appBar: AppBar(
         forceMaterialTransparency: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios),
-          onPressed: () => Navigator.pop(context),
+        automaticallyImplyLeading: false,
+        // 뒤로가기 — setting_page와 같은 원형 surface 버튼(pill). 화면 좌측 패딩 16에 맞춘다.
+        leadingWidth: 72,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Center(
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Material(
+                color: SaColors.surface,
+                shape: CircleBorder(side: BorderSide(color: SaColors.borderStrong)),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => Navigator.pop(context),
+                  child: Center(
+                    child: PhosphorIcon(PhosphorIconsBold.caretLeft, size: 17, color: SaColors.textPrimary),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
-        title: const Text('위치기반 서비스 이용약관'),
+        title: Text('위치기반 서비스 이용약관', style: SaText.titleS),
         centerTitle: true,
         elevation: 0,
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: SaColors.bgBase,
       body: const CommonWebView(
         isBackBtn: false,
         url: 'https://www.skysnap.co.kr/location/',
@@ -126,13 +151,14 @@ class _LocatinServicePageState extends State<LocatinServicePage> {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
             // '${data.subject}',
-            '위치기반 서비스 이용약관'),
-        const Divider(
+            '위치기반 서비스 이용약관',
+            style: SaText.titleS),
+        Divider(
           height: 20,
           thickness: 1,
-          color: Colors.black,
+          color: SaColors.border,
         ),
 
         // Text(
@@ -141,7 +167,7 @@ class _LocatinServicePageState extends State<LocatinServicePage> {
         // ),
         Text(
           "${data.contents}",
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+          style: SaText.body.copyWith(color: SaColors.textPrimary),
         ),
       ],
     );

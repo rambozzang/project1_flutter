@@ -3,11 +3,17 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
+import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/services/weather_notification_service.dart';
 import 'package:project1/utils/utils.dart';
 
 /// 날씨 상태바 알림 설정 (Android 전용 메뉴에서만 진입).
 /// 상시 알림 켜기/끄기, 갱신 주기 선택, 즉시 갱신을 제공한다.
+///
+/// 설정 화면(setting_page)과 같은 디자인 토큰(SaColors/SaText)을 쓴다.
+/// 라이트 고정: `SaColors.syncWith(context)`를 부르지 않는다.
 class WeatherNotiSettingPage extends StatefulWidget {
   const WeatherNotiSettingPage({super.key});
 
@@ -105,117 +111,165 @@ class _WeatherNotiSettingPageState extends State<WeatherNotiSettingPage> with Wi
     }
   }
 
+  /// 섹션 제목 — setting_page의 SettingsGroup 제목과 같은 규격(titleS / 좌우 4 / 아래 8).
+  Widget _groupTitle(String text) => Padding(
+        padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+        child: Text(text, style: SaText.titleS),
+      );
+
+  /// 카드 — 핸드오프 규격: r26 / surface / border / 내부 패딩 14.
+  /// 배경은 Container가 아니라 Material이 그린다(잉크 리플이 가려지지 않도록).
+  Widget _card({required Widget child}) => Material(
+        color: SaColors.surface,
+        borderRadius: BorderRadius.circular(26),
+        clipBehavior: Clip.antiAlias,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: SaColors.border),
+          ),
+          padding: const EdgeInsets.all(14),
+          child: child,
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         forceMaterialTransparency: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios),
-          onPressed: () => Navigator.pop(context),
+        automaticallyImplyLeading: false,
+        // 뒤로가기 — setting_page와 같은 원형 surface 버튼(pill). 화면 좌측 패딩 16에 맞춘다.
+        leadingWidth: 72,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Center(
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Material(
+                color: SaColors.surface,
+                shape: CircleBorder(side: BorderSide(color: SaColors.borderStrong)),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => Navigator.pop(context),
+                  child: Center(
+                    child: PhosphorIcon(PhosphorIconsBold.caretLeft, size: 17, color: SaColors.textPrimary),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
-        title: const Text('날씨 상태바 알림', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: Text('날씨 상태바 알림', style: SaText.titleS),
         centerTitle: true,
         elevation: 0,
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: SaColors.bgBase,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Gap(10),
-            if (!_hasPermission)
+            if (!_hasPermission) ...[
               GestureDetector(
                 onTap: () => openAppSettings(),
-                child: Container(
-                  height: 60,
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: Colors.grey[200],
-                  ),
-                  child: const Row(
+                child: _card(
+                  child: Row(
                     children: [
-                      Text('기기 알림이 꺼져있습니다.', style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
-                      Spacer(),
-                      Text('켜기', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                      Gap(5),
-                      Icon(Icons.arrow_forward_ios, size: 19),
+                      Text('기기 알림이 꺼져있습니다.', style: SaText.titleS),
+                      const Spacer(),
+                      Text('켜기', style: SaText.caption.copyWith(color: SaColors.accentTeal, fontWeight: FontWeight.w800)),
+                      const Gap(5),
+                      PhosphorIcon(PhosphorIconsBold.caretRight, size: 16, color: SaColors.textTertiary),
                     ],
                   ),
                 ),
               ),
-            const Gap(10),
-            Row(
-              children: [
-                const Icon(Icons.wb_sunny_outlined, color: Colors.grey, size: 27),
-                const Gap(7),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              const Gap(20),
+            ],
+            _card(
+              child: Row(
+                children: [
+                  PhosphorIcon(PhosphorIconsBold.sun, color: SaColors.textSecondary, size: 27),
+                  const Gap(7),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('날씨 상태바 알림', style: SaText.titleS),
+                        Text('상태바에 현재 온도와 날씨를 상시 표시합니다.', style: SaText.caption),
+                      ],
+                    ),
+                  ),
+                  Transform.scale(
+                    scale: 0.8,
+                    // 스위치 on 색은 OS 관례(iOS 초록)라 SaColors로 치환하지 않고 원본 유지.
+                    child: CupertinoSwitch(
+                      value: _enabled,
+                      activeTrackColor: CupertinoColors.activeGreen,
+                      onChanged: _busy ? null : _toggle,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Gap(20),
+            _groupTitle('갱신 주기'),
+            _card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('배터리 절약을 위해 주기가 길수록 좋습니다. 시스템 상황에 따라 몇 분 지연될 수 있습니다.', style: SaText.caption),
+                  const Gap(10),
+                  Row(
                     children: [
-                      Text('날씨 상태바 알림', style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
-                      Text('상태바에 현재 온도와 날씨를 상시 표시합니다.',
-                          style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w500)),
+                      for (final (min, label) in _intervals) ...[
+                        // 칩은 pill(999) — 핸드오프 규격
+                        ChoiceChip(
+                          label: Text(label),
+                          selected: _intervalMin == min,
+                          onSelected: _busy ? null : (_) => _changeInterval(min),
+                          selectedColor: SaColors.accentTeal,
+                          labelStyle: SaText.caption.copyWith(
+                            color: _intervalMin == min ? SaColors.onAccent : SaColors.textSecondary,
+                            fontSize: 13,
+                          ),
+                          backgroundColor: SaColors.surfaceElevated,
+                          side: BorderSide(color: _intervalMin == min ? SaColors.accentTeal : SaColors.border),
+                          shape: const StadiumBorder(),
+                          showCheckmark: false,
+                        ),
+                        const Gap(8),
+                      ],
                     ],
                   ),
-                ),
-                Transform.scale(
-                  scale: 0.8,
-                  child: CupertinoSwitch(
-                    value: _enabled,
-                    activeTrackColor: CupertinoColors.activeGreen,
-                    onChanged: _busy ? null : _toggle,
-                  ),
-                ),
-              ],
-            ),
-            Divider(height: 30, thickness: 3, color: Colors.grey.withOpacity(0.3)),
-            const Text('갱신 주기', style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
-            const Gap(4),
-            const Text('배터리 절약을 위해 주기가 길수록 좋습니다. 시스템 상황에 따라 몇 분 지연될 수 있습니다.',
-                style: TextStyle(color: Colors.grey, fontSize: 12)),
-            const Gap(10),
-            Row(
-              children: [
-                for (final (min, label) in _intervals) ...[
-                  ChoiceChip(
-                    label: Text(label),
-                    selected: _intervalMin == min,
-                    onSelected: _busy ? null : (_) => _changeInterval(min),
-                    selectedColor: Colors.black,
-                    labelStyle: TextStyle(
-                      color: _intervalMin == min ? Colors.white : Colors.black87,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    backgroundColor: Colors.grey[100],
-                    showCheckmark: false,
-                  ),
-                  const Gap(8),
                 ],
-              ],
+              ),
             ),
-            Divider(height: 30, thickness: 3, color: Colors.grey.withOpacity(0.3)),
-            const Text('위치', style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
-            const Gap(4),
-            const Text('마지막으로 확인된 위치의 날씨를 표시합니다. 앱을 사용하면 위치가 자동으로 갱신됩니다.',
-                style: TextStyle(color: Colors.grey, fontSize: 12)),
+            const Gap(20),
+            _groupTitle('위치'),
+            _card(
+              child: Text('마지막으로 확인된 위치의 날씨를 표시합니다. 앱을 사용하면 위치가 자동으로 갱신됩니다.', style: SaText.caption),
+            ),
             const Gap(20),
             if (_enabled)
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   onPressed: _busy ? null : _refreshNow,
-                  icon: const Icon(Icons.refresh, size: 18, color: Colors.black),
-                  label: const Text('지금 갱신', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600)),
+                  icon: PhosphorIcon(PhosphorIconsBold.arrowsClockwise, size: 18, color: SaColors.textPrimary),
+                  label: Text('지금 갱신', style: SaText.caption.copyWith(color: SaColors.textPrimary, fontSize: 14)),
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.grey.withOpacity(0.4)),
+                    backgroundColor: SaColors.surface,
+                    side: BorderSide(color: SaColors.borderStrong),
+                    // 버튼은 pill(999) — 핸드오프 규격
+                    shape: const StadiumBorder(),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
               ),
+            const Gap(40),
           ],
         ),
       ),
