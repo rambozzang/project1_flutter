@@ -18,6 +18,7 @@ import 'package:project1/repo/cloudflare/cloudflare_repo.dart';
 import 'package:project1/repo/cloudflare/data/cloudflare_req_save_data.dart';
 import 'package:project1/repo/cloudflare/direct_upload_repo.dart';
 import 'package:project1/services/analytics_service.dart';
+import 'package:project1/services/native_background_upload.dart';
 import 'package:project1/services/pending_upload_store.dart';
 import 'package:project1/services/review_service.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -37,6 +38,15 @@ class RootCntrBinding extends Bindings {
 }
 
 enum UploadingType { NONE, UPLOADING, SUCCESS, FAIL }
+
+/// 네이티브 전송 한 건 — 보낼 파일과 그 파일을 받을 일회용 URL.
+class _NativeTransfer {
+  const _NativeTransfer({required this.id, required this.file, required this.uploadUrl});
+
+  final String id;
+  final File file;
+  final String uploadUrl;
+}
 
 class RootCntr extends GetxController {
   static RootCntr get to => Get.find();
@@ -201,8 +211,9 @@ class RootCntr extends GetxController {
       Lo.g('비디오 압축 결과 : ${pickedFile!.toJson()}');
 
       File uploadVideoFile = File(pickedFile.path.toString());
-      // 백엔드에서 일회용 업로드 URL 발급 → 해당 URL로 직접 업로드 (앱에 Cloudflare 토큰 없음)
-      final VideoUploadTicket? ticket = await directUpload.uploadVideoFile(uploadVideoFile);
+      // 백엔드에서 일회용 업로드 URL 발급 → 해당 URL로 직접 업로드 (앱에 Cloudflare 토큰 없음).
+      // 전송 자체는 가능하면 OS 에 넘긴다 — 앱을 닫아도 이어진다.
+      final VideoUploadTicket? ticket = await _uploadVideoPreferNative(directUpload, uploadVideoFile, job);
 
       if (ticket == null) {
         Utils.alert('파일 업로드에 실패했습니다.');
@@ -332,14 +343,15 @@ class RootCntr extends GetxController {
       final List<String> imageIds = [];
 
       // 각 사진을 순차 업로드(안정성 우선). 백엔드가 발급한 일회용 URL로 직접 업로드.
-      for (final File f in photoFiles) {
-        final ImageUploadResult? res = await directUpload.uploadImageFile(f);
-        if (res == null) {
-          Utils.alert('사진 업로드에 실패했습니다.');
-          // 실패 — job 과 사본을 남긴다. 재개 시 처음부터 다시 올린다.
-          _markUploadFailed('사진 업로드 실패(${f.path})', job);
-          return;
-        }
+      // 전송 자체는 가능하면 OS 에 넘긴다 — 앱을 닫아도 이어진다.
+      final List<ImageUploadResult>? results = await _uploadPhotosPreferNative(directUpload, photoFiles, job);
+      if (results == null) {
+        Utils.alert('사진 업로드에 실패했습니다.');
+        // 실패 — job 과 사본을 남긴다. 재개 시 처음부터 다시 올린다.
+        _markUploadFailed('사진 업로드 실패(${photoFiles.length}장)', job);
+        return;
+      }
+      for (final ImageUploadResult res in results) {
         imageUrls.add(res.url);
         imageIds.add(res.id);
       }
@@ -386,6 +398,157 @@ class RootCntr extends GetxController {
       // 예외로 빠져나와도 job 은 남긴다 — 다음 실행에서 이어 올린다.
       _markUploadFailed('사진 업로드 예외: $e', job);
     }
+  }
+
+  // ─────────────────────── 네이티브(OS) 백그라운드 전송 ───────────────────────
+  //
+  // 앱을 닫아도 파일 전송이 이어지도록 **바이트 전송만** OS 에 넘긴다
+  // (Android WorkManager / iOS background URLSession). 티켓 발급과 게시는 인증이
+  // 필요해 Dart 만 할 수 있으므로 여기서 하고, 그 사이의 전송만 위임한다.
+  //
+  // 전송 성공/실패 판정은 오직 [NativeBackgroundUpload.states] 로만 한다.
+  // SkySnap 백엔드에는 업로드 세션 조회 API 가 없어 서버에 되물을 방법이 없다.
+
+  /// 폴링 간격. iOS 는 앱이 백그라운드로 가면 Dart 타이머가 멈췄다가 복귀할 때 이어진다.
+  static const Duration _nativePollInterval = Duration(seconds: 2);
+
+  /// 상태 조회가 연달아 실패한 횟수의 상한. null 은 "네이티브 저장소를 못 읽었다"는
+  /// 뜻이지 "전송이 사라졌다"는 뜻이 아니라, 한 번으로 실패를 단정하지 않는다.
+  static const int _nativeStateFailureLimit = 5;
+
+  /// 무한 대기 방지용 최후 방어선. queued/running 이 보이는 동안은 OS 가 실제로
+  /// 들고 있다는 뜻이므로 그 자체로는 포기하지 않는다.
+  static const Duration _nativeTransferDeadline = Duration(hours: 2);
+
+  /// 영상 한 건을 올리고 성공한 전송에 대응하는 티켓을 돌려준다.
+  /// 네이티브가 없거나 실패하면 기존 Dart 업로드로 그대로 내려간다.
+  Future<VideoUploadTicket?> _uploadVideoPreferNative(
+    DirectUploadRepo directUpload,
+    File file,
+    PendingUpload? job,
+  ) async {
+    // 영상은 큐 사본이 아니라 **압축본**을 올려야 한다(큐에는 원본이 들어 있다).
+    // 압축본은 임시 폴더에 있어 OS 가 지울 수 있는데, 그때는 네이티브가 file_missing
+    // 으로 실패하고 아래 폴백이 받는다. 원본은 큐에 그대로 남아 있어 잃지 않는다.
+    final VideoUploadTicket? ticket = await directUpload.issueVideoTicket();
+    if (ticket != null && ticket.uploadUrl.isNotEmpty) {
+      final String batchId = 'video-${job?.id ?? DateTime.now().microsecondsSinceEpoch}';
+      final bool sent = await _transferViaNative(batchId, [
+        _NativeTransfer(id: '$batchId-0', file: file, uploadUrl: ticket.uploadUrl),
+      ]);
+      if (sent) return ticket;
+    }
+    // 폴백 — 위 URL 은 일회용이라 재사용하지 않는다. 새 티켓을 받아 Dart 가 올린다.
+    return directUpload.uploadVideoFile(file);
+  }
+
+  /// 사진 묶음을 올리고 결과를 **입력 순서대로** 돌려준다. 한 장이라도 실패하면 null.
+  Future<List<ImageUploadResult>?> _uploadPhotosPreferNative(
+    DirectUploadRepo directUpload,
+    List<File> photoFiles,
+    PendingUpload? job,
+  ) async {
+    // 큐 사본이 있으면 그쪽을 쓴다. 갤러리·카메라가 준 원본은 임시 폴더에 있어
+    // 전송 도중 OS 가 지울 수 있다. 개수가 다르면(복사 중 일부 유실) 짝을 맞출 수
+    // 없으므로 원본을 쓴다.
+    final List<File> sources =
+        (job != null && job.files.length == photoFiles.length) ? job.files : photoFiles;
+    // heic/heif 는 png 로 바꿔 올린다. 네이티브도 같은 변환본을 써야 한다.
+    final List<File> prepared = [
+      for (final File f in sources) await directUpload.convertIfHeif(f),
+    ];
+
+    final String batchId = 'photo-${job?.id ?? DateTime.now().microsecondsSinceEpoch}';
+    final List<ImageUploadTicket> tickets = [];
+    for (var i = 0; i < prepared.length; i++) {
+      final ImageUploadTicket? ticket = await directUpload.issueImageTicket();
+      if (ticket == null) break;
+      tickets.add(ticket);
+    }
+    // 한 장이라도 티켓을 못 받으면 묶음 전체를 네이티브로 넘기지 않는다.
+    if (tickets.length == prepared.length) {
+      final bool sent = await _transferViaNative(batchId, [
+        for (var i = 0; i < prepared.length; i++)
+          _NativeTransfer(id: '$batchId-$i', file: prepared[i], uploadUrl: tickets[i].uploadUrl),
+      ]);
+      if (sent) return [for (final ImageUploadTicket t in tickets) t.result];
+    }
+
+    // 폴백 — 위 URL 들은 일회용이라 재사용하지 않는다. 새 티켓으로 한 장씩 올린다.
+    final List<ImageUploadResult> results = [];
+    for (final File f in prepared) {
+      final ImageUploadResult? res = await directUpload.uploadImageFile(f);
+      if (res == null) return null;
+      results.add(res);
+    }
+    return results;
+  }
+
+  /// 묶음을 네이티브 전송기에 넘기고 전부 끝날 때까지 기다린다.
+  /// true 는 **모든 파일이 실제로 전송 완료**됐다는 뜻이다.
+  Future<bool> _transferViaNative(String batchId, List<_NativeTransfer> items) async {
+    if (items.isEmpty) return false;
+    final List<String> ids = [for (final _NativeTransfer item in items) item.id];
+    final bool queued = await NativeBackgroundUpload.enqueue([
+      for (final _NativeTransfer item in items)
+        NativeBackgroundUploadRequest(
+          id: item.id,
+          batchId: batchId,
+          filePath: item.file.path,
+          uploadUrl: item.uploadUrl,
+        ),
+    ]);
+    // 네이티브가 없는 환경(테스트·미지원 플랫폼)은 여기서 조용히 빠진다.
+    if (!queued) return false;
+
+    try {
+      return await _awaitNativeTransfer(ids);
+    } finally {
+      // 상태 기록만 지운다. OS 가 진행 중인 전송을 취소하지는 않는다.
+      await NativeBackgroundUpload.forget(ids);
+    }
+  }
+
+  /// 모든 id 가 success 가 될 때까지 폴링한다. 하나라도 종료 실패면 즉시 false.
+  Future<bool> _awaitNativeTransfer(List<String> ids) async {
+    final Set<String> pending = ids.toSet();
+    final DateTime deadline = DateTime.now().add(_nativeTransferDeadline);
+    int consecutiveUnknown = 0;
+
+    while (pending.isNotEmpty) {
+      if (DateTime.now().isAfter(deadline)) {
+        lo.g('네이티브 전송 대기 한도 초과 — Dart 업로드로 내려갑니다(남은 ${pending.length}건)');
+        return false;
+      }
+
+      final states = await NativeBackgroundUpload.states(pending.toList());
+      if (states == null) {
+        // 저장소를 못 읽었다. 전송이 사라졌다고 단정하면 중복 전송이 된다.
+        consecutiveUnknown++;
+        if (consecutiveUnknown >= _nativeStateFailureLimit) {
+          lo.g('네이티브 전송 상태를 읽지 못했습니다 — Dart 업로드로 내려갑니다');
+          return false;
+        }
+        await Future.delayed(_nativePollInterval);
+        continue;
+      }
+      consecutiveUnknown = 0;
+
+      for (final String id in pending.toList()) {
+        final NativeBackgroundUploadState? state = states[id];
+        // 조회 결과에 없으면 판정을 미루고 다음 폴링에서 다시 본다.
+        if (state == null) continue;
+        if (state.isSuccess) {
+          pending.remove(id);
+        } else if (state.isTerminalFailure) {
+          lo.g('네이티브 전송 실패($id): ${state.status} ${state.error ?? ''}');
+          return false;
+        }
+      }
+      if (pending.isEmpty) break;
+      await Future.delayed(_nativePollInterval);
+    }
+    return true;
   }
 
   // ───────────────────────── 업로드 영속 큐(재개) ─────────────────────────

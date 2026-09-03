@@ -48,6 +48,19 @@ class ImageUploadResult {
   ImageUploadResult({required this.id, required this.url});
 }
 
+/// 이미지 업로드 티켓 — 일회용 업로드 URL + 전송 성공 후 쓸 결과값.
+/// 전송을 OS(네이티브 백그라운드 업로드)에 넘길 때는 URL만 건네고,
+/// 성공 판정 뒤 [result] 를 그대로 게시에 쓴다.
+class ImageUploadTicket {
+  final String uploadUrl;
+  final String id;
+  final String url;
+
+  ImageUploadTicket({required this.uploadUrl, required this.id, required this.url});
+
+  ImageUploadResult get result => ImageUploadResult(id: id, url: url);
+}
+
 class DirectUploadRepo {
   /// 영상: 업로드 URL 발급 → 파일 업로드. 성공 시 재생 URL들이 담긴 티켓 반환, 실패 시 null.
   Future<VideoUploadTicket?> uploadVideoFile(File videoFile, {void Function(int, int)? onProgress}) async {
@@ -59,26 +72,42 @@ class DirectUploadRepo {
 
   /// 이미지: (heic/heif → png 변환 후) 업로드 URL 발급 → 파일 업로드.
   Future<ImageUploadResult?> uploadImageFile(File imageFile, {void Function(int, int)? onProgress}) async {
+    final File prepared = await convertIfHeif(imageFile);
+    final ImageUploadTicket? ticket = await issueImageTicket();
+    if (ticket == null) return null;
+
+    final ok = await _uploadTo(ticket.uploadUrl, prepared, onProgress: onProgress);
+    if (!ok) return null;
+    return ticket.result;
+  }
+
+  /// heic/heif 는 png 로 바꿔 올린다. 네이티브 백그라운드 전송도 **변환된 같은 파일**을
+  /// 써야 하므로 변환만 따로 떼어 공개한다. 변환에 실패하면 원본을 그대로 돌려준다.
+  Future<File> convertIfHeif(File imageFile) async {
     try {
       if (imageFile.path.endsWith('.heif') || imageFile.path.endsWith('.heic')) {
         final String? converted = await HeifConverter.convert(imageFile.path, format: 'png');
-        if (converted != null) imageFile = File(converted);
+        if (converted != null) return File(converted);
       }
     } catch (e) {
       lo.g('HEIF 변환 실패(원본으로 시도): $e');
     }
+    return imageFile;
+  }
 
+  /// 전송 없이 이미지 티켓만 발급한다(네이티브 백그라운드 전송용).
+  Future<ImageUploadTicket?> issueImageTicket() async {
     final resData = await _post('/cloudflare/imageUploadUrl');
     if (resData == null) return null;
     final String uploadUrl = resData['uploadUrl']?.toString() ?? '';
     final String id = resData['id']?.toString() ?? '';
     final String url = resData['deliveryUrl']?.toString() ?? '';
     if (uploadUrl.isEmpty || id.isEmpty) return null;
-
-    final ok = await _uploadTo(uploadUrl, imageFile, onProgress: onProgress);
-    if (!ok) return null;
-    return ImageUploadResult(id: id, url: url);
+    return ImageUploadTicket(uploadUrl: uploadUrl, id: id, url: url);
   }
+
+  /// 전송 없이 영상 티켓만 발급한다(네이티브 백그라운드 전송용).
+  Future<VideoUploadTicket?> issueVideoTicket() => _issueVideoTicket();
 
   /// 이미지 삭제(백엔드 프록시 — 앱에 토큰 없음).
   Future<bool> deleteImage(String imageId) async {

@@ -10,6 +10,10 @@ import flutter_local_notifications
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
+        // background URLSession은 앱이 종료된 뒤에도 시스템이 다시 연결한다. 앱 시작 시
+        // 싱글턴을 먼저 만들어 이전 작업의 delegate를 복구한다.
+        _ = BackgroundUpload.shared
+
         GeneratedPluginRegistrant.register(with: self)
 
         // 카메라 가상 멀티카메라(초광각 포함) 조회 채널 — 0.5x 줌아웃용.
@@ -35,6 +39,9 @@ import flutter_local_notifications
                 let switchOvers = device.virtualDeviceSwitchOverVideoZoomFactors.map { Double(truncating: $0) }
                 result(["uid": device.uniqueID, "switchOver": switchOvers])
             }
+
+            // 앱을 닫아도 OS가 이어가는 사진·영상 Direct Upload 채널.
+            BackgroundUpload.shared.install(messenger: controller.binaryMessenger)
         }
 
         // FCM 설정
@@ -59,6 +66,21 @@ import flutter_local_notifications
 
 
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    }
+
+    // 백그라운드 전송이 끝나면 iOS가 앱을 깨워 이 콜백을 부른다. 우리 세션이면
+    // completion handler를 전송기에 넘겨 모든 delegate 이벤트를 처리한 뒤 호출하게 한다.
+    override func application(
+        _ application: UIApplication,
+        handleEventsForBackgroundURLSession identifier: String,
+        completionHandler: @escaping () -> Void
+    ) {
+        if BackgroundUpload.shared.accepts(identifier: identifier) {
+            BackgroundUpload.shared.setBackgroundCompletionHandler(completionHandler)
+            return
+        }
+        super.application(application, handleEventsForBackgroundURLSession: identifier,
+                          completionHandler: completionHandler)
     }
 
     // URL 처리를 위한 메서드

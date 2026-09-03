@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:path_provider/path_provider.dart';
 import 'package:project1/repo/board/data/board_save_data.dart';
+import 'package:project1/services/native_background_upload.dart';
 import 'package:project1/utils/log_utils.dart';
 
 /// 아직 못 올린 업로드 한 건.
@@ -39,10 +40,15 @@ class PendingUpload {
 /// 파일은 경로만 기억하지 않고 **복사해 둔다.** 갤러리·카메라가 준 파일은 임시
 /// 폴더에 있어서 OS 가 언제든 지운다. 경로만 들고 있으면 이어올릴 때 파일이 없다.
 ///
-/// 이 단계에서는 재전송을 Dart 쪽 기존 업로더(`RootCntr.uploadCloudflare` /
-/// `uploadPhotos`)가 전부 맡는다. OS 백그라운드 전송 위임(Android WorkManager /
-/// iOS background URLSession)과 서버 대사(對査)는 백엔드 지원이 생기는 다음
-/// 단계에서 붙인다. 그래서 여기엔 네이티브 계획(plan) 필드가 없다.
+/// 파일 **전송**은 가능하면 OS 에 넘긴다(`NativeBackgroundUpload`). 다만 티켓 발급과
+/// 게시(`boardRepo.save`)는 인증이 필요해 Dart 만 할 수 있으므로, 전송이 끝난 뒤
+/// 나머지는 `RootCntr.uploadCloudflare` / `uploadPhotos` 가 이어서 처리한다.
+/// 네이티브가 없거나 전송이 실패하면 같은 함수가 기존 Dart 업로드로 그대로 내려간다.
+///
+/// 여기엔 네이티브 계획(plan) 필드가 없다. 발급한 티켓을 큐에 적어두려면 서버 쪽
+/// 업로드 세션 조회 API 가 있어야 재기동 후 "이미 올라갔는지"를 판정할 수 있는데,
+/// SkySnap 백엔드에는 아직 그 API 가 없다. 그래서 프로세스가 죽어 되살아난 경우엔
+/// 새 티켓으로 다시 올린다 — 바이트는 낭비돼도 게시물이 중복되지는 않는다.
 class PendingUploadStore {
   PendingUploadStore._();
 
@@ -61,10 +67,19 @@ class PendingUploadStore {
     final Directory base = debugRootOverride ?? await getApplicationDocumentsDirectory();
     final dir = Directory('${base.path}/pending_uploads');
     if (!await dir.exists()) await dir.create(recursive: true);
-    // NOTE: 기기 백업 제외(Android backup rule / iOS 파일 속성)는 네이티브 작업이라
-    // 이번 단계에서 제외했다. 아직 서버에 없는 원본이 백업에 섞일 수 있다.
+    // 큐에는 아직 서버 어디에도 없는 원본과 일회용 업로드 URL 이 들어 있다. 복원
+    // 백업으로 다른 기기에 복제되지 않도록 백업 제외 속성을 건다(iOS 파일 속성 /
+    // Android 는 manifest 에서 allowBackup=false 라 네이티브가 no-op 로 받는다).
+    // _root() 는 자주 불리므로 실행당 한 번만 건다. 네이티브가 없는 환경(테스트)에서는
+    // MissingPluginException 을 서비스가 삼키므로 조용히 지나간다.
+    if (!_backupExclusionApplied) {
+      _backupExclusionApplied = true;
+      await NativeBackgroundUpload.excludeFromBackup(dir.path);
+    }
     return dir;
   }
+
+  static bool _backupExclusionApplied = false;
 
   /// 사용자에게 정리가 필요함을 알릴 때 쓰는 소프트 기준이다.
   /// 아직 서버에 없는 유일본이므로 이 수치를 넘었다고 자동 삭제하지 않는다.

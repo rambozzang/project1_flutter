@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.codelabtiger.skysnap">
     <uses-feature
         android:name="android.hardware.camera"
@@ -37,6 +38,15 @@
         android:name="android.permission.VIBRATE"/>
     <uses-permission
         android:name="android.permission.WAKE_LOCK"/>
+    <!-- 앱을 닫아도 이어지는 사진·영상 업로드.
+         FOREGROUND_SERVICE(_DATA_SYNC) 는 WorkManager 가 전송 중 알림과 함께 살아 있기 위해,
+         RUN_USER_INITIATED_JOBS 는 Android 14+ 에서 사용자가 시작한 대용량 전송(UIDT)에 필요하다. -->
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+    <uses-permission
+        android:name="android.permission.RUN_USER_INITIATED_JOBS"/>
     <!-- 안드로이드 심사 거절로 주석 처리 -->
     <uses-permission
         android:name="android.permission.SCHEDULE_EXACT_ALARM"
@@ -165,6 +175,16 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-7861255216779015~2088764563"/>
+        <!-- WorkManager가 긴 네트워크 전송 동안 시스템 알림과 함께 살아 있도록 한다. -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge"/>
+        <!-- Android 14+: 사용자가 누른 대용량 업로드는 일반 Job quota와 분리된 UIDT로 실행한다. -->
+        <service
+            android:name=".BackgroundUploadJobService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false"/>
         <!-- FCM Setting-->
         <receiver
             android:exported="false"

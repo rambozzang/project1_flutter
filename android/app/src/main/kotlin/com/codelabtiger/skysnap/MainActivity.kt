@@ -1,8 +1,21 @@
 package com.codelabtiger.skysnap
 
 import io.flutter.embedding.android.FlutterFragmentActivity
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
 
-class MainActivity: FlutterFragmentActivity()
+class MainActivity : FlutterFragmentActivity() {
+
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+
+        // 앱을 닫아도 OS가 이어가는 사진·영상 Direct Upload 채널.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, BackgroundUpload.CHANNEL)
+            .setMethodCallHandler { call, result ->
+                BackgroundUpload.handle(applicationContext, call, result)
+            }
+    }
+}
 // class MainActivity: FlutterFragmentActivity() {
 //     private val TAG = "FlutterFragmentActivity"
 
