@@ -9,6 +9,7 @@ import 'package:project1/admob/ad_manager.dart';
 import 'package:project1/admob/native_feed_ad_page.dart';
 import 'package:project1/app/videolist/Video_screen_page.dart';
 import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
+import 'package:project1/app/videolist/video_decoder_window.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
@@ -104,6 +105,14 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
   final PreloadPageController _controller = PreloadPageController();
   final ScrollController scrollController = ScrollController();
 
+  /// 현재 보고 있는 **영상 데이터 인덱스**(광고 페이지 제외).
+  ///
+  /// `VideoListCntr.currentIndex`(RxInt)와 같은 값이지만 별도로 둔다 —
+  /// 그쪽은 GetBuilder 가 구독하지 않아 값이 바뀌어도 itemBuilder 가 다시
+  /// 돌지 않는다. 디코더 윈도우는 페이지를 넘길 때마다 재판정돼야 하므로
+  /// 페이저를 직접 리빌드할 수 있는 알림원이 필요하다.
+  final ValueNotifier<int> _currentVideoIndex = ValueNotifier<int>(0);
+
   GlobalKey<ScaffoldState> scaffoldkey = GlobalKey<ScaffoldState>();
   AdManager adManager = AdManager();
   // static const String AD_UNIT_NAME = 'VideoPage';
@@ -140,6 +149,7 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
   void dispose() {
     _controller.dispose();
     scrollController.dispose();
+    _currentVideoIndex.dispose();
     // AdManager().disposeBannerAd('VideoPage');
     super.dispose();
   }
@@ -290,38 +300,56 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
   Widget buildVideoBody(List<BoardWeatherListData> data, BuildContext context) {
     return GetBuilder<VideoListCntr>(
       builder: (cntr) {
-        return PreloadPageView.builder(
-          key: const PageStorageKey("tigerBkPageView"),
-          controller: _controller,
-          preloadPagesCount: cntr.preLoadingCount,
-          scrollDirection: Axis.vertical,
-          itemCount: _pageCount(data.length),
-          physics: const FastPageScrollPhysics(),
-          onPageChanged: (int page) {
-            RootCntr.to.bottomBarStreamController.sink.add(true);
-            // 광고 페이지면 현재영상 인덱스/페이징을 건드리지 않는다(list[currentIndex] 정합 유지).
-            if (_isAdPage(page)) return;
-            final int videoIndex = _pageToVideoIndex(page);
-            // 좋아요/팔로우가 현재 영상을 정확히 가리키도록 '데이터 인덱스'를 저장.
-            cntr.currentIndex.value = videoIndex;
-            if (videoIndex >= cntr.list.length - (cntr.preLoadingCount + 1)) {
-              cntr.getDataWithPagination();
-            }
-          },
-          itemBuilder: (context, page) {
-            // 5장마다 끼워넣는 틱톡형 인라인 광고 페이지
-            if (_isAdPage(page)) {
-              return const SizedBox.expand(child: NativeFeedAdPage());
-            }
-            final int videoIndex = _pageToVideoIndex(page);
-            if (videoIndex < 0 || videoIndex >= data.length) {
-              return const SizedBox.shrink();
-            }
-            PageStorageKey key = PageStorageKey('key_$videoIndex');
-            return SizedBox(
-              width: MediaQuery.of(context).size.width,
-              height: MediaQuery.of(context).size.height,
-              child: VideoScreenPage(key: key, index: videoIndex, data: data[videoIndex]),
+        // 페이지를 넘길 때마다 itemBuilder 를 다시 돌려야 videoActive 가 재판정된다.
+        // GetBuilder 는 update() 에만 반응하므로 여기서 한 겹 더 감싼다.
+        return ValueListenableBuilder<int>(
+          valueListenable: _currentVideoIndex,
+          builder: (context, currentVideoIndex, _) {
+            return PreloadPageView.builder(
+              key: const PageStorageKey("tigerBkPageView"),
+              controller: _controller,
+              preloadPagesCount: cntr.preLoadingCount,
+              scrollDirection: Axis.vertical,
+              itemCount: _pageCount(data.length),
+              physics: const FastPageScrollPhysics(),
+              onPageChanged: (int page) {
+                RootCntr.to.bottomBarStreamController.sink.add(true);
+                // 광고 페이지면 현재영상 인덱스/페이징을 건드리지 않는다(list[currentIndex] 정합 유지).
+                if (_isAdPage(page)) return;
+                final int videoIndex = _pageToVideoIndex(page);
+                // 좋아요/팔로우가 현재 영상을 정확히 가리키도록 '데이터 인덱스'를 저장.
+                cntr.currentIndex.value = videoIndex;
+                // 디코더 윈도우 재판정을 유발한다(위 ValueListenableBuilder).
+                _currentVideoIndex.value = videoIndex;
+                if (videoIndex >= cntr.list.length - (cntr.preLoadingCount + 1)) {
+                  cntr.getDataWithPagination();
+                }
+              },
+              itemBuilder: (context, page) {
+                // 10장마다 끼워넣는 틱톡형 인라인 광고 페이지
+                if (_isAdPage(page)) {
+                  return const SizedBox.expand(child: NativeFeedAdPage());
+                }
+                final int videoIndex = _pageToVideoIndex(page);
+                if (videoIndex < 0 || videoIndex >= data.length) {
+                  return const SizedBox.shrink();
+                }
+                return SizedBox(
+                  width: MediaQuery.of(context).size.width,
+                  height: MediaQuery.of(context).size.height,
+                  child: VideoScreenPage(
+                    // 인덱스가 아니라 boardId 로 고정한다. 앞쪽에 항목이 끼거나
+                    // 빠지면 인덱스 기준 키는 다른 영상의 State 를 재사용한다.
+                    key: ValueKey('video_${data[videoIndex].boardId}'),
+                    index: videoIndex,
+                    data: data[videoIndex],
+                    videoActive: isVideoActive(
+                      videoIndex: videoIndex,
+                      currentVideoIndex: currentVideoIndex,
+                    ),
+                  ),
+                );
+              },
             );
           },
         );
