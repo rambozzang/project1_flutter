@@ -30,10 +30,22 @@ import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 class VideoScreenPage extends StatefulWidget {
-  const VideoScreenPage({super.key, required this.index, required this.data});
+  const VideoScreenPage({
+    super.key,
+    required this.index,
+    required this.data,
+    this.videoActive = true,
+  });
 
   final BoardWeatherListData data;
   final int index;
+
+  /// 이 페이지가 **지금 네이티브 디코더를 물고 있을지.**
+  ///
+  /// 페이지 위젯은 앞뒤 5장을 미리 만들지만 영상은 가까운 3장만 준비한다.
+  /// 멀어지면 놓고, 되돌아오면 다시 만든다. 버퍼링 동안 썸네일(buildLoading)이
+  /// 깔리므로 넘길 때 빈 화면이 보이지 않는다.
+  final bool videoActive;
 
   @override
   State<VideoScreenPage> createState() => VideoScreenPageState();
@@ -104,7 +116,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     // 인코딩이 끝나지 않은 영상도 초기화하지 않는다. 매니페스트가 아직 없어서
     // 반드시 실패하고, 실패 → 재시도 경로를 태워봤자 사용자에겐 '느리게 로딩'으로만
     // 보인다. 대신 buildProcessing() 으로 "준비 중"임을 분명히 알린다.
-    if (!isPhotoPost && !isVideoProcessing) {
+    if (!isPhotoPost && !isVideoProcessing && widget.videoActive) {
       initiliazeVideo();
     }
     // initialized.value = false;
@@ -112,8 +124,42 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     isFollowed.value = widget.data.followYn.toString();
   }
 
+  /// 부모가 현재 페이지를 옮기면 이 값이 바뀐다.
+  /// 멀어지면 디코더를 놓고, 돌아오면 다시 만든다.
+  @override
+  void didUpdateWidget(covariant VideoScreenPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (isPhotoPost || isVideoProcessing) return;
+    if (widget.videoActive == oldWidget.videoActive) return;
+
+    if (widget.videoActive) {
+      // 멀어졌다 돌아왔다. 재시도 횟수도 초기화한다 — 아까 실패한 이유가
+      // 인코딩 지연이었다면 그새 끝났을 수 있다.
+      if (_controller == null) {
+        _retryCount = 0;
+        initiliazeVideo();
+      }
+    } else {
+      _releaseVideo();
+    }
+  }
+
+  /// 멀어진 페이지의 디코더를 놓는다. 화면은 initialized=false 가 되면서
+  /// buildLoading()(썸네일)으로 자동 전환된다.
+  void _releaseVideo() {
+    final ctrl = _controller;
+    if (ctrl == null) return;
+    _controller = null;
+    initialized.value = false;
+    initPlay = false;
+    ctrl.dispose();
+  }
+
   Future<void> initiliazeVideo() async {
     try {
+      // 재시도 대기 중에 멀어졌을 수도 있다.
+      if (!widget.videoActive) return;
+
       Stopwatch stopwatch = Stopwatch()..start();
       lo.g("=== Video Player Initialization Started ===");
       lo.g("Video URL: ${widget.data.videoPath}");
@@ -249,7 +295,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     _retryCount++;
     lo.g("영상 초기화 재시도 $_retryCount/${_retryDelays.length} (${delay.inSeconds}s 후): $error");
     await Future.delayed(delay);
-    if (!mounted) return;
+    if (!mounted || !widget.videoActive) return;
     try {
       try {
         await _controller?.dispose();
