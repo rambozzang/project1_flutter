@@ -30,17 +30,31 @@ import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 class VideoMySreenPage extends StatefulWidget {
-  const VideoMySreenPage({super.key, required this.data, required this.index});
+  const VideoMySreenPage({
+    super.key,
+    required this.data,
+    required this.index,
+    this.videoActive = true,
+  });
 
   final BoardWeatherListData data;
   final int index;
+
+  /// 이 페이지가 **지금 네이티브 디코더를 물고 있을지.**
+  ///
+  /// 페이지 위젯은 앞뒤 5장을 미리 만들지만 영상은 가까운 3장만 준비한다.
+  /// 멀어지면 놓고, 되돌아오면 다시 만든다. 버퍼링 동안 썸네일이 깔리므로
+  /// 넘길 때 빈 화면이 보이지 않는다.
+  final bool videoActive;
 
   @override
   State<VideoMySreenPage> createState() => _VideoMySreenPageState();
 }
 
 class _VideoMySreenPageState extends State<VideoMySreenPage> {
-  late VideoPlayerController _controller;
+  // videoActive=false 인 먼 페이지는 컨트롤러를 아예 만들지 않는다.
+  // late 로 두면 그 상태의 모든 접근이 LateInitializationError 가 되므로 nullable 로 둔다.
+  VideoPlayerController? _controller;
   bool initialized = false;
 
   final ValueNotifier<bool> soundOff = ValueNotifier<bool>(false);
@@ -84,14 +98,52 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
     super.initState();
 
     // 사진 게시물은 VideoPlayer를 초기화하지 않는다(null videoPath로 실패→재귀 방지).
-    if (!isPhotoPost) {
+    // 멀리 있는 페이지(videoActive=false)도 만들지 않는다 — 디코더 윈도우.
+    if (!isPhotoPost && widget.videoActive) {
       initiliazeVideo();
     }
     isFollowed.value = widget.data.followYn.toString();
     loadingImageIndex = Random().nextInt(6);
   }
 
+  /// 부모가 현재 페이지를 옮기면 이 값이 바뀐다.
+  /// 멀어지면 디코더를 놓고, 돌아오면 다시 만든다.
+  @override
+  void didUpdateWidget(covariant VideoMySreenPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (isPhotoPost) return;
+    if (widget.videoActive == oldWidget.videoActive) return;
+
+    if (widget.videoActive) {
+      // 멀어졌다 돌아왔다. 재시도 횟수도 초기화한다 — 아까 실패한 이유가
+      // 인코딩 지연이었다면 그새 끝났을 수 있다.
+      if (_controller == null) {
+        _retryCount = 0;
+        initiliazeVideo();
+      }
+    } else {
+      _releaseVideo();
+    }
+  }
+
+  /// 멀어진 페이지의 디코더를 놓는다. 화면은 initialized=false 가 되면서
+  /// 썸네일로 자동 전환된다.
+  ///
+  /// didUpdateWidget 에서만 부르므로 setState 는 필요 없다 —
+  /// 이 위젯은 어차피 곧바로 다시 build 된다.
+  void _releaseVideo() {
+    final ctrl = _controller;
+    if (ctrl == null) return;
+    _controller = null;
+    initialized = false;
+    initPlay = false;
+    ctrl.dispose();
+  }
+
   Future<void> initiliazeVideo() async {
+    // 재시도를 기다리는 사이에 페이지가 멀어졌을 수 있다.
+    if (!widget.videoActive) return;
+
     //  Ios : m3u8
     String finalUrl = widget.data.videoPath.toString();
     VideoFormat format = VideoFormat.hls;
@@ -109,7 +161,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
       lo.g(
           '@@@  VideoScreenPage init(${Get.find<VideoMyinfoListCntr>().currentIndex.value}) ${widget.index} : ${widget.data.boardId} : 1.Start ');
 
-      _controller = VideoPlayerController.networkUrl(Uri.parse(finalUrl),
+      final ctrl = VideoPlayerController.networkUrl(Uri.parse(finalUrl),
           httpHeaders: {
             'Connection': 'keep-alive',
             'Cache-Control': 'max-age=3600, stale-while-revalidate=86400',
@@ -123,42 +175,104 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
             mixWithOthers: true,
             allowBackgroundPlayback: false,
           ),
-          formatHint: format)
-        ..initialize().then((_) {
-          if (mounted) {
-            lo.g('VideoScreenPage initialization time: ${stopwatch.elapsedMilliseconds}ms');
-            timeDesc.value = '${stopwatch.elapsedMilliseconds}ms';
+          formatHint: format);
+      _controller = ctrl;
 
-            lo.g(
-                '@@@  VideoScreenPage init(${Get.find<VideoMyinfoListCntr>().currentIndex.value}) ${widget.index} : ${widget.data.boardId} : 2.Mounted =>. ${stopwatch.elapsed}');
-            setState(() {
-              _controller.setLooping(true);
-              _controller.pause();
-              initialized = true;
-            });
-            //   Get.find<VideoListCntr>().onPageMounted(widget.data.boardId!);
-          }
-        });
+      // await 로 초기화 완료/실패를 직접 받는다.
+      // 기존 ..initialize().then() 캐스케이드는 async 실패가 try/catch 밖으로 새어
+      // 아예 잡히지 않았고, 무엇보다 '초기화가 끝난 시점'을 잡을 수 없어
+      // 아래 주인 확인(identical)을 할 수가 없다.
+      await ctrl.initialize().timeout(_initializeTimeout);
 
-      _controller.addListener(() {
-        isPlay.value = _controller.value.isPlaying;
-        int max = _controller.value.duration.inSeconds;
-        position = _controller.value.position;
-        progress.value = (position.inSeconds / max * 100).isNaN ? 0 : position.inSeconds / max * 100;
-        if (isPlay.value) {
-          updateCount();
-        }
-        if (_controller.value.hasError) {
-          lo.g('Video error: ${_controller.value.errorDescription}');
-          // 4. 재시도 로직
-          // _retryInitialization();
-        }
+      // 초기화하는 동안 페이지가 멀어져 해제됐을 수 있다. 그때 _controller 는
+      // null 이거나 다른 인스턴스다 — 계속하면 해제된 플레이어를 만지고,
+      // 방금 만든 이 디코더는 주인 없이 남는다.
+      if (!mounted || !identical(_controller, ctrl)) {
+        ctrl.dispose();
+        return;
+      }
+
+      lo.g('VideoScreenPage initialization time: ${stopwatch.elapsedMilliseconds}ms');
+      timeDesc.value = '${stopwatch.elapsedMilliseconds}ms';
+
+      lo.g(
+          '@@@  VideoScreenPage init(${Get.find<VideoMyinfoListCntr>().currentIndex.value}) ${widget.index} : ${widget.data.boardId} : 2.Mounted =>. ${stopwatch.elapsed}');
+
+      ctrl.setLooping(true);
+      ctrl.pause();
+      setState(() {
+        initialized = true;
       });
+
+      // 리스너는 초기화 성공이 확인된 뒤에 붙인다.
+      _setupVideoListener(ctrl);
     } catch (e) {
       lo.g('initiliazeMyVideo error : ${e.toString()}');
-      Utils.alert('영상 초기화 실패! ${e.toString()}');
-      initiliazeVideo();
-    } finally {}
+      // 알럿은 띄우지 않는다 — 재시도할 때마다 뜨면 방해만 된다. 로그로 충분하다.
+      if (mounted) {
+        await _handleInitializationError(e);
+      }
+    }
+  }
+
+  /// 재생 상태·진행률 리스너.
+  ///
+  /// 재시도나 디코더 윈도우로 컨트롤러 인스턴스가 교체될 수 있으므로
+  /// 필드가 아니라 지역 변수를 캡처한다.
+  void _setupVideoListener(VideoPlayerController ctrl) {
+    ctrl.addListener(() {
+      // dispose 이후 도착하는 플랫폼 이벤트가 해제된 ValueNotifier 를 건드리지 않게 한다.
+      if (!mounted) return;
+
+      isPlay.value = ctrl.value.isPlaying;
+      int max = ctrl.value.duration.inSeconds;
+      position = ctrl.value.position;
+      progress.value = (position.inSeconds / max * 100).isNaN ? 0 : position.inSeconds / max * 100;
+      if (isPlay.value) {
+        updateCount();
+      }
+      if (ctrl.value.hasError) {
+        lo.g('Video error: ${ctrl.value.errorDescription}');
+      }
+    });
+  }
+
+  /// 초기화 실패 재시도 — 신규 업로드는 Cloudflare 인코딩이 끝나기 전이라
+  /// 매니페스트가 잠시 미준비(404/빈 응답)일 수 있다. 백오프로 몇 번만 다시 시도하고,
+  /// 한도를 넘으면 조용히 포기한다(썸네일이 그대로 남는다).
+  ///
+  /// 기존에는 지연도 횟수 제한도 없이 initiliazeVideo() 를 다시 불러
+  /// 깨진 영상 하나가 타이트 무한 루프를 만들었다.
+  int _retryCount = 0;
+  static const List<Duration> _retryDelays = [
+    Duration(seconds: 2),
+    Duration(seconds: 4),
+    Duration(seconds: 7),
+    Duration(seconds: 12),
+  ];
+
+  /// 인코딩 지연·네트워크 문제로 무기한 대기하지 않게 한다.
+  /// 타임아웃이 없으면 실패로 떨어지지 않아 재시도 경로조차 타지 않는다.
+  static const Duration _initializeTimeout = Duration(seconds: 15);
+
+  Future<void> _handleInitializationError(dynamic error) async {
+    if (_retryCount >= _retryDelays.length) {
+      lo.g('영상 초기화 재시도 한도 초과($_retryCount): $error');
+      return;
+    }
+    final delay = _retryDelays[_retryCount];
+    _retryCount++;
+    lo.g('영상 초기화 재시도 $_retryCount/${_retryDelays.length} (${delay.inSeconds}s 후): $error');
+    await Future.delayed(delay);
+    // 기다리는 사이에 화면을 벗어났거나 페이지가 멀어졌으면 그만둔다.
+    if (!mounted || !widget.videoActive) return;
+
+    // 실패한 컨트롤러를 먼저 놓아준다. 그대로 두고 새로 만들면 디코더가 샌다.
+    try {
+      await _controller?.dispose();
+    } catch (_) {}
+    _controller = null;
+    await initiliazeVideo();
   }
 
   String _formatHttpDate(DateTime date) {
@@ -236,13 +350,10 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
     initialized = false;
     _photoController.dispose();
     _photoIndex.dispose();
-    // 사진 게시물은 _controller(late)를 초기화하지 않았으므로 접근 금지.
-    if (!isPhotoPost) {
-      _controller.removeListener(() {});
-      _controller.setVolume(0);
-      _controller.pause();
-      _controller.dispose();
-    }
+    // 컨트롤러 유무가 곧 진실이다. isPhotoPost / videoActive 를 여기서 다시
+    // 조합하면 initState 조건과 어긋날 때 누수가 난다.
+    _controller?.dispose();
+    _controller = null;
     super.dispose();
   }
 
@@ -262,11 +373,14 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
               children: [
                 GestureDetector(
                   onTap: () {
+                    // 멀어진 페이지는 컨트롤러가 없다(디코더 윈도우).
+                    final ctrl = _controller;
+                    if (ctrl == null || !initialized) return;
                     initPlay = true;
-                    if (_controller.value.isPlaying) {
-                      _controller.pause();
+                    if (ctrl.value.isPlaying) {
+                      ctrl.pause();
                     } else {
-                      _controller.play();
+                      ctrl.play();
                     }
                   },
                   child: AnimatedSwitcher(
@@ -279,22 +393,22 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                         child: child,
                       );
                     },
-                    child: initialized == false
+                    // 초기화 전이거나 디코더를 놓은 상태(멀어진 페이지)면 썸네일을 깐다.
+                    child: (initialized == false || _controller == null)
                         ? _buildThumbnail(ValueKey('${widget.data.boardId.toString()}loading'))
                         : VisibilityDetector(
                             onVisibilityChanged: (info) {
+                              // 콜백이 도착할 때 컨트롤러가 이미 해제됐을 수 있다.
+                              final ctrl = _controller;
+                              if (ctrl == null || !initialized) return;
                               initPlay = false;
                               if (info.visibleFraction > 0.1) {
-                                if (initialized) {
-                                  _controller.play();
-                                  Get.find<VideoMyinfoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
-                                }
+                                ctrl.play();
+                                Get.find<VideoMyinfoListCntr>().soundOff.value ? ctrl.setVolume(0) : ctrl.setVolume(1);
                               } else if (info.visibleFraction < 0.3) {
-                                if (initialized) {
-                                  _controller.pause();
-                                  _controller.seekTo(Duration.zero);
-                                  Get.find<VideoMyinfoListCntr>().soundOff.value ? _controller.setVolume(0) : _controller.setVolume(1);
-                                }
+                                ctrl.pause();
+                                ctrl.seekTo(Duration.zero);
+                                Get.find<VideoMyinfoListCntr>().soundOff.value ? ctrl.setVolume(0) : ctrl.setVolume(1);
                               }
                             },
                             key: ValueKey('${widget.data.boardId.toString()}videoScreen'),
@@ -304,9 +418,9 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                                 fit: BoxFit.cover,
                                 clipBehavior: Clip.hardEdge,
                                 child: SizedBox(
-                                  width: _controller.value.size.width,
-                                  height: _controller.value.size.height,
-                                  child: VideoPlayer(_controller),
+                                  width: _controller!.value.size.width,
+                                  height: _controller!.value.size.height,
+                                  child: VideoPlayer(_controller!),
                                 ),
                               ),
                             ),
@@ -834,10 +948,10 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
               ),
               child: value
                   ? IconButton(
-                      onPressed: () => _controller.pause(),
+                      onPressed: () => _controller?.pause(),
                       icon: Icon(Icons.play_arrow_outlined, color: Colors.white.withOpacity(0.5), size: 40))
                   : IconButton(
-                      onPressed: () => _controller.play(), icon: Icon(Icons.pause, color: Colors.white.withOpacity(0.5), size: 40)),
+                      onPressed: () => _controller?.play(), icon: Icon(Icons.pause, color: Colors.white.withOpacity(0.5), size: 40)),
             ),
           );
         },
@@ -889,10 +1003,11 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
       child: Obx(() => IconButton(
             onPressed: () {
               Get.find<VideoMyinfoListCntr>().soundOff.value = !Get.find<VideoMyinfoListCntr>().soundOff.value;
+              // 디코더를 놓은 페이지에서는 컨트롤러가 없다 — 설정값만 바꾸고 넘어간다.
               if (Get.find<VideoMyinfoListCntr>().soundOff.value) {
-                _controller.setVolume(0);
+                _controller?.setVolume(0);
               } else {
-                _controller.setVolume(1);
+                _controller?.setVolume(1);
               }
             },
             icon: Get.find<VideoMyinfoListCntr>().soundOff.value

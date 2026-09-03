@@ -12,6 +12,7 @@ import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/theme/sa_weather_gradients.dart';
 import 'package:project1/app/shared_album/widget/sa_glass_chip.dart';
 import 'package:project1/app/videocomment/comment_page.dart';
+import 'package:project1/app/videolist/video_decoder_window.dart';
 import 'package:project1/app/videolist/video_list_page.dart' show FastPageScrollPhysics;
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/community/community_repo.dart';
@@ -524,6 +525,9 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
                       key: ValueKey('sa_immersive_${_items[index].boardId}'),
                       item: _items[index],
                       gradientKey: _gradientKey(),
+                      // 위젯은 앞뒤 5장을 미리 만들지만 디코더는 가까운 3장만 문다.
+                      // _onPageChanged 가 setState 를 부르므로 여기서 재판정된다.
+                      videoActive: isVideoActive(videoIndex: index, currentVideoIndex: _index),
                       onDoubleTap: () => _onDoubleTap(_items[index]),
                       onVisibleVideo: (ctrl) => _activeVideo.value = ctrl,
                       onHiddenVideo: (ctrl) {
@@ -862,6 +866,7 @@ class _ImmersiveMediaItem extends StatefulWidget {
     required this.onDoubleTap,
     required this.onVisibleVideo,
     required this.onHiddenVideo,
+    this.videoActive = true,
   });
 
   final BoardWeatherListData item;
@@ -869,6 +874,12 @@ class _ImmersiveMediaItem extends StatefulWidget {
   final VoidCallback onDoubleTap;
   final ValueChanged<VideoPlayerController?> onVisibleVideo;
   final ValueChanged<VideoPlayerController?> onHiddenVideo;
+
+  /// 이 페이지가 **지금 네이티브 디코더를 물고 있을지.**
+  ///
+  /// 멀어지면 놓고, 되돌아오면 다시 만든다. 놓은 동안에는 썸네일이 깔리므로
+  /// 빈 화면이 보이지 않는다.
+  final bool videoActive;
 
   @override
   State<_ImmersiveMediaItem> createState() => _ImmersiveMediaItemState();
@@ -883,7 +894,41 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
   @override
   void initState() {
     super.initState();
-    if (_isVideo) _initVideo();
+    // 멀리 있는 페이지(videoActive=false)는 디코더를 만들지 않는다.
+    if (_isVideo && widget.videoActive) _initVideo();
+  }
+
+  /// 부모가 현재 페이지를 옮기면 이 값이 바뀐다.
+  /// 멀어지면 디코더를 놓고, 돌아오면 다시 만든다.
+  @override
+  void didUpdateWidget(covariant _ImmersiveMediaItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_isVideo) return;
+    if (widget.videoActive == oldWidget.videoActive) return;
+
+    if (widget.videoActive) {
+      // 멀어졌다 돌아왔다. 재시도 횟수도 초기화한다 — 아까 실패한 이유가
+      // 인코딩 지연이었다면 그새 끝났을 수 있다.
+      if (_controller == null) {
+        _retryCount = 0;
+        _initVideo();
+      }
+    } else {
+      _releaseVideo();
+    }
+  }
+
+  /// 멀어진 페이지의 디코더를 놓는다.
+  ///
+  /// 순서가 중요하다. 부모(_activeVideo)에게 **파기 전에** 알려야 한다 —
+  /// 먼저 dispose 하면 하단 스크러버가 죽은 컨트롤러를 잠시 가리킨다.
+  void _releaseVideo() {
+    final ctrl = _controller;
+    if (ctrl == null) return;
+    _controller = null;
+    _initialized.value = false;
+    widget.onHiddenVideo(ctrl);
+    ctrl.dispose();
   }
 
   // 신규 업로드(Cloudflare 인코딩 중)는 매니페스트가 잠시 미준비 → 백오프로 여러 번 재시도한다.
@@ -898,6 +943,8 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
   /// 기본 피드(VideoScreenPage.initiliazeVideo)와 동일 구성:
   /// Android=DASH(.mpd)+formatHint / iOS=HLS, 캐시 헤더, mixWithOthers.
   Future<void> _initVideo() async {
+    // 재시도를 기다리는 사이에 페이지가 멀어졌을 수 있다.
+    if (!widget.videoActive) return;
     final item = widget.item;
     String url = (item.hls?.isNotEmpty == true) ? item.hls! : (item.videoPath ?? '');
     if (url.isEmpty) {
@@ -932,7 +979,10 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
       );
       _controller = ctrl;
       await ctrl.initialize();
-      if (!mounted) {
+      // 초기화하는 동안 페이지가 멀어져 해제됐을 수 있다. 그때 _controller 는
+      // null 이거나 다른 인스턴스다 — 계속하면 해제된 플레이어를 만지고,
+      // 방금 만든 이 디코더는 주인 없이 남는다.
+      if (!mounted || !identical(_controller, ctrl)) {
         ctrl.dispose();
         return;
       }
@@ -947,7 +997,14 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
         final delay = _retryDelays[_retryCount];
         _retryCount++;
         await Future.delayed(delay);
-        if (mounted) await _initVideo();
+        // 기다리는 사이에 화면을 벗어났거나 페이지가 멀어졌으면 그만둔다.
+        if (!mounted || !widget.videoActive) return;
+        // 실패한 컨트롤러를 먼저 놓아준다. 그대로 두고 새로 만들면 디코더가 샌다.
+        try {
+          await _controller?.dispose();
+        } catch (_) {}
+        _controller = null;
+        await _initVideo();
       }
     }
   }
@@ -999,7 +1056,8 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
       builder: (context, ready, _) {
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 250),
-          child: ready
+          // 디코더를 놓은 상태(멀어진 페이지)면 컨트롤러가 없다 → 썸네일.
+          child: (ready && _controller != null)
               ? VisibilityDetector(
                   key: ValueKey('sa_vis_${widget.item.boardId}'),
                   onVisibilityChanged: (info) {
