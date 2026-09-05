@@ -5,6 +5,7 @@ import 'package:project1/app/spot/spot_my_page.dart';
 import 'package:project1/app/spot/spot_submit_page.dart';
 import 'package:project1/app/spot/spot_weather_body.dart';
 import 'package:project1/repo/spot/spot_repo.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 
 /// "스팟별 날씨" — 캠핑·낚시·골프 스팟을 현재 날씨와 함께 둘러보고,
 /// 스팟을 탭하면 그곳 커뮤니티 영상으로 "지금 거기 어때?"를 확인한다.
@@ -14,7 +15,9 @@ class SpotWeatherPage extends StatelessWidget {
 
   static const Color _bg = Color(0xFFF8F9FB);
   static const Color _textHi = Colors.black;
-  static const Color _accent = Color(0xFF8C83DD);
+  /// 브랜드 페리윙클 — 흰 배경 화면이므로 라이트 명도(#6559CF, 흰 배경 대비 5.41:1)를 쓴다.
+  /// (이전: #8C83DD 하드코딩 사본 — 흰 배경 대비 3.28:1로 본문 기준 미달이었다)
+  static const Color _accent = SaColorsLight.accentTeal;
 
   @override
   Widget build(BuildContext context) {

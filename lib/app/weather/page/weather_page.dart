@@ -10,6 +10,7 @@ import 'package:project1/admob/banner_ad_widget.dart';
 import 'package:project1/app/weather/page/kakao_searchbar.dart';
 import 'package:project1/app/weather/page/location_error.dart';
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
@@ -80,7 +81,7 @@ class _WeatherPageState extends State<WeatherPage> with TickerProviderStateMixin
   Widget build(BuildContext context) {
     return Scaffold(
       key: scaffoldKey,
-      backgroundColor: const Color(0xFF262B49),
+      backgroundColor: SaColorsDark.bgBase,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         forceMaterialTransparency: true,

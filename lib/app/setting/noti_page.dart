@@ -102,6 +102,7 @@ class _NotiPageState extends State<NotiPage> with AutomaticKeepAliveClientMixin 
 
   @override
   Widget build(BuildContext context) {
+    SaColors.isLight = true; // 라이트 고정 — 앨범 다크모드 잔류 방지
     super.build(context);
     return Scaffold(
       appBar: AppBar(

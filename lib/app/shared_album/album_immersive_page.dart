@@ -28,6 +28,7 @@ import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/media/media_interaction_repo.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:project1/utils/image_decode.dart';
 
 /// 앨범 상세 — 1e 몰입 뷰(틱톡식 세로 풀스크린).
 /// 세로 PageView로 미디어 전환, 탭=재생/일시정지, 더블탭=좋아요(하트 애니메이션).
@@ -484,7 +485,12 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
                       ListTile(
                         leading: ClipOval(
                           child: (v['profilePath']?.toString() ?? '').isNotEmpty
-                              ? CachedNetworkImage(imageUrl: v['profilePath'].toString(), width: 40, height: 40, fit: BoxFit.cover)
+                              ? CachedNetworkImage(
+                                  imageUrl: v['profilePath'].toString(),
+                                  width: 40,
+                                  height: 40,
+                                  fit: BoxFit.cover,
+                                  memCacheWidth: ImageDecode.fixed(context, 40))
                               : Container(width: 40, height: 40, color: SaColors.surfaceElevated, child: Icon(Icons.person, color: SaColors.textTertiary)),
                         ),
                         title: Text(v['nickNm']?.toString() ?? '', style: SaText.bodyMedium),
@@ -713,7 +719,10 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
             ),
             child: ClipOval(
               child: (item.profilePath ?? '').isNotEmpty
-                  ? CachedNetworkImage(imageUrl: item.profilePath!, fit: BoxFit.cover)
+                  ? CachedNetworkImage(
+                      imageUrl: item.profilePath!,
+                      fit: BoxFit.cover,
+                      memCacheWidth: ImageDecode.fixed(context, 44))
                   : ColoredBox(
                       color: SaColorsDark.surfaceElevated,
                       child: Icon(Icons.person, size: 22, color: SaColorsDark.textTertiary)),
@@ -1117,6 +1126,7 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
         imageUrl: imgs.first,
         cacheKey: imgs.first,
         fit: BoxFit.cover,
+        memCacheWidth: ImageDecode.fullScreen(context),
         width: double.infinity,
         height: double.infinity,
       );
@@ -1129,7 +1139,10 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
           itemCount: imgs.length,
           onPageChanged: (i) => setState(() => _photoIndex = i),
           itemBuilder: (_, i) => CachedNetworkImage(
-              imageUrl: imgs[i], cacheKey: imgs[i], fit: BoxFit.cover),
+              imageUrl: imgs[i],
+              cacheKey: imgs[i],
+              fit: BoxFit.cover,
+              memCacheWidth: ImageDecode.fullScreen(context)),
         ),
         Positioned(
           top: MediaQuery.of(context).viewPadding.top + 12,
@@ -1178,7 +1191,11 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
     if (img.isEmpty) return SizedBox.expand(key: key);
     return SizedBox.expand(
       key: key,
-      child: CachedNetworkImage(imageUrl: img, cacheKey: img, fit: BoxFit.cover),
+      child: CachedNetworkImage(
+          imageUrl: img,
+          cacheKey: img,
+          fit: BoxFit.cover,
+          memCacheWidth: ImageDecode.fullScreen(context)),
     );
   }
 }

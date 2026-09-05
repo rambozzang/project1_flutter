@@ -232,6 +232,7 @@ class _AlramSettingPageState extends State<AlramSettingPage> with WidgetsBinding
 
   @override
   Widget build(BuildContext context) {
+    SaColors.isLight = true; // 라이트 고정 — 앨범 다크모드 잔류 방지
     return Scaffold(
       appBar: AppBar(
         forceMaterialTransparency: true,

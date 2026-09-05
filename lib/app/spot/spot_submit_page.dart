@@ -6,6 +6,7 @@ import 'package:project1/repo/kakao/kakao_repo.dart';
 import 'package:project1/repo/spot/spot_repo.dart';
 import 'package:project1/repo/weather_gogo/adapter/adapter_map.dart';
 import 'package:project1/utils/utils.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 
 /// 스팟 제보 화면 (사용자 → 승인대기).
 /// 카카오 장소검색으로 위치를 고르고(좌표·주소 자동), 카테고리를 선택해 제보한다.
@@ -17,7 +18,9 @@ class SpotSubmitPage extends StatefulWidget {
 }
 
 class _SpotSubmitPageState extends State<SpotSubmitPage> {
-  static const Color _accent = Color(0xFF8C83DD);
+  /// 브랜드 페리윙클 — 흰 배경 화면이므로 라이트 명도(#6559CF, 흰 배경 대비 5.41:1)를 쓴다.
+  /// (이전: #8C83DD 하드코딩 사본 — 흰 배경 대비 3.28:1로 본문 기준 미달이었다)
+  static const Color _accent = SaColorsLight.accentTeal;
   static const List<(String, String, IconData)> _categories = [
     ('camping', '캠핑', Icons.cabin),
     ('fishing', '낚시', Icons.phishing),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 
 class AchievementUnlockDialog extends StatefulWidget {
   final String icon;
@@ -67,7 +68,7 @@ class _AchievementUnlockDialogState extends State<AchievementUnlockDialog>
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
             gradient: const LinearGradient(
-              colors: [Colors.white, Color(0xFFFFFDF5)],
+              colors: [SaColorsLight.surface, SaColorsLight.surfaceElevated],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
@@ -110,7 +111,7 @@ class _AchievementUnlockDialogState extends State<AchievementUnlockDialog>
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF04101C),
+                  color: SaColorsLight.textPrimary,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -130,7 +131,7 @@ class _AchievementUnlockDialogState extends State<AchievementUnlockDialog>
                 child: ElevatedButton(
                   onPressed: Get.back,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF04101C),
+                    backgroundColor: SaColorsLight.accentTeal,
                     foregroundColor: Colors.white,
                     minimumSize: const Size(double.infinity, 50),
                     elevation: 0,

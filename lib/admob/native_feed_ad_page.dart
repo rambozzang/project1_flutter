@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:project1/utils/log_utils.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 
 /// 영상 피드(틱톡형)에 5장마다 끼워넣는 풀스크린 네이티브 광고 페이지.
 /// 다른 영상 페이지처럼 위/아래로 스와이프해 넘길 수 있다.
@@ -44,7 +45,7 @@ class _NativeFeedAdPageState extends State<NativeFeedAdPage> with AutomaticKeepA
         cornerRadius: 14.0,
         callToActionTextStyle: NativeTemplateTextStyle(
           textColor: Colors.white,
-          backgroundColor: const Color(0xFF8C83DD),
+          backgroundColor: SaColorsLight.accentTeal, // 흰 템플릿 위 CTA — 라이트 명도
           size: 16.0,
         ),
       ),

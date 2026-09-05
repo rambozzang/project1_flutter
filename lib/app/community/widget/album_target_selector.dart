@@ -1,8 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:project1/app/community/widget/cover_template.dart' show albumCoverCacheUrl;
+import 'package:project1/app/community/widget/cover_template.dart'
+    show albumCoverCacheUrl;
 import 'package:project1/repo/community/community_repo.dart';
 import 'package:project1/repo/community/data/community_data.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 
 /// 업로드(영상/사진 등록) 화면에서 "어느 앨범에 올릴지" 고르는 셀렉터.
 /// - null = 선택 안함(전체 피드)
@@ -13,11 +15,13 @@ class AlbumTargetSelector extends StatefulWidget {
     required this.selectedCommunityId,
     required this.onChanged,
     this.dark = false,
+    this.accentColor,
   });
 
   final int? selectedCommunityId;
   final ValueChanged<CommunityData?> onChanged;
   final bool dark; // 다크 배경(사진 등록 화면)용
+  final Color? accentColor;
 
   @override
   State<AlbumTargetSelector> createState() => _AlbumTargetSelectorState();
@@ -56,7 +60,8 @@ class _AlbumTargetSelectorState extends State<AlbumTargetSelector> {
       context: context,
       backgroundColor: Colors.white,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
       builder: (ctx) {
         return SafeArea(
           child: Padding(
@@ -65,15 +70,29 @@ class _AlbumTargetSelectorState extends State<AlbumTargetSelector> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: const Color(0xFFE0E3EA), borderRadius: BorderRadius.circular(2)))),
+                Center(
+                    child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                            color: const Color(0xFFE0E3EA),
+                            borderRadius: BorderRadius.circular(2)))),
                 const SizedBox(height: 14),
-                const Text('어디에 올릴까요?', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
+                const Text('어디에 올릴까요?',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.black87)),
                 const SizedBox(height: 14),
                 _sheetTile(
                   ctx,
                   leading: Container(
-                    width: 44, height: 44,
-                    decoration: BoxDecoration(color: const Color(0xFFEFF1F6), borderRadius: BorderRadius.circular(12)),
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                        color: const Color(0xFFEFF1F6),
+                        borderRadius: BorderRadius.circular(12)),
                     child: const Icon(Icons.public, color: Color(0xFF7A8291)),
                   ),
                   title: '전체 피드',
@@ -86,19 +105,24 @@ class _AlbumTargetSelectorState extends State<AlbumTargetSelector> {
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 14),
                     child: Text('참여한 앨범이 없어요. 라운지에서 앨범을 만들어보세요.',
-                        textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF9AA3B2), fontSize: 12.5)),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            color: Color(0xFF9AA3B2), fontSize: 12.5)),
                   ),
                 Flexible(
                   child: ListView(
                     shrinkWrap: true,
-                    children: _albums.map((a) => _sheetTile(
-                      ctx,
-                      leading: _albumThumb(a, 44),
-                      title: a.name,
-                      subtitle: '멤버 ${a.memberCnt}명',
-                      selected: widget.selectedCommunityId == a.communityId,
-                      onTap: () => Navigator.of(ctx).pop(a),
-                    )).toList(),
+                    children: _albums
+                        .map((a) => _sheetTile(
+                              ctx,
+                              leading: _albumThumb(a, 44),
+                              title: a.name,
+                              subtitle: '멤버 ${a.memberCnt}명',
+                              selected:
+                                  widget.selectedCommunityId == a.communityId,
+                              onTap: () => Navigator.of(ctx).pop(a),
+                            ))
+                        .toList(),
                   ),
                 ),
               ],
@@ -120,15 +144,22 @@ class _AlbumTargetSelectorState extends State<AlbumTargetSelector> {
     final sel = _selected;
     final isNone = widget.selectedCommunityId == null;
     final dark = widget.dark;
+    final Color accent = widget.accentColor ??
+        (dark ? SaColorsDark.accentTeal : SaColorsLight.accentTeal);
 
     final Color bg = dark
-        ? (isNone ? const Color(0xFF20242E) : const Color(0xFF1E2A44))
-        : (isNone ? Colors.white : const Color(0xFFF1F5FF));
+        ? (isNone ? SaColorsDark.surface : SaColorsDark.surfaceElevated)
+        : (isNone ? SaColorsLight.surface : SaColorsLight.surfaceElevated);
     final Color border = dark
-        ? (isNone ? const Color(0xFF2C313D) : const Color(0xFF35507F))
-        : (isNone ? const Color(0xFFE6E8EF) : const Color(0xFFD6E0FA));
-    final Color accent = dark ? const Color(0xFF6AA0F0) : const Color(0xFF3B6FE0);
-    final Color valueColor = isNone ? (dark ? const Color(0xFFF1F4F9) : Colors.black87) : accent;
+        ? (isNone
+            ? SaColorsDark.borderStrong
+            : SaColorsDark.accentTeal.withValues(alpha: 0.35))
+        : (isNone
+            ? SaColorsLight.borderStrong
+            : accent.withValues(alpha: 0.35));
+    final Color valueColor = isNone
+        ? (dark ? SaColorsDark.textPrimary : SaColorsLight.textPrimary)
+        : accent;
 
     return InkWell(
       borderRadius: BorderRadius.circular(12),
@@ -142,23 +173,44 @@ class _AlbumTargetSelectorState extends State<AlbumTargetSelector> {
         ),
         child: Row(
           children: [
-            Icon(isNone ? Icons.public : Icons.photo_album, size: 20, color: isNone ? (dark ? const Color(0xFF9AA3B2) : const Color(0xFF7A8291)) : accent),
+            Icon(isNone ? Icons.public : Icons.photo_album,
+                size: 20,
+                color: isNone
+                    ? (dark
+                        ? SaColorsDark.textSecondary
+                        : const Color(0xFF7A8291))
+                    : accent),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('올릴 앨범', style: TextStyle(fontSize: 11.5, color: Color(0xFF9AA3B2), fontWeight: FontWeight.w600)),
+                  Text('올릴 앨범',
+                      style: TextStyle(
+                          fontSize: 11.5,
+                          color: dark
+                              ? SaColorsDark.textSecondary
+                              : SaColorsLight.textSecondary,
+                          fontWeight: FontWeight.w600)),
                   const SizedBox(height: 2),
                   Text(
-                    _loading ? '불러오는 중…' : (isNone ? '전체 피드' : (sel?.name ?? '선택한 앨범')),
-                    maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: valueColor),
+                    _loading
+                        ? '불러오는 중…'
+                        : (isNone ? '전체 피드' : (sel?.name ?? '선택한 앨범')),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.bold,
+                        color: valueColor),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.keyboard_arrow_down_rounded, color: dark ? const Color(0xFF6B7280) : const Color(0xFFB6BCC8)),
+            Icon(Icons.keyboard_arrow_down_rounded,
+                color: dark
+                    ? SaColorsDark.textTertiary
+                    : SaColorsLight.textTertiary),
           ],
         ),
       ),
@@ -166,7 +218,11 @@ class _AlbumTargetSelectorState extends State<AlbumTargetSelector> {
   }
 
   Widget _sheetTile(BuildContext ctx,
-      {required Widget leading, required String title, required String subtitle, required bool selected, required VoidCallback onTap}) {
+      {required Widget leading,
+      required String title,
+      required String subtitle,
+      required bool selected,
+      required VoidCallback onTap}) {
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: onTap,
@@ -180,13 +236,22 @@ class _AlbumTargetSelectorState extends State<AlbumTargetSelector> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 15)),
+                  Text(title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                          fontSize: 15)),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF9AA3B2))),
+                  Text(subtitle,
+                      style: const TextStyle(
+                          fontSize: 12, color: Color(0xFF9AA3B2))),
                 ],
               ),
             ),
-            if (selected) const Icon(Icons.check_circle, color: Color(0xFF3B6FE0)),
+            if (selected)
+              const Icon(Icons.check_circle, color: SaColorsLight.accentTeal),
           ],
         ),
       ),
@@ -209,13 +274,19 @@ class _AlbumTargetSelectorState extends State<AlbumTargetSelector> {
       );
     }
     return Container(
-      width: size, height: size,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         borderRadius: radius,
-        gradient: const LinearGradient(colors: [Color(0xFF5B8DEF), Color(0xFF3B6FE0)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+        gradient: const LinearGradient(
+            colors: [SaColorsLight.accentBlue, SaColorsLight.accentTeal],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight),
       ),
       alignment: Alignment.center,
-      child: Text(a.name.isNotEmpty ? a.name.characters.first : '?', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      child: Text(a.name.isNotEmpty ? a.name.characters.first : '?',
+          style: const TextStyle(
+              color: Colors.white, fontWeight: FontWeight.bold)),
     );
   }
 }

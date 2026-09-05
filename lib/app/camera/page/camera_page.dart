@@ -14,6 +14,7 @@ import 'package:project1/app/camera/page/photo_reg_page.dart';
 import 'package:project1/app/camera/page/video_reg_page.dart';
 import 'package:project1/app/camera/page/widgets/animated_bar.dart';
 import 'package:project1/app/camera/page/widgets/camera_preview_widget.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -558,7 +559,7 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFF4A90E2),
+            color: SaColorsLight.accentTeal,
             borderRadius: BorderRadius.circular(24),
           ),
           child: Row(
@@ -680,4 +681,3 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
     );
   }
 }
-

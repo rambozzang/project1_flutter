@@ -3,6 +3,7 @@ import 'dart:io';
 // import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
@@ -10,6 +11,7 @@ import 'package:hashtagable_v3/widgets/hashtag_text_field.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:pretty_animated_text/pretty_animated_text.dart';
 import 'package:project1/app/feel/widgets/feel_selector_widget.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/weather/models/geocode.dart';
 import 'package:project1/app/weathergogo/services/location_service.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
@@ -19,7 +21,6 @@ import 'package:project1/repo/board/data/board_save_weather_data.dart';
 import 'package:project1/repo/weather/data/current_weather.dart';
 import 'package:project1/app/weathergogo/cntr/data/current_weather_data.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
-import 'package:project1/app/weathergogo/theme/sky_gradient.dart';
 import 'package:project1/repo/weather/data/weather_view_data.dart';
 import 'package:project1/repo/weather_gogo/models/response/super_fct/super_fct_model.dart';
 import 'package:project1/repo/weather_gogo/repository/weather_gogo_caching.dart';
@@ -45,10 +46,9 @@ class VideoRegPage extends StatefulWidget {
   State<VideoRegPage> createState() => _VideoRegPageState();
 }
 
-class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMixin {
+class _VideoRegPageState extends State<VideoRegPage>
+    with TickerProviderStateMixin {
   late VideoPlayerController _videoController;
-  // 배경 하늘 그라데이션은 1회만 계산(매 빌드마다 DateTime.now()+그라데이션 재계산 방지)
-  final Decoration _skyBg = SkyGradient.decoration(DateTime.now());
   final TextEditingController hashTagController = TextEditingController();
   final FocusNode hashTagFocusNode = FocusNode();
   // late Subscription _subscription;
@@ -73,6 +73,7 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
   bool isCancle = false;
   Duration durationOfVideo = Duration.zero;
   bool initVideo = false;
+  bool _videoControllerCreated = false;
   String hideYn = 'N';
   String anonyYn = 'N';
 
@@ -91,7 +92,8 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
 
   final WeatherService weatherService = WeatherService();
 
-  ValueNotifier<CurrentWeatherData?> currentWeather = ValueNotifier<CurrentWeatherData?>(null);
+  ValueNotifier<CurrentWeatherData?> currentWeather =
+      ValueNotifier<CurrentWeatherData?>(null);
   ValueNotifier<GeocodeData?> geocodeData = ValueNotifier<GeocodeData?>(null);
   ValueNotifier<MistViewData?> mistData = ValueNotifier<MistViewData?>(null);
 
@@ -140,7 +142,7 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
   Future<void> _retryInitialization() async {
     lo.g('retryInitialization');
     await Future.delayed(const Duration(seconds: 1));
-    initializeVideo();
+    if (mounted) initializeVideo();
   }
 
   void _toggleHideCheckbox() {
@@ -173,27 +175,35 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
       // 초기화 전 딜레이 추가
       await Future.delayed(const Duration(milliseconds: 300));
 
-      _videoController = VideoPlayerController.file(
+      final controller = VideoPlayerController.file(
         widget.videoFile,
-        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: false, allowBackgroundPlayback: false),
+        videoPlayerOptions: VideoPlayerOptions(
+            mixWithOthers: false, allowBackgroundPlayback: false),
       );
-      await _videoController.initialize().then((a) {
-        setState(() {
-          _videoController.setLooping(true);
-          _videoController.play();
-          initVideo = true;
-          durationOfVideo = _videoController.value.duration;
-        });
+      _videoController = controller;
+      _videoControllerCreated = true;
+      await controller.initialize();
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      controller.setLooping(true);
+      controller.play();
+      setState(() {
+        initVideo = true;
+        durationOfVideo = controller.value.duration;
       });
 
-      _videoController.addListener(() {
-        if (_videoController.value.hasError) {
+      controller.addListener(() {
+        if (!mounted) return;
+        if (controller.value.hasError) {
           lo.g('Video error: ${_videoController.value.errorDescription}');
           // 재시도 로직
           _retryInitialization();
         }
       });
     } catch (e) {
+      if (!mounted) return;
       Utils.alert("비디오초기화 오류 : $e");
       lo.g("initializeVideo() error : $e");
       _retryInitialization();
@@ -235,7 +245,11 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
           }
         } else {
           onValue2 = Get.find<WeatherGogoCntr>().currentLocation.value.name;
-          onValue1 = Get.find<WeatherGogoCntr>().currentLocation.value.addr!.split(' ')[0];
+          onValue1 = Get.find<WeatherGogoCntr>()
+              .currentLocation
+              .value
+              .addr!
+              .split(' ')[0];
         }
       }
 
@@ -247,10 +261,12 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
       WeatherGogoRepo repo = WeatherGogoRepo();
 
       // 기본 날씨
-      CurrentWeatherData currentWeatherData = Get.find<WeatherGogoCntr>().currentWeather.value;
+      CurrentWeatherData currentWeatherData =
+          Get.find<WeatherGogoCntr>().currentWeather.value;
       lo.g("currentWeatherData : ${currentWeatherData.toString()}");
       isWeathering.value = false;
-      String fcstDate = currentWeatherData.fcstDate ?? intl.DateFormat('yyyyMMdd').format(DateTime.now());
+      String fcstDate = currentWeatherData.fcstDate ??
+          intl.DateFormat('yyyyMMdd').format(DateTime.now());
       String fcstTime = currentWeatherData.fcsTime!;
 
       currentWeather.value = currentWeatherData;
@@ -271,7 +287,8 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
         fcstTime = itemFctList.first.fcstTime!;
         // 날씨 데이터 처리...
         for (var item in itemFctList) {
-          if (item.fcstDate.toString() == fcstDate && item.fcstTime.toString() == fcstTime) {
+          if (item.fcstDate.toString() == fcstDate &&
+              item.fcstTime.toString() == fcstTime) {
             if (item.category == 'T1H') {
               currentWeatherData.temp = item.fcstValue!;
             } else if (item.category == 'PTY') {
@@ -292,8 +309,9 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
       //   return await getDate();
       // }
 
-      currentWeatherData.description =
-          WeatherDataProcessor.instance.combineWeatherCondition(currentWeatherData.sky.toString(), currentWeatherData.rain.toString());
+      currentWeatherData.description = WeatherDataProcessor.instance
+          .combineWeatherCondition(currentWeatherData.sky.toString(),
+              currentWeatherData.rain.toString());
 
       currentWeather.value = currentWeatherData;
       lo.g('currentWeather : ${currentWeather.value}');
@@ -326,7 +344,8 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
       boardSaveData.boardMastInVo = _createBoardSaveMainData();
       // 날씨 본체는 백그라운드에서 수집하지만, 사용자가 고른 체감 태그는 여기서 실어 보낸다.
       // (RootCntr.uploadCloudflare 가 저장 직전 weatherVo.feelCd 로 보존한다.)
-      boardSaveData.boardWeatherVo = BoardSaveWeatherData()..feelCd = selectedFeelCd;
+      boardSaveData.boardWeatherVo = BoardSaveWeatherData()
+        ..feelCd = selectedFeelCd;
 
       _showUploadAlert();
 
@@ -391,7 +410,9 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
     if (isUploading.value == true) {
       return;
     }
-    Utils.showConfirmDialog('나가기', '영상이 삭제됩니다. 나가겠습니까?', BackButtonBehavior.none, confirm: () async {
+    Utils.showConfirmDialog(
+        '나가기', '영상이 삭제됩니다. 나가겠습니까?', BackButtonBehavior.none,
+        confirm: () async {
       Lo.g('cancel');
       isCancle = true;
       Navigator.of(context).pop();
@@ -402,9 +423,10 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
 
   @override
   void dispose() {
-    _videoController.removeListener(() {});
-    _videoController.setVolume(0);
-    _videoController.dispose();
+    if (_videoControllerCreated) {
+      _videoController.setVolume(0);
+      _videoController.dispose();
+    }
     _hideController.dispose();
     _anonyController.dispose();
     hashTagController.dispose();
@@ -418,15 +440,16 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
     }
   }
 
-  // ── 디자인 토큰 (앱의 하늘/다크 무드와 통일) ──
-  static const Color _bgTop = Color(0xFF121A38);
-  static const Color _bgMid = Color(0xFF1A2348);
-  static const Color _bgBot = Color(0xFF0B0F22);
-  static const Color _surface = Color(0x14FFFFFF); // 흰색 8% — 은은한 표면
-  static const Color _surfaceBorder = Color(0x1FFFFFFF); // 흰색 12% — 헤어라인
-  static const Color _accent = Color(0xFF4C8DFF); // 하늘빛 블루 액센트
-  static const Color _textHi = Color(0xFFF2F5FA);
-  static const Color _textLo = Color(0xFF9AA6C2);
+  // 전역 화이트/민트 토큰을 공유해 게시 화면만 다른 색으로 남지 않게 한다.
+  static const Color _bgBot = SaColorsLight.bgBase;
+  static const Color _surface = SaColorsLight.surface;
+  static const Color _surfaceBorder = SaColorsLight.border;
+  static const Color _accent = SaColorsLight.accentTeal;
+  static const Color _accentBright = SaColorsLight.accentBlue;
+  static const Color _warning = SaColorsLight.warn;
+  static const Color _warningSurface = SaColorsLight.surface;
+  static const Color _textHi = SaColorsLight.textPrimary;
+  static const Color _textLo = SaColorsLight.textSecondary;
 
   @override
   Widget build(BuildContext context) {
@@ -438,9 +461,22 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
-        title: const Text('새 영상', style: TextStyle(color: _textHi, fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: -0.2)),
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+          systemNavigationBarColor: _bgBot,
+          systemNavigationBarIconBrightness: Brightness.dark,
+        ),
+        title: const Text('새 영상',
+            style: TextStyle(
+                color: _textHi,
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2)),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _textHi, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: _textHi, size: 20),
           onPressed: () => cancle(),
         ),
         actions: [
@@ -451,33 +487,10 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
         ],
       ),
       resizeToAvoidBottomInset: true,
-      body: Stack(
+      body: Column(
         children: [
-          // 앱의 '시간대별 하늘'과 동일한 배경 → 화면 통일감
-          Positioned.fill(child: Container(decoration: _skyBg)),
-          // 가독성을 위한 은은한 다크 스크림 (상·하단을 조금 더 어둡게)
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.45),
-                    Colors.black.withOpacity(0.20),
-                    Colors.black.withOpacity(0.55),
-                  ],
-                  stops: const [0.0, 0.45, 1.0],
-                ),
-              ),
-            ),
-          ),
-          Column(
-            children: [
-              Expanded(child: _buildBody()),
-              _buildBottomBar(),
-            ],
-          ),
+          Expanded(child: _buildBody()),
+          _buildBottomBar(),
         ],
       ),
     );
@@ -508,76 +521,142 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
 
   // 음란물 등 부적절 콘텐츠 경고 — 등록 화면 상단에 항상 노출(정책 준수 + 사용자 경각심).
   Widget _buildContentWarning() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFDECEC),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFF0C4C4)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Icon(Icons.warning_amber_rounded, size: 18, color: Color(0xFFC62828)),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '음란물·불법촬영물·타인 비방 등 부적절한 콘텐츠는 게시가 제한됩니다. 위반 시 삭제·이용 정지되며 관련 법에 따라 처벌될 수 있어요.',
-              style: TextStyle(fontSize: 12, height: 1.4, color: Color(0xFFB23A3A), fontWeight: FontWeight.w600),
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => _policyOpen.value = true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+        decoration: BoxDecoration(
+          color: _warningSurface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _surfaceBorder),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.shield_outlined, size: 16, color: _warning),
+            const Gap(8),
+            const Expanded(
+              child: Text(
+                '음란물·불법촬영물 등 부적절한 콘텐츠는 게시할 수 없어요.',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: 11.5,
+                    height: 1.25,
+                    color: _textHi,
+                    fontWeight: FontWeight.w600),
+              ),
             ),
-          ),
-        ],
+            const Gap(4),
+            Icon(Icons.chevron_right_rounded,
+                size: 18, color: _warning.withValues(alpha: 0.8)),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildMainContent() {
     return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildEditorIntro(),
+          const Gap(12),
           _buildContentWarning(),
-          const Gap(12),
-          // 큰 영상 플레이어 (음소거 + 전체화면 + 재생시간 포함)
-          Center(child: _buildVideoPlayer()),
-          const Gap(12),
-          // 캡션 입력
-          _buildCaptionField(),
-          const Gap(10),
-          // 어느 앨범에 올릴지 선택
+          const Gap(14),
+          _buildComposerRow(),
+          const Gap(22),
+          _buildSectionLabel('게시 위치'),
+          const Gap(8),
           AlbumTargetSelector(
+            dark: false,
+            accentColor: _accent,
             selectedCommunityId: _selectedCommunityId,
-            onChanged: (c) => setState(() => _selectedCommunityId = c?.communityId),
+            onChanged: (c) =>
+                setState(() => _selectedCommunityId = c?.communityId),
           ),
-          const Gap(10),
-          _igDivider(),
-          // 비공개 + 익명을 한 줄 컴팩트 칩으로
-          const Gap(4),
+          const Gap(20),
+          _buildSectionLabel('공개 설정'),
+          const Gap(8),
           _buildOptionPills(),
-          const Gap(4),
-          _igDivider(),
+          const Gap(20),
+          _buildSectionLabel('게시 정보'),
+          const Gap(8),
           _autoWeatherRow(),
-          _igDivider(),
-          // 체감 날씨 태그 선택 (사용자 주관 입력 — 자동 수집되는 날씨와 별개)
+          const Gap(8),
           Container(
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.fromLTRB(14, 6, 14, 12),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              color: _surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: _surfaceBorder),
             ),
             child: FeelSelectorWidget(
+              dark: false,
+              accentColor: _accent,
               selectedFeelCd: selectedFeelCd,
               onSelected: (code) => setState(() => selectedFeelCd = code),
             ),
           ),
-          _igDivider(),
+          const Gap(18),
           _policyRow(),
-          const Gap(8),
+          const Gap(10),
         ],
       ),
+    );
+  }
+
+  Widget _buildEditorIntro() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        const Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('게시 준비',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: _accentBright,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.4)),
+              Gap(3),
+              Text('영상과 문구를 확인하세요',
+                  style: TextStyle(
+                      fontSize: 21,
+                      height: 1.15,
+                      color: _textHi,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5)),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+          decoration: BoxDecoration(
+            color: _accent.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _accent.withValues(alpha: 0.28)),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.check_circle_outline_rounded,
+                  size: 14, color: _accentBright),
+              Gap(5),
+              Text('1단계',
+                  style: TextStyle(
+                      fontSize: 11,
+                      color: _textHi,
+                      fontWeight: FontWeight.w700)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -595,12 +674,13 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
 
   // 컴팩트 영상 썸네일 (탭 → 전체화면)
   Widget _buildVideoThumb() {
-    const double w = 104, h = 164;
+    const double w = 108, h = 192;
     void openFull() {
       Navigator.push<VideoPreviewPage>(
         context,
         MaterialPageRoute<VideoPreviewPage>(
-          builder: (BuildContext context) => VideoPreviewPage(videoPlayerController: _videoController),
+          builder: (BuildContext context) =>
+              VideoPreviewPage(videoPlayerController: _videoController),
         ),
       );
     }
@@ -615,7 +695,10 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
           border: Border.all(color: _surfaceBorder),
         ),
         alignment: Alignment.center,
-        child: const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: _accent)),
+        child: const SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2, color: _accent)),
       );
     }
 
@@ -645,20 +728,31 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                 left: 6,
                 bottom: 6,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                  decoration: BoxDecoration(color: Colors.black.withOpacity(0.5), borderRadius: BorderRadius.circular(7)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(7)),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.play_arrow_rounded, size: 12, color: Colors.white),
+                      const Icon(Icons.play_arrow_rounded,
+                          size: 12, color: Colors.white),
                       const Gap(2),
                       Text(formatMilliseconds(durationOfVideo.inMilliseconds),
-                          style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w600)),
+                          style: const TextStyle(
+                              fontSize: 10,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ),
               ),
-              const Positioned(top: 6, right: 6, child: Icon(Icons.fullscreen_rounded, size: 18, color: Colors.white)),
+              const Positioned(
+                  top: 6,
+                  right: 6,
+                  child: Icon(Icons.fullscreen_rounded,
+                      size: 18, color: Colors.white)),
             ],
           ),
         ),
@@ -684,8 +778,13 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 15, color: _textHi, fontWeight: FontWeight.w600)),
-                Text(subtitle, style: const TextStyle(fontSize: 12, color: _textLo)),
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 15,
+                        color: _textHi,
+                        fontWeight: FontWeight.w600)),
+                Text(subtitle,
+                    style: const TextStyle(fontSize: 12, color: _textLo)),
               ],
             ),
           ),
@@ -704,19 +803,53 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
 
   // 위치·날씨 자동 첨부 안내 행
   Widget _autoWeatherRow() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _surfaceBorder),
+      ),
       child: Row(
         children: [
-          const Icon(Icons.auto_awesome_rounded, size: 22, color: _accent),
-          const Gap(14),
+          Container(
+            width: 34,
+            height: 34,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: _accent.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: const Icon(Icons.auto_awesome_rounded,
+                size: 18, color: _accentBright),
+          ),
+          const Gap(11),
           const Expanded(
-            child: Text('촬영한 곳의 날씨·위치가 자동으로 함께 기록돼요.', style: TextStyle(fontSize: 14, color: _textHi, height: 1.3)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('촬영 정보 자동 첨부',
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: _textHi,
+                        fontWeight: FontWeight.w700)),
+                Gap(3),
+                Text('촬영한 곳의 날씨와 위치가 함께 기록돼요.',
+                    style: TextStyle(
+                        fontSize: 11.5, color: _textLo, height: 1.25)),
+              ],
+            ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(color: _accent.withOpacity(0.16), borderRadius: BorderRadius.circular(8)),
-            child: const Text('자동', style: TextStyle(fontSize: 11, color: _accent, fontWeight: FontWeight.w700)),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            decoration: BoxDecoration(
+                color: _accent.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(8)),
+            child: const Text('자동',
+                style: TextStyle(
+                    fontSize: 10.5,
+                    color: _accentBright,
+                    fontWeight: FontWeight.w800)),
           ),
         ],
       ),
@@ -728,46 +861,65 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
     return ValueListenableBuilder<bool>(
       valueListenable: _policyOpen,
       builder: (context, open, _) {
-        return Column(
-          children: [
-            InkWell(
-              onTap: () => _policyOpen.value = !open,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                child: Row(
-                  children: [
-                    const Icon(Icons.shield_outlined, size: 22, color: _textLo),
-                    const Gap(14),
-                    const Expanded(
-                      child: Text('게시 정책 · 저작권 안내', style: TextStyle(fontSize: 15, color: _textHi, fontWeight: FontWeight.w600)),
-                    ),
-                    AnimatedRotation(
-                      turns: open ? 0.5 : 0,
-                      duration: const Duration(milliseconds: 220),
-                      child: const Icon(Icons.keyboard_arrow_down_rounded, color: _textLo, size: 22),
-                    ),
-                  ],
+        return Container(
+          decoration: BoxDecoration(
+            color: _surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _surfaceBorder),
+          ),
+          child: Column(
+            children: [
+              InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => _policyOpen.value = !open,
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.shield_outlined,
+                          size: 19, color: _accentBright),
+                      const Gap(10),
+                      const Expanded(
+                        child: Text('게시 정책 · 저작권 안내',
+                            style: TextStyle(
+                                fontSize: 13,
+                                color: _textHi,
+                                fontWeight: FontWeight.w700)),
+                      ),
+                      AnimatedRotation(
+                        turns: open ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 220),
+                        child: const Icon(Icons.keyboard_arrow_down_rounded,
+                            color: _textLo, size: 21),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            AnimatedCrossFade(
-              duration: const Duration(milliseconds: 220),
-              crossFadeState: open ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-              firstChild: const SizedBox(width: double.infinity, height: 0),
-              secondChild: const Padding(
-                padding: EdgeInsets.only(left: 36, bottom: 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _PolicyLine(
-                        icon: Icons.music_note_rounded, text: '음악 저작권: 허락 없는 음원 사용 시 게시가 제한되거나 법적 책임이 따를 수 있어요. 저작권 free 음원을 권장합니다.'),
-                    Gap(10),
-                    _PolicyLine(icon: Icons.gavel_rounded, text: '금지 콘텐츠: 불법·성적·폭력·혐오 영상은 즉시 삭제되며 계정 정지 및 법적 조치 대상이 됩니다.'),
-                  ],
+              AnimatedCrossFade(
+                duration: const Duration(milliseconds: 220),
+                crossFadeState:
+                    open ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                firstChild: const SizedBox(width: double.infinity, height: 0),
+                secondChild: const Padding(
+                  padding: EdgeInsets.fromLTRB(14, 0, 14, 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _PolicyLine(
+                          icon: Icons.music_note_rounded,
+                          text: '음악 저작권: 허락 없는 음원 사용 시 게시가 제한될 수 있어요.'),
+                      Gap(9),
+                      _PolicyLine(
+                          icon: Icons.gavel_rounded,
+                          text: '음란물·불법·폭력·혐오 콘텐츠는 삭제 및 이용 제한 대상이에요.'),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
@@ -781,7 +933,11 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
       padding: const EdgeInsets.only(left: 2),
       child: Text(
         text,
-        style: const TextStyle(fontSize: 13, color: _textLo, fontWeight: FontWeight.w700, letterSpacing: 0.2),
+        style: const TextStyle(
+            fontSize: 13,
+            color: _textLo,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.2),
       ),
     );
   }
@@ -815,11 +971,11 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
     return GestureDetector(
       onTap: () => FocusScope.of(context).requestFocus(hashTagFocusNode),
       child: Container(
-        height: 100,
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+        height: 192,
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
         decoration: BoxDecoration(
           color: _surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: _surfaceBorder),
         ),
         child: Column(
@@ -828,19 +984,36 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
             // 입력칸임을 분명히 알리는 라벨
             Row(
               children: [
-                const Icon(Icons.edit_note_rounded, size: 17, color: _accent),
-                const Gap(5),
-                const Text('문구 입력', style: TextStyle(fontSize: 12.5, color: _accent, fontWeight: FontWeight.w700)),
+                const Icon(Icons.edit_note_rounded,
+                    size: 18, color: _accentBright),
+                const Gap(6),
+                const Text('문구 입력',
+                    style: TextStyle(
+                        fontSize: 12.5,
+                        color: _textHi,
+                        fontWeight: FontWeight.w700)),
                 const Spacer(),
-                Text('# 태그', style: TextStyle(fontSize: 11, color: _textLo.withOpacity(0.9), fontWeight: FontWeight.w600)),
+                Text('# 태그',
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: _textLo.withValues(alpha: 0.9),
+                        fontWeight: FontWeight.w600)),
               ],
             ),
-            const Gap(6),
+            const Gap(9),
             Expanded(
               child: HashTagTextField(
                 controller: hashTagController,
-                basicStyle: const TextStyle(fontSize: 15, height: 1.4, color: _textHi, decorationThickness: 0),
-                decoratedStyle: const TextStyle(fontSize: 15, height: 1.4, color: _accent, fontWeight: FontWeight.w600),
+                basicStyle: const TextStyle(
+                    fontSize: 15,
+                    height: 1.4,
+                    color: _textHi,
+                    decorationThickness: 0),
+                decoratedStyle: const TextStyle(
+                    fontSize: 15,
+                    height: 1.4,
+                    color: _accent,
+                    fontWeight: FontWeight.w600),
                 keyboardType: TextInputType.multiline,
                 focusNode: hashTagFocusNode,
                 cursorColor: _accent,
@@ -850,8 +1023,9 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                 decoration: const InputDecoration(
                   isCollapsed: true,
                   contentPadding: EdgeInsets.zero,
-                  hintText: "이 순간을 설명해 주세요…\n예) 노을이 예술 #오늘하늘",
-                  hintStyle: TextStyle(fontSize: 14, height: 1.4, color: _textLo),
+                  hintText: '이 순간을 설명해 주세요…\n예) 노을이 예술 #오늘하늘',
+                  hintStyle:
+                      TextStyle(fontSize: 14, height: 1.4, color: _textLo),
                   border: InputBorder.none,
                   focusedBorder: InputBorder.none,
                   enabledBorder: InputBorder.none,
@@ -885,7 +1059,8 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
           child: _optionPill(
             active: _anonyChecked,
             onTap: _toggleAnonyCheckbox,
-            icon: _anonyChecked ? Icons.person_off_rounded : Icons.person_rounded,
+            icon:
+                _anonyChecked ? Icons.person_off_rounded : Icons.person_rounded,
             label: _anonyChecked ? '익명' : '내 이름',
             sub: _anonyChecked ? '닉네임 숨김' : '닉네임 표시',
             activeColor: _accent,
@@ -903,25 +1078,61 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
     required String sub,
     required Color activeColor,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: active ? activeColor.withOpacity(0.16) : _surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: active ? activeColor.withOpacity(0.9) : _surfaceBorder, width: 1),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 17, color: active ? activeColor : _textLo),
-            const Gap(7),
-            Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: active ? _textHi : _textHi.withOpacity(0.85))),
-          ],
+    return Semantics(
+      button: true,
+      toggled: active,
+      label: '$label, $sub',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            constraints: const BoxConstraints(minHeight: 58),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: BoxDecoration(
+              color: active ? activeColor.withValues(alpha: 0.18) : _surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                  color: active
+                      ? activeColor.withValues(alpha: 0.85)
+                      : _surfaceBorder,
+                  width: 1),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 19, color: active ? _accentBright : _textLo),
+                const Gap(8),
+                Flexible(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: active
+                                  ? _textHi
+                                  : _textHi.withValues(alpha: 0.92))),
+                      const Gap(2),
+                      Text(sub,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontSize: 10.5,
+                              color: _textLo.withValues(alpha: 0.95))),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -946,18 +1157,25 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                 borderRadius: BorderRadius.circular(16),
                 onTap: () => _policyOpen.value = !open,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
                   child: Row(
                     children: [
-                      const Icon(Icons.shield_outlined, size: 18, color: _textLo),
+                      const Icon(Icons.shield_outlined,
+                          size: 18, color: _textLo),
                       const Gap(10),
                       const Expanded(
-                        child: Text('게시 정책 · 저작권 안내', style: TextStyle(fontSize: 13, color: _textHi, fontWeight: FontWeight.w600)),
+                        child: Text('게시 정책 · 저작권 안내',
+                            style: TextStyle(
+                                fontSize: 13,
+                                color: _textHi,
+                                fontWeight: FontWeight.w600)),
                       ),
                       AnimatedRotation(
                         turns: open ? 0.5 : 0,
                         duration: const Duration(milliseconds: 220),
-                        child: const Icon(Icons.keyboard_arrow_down_rounded, color: _textLo, size: 22),
+                        child: const Icon(Icons.keyboard_arrow_down_rounded,
+                            color: _textLo, size: 22),
                       ),
                     ],
                   ),
@@ -965,7 +1183,8 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
               ),
               AnimatedCrossFade(
                 duration: const Duration(milliseconds: 220),
-                crossFadeState: open ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                crossFadeState:
+                    open ? CrossFadeState.showSecond : CrossFadeState.showFirst,
                 firstChild: const SizedBox(width: double.infinity, height: 0),
                 secondChild: const Padding(
                   padding: EdgeInsets.fromLTRB(14, 0, 14, 14),
@@ -973,9 +1192,14 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _PolicyLine(
-                          icon: Icons.music_note_rounded, text: '음악 저작권: 허락 없는 음원 사용 시 게시가 제한되거나 법적 책임이 따를 수 있어요. 저작권 free 음원을 권장합니다.'),
+                          icon: Icons.music_note_rounded,
+                          text:
+                              '음악 저작권: 허락 없는 음원 사용 시 게시가 제한되거나 법적 책임이 따를 수 있어요. 저작권 free 음원을 권장합니다.'),
                       Gap(10),
-                      _PolicyLine(icon: Icons.gavel_rounded, text: '금지 콘텐츠: 불법·성적·폭력·혐오 영상은 즉시 삭제되며 계정 정지 및 법적 조치 대상이 됩니다.'),
+                      _PolicyLine(
+                          icon: Icons.gavel_rounded,
+                          text:
+                              '금지 콘텐츠: 불법·성적·폭력·혐오 영상은 즉시 삭제되며 계정 정지 및 법적 조치 대상이 됩니다.'),
                     ],
                   ),
                 ),
@@ -999,7 +1223,8 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
           border: Border.all(color: _surfaceBorder),
         ),
         alignment: Alignment.center,
-        child: const CircularProgressIndicator(strokeWidth: 2.4, color: _accent),
+        child:
+            const CircularProgressIndicator(strokeWidth: 2.4, color: _accent),
       );
     }
 
@@ -1007,7 +1232,8 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
       Navigator.push<VideoPreviewPage>(
         context,
         MaterialPageRoute<VideoPreviewPage>(
-          builder: (BuildContext context) => VideoPreviewPage(videoPlayerController: _videoController),
+          builder: (BuildContext context) =>
+              VideoPreviewPage(videoPlayerController: _videoController),
         ),
       );
     }
@@ -1054,7 +1280,10 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Colors.black.withOpacity(0.35), Colors.transparent],
+                      colors: [
+                        Colors.black.withOpacity(0.35),
+                        Colors.transparent
+                      ],
                     ),
                   ),
                 ),
@@ -1072,7 +1301,12 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                       _videoController.setVolume(value ? 1 : 0);
                       soundOff.value = !value;
                     },
-                    child: Icon(value ? Icons.volume_off_rounded : Icons.volume_up_rounded, size: 18, color: Colors.white),
+                    child: Icon(
+                        value
+                            ? Icons.volume_off_rounded
+                            : Icons.volume_up_rounded,
+                        size: 18,
+                        color: Colors.white),
                   );
                 },
               ),
@@ -1083,7 +1317,8 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
               bottom: 10,
               child: _glassChip(
                 onTap: openFull,
-                child: const Icon(Icons.fullscreen_rounded, size: 20, color: Colors.white),
+                child: const Icon(Icons.fullscreen_rounded,
+                    size: 20, color: Colors.white),
               ),
             ),
             // 재생시간 (우하단)
@@ -1098,7 +1333,10 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                 ),
                 child: Text(
                   formatMilliseconds(durationOfVideo.inMilliseconds),
-                  style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -1144,7 +1382,8 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.location_on_rounded, size: 14, color: _accent),
+                    const Icon(Icons.location_on_rounded,
+                        size: 14, color: _accent),
                     const Gap(4),
                     Flexible(
                       child: ValueListenableBuilder<GeocodeData?>(
@@ -1153,7 +1392,10 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                           return Text(
                             value?.name ?? '위치 확인 중…',
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 13, color: _textHi, fontWeight: FontWeight.w700),
+                            style: const TextStyle(
+                                fontSize: 13,
+                                color: _textHi,
+                                fontWeight: FontWeight.w700),
                           );
                         },
                       ),
@@ -1165,21 +1407,37 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                   valueListenable: currentWeather,
                   builder: (context, value, child) {
                     if (value == null) {
-                      return const Text('기상정보를 가져오는 중…', style: TextStyle(fontSize: 12, color: _textLo, fontWeight: FontWeight.w500));
+                      return const Text('기상정보를 가져오는 중…',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: _textLo,
+                              fontWeight: FontWeight.w500));
                     }
                     return Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text('${value.temp}', style: const TextStyle(fontSize: 24, height: 1, color: _textHi, fontWeight: FontWeight.w800)),
+                        Text('${value.temp}',
+                            style: const TextStyle(
+                                fontSize: 24,
+                                height: 1,
+                                color: _textHi,
+                                fontWeight: FontWeight.w800)),
                         const Padding(
                           padding: EdgeInsets.only(top: 2),
-                          child: Text('°', style: TextStyle(fontSize: 18, color: _textHi, fontWeight: FontWeight.w800)),
+                          child: Text('°',
+                              style: TextStyle(
+                                  fontSize: 18,
+                                  color: _textHi,
+                                  fontWeight: FontWeight.w800)),
                         ),
                         const Gap(8),
                         Flexible(
                           child: Text(value.description ?? '-',
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 13, color: _textLo, fontWeight: FontWeight.w600)),
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  color: _textLo,
+                                  fontWeight: FontWeight.w600)),
                         ),
                       ],
                     );
@@ -1219,8 +1477,13 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                     border: Border.all(color: _accent.withOpacity(0.4)),
                   ),
                   child: busy
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: _accent))
-                      : const Icon(Icons.refresh_rounded, size: 18, color: _accent),
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: _accent))
+                      : const Icon(Icons.refresh_rounded,
+                          size: 18, color: _accent),
                 ),
               );
             },
@@ -1231,7 +1494,7 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
   }
 
   Widget _mistDot(String label, String grade) {
-    Color c = const Color(0xFF4C8DFF);
+    Color c = _accent;
     switch (grade) {
       case '보통':
         c = const Color(0xFF35C56A);
@@ -1246,10 +1509,15 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(width: 7, height: 7, decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
+        Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
         const Gap(5),
         Text('$label ', style: const TextStyle(fontSize: 11, color: _textLo)),
-        Text(grade, style: TextStyle(fontSize: 11, color: c, fontWeight: FontWeight.w700)),
+        Text(grade,
+            style:
+                TextStyle(fontSize: 11, color: c, fontWeight: FontWeight.w700)),
       ],
     );
   }
@@ -1329,7 +1597,10 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                           }
                           return Text(value.name,
                               overflow: TextOverflow.clip,
-                              style: const TextStyle(fontSize: 13, color: Colors.black, fontWeight: FontWeight.bold));
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold));
                         }),
                   ),
                 ],
@@ -1345,7 +1616,10 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                       duration: Duration(milliseconds: 1200),
                       type: AnimationType.word,
                       slideType: SlideAnimationType.leftRight,
-                      textStyle: TextStyle(fontSize: 10, color: Colors.black, fontWeight: FontWeight.bold),
+                      textStyle: TextStyle(
+                          fontSize: 10,
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold),
                     );
                     // return const Text("기상정보를 가져오는 중입니다.", style: TextStyle(fontSize: 10, color: Colors.black, fontWeight: FontWeight.bold));
                   }
@@ -1436,7 +1710,10 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                           buildTextMist(value.mist10Grade.toString()),
                           const TextSpan(
                             text: ' 초미세',
-                            style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: Colors.black),
+                            style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                fontSize: 13,
+                                color: Colors.black),
                           ),
                           buildTextMist(value.mist25Grade.toString()),
                         ],
@@ -1458,20 +1735,25 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                     // padding: const EdgeInsets.all(0),
                     // constraints: const BoxConstraints(),
                     style: ButtonStyle(
-                        shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
+                        shape: WidgetStateProperty.all(RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6))),
                         padding: WidgetStateProperty.all(EdgeInsets.zero),
                         backgroundColor: WidgetStateProperty.all(
                           // const Color.fromARGB(255, 95, 96, 103),
                           const Color.fromARGB(255, 50, 125, 237),
                         ),
-                        shadowColor: const WidgetStatePropertyAll(Color.fromARGB(255, 50, 125, 237))),
+                        shadowColor: const WidgetStatePropertyAll(
+                            Color.fromARGB(255, 50, 125, 237))),
                     onPressed: () async => getDate(),
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         Text(
                           '날씨 다시조회',
-                          style: TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                              fontSize: 9,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500),
                         ),
                         Icon(
                           Icons.refresh_rounded,
@@ -1515,10 +1797,10 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
       return '매우나쁨';
     }
     */
-    Color color = Colors.blue;
+    Color color = _accent;
     switch (mist) {
       case '좋음':
-        color = Colors.blue;
+        color = _accent;
         break;
       case '보통':
         color = Colors.green;
@@ -1530,7 +1812,7 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
         color = Colors.red;
         break;
       default:
-        color = Colors.blue;
+        color = _accent;
     }
 
     return TextSpan(
@@ -1563,13 +1845,17 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                         color: Colors.white,
                         size: 19.5,
                       )
-                    : const Icon(Icons.check_box_outline_blank, size: 23.5, color: Colors.black87),
+                    : const Icon(Icons.check_box_outline_blank,
+                        size: 23.5, color: Colors.black87),
               ),
             ),
             const Gap(6),
             const Text(
               "숨기기로 등록",
-              style: TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -1603,13 +1889,17 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                         color: Colors.white,
                         size: 19.5,
                       )
-                    : const Icon(Icons.check_box_outline_blank, size: 23.5, color: Colors.black87),
+                    : const Icon(Icons.check_box_outline_blank,
+                        size: 23.5, color: Colors.black87),
               ),
             ),
             const Gap(6),
             const Text(
               "익명으로 등록",
-              style: TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -1621,7 +1911,8 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
     return ValueListenableBuilder<bool>(
       valueListenable: isUploading,
       builder: (context, value, child) {
-        return CustomIndicatorOffstage(isLoading: !value, color: const Color(0xFFEA3799), opacity: 0.5);
+        return CustomIndicatorOffstage(
+            isLoading: !value, color: _accent, opacity: 0.5);
       },
     );
   }
@@ -1694,7 +1985,9 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: _surfaceBorder),
         ),
-        child: const Text('#', style: TextStyle(color: _textHi, fontSize: 22, fontWeight: FontWeight.w800)),
+        child: const Text('#',
+            style: TextStyle(
+                color: _textHi, fontSize: 22, fontWeight: FontWeight.w800)),
       ),
     );
   }
@@ -1722,7 +2015,14 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
               color: busy ? _surface : _accent,
               borderRadius: BorderRadius.circular(16),
               border: busy ? Border.all(color: _surfaceBorder) : null,
-              boxShadow: busy ? null : [BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 12, offset: const Offset(0, 4))],
+              boxShadow: busy
+                  ? null
+                  : [
+                      BoxShadow(
+                          color: _textHi.withValues(alpha: 0.08),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2))
+                    ],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1731,11 +2031,13 @@ class _VideoRegPageState extends State<VideoRegPage> with TickerProviderStateMix
                   const SizedBox(
                     width: 16,
                     height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: _accent),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: _accent),
                   ),
                   const Gap(10),
                 ] else ...[
-                  const Icon(Icons.cloud_upload_rounded, size: 20, color: Colors.white),
+                  const Icon(Icons.cloud_upload_rounded,
+                      size: 20, color: Colors.white),
                   const Gap(8),
                 ],
                 Text(
@@ -1781,12 +2083,13 @@ class _PolicyLine extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 15, color: const Color(0xFF9AA6C2)),
+        Icon(icon, size: 15, color: SaColorsLight.textTertiary),
         const Gap(8),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(fontSize: 12, height: 1.5, color: Color(0xFF9AA6C2)),
+            style: const TextStyle(
+                fontSize: 12, height: 1.5, color: SaColorsLight.textTertiary),
           ),
         ),
       ],

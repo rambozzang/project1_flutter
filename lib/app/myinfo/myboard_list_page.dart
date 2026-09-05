@@ -94,6 +94,7 @@ class _MyboardListPageState extends State<MyboardListPage> {
 
   @override
   Widget build(BuildContext context) {
+    SaColors.isLight = true; // 라이트 고정 — 앨범 다크모드 잔류 방지
     return Scaffold(
       backgroundColor: SaColors.bgBase,
       // appBar: AppBar(

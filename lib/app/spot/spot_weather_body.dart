@@ -4,6 +4,7 @@ import 'package:project1/app/spot/cntr/spot_cntr.dart';
 import 'package:project1/app/spot/spot_detail_page.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
 import 'package:project1/repo/spot/data/spot_data.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 
 /// [SpotWeatherPage]의 본문 위젯.
 /// 탭 낭비(AlramPage) 등에서 Scaffold 없이 body만 필요할 때 사용한다.
@@ -24,7 +25,9 @@ class _SpotWeatherBodyState extends State<SpotWeatherBody> {
   static const Color _bg = Color(0xFFF8F9FB);
   static const Color _surface = Colors.white;
   static const Color _border = Color(0xFFE8EAED);
-  static const Color _accent = Color(0xFF8C83DD);
+  /// 브랜드 페리윙클 — 흰 배경 화면이므로 라이트 명도(#6559CF, 흰 배경 대비 5.41:1)를 쓴다.
+  /// (이전: #8C83DD 하드코딩 사본 — 흰 배경 대비 3.28:1로 본문 기준 미달이었다)
+  static const Color _accent = SaColorsLight.accentTeal;
   static const Color _textHi = Colors.black;
   static const Color _textLo = Color(0xFF5F6368);
 

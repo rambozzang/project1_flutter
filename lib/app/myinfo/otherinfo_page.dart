@@ -26,7 +26,7 @@ import 'package:project1/utils/utils.dart';
 import 'package:image_picker/image_picker.dart';
 // import 'package:flutter_image_compress/flutter_image_compress.dart';
 
-import 'package:project1/widget/custom_button.dart';
+import 'package:project1/app/shared_album/widget/sa_pill_button.dart';
 import 'package:project1/widget/media_thumbnail.dart';
 
 import 'package:rxdart/rxdart.dart';
@@ -45,7 +45,8 @@ class OtherInfoPage extends StatefulWidget {
   State<OtherInfoPage> createState() => _OtherInfoPageState();
 }
 
-class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
+class _OtherInfoPageState extends State<OtherInfoPage>
+    with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
   final ValueNotifier<List<String>> urls = ValueNotifier<List<String>>([]);
   final ValueNotifier<String> nickNm = ValueNotifier<String>('');
 
@@ -60,17 +61,20 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
   // 상태유지
 
   // 3가지 갯수 가져오기
-  StreamController<ResStream<CustCountData>> myCountCntr = StreamController.broadcast();
+  StreamController<ResStream<CustCountData>> myCountCntr =
+      StreamController.broadcast();
 
   // 내게시물 리스트 가져오기
   int myboardPageNum = 0;
   int myboardageSize = 30;
-  StreamController<ResStream<List<BoardWeatherListData>>> myVideoListCntr = BehaviorSubject();
+  StreamController<ResStream<List<BoardWeatherListData>>> myVideoListCntr =
+      BehaviorSubject();
 
   // 팔로워 리스트 가져오기
   int followboardPageNum = 0;
   int followboardageSize = 30;
-  StreamController<ResStream<List<BoardWeatherListData>>> followVideoListCntr = BehaviorSubject();
+  StreamController<ResStream<List<BoardWeatherListData>>> followVideoListCntr =
+      BehaviorSubject();
 
   // 관심태그 리스트 가져오기
   StreamController<ResStream<List<String>>> tagStream = StreamController();
@@ -193,13 +197,16 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
     try {
       myVideoListCntr.sink.add(ResStream.loading());
       BoardRepo repo = BoardRepo();
-      ResData res = await repo.getMyBoard(custId, myboardPageNum, myboardageSize);
+      ResData res =
+          await repo.getMyBoard(custId, myboardPageNum, myboardageSize);
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         return;
       }
 
-      List<BoardWeatherListData> list = ((res.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
+      List<BoardWeatherListData> list = ((res.data) as List)
+          .map((data) => BoardWeatherListData.fromMap(data))
+          .toList();
       myVideoListCntr.sink.add(ResStream.completed(list));
     } catch (e) {
       if (myVideoListCntr.isClosed) {
@@ -213,13 +220,16 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
     try {
       followVideoListCntr.sink.add(ResStream.loading());
       BoardRepo repo = BoardRepo();
-      ResData res = await repo.getFollowBoard(custId, followboardPageNum, followboardageSize);
+      ResData res = await repo.getFollowBoard(
+          custId, followboardPageNum, followboardageSize);
       if (res.code != '00') {
         Utils.alert(res.msg.toString());
         return;
       }
       print(res.data);
-      List<BoardWeatherListData> list = ((res.data) as List).map((data) => BoardWeatherListData.fromMap(data)).toList();
+      List<BoardWeatherListData> list = ((res.data) as List)
+          .map((data) => BoardWeatherListData.fromMap(data))
+          .toList();
       followVideoListCntr.sink.add(ResStream.completed(list));
     } catch (e) {
       if (followVideoListCntr.isClosed) {
@@ -233,7 +243,8 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
     // 팔로우 추가
 
     String title = "팔로우 하시겠습니까?";
-    Utils.showConfirmDialog("확인", title, BackButtonBehavior.none, confirm: () async {
+    Utils.showConfirmDialog("확인", title, BackButtonBehavior.none,
+        confirm: () async {
       Lo.g('cancel');
       final result = await Get.find<VideoListCntr>().follow(cudtId.toString());
       result ? getInitCountData() : null;
@@ -246,9 +257,11 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
     // 팔로우 추가
     // 팔로우 추가
     String title = "팔로우 취소하시겠습니까?";
-    Utils.showConfirmDialog("취소", title, BackButtonBehavior.none, confirm: () async {
+    Utils.showConfirmDialog("취소", title, BackButtonBehavior.none,
+        confirm: () async {
       Lo.g('cancel');
-      final result = await Get.find<VideoListCntr>().followCancle(cudtId.toString());
+      final result =
+          await Get.find<VideoListCntr>().followCancle(cudtId.toString());
       result ? getInitCountData() : null;
     }, cancel: () async {
       Lo.g('cancel');
@@ -302,6 +315,7 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
 
   @override
   Widget build(BuildContext context) {
+    SaColors.isLight = true; // 라이트 고정 — 앨범 다크모드 잔류 방지
     super.build(context);
     return Scaffold(
       backgroundColor: SaColors.bgBase,
@@ -349,7 +363,9 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
         stream: myCountCntr.stream,
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const SizedBox();
+            // 데이터 도착 전 높이 0 → 버튼 행(40)이 갑자기 튀어나오며 레이아웃이 흔들렸다.
+            // 자리를 미리 잡아 둬서 전환이 끝난 뒤 내용만 조용히 채워지게 한다.
+            return const SizedBox(height: 40);
           }
 
           if (snapshot.data!.status == Status.COMPLETED) {
@@ -358,75 +374,61 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
             lo.g(data.chatId.toString());
             String followyn = data.followYn.toString();
 
+            // 팔로우·차단 — 예전엔 각자 다른 버튼 위젯(CustomButton, 각지고 그림자·하드코딩
+            // 색)을 썼다. "우리의 앨범" 계열 pill 버튼(SaPillButton)으로 통일한다:
+            //   - 팔로우 안 함 / 차단 안 함 → solid(눈에 띄게, 지금 누르면 하는 동작을 강조)
+            //   - 팔로우 중 / 차단 중       → outline(차분하게, 이미 그런 상태임을 알림)
+            // 두 버튼이 항상 같은 모양이라 상태가 바뀌어도 자리가 흔들리지 않는다.
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  SizedBox(
-                    width: 90,
-                    child: CustomButton(
-                      text: followyn == 'Y' ? '팔로잉 취소' : '팔로우 하기',
-                      type: 'S',
-                      heightValue: 40,
-                      isEnable: true,
-                      // '팔로우 하기'(주요 액션)만 accent 그라디언트(teal→blue)로. 이미 팔로잉 중일 때의
-                      // 취소 버튼은 중립이어야 하는데 CustomButton 이 글자색을 흰색으로 고정해서
-                      // 밝은 토큰을 쓰면 글자가 안 보인다 → 원본 짙은 남색을 유지한다.
-                      listColors: [
-                        followyn == 'Y' ? const Color(0xFF3A3F65) : SaColors.accentTeal,
-                        // followyn == 'Y' ? const Color(0xFF1E2238) : const Color.fromARGB(255, 188, 195, 233),
-                        followyn == 'Y' ? const Color(0xFF414766) : SaColors.accentBlue,
-                      ],
-                      onPressed: () => followyn == 'Y' ? cancleFollow(data.custId.toString()) : addFollow(data.custId.toString()),
-                    ),
+                  SaPillButton(
+                    label: followyn == 'Y' ? '팔로잉' : '팔로우',
+                    icon: followyn == 'Y'
+                        ? PhosphorIconsFill.checkCircle
+                        : PhosphorIconsBold.userPlus,
+                    solid: followyn != 'Y',
+                    onTap: () => followyn == 'Y'
+                        ? cancleFollow(data.custId.toString())
+                        : addFollow(data.custId.toString()),
                   ),
-                  const Gap(15),
+                  const Gap(12),
                   ValueListenableBuilder<bool>(
                       valueListenable: isBlocked,
                       builder: (context, value, snapshot) {
-                        return SizedBox(
-                          width: 90,
-                          child: CustomButton(
-                            text: value ? '차단해제' : '차단하기',
-                            type: 'S',
-                            heightValue: 40,
-                            isEnable: true,
-                            onPressed: () async {
-                              Utils.showConfirmDialog(
-                                  value ? '차단해제' : '차단하기', value ? '차단해제하시겠습니까>' : '차단 하시겠습니까?', BackButtonBehavior.none,
-                                  confirm: () async {
-                                if (value) {
-                                  await unBlock();
-                                } else {
-                                  await block();
-                                }
-                                isBlocked.value = !value;
-                              }, cancel: () async {
-                                Lo.g('cancel');
-                              }, backgroundReturn: () {});
-                            },
-                            suffixIcon: const Padding(
-                              padding: EdgeInsets.only(left: 3.0),
-                              child: PhosphorIcon(
-                                PhosphorIconsFill.warning,
-                                color: Colors.white,
-                                size: 19,
-                              ),
-                            ),
-                            // 차단(위험) 액션 강조색 — SaColors 에 대응 토큰이 없어 원본 주황 유지.
-                            listColors: const [
-                              Color(0xFFFF9900),
-                              Color(0xFFFF9900),
-                            ],
-                          ),
+                        return SaPillButton(
+                          label: value ? '차단해제' : '차단하기',
+                          icon: PhosphorIconsFill.prohibit,
+                          solid: value,
+                          // 위험 계열 — SaColors 에 별도 danger 토큰이 없어 가장 가까운
+                          // 의미인 warn(주의)을 쓴다. 예전엔 SaColors 밖의 하드코딩 주황이었다.
+                          accent: SaColors.warn,
+                          onTap: () {
+                            Utils.showConfirmDialog(
+                                value ? '차단해제' : '차단하기',
+                                value ? '차단해제하시겠습니까>' : '차단 하시겠습니까?',
+                                BackButtonBehavior.none, confirm: () async {
+                              if (value) {
+                                await unBlock();
+                              } else {
+                                await block();
+                              }
+                              isBlocked.value = !value;
+                            }, cancel: () async {
+                              Lo.g('cancel');
+                            }, backgroundReturn: () {});
+                          },
                         );
                       }),
                 ],
               ),
             );
           } else {
-            return const SizedBox();
+            // 데이터 도착 전 높이 0 → 버튼 행(40)이 갑자기 튀어나오며 레이아웃이 흔들렸다.
+            // 자리를 미리 잡아 둬서 전환이 끝난 뒤 내용만 조용히 채워지게 한다.
+            return const SizedBox(height: 40);
           }
         });
   }
@@ -540,8 +542,9 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) =>
-                                ProfileImagePage(imageUrl: data.custInfo!.profilePath.toString(), nickNm: data.custInfo!.nickNm.toString()),
+                            builder: (context) => ProfileImagePage(
+                                imageUrl: data.custInfo!.profilePath.toString(),
+                                nickNm: data.custInfo!.nickNm.toString()),
                           ),
                         );
                       },
@@ -555,7 +558,9 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                             borderRadius: BorderRadius.circular(25),
                             image: DecorationImage(
                               image: CachedNetworkImageProvider(
-                                  cacheKey: data.custInfo!.profilePath.toString(), data.custInfo!.profilePath.toString()),
+                                  cacheKey:
+                                      data.custInfo!.profilePath.toString(),
+                                  data.custInfo!.profilePath.toString()),
                               fit: BoxFit.cover,
                             ),
                           ),
@@ -573,7 +578,8 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                       child: Center(
                         child: Text(
                           data.custInfo!.nickNm.toString().substring(0, 1),
-                          style: SaText.titleM.copyWith(fontSize: 19, color: SaColors.onAccent),
+                          style: SaText.titleM
+                              .copyWith(fontSize: 19, color: SaColors.onAccent),
                         ),
                       ),
                     ),
@@ -583,44 +589,54 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(3.0),
-                          child: OtherInfoPageInfo(
-                            count: data.boardCnt!.toInt(),
-                            label: '게시물',
-                            onTap: () => Get.toNamed('/MainView1/$custId/0/${null}'), //Get.toNamed('/MainView1
+                    // 게시물/팔로워/팔로잉 세 칩 — 팔로워 수가 커지면(3자리 이상) 좁은
+                    // 기기 폭(실측: 갤럭시 S24 계열에서 23px)에서 고정폭 Row가 넘쳤다.
+                    // 가로 스크롤로 감싸 어떤 자릿수·화면 폭에서도 잘리지 않게 한다.
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const ClampingScrollPhysics(),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(3.0),
+                            child: OtherInfoPageInfo(
+                              count: data.boardCnt!.toInt(),
+                              label: '게시물',
+                              onTap: () => Get.toNamed(
+                                  '/MainView1/$custId/0/${null}'), //Get.toNamed('/MainView1
+                            ),
                           ),
-                        ),
-                        // Padding(
-                        //   padding: const EdgeInsets.all(3.0),
-                        //   child: OtherInfoPageInfo(
-                        //     count: data.likeCnt!.toInt(),
-                        //     label: '좋아요',
-                        //     onTap: () => Get.toNamed('/MainView1/$custId/1/${null}'),
-                        //   ),
-                        // ),
-                        const Gap(20),
-                        Padding(
-                          padding: const EdgeInsets.all(3.0),
-                          child: OtherInfoPageInfo(
-                            count: data.followCnt!.toInt(),
-                            label: '팔로워',
-                            onTap: () => Get.toNamed('/MainView1/$custId/2/${null}'),
+                          // Padding(
+                          //   padding: const EdgeInsets.all(3.0),
+                          //   child: OtherInfoPageInfo(
+                          //     count: data.likeCnt!.toInt(),
+                          //     label: '좋아요',
+                          //     onTap: () => Get.toNamed('/MainView1/$custId/1/${null}'),
+                          //   ),
+                          // ),
+                          const Gap(20),
+                          Padding(
+                            padding: const EdgeInsets.all(3.0),
+                            child: OtherInfoPageInfo(
+                              count: data.followCnt!.toInt(),
+                              label: '팔로워',
+                              onTap: () =>
+                                  Get.toNamed('/MainView1/$custId/2/${null}'),
+                            ),
                           ),
-                        ),
-                        const Gap(20),
-                        Padding(
-                          padding: const EdgeInsets.all(3.0),
-                          child: OtherInfoPageInfo(
-                            count: data.followerCnt!.toInt(),
-                            label: '팔로잉',
-                            onTap: () => Get.toNamed('/MainView1/$custId/3/${null}'),
+                          const Gap(20),
+                          Padding(
+                            padding: const EdgeInsets.all(3.0),
+                            child: OtherInfoPageInfo(
+                              count: data.followerCnt!.toInt(),
+                              label: '팔로잉',
+                              onTap: () =>
+                                  Get.toNamed('/MainView1/$custId/3/${null}'),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -629,7 +645,9 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
           ),
         ),
         const Gap(5),
-        data.custInfo!.custNm == 'null' || data.custInfo!.custNm == null || data.custInfo!.custNm == ''
+        data.custInfo!.custNm == 'null' ||
+                data.custInfo!.custNm == null ||
+                data.custInfo!.custNm == ''
             ? Text(
                 '-',
                 style: SaText.titleS.copyWith(fontSize: 15),
@@ -650,7 +668,9 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
         //   ),
         // ),
         const Gap(5),
-        data.custInfo!.selfIntro == 'null' || data.custInfo!.selfIntro == null || data.custInfo!.selfIntro == ''
+        data.custInfo!.selfIntro == 'null' ||
+                data.custInfo!.selfIntro == null ||
+                data.custInfo!.selfIntro == ''
             ? Text(
                 '자기 소개 내용이 없습니다.',
                 style: SaText.caption.copyWith(color: SaColors.textTertiary),
@@ -664,9 +684,12 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
         Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            Text('👍좋아요', style: SaText.caption.copyWith(fontWeight: FontWeight.w500)),
+            Text('👍좋아요',
+                style: SaText.caption.copyWith(fontWeight: FontWeight.w500)),
             const Gap(5),
-            Text('${data.likeCnt}', style: SaText.caption.copyWith(fontWeight: FontWeight.w700, color: SaColors.textPrimary)),
+            Text('${data.likeCnt}',
+                style: SaText.caption.copyWith(
+                    fontWeight: FontWeight.w700, color: SaColors.textPrimary)),
           ],
         ),
         const Gap(15),
@@ -678,8 +701,10 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
     return Expanded(
       child: TabBarView(controller: _tabController, children: [
         //_myFeeds(),
-        Utils.commonStreamList<BoardWeatherListData>(myVideoListCntr, _myFeeds, getInitMyBoard),
-        Utils.commonStreamList<BoardWeatherListData>(followVideoListCntr, _followFeeds, getInitFollowBoard),
+        Utils.commonStreamList<BoardWeatherListData>(
+            myVideoListCntr, _myFeeds, getInitMyBoard),
+        Utils.commonStreamList<BoardWeatherListData>(
+            followVideoListCntr, _followFeeds, getInitFollowBoard),
         // _followFeeds(),
       ]),
     );
@@ -702,8 +727,11 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
               itemCount: list.length,
               itemBuilder: (context, index) => GestureDetector(
                 onTap: () {
-                  Get.toNamed('/VideoMyinfoListPage',
-                      arguments: {'datatype': 'MYFEED', 'custId': custId, 'boardId': list[index].boardId.toString()});
+                  Get.toNamed('/VideoMyinfoListPage', arguments: {
+                    'datatype': 'MYFEED',
+                    'custId': custId,
+                    'boardId': list[index].boardId.toString()
+                  });
                 },
                 child: Container(
                   decoration: BoxDecoration(
@@ -729,7 +757,8 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 5),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 5),
                               child: Row(
                                 children: [
                                   const Icon(
@@ -740,13 +769,16 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                                   const Gap(5),
                                   Text(
                                     list[index].likeCnt.toString(),
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold),
                                   ),
                                 ],
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 5),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 5),
                               child: Row(
                                 children: [
                                   const Icon(
@@ -757,7 +789,9 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                                   const Gap(5),
                                   Text(
                                     list[index].viewCnt.toString(),
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold),
                                   ),
                                 ],
                               ),
@@ -770,7 +804,8 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                           ? const Positioned(
                               top: 10,
                               left: 10,
-                              child: PhosphorIcon(PhosphorIconsFill.lock, color: Colors.red, size: 20),
+                              child: PhosphorIcon(PhosphorIconsFill.lock,
+                                  color: Colors.red, size: 20),
                             )
                           : const SizedBox.shrink(),
                     ],
@@ -794,8 +829,11 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
         itemCount: list.length,
         itemBuilder: (context, index) => GestureDetector(
           onTap: () {
-            Get.toNamed('/VideoMyinfoListPage',
-                arguments: {'datatype': 'FOLLOW', 'custId': custId, 'boardId': list[index].boardId.toString()});
+            Get.toNamed('/VideoMyinfoListPage', arguments: {
+              'datatype': 'FOLLOW',
+              'custId': custId,
+              'boardId': list[index].boardId.toString()
+            });
           },
           child: Container(
             height: (index % 5 + 1) * 60,
@@ -830,7 +868,9 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                             const Gap(5),
                             Text(
                               list[index].likeCnt.toString(),
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
@@ -847,7 +887,9 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                             const Gap(5),
                             Text(
                               list[index].viewCnt.toString(),
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
@@ -860,7 +902,8 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
                   right: 10,
                   child: Text(
                     list[index].nickNm.toString(),
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                 )
               ],
@@ -930,7 +973,8 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
         Padding(
           padding: const EdgeInsets.only(right: 16.0, top: 4, bottom: 4),
           child: IconButton(
-            icon: PhosphorIcon(PhosphorIconsBold.x, size: 20, color: SaColors.textPrimary),
+            icon: PhosphorIcon(PhosphorIconsBold.x,
+                size: 20, color: SaColors.textPrimary),
             onPressed: () => Get.back(),
           ),
         ),
@@ -945,7 +989,8 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
       child: Chip(
         elevation: 10,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-        backgroundColor: const Color.fromARGB(255, 140, 131, 221), // Color.fromARGB(255, 76, 70, 124),
+        backgroundColor: const Color.fromARGB(
+            255, 140, 131, 221), // Color.fromARGB(255, 76, 70, 124),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
           side: const BorderSide(color: Colors.transparent),
@@ -953,7 +998,8 @@ class _OtherInfoPageState extends State<OtherInfoPage> with AutomaticKeepAliveCl
         label: Text(
           label,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+              color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
         ),
         labelPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
         // onDeleted: () => null,
@@ -975,7 +1021,9 @@ class OtherInfoPageButton extends StatelessWidget {
       onTap: onTap,
       child: Container(
         height: 40,
-        decoration: BoxDecoration(color: const Color(0xfff3f3f3), borderRadius: BorderRadius.circular(8.0)),
+        decoration: BoxDecoration(
+            color: const Color(0xfff3f3f3),
+            borderRadius: BorderRadius.circular(8.0)),
         child: Center(
           child: Text(
             label,
@@ -991,7 +1039,11 @@ class OtherInfoPageInfo extends StatelessWidget {
   final int count;
   final String label;
   final void Function() onTap;
-  const OtherInfoPageInfo({super.key, required this.count, required this.label, required this.onTap});
+  const OtherInfoPageInfo(
+      {super.key,
+      required this.count,
+      required this.label,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1037,7 +1089,8 @@ class DraggablePage extends StatefulWidget {
 }
 
 class _DraggablePageState extends State<DraggablePage> {
-  DraggableScrollableController draggableScrollableController = DraggableScrollableController();
+  DraggableScrollableController draggableScrollableController =
+      DraggableScrollableController();
   bool isChecked = false;
 
   @override
@@ -1046,11 +1099,14 @@ class _DraggablePageState extends State<DraggablePage> {
       maxChildSize: 0.8,
       minChildSize: 0.2,
       controller: draggableScrollableController,
-      builder: (BuildContext context, ScrollController scrollController) => Scaffold(
+      builder: (BuildContext context, ScrollController scrollController) =>
+          Scaffold(
         appBar: AppBar(
           title: ScrollConfiguration(
             behavior: const ScrollBehavior(),
-            child: SingleChildScrollView(controller: scrollController, child: const Text('Draggable scrollable sheet example')),
+            child: SingleChildScrollView(
+                controller: scrollController,
+                child: const Text('Draggable scrollable sheet example')),
           ),
           backgroundColor: Colors.teal,
         ),
@@ -1087,7 +1143,8 @@ class ProfileImagePage extends StatelessWidget {
   final String imageUrl;
   final String nickNm;
 
-  const ProfileImagePage({super.key, required this.imageUrl, required this.nickNm});
+  const ProfileImagePage(
+      {super.key, required this.imageUrl, required this.nickNm});
 
   @override
   Widget build(BuildContext context) {
@@ -1096,7 +1153,9 @@ class ProfileImagePage extends StatelessWidget {
       appBar: AppBar(
         forceMaterialTransparency: true,
         centerTitle: false,
-        title: Hero(tag: nickNm, child: Text(nickNm, style: SaText.titleM.copyWith(fontSize: 20))),
+        title: Hero(
+            tag: nickNm,
+            child: Text(nickNm, style: SaText.titleM.copyWith(fontSize: 20))),
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
@@ -1124,7 +1183,9 @@ class ProfileImagePage extends StatelessWidget {
                 fadeInDuration: const Duration(milliseconds: 100),
                 fadeOutDuration: const Duration(milliseconds: 100),
                 // placeholder: (context, url) => const CircularProgressIndicator(),
-                errorWidget: (context, url, error) => PhosphorIcon(PhosphorIconsFill.warning, color: SaColors.textTertiary),
+                errorWidget: (context, url, error) => PhosphorIcon(
+                    PhosphorIconsFill.warning,
+                    color: SaColors.textTertiary),
               ),
             ),
           ),
@@ -1139,4 +1200,5 @@ class ProfileImagePage extends StatelessWidget {
 /// 판별식은 `Video_screen_page` 의 `isPhotoPost`(= `typeDtCd == 'I' ||
 /// imageUrls 있음`)를 그대로 뒤집은 것이다. `typeDtCd` 가 비어 있는 레거시
 /// 게시물이 있어 사진 URL 유무까지 함께 봐야 사진에 재생 배지가 붙지 않는다.
-bool _isVideoPost(BoardWeatherListData d) => !(d.typeDtCd == 'I' || (d.imageUrls?.isNotEmpty ?? false));
+bool _isVideoPost(BoardWeatherListData d) =>
+    !(d.typeDtCd == 'I' || (d.imageUrls?.isNotEmpty ?? false));

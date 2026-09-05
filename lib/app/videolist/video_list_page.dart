@@ -12,6 +12,7 @@ import 'package:project1/app/videolist/cntr/video_list_cntr.dart';
 import 'package:project1/app/videolist/video_decoder_window.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/WeatherLottie.dart';
 import 'package:project1/utils/utils.dart';
@@ -80,15 +81,9 @@ class FastPageScrollPhysics extends ScrollPhysics {
         stiffness: 750, // 극도로 단단하게 → 즉각 스냅
         ratio: 1.1, // 과감쇠 → 출렁임 없음
       );
-
-  @override
-  double get minFlingVelocity => 0.85;
-
-  @override
-  double get minFlingDistance => 0.0;
-
-  @override
-  bool get allowImplicitScrolling => false;
+  // minFlingVelocity/minFlingDistance/allowImplicitScrolling 오버라이드는 여기 없었다
+  // (모모앨범 album_immersive_page.dart의 FastPageScrollPhysics와 완전히 동일하게 맞춘다,
+  // 2026-09-04, 사용자 지시). 프레임워크 기본값을 그대로 쓴다.
 }
 
 class VideoListPage extends StatefulWidget {
@@ -384,7 +379,8 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
             ? Positioned(
                 top: -2,
                 right: 0,
-                child: Icon(Icons.check_circle, color: Colors.purple.withOpacity(0.6), size: 15),
+                // 어두운 영상 위 선택 표시 — 브랜드 페리윙클의 다크 명도(임의 Colors.purple 대체)
+                child: Icon(Icons.check_circle, color: SaColorsDark.accentTeal, size: 15),
               )
             : const SizedBox.shrink(),
       ],

@@ -10,7 +10,9 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:project1/app/camera/page/photo_reg_page.dart';
 import 'package:project1/app/camera/page/video_reg_page.dart';
 import 'package:project1/app/camera/page/widgets/record_progress_ring.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/utils/utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// 카메라 권한 화면 상태.
 enum _CamPermState { checking, granted, denied, permanentlyDenied }
@@ -22,7 +24,8 @@ class CameraAwesomePage extends StatefulWidget {
   State<CameraAwesomePage> createState() => _CameraAwesomePageState();
 }
 
-class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+class _CameraAwesomePageState extends State<CameraAwesomePage>
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   bool _navigated = false;
   final List<File> _photos = [];
 
@@ -73,7 +76,9 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     if (_cameraState == null) return;
     if (details.pointerCount >= 2) {
       // 두 손가락 핀치 → 줌
-      final double z = (_pinchBaseZoom + (details.scale - 1.0) * _zoomSensitivity).clamp(0.0, 1.0);
+      final double z =
+          (_pinchBaseZoom + (details.scale - 1.0) * _zoomSensitivity)
+              .clamp(0.0, 1.0);
       _lastZoom = z;
       _cameraState!.sensorConfig.setZoom(z);
     } else {
@@ -85,7 +90,8 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
       if (_panAxis == 0) {
         _panAccumDx += dx;
         _panAccumDy += dy;
-        if (_panAccumDx.abs() < _axisLockThreshold && _panAccumDy.abs() < _axisLockThreshold) {
+        if (_panAccumDx.abs() < _axisLockThreshold &&
+            _panAccumDy.abs() < _axisLockThreshold) {
           return; // 아직 방향 판단 전 → 아무것도 안 함
         }
         _panAxis = _panAccumDx.abs() >= _panAccumDy.abs() ? 1 : 2;
@@ -153,7 +159,8 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
     // 설정 앱에서 권한을 바꾸고 돌아왔을 때 자동으로 다시 확인(사용자가 직접 재요청할 필요 없게).
     // 주의: 여기서 _checkCameraPermission()을 부르면 denied 상태에서 OS 요청 창을
     // 자동 재발사(프롬프트 남발)하므로, resume에서는 '상태 읽기'만 한다.
-    if (state == AppLifecycleState.resumed && _permState != _CamPermState.granted) {
+    if (state == AppLifecycleState.resumed &&
+        _permState != _CamPermState.granted) {
       _refreshPermStatusOnly();
     }
   }
@@ -215,7 +222,8 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
   // - permanentlyDenied: 정보성 안내(주 액션은 '닫기') + 작은 '설정 열기' 텍스트 링크만.
   //   (큰 설정 CTA가 두 번 연속 5.1.1(iv) 리젝 스크린샷으로 첨부됨 — build 55·56)
   Widget _buildPermissionGate() {
-    final bool permanentlyDenied = _permState == _CamPermState.permanentlyDenied;
+    final bool permanentlyDenied =
+        _permState == _CamPermState.permanentlyDenied;
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
@@ -231,7 +239,8 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
                 left: 8,
                 child: _topGlassButton(
                   onTap: () => Navigator.of(context).maybePop(),
-                  child: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                  child: const Icon(Icons.close_rounded,
+                      color: Colors.white, size: 22),
                 ),
               ),
             Center(
@@ -241,7 +250,9 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      permanentlyDenied ? Icons.no_photography_outlined : Icons.camera_alt_rounded,
+                      permanentlyDenied
+                          ? Icons.no_photography_outlined
+                          : Icons.camera_alt_rounded,
                       color: Colors.white54,
                       size: 56,
                     ),
@@ -249,7 +260,10 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
                     Text(
                       permanentlyDenied ? '카메라를 사용할 수 없어요' : '카메라 접근 권한이 필요합니다',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 10),
                     Text(
@@ -257,23 +271,27 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
                           ? '카메라 권한이 꺼져 있어 촬영 기능을 사용할 수 없어요.\n휴대폰 설정에서 카메라 권한을 허용하면\n다시 촬영할 수 있어요.'
                           : '사진과 영상을 촬영하려면 카메라 접근을\n허용해주세요.',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
+                      style: const TextStyle(
+                          color: Colors.white70, fontSize: 14, height: 1.5),
                     ),
                     const SizedBox(height: 28),
                     if (!permanentlyDenied)
                       ElevatedButton(
                         onPressed: () => _checkCameraPermission(fromUser: true),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4C8DFF),
+                          backgroundColor: SaColorsLight.accentTeal,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 28, vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24)),
                         ),
                         // '허용' 같은 단어 금지 — OS 다이얼로그의 선택을 선점하는 인상을 주면 안 됨
                         // (build 58 리젝: "Use words like 'Continue' or 'Next' on the button").
                         child: const Text(
                           '계속하기',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                          style: TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w700),
                         ),
                       )
                     else ...[
@@ -284,10 +302,14 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
                           backgroundColor: Colors.white.withValues(alpha: 0.14),
                           foregroundColor: Colors.white,
                           elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 34, vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24)),
                         ),
-                        child: const Text('닫기', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                        child: const Text('닫기',
+                            style: TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.w700)),
                       ),
                       const SizedBox(height: 12),
                       // 보조: 원하는 사용자만 탭하는 작은 텍스트 링크.
@@ -299,7 +321,8 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
                             color: Colors.white.withValues(alpha: 0.6),
                             fontSize: 13,
                             decoration: TextDecoration.underline,
-                            decorationColor: Colors.white.withValues(alpha: 0.4),
+                            decorationColor:
+                                Colors.white.withValues(alpha: 0.4),
                           ),
                         ),
                       ),
@@ -363,7 +386,8 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
         _goToPhotoRegPage();
       }
     } else {
-      final XFile? picked = await ImagePicker().pickVideo(source: ImageSource.gallery);
+      final XFile? picked =
+          await ImagePicker().pickVideo(source: ImageSource.gallery);
       if (picked != null && mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -431,7 +455,8 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
                     flutterPreviewSize: flutterPreviewSize,
                     pixelPreviewSize: pixelPreviewSize,
                   ),
-                  onVideoRecordingMode: (recordingState) => recordingState.focusOnPoint(
+                  onVideoRecordingMode: (recordingState) =>
+                      recordingState.focusOnPoint(
                     flutterPosition: position,
                     flutterPreviewSize: flutterPreviewSize,
                     pixelPreviewSize: pixelPreviewSize,
@@ -445,7 +470,8 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
                 children: [
                   _topGlassButton(
                     onTap: () => Navigator.of(context).pop(),
-                    child: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                    child: const Icon(Icons.close_rounded,
+                        color: Colors.white, size: 22),
                   ),
                   const Spacer(),
                   // 사진 모드에서 촬영한 사진이 있으면 "다음" 버튼
@@ -457,7 +483,7 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
                         height: 40,
                         padding: const EdgeInsets.symmetric(horizontal: 14),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF4C8DFF),
+                          color: SaColorsLight.accentTeal,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -472,7 +498,8 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
                               ),
                             ),
                             const SizedBox(width: 4),
-                            const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 16),
+                            const Icon(Icons.arrow_forward_rounded,
+                                color: Colors.white, size: 16),
                           ],
                         ),
                       ),
@@ -523,7 +550,12 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.block, color: Colors.white, size: 15, shadows: [Shadow(color: Colors.black87, blurRadius: 4)]),
+                      Icon(Icons.block,
+                          color: Colors.white,
+                          size: 15,
+                          shadows: [
+                            Shadow(color: Colors.black87, blurRadius: 4)
+                          ]),
                       SizedBox(width: 6),
                       Text(
                         '음란물·불법촬영물 촬영·게시 금지',
@@ -567,11 +599,13 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
                       opacity: visible ? 1.0 : 0.0,
                       duration: const Duration(milliseconds: 250),
                       child: _glassPill(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 14),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.wb_sunny_rounded, color: Color(0xFFFFD54F), size: 18),
+                            const Icon(Icons.wb_sunny_rounded,
+                                color: Color(0xFFFFD54F), size: 18),
                             const SizedBox(height: 10),
                             Container(
                               width: 6,
@@ -592,10 +626,20 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
                                           gradient: const LinearGradient(
                                             begin: Alignment.bottomCenter,
                                             end: Alignment.topCenter,
-                                            colors: [Color(0xFFFF9A3C), Color(0xFFFFD54F), Colors.white],
+                                            colors: [
+                                              Color(0xFFFF9A3C),
+                                              Color(0xFFFFD54F),
+                                              Colors.white
+                                            ],
                                           ),
-                                          borderRadius: BorderRadius.circular(3),
-                                          boxShadow: [BoxShadow(color: const Color(0xFFFFD54F).withOpacity(0.5), blurRadius: 6)],
+                                          borderRadius:
+                                              BorderRadius.circular(3),
+                                          boxShadow: [
+                                            BoxShadow(
+                                                color: const Color(0xFFFFD54F)
+                                                    .withOpacity(0.5),
+                                                blurRadius: 6)
+                                          ],
                                         ),
                                       ),
                                     ),
@@ -630,7 +674,8 @@ class _CameraAwesomePageState extends State<CameraAwesomePage> with SingleTicker
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.14),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withOpacity(0.28), width: 0.8),
+            border:
+                Border.all(color: Colors.white.withOpacity(0.28), width: 0.8),
           ),
           child: child,
         ),
@@ -659,7 +704,8 @@ class CamerAwesomeBottomActions extends StatefulWidget {
   });
 
   @override
-  State<CamerAwesomeBottomActions> createState() => _CamerAwesomeBottomActionsState();
+  State<CamerAwesomeBottomActions> createState() =>
+      _CamerAwesomeBottomActionsState();
 }
 
 class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
@@ -667,11 +713,14 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
   // 예전 촬영 화면(CameraBloc + RecordingProgressIndicator)의 방식을 그대로 옮긴 것:
   // 셔터를 누르면 제한시간까지 카운트업하며 링이 차오르고, 다 차면 자동으로 녹화가 끝난다.
   // 최소 길이(2초) 미만에서 누른 정지는 무시하고 안내만 띄운다.
-  static const List<int> _limitOptions = [15, 30, 60];
+  static const String _recordLimitKey = 'camera_record_limit_sec';
+  static const int _defaultLimitSec = 5;
+  static const List<int> _limitOptions = [5, 10, 15, 30, 60];
   static const int _minRecordSec = 2;
 
-  /// 선택된 녹화 제한시간(초). 기본 15초.
-  int _limitSec = _limitOptions.first;
+  /// 선택된 녹화 제한시간(초). 첫 실행은 5초, 이후에는 마지막 선택값.
+  int _limitSec = _defaultLimitSec;
+  bool _durationUserSelected = false;
 
   /// 경과 시간(초, 소수 포함). 링/시간 표시만 다시 그리도록 ValueNotifier로 둔다
   /// (하단 컨트롤 전체를 50ms마다 setState 하면 줌/플래시 위젯까지 매번 리빌드됨).
@@ -689,11 +738,13 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
   // - Android: CameraX 논리 카메라의 minZoomRatio<1.0 이면 linearZoom 0 = 초광각 화각.
   // - iOS: 가상 멀티카메라(트리플/듀얼와이드)로 1회 전환 후 videoZoomFactor 1.0=0.5x,
   //        _iosWideFactor(보통 2.0)=표시 1x. 이후 줌은 전부 팩터 램프라 렌즈 점프 없음.
-  static const MethodChannel _lensChannel = MethodChannel('com.skysnap/camera_lens');
+  static const MethodChannel _lensChannel =
+      MethodChannel('com.skysnap/camera_lens');
   bool _zoomCapsLoaded = false;
   bool _zoomCapsLoading = false;
   double _minRatio = 1.0; // Android 전용: minZoomRatio (0.5면 초광각 포함)
-  double _maxRatio = 1.0; // Android: maxZoomRatio / iOS: max videoZoomFactor(플러그인이 50 상한)
+  double _maxRatio =
+      1.0; // Android: maxZoomRatio / iOS: max videoZoomFactor(플러그인이 50 상한)
   double _iosWideFactor = 2.0; // iOS: 초광각→광각 전환 팩터(=표시 1x 기준)
   bool _hasUltraWide = false; // 0.5x 핀 노출 여부
 
@@ -707,6 +758,30 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
     super.initState();
     _checkRecordingState();
     _loadZoomCaps();
+    unawaited(_restoreRecordLimit());
+  }
+
+  /// 마지막으로 고른 녹화 제한시간을 다음 카메라 진입 시 기본값으로 복원한다.
+  Future<void> _restoreRecordLimit() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getInt(_recordLimitKey);
+      if (!mounted || _durationUserSelected || saved == null) return;
+      if (_limitOptions.contains(saved) && saved != _limitSec) {
+        setState(() => _limitSec = saved);
+      }
+    } catch (e) {
+      debugPrint('[CAM] 녹화 시간 설정 복원 실패: $e');
+    }
+  }
+
+  Future<void> _saveRecordLimit(int seconds) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_recordLimitKey, seconds);
+    } catch (e) {
+      debugPrint('[CAM] 녹화 시간 설정 저장 실패: $e');
+    }
   }
 
   // 기기의 줌 배율 범위를 조회해 0.5x 지원 여부와 핀 매핑을 계산한다.
@@ -733,7 +808,8 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
         _maxRatio = maxZ;
         _hasUltraWide = false;
       } else {
-        final Map<dynamic, dynamic>? info = await _lensChannel.invokeMethod<Map<dynamic, dynamic>>('getVirtualBackCamera');
+        final Map<dynamic, dynamic>? info = await _lensChannel
+            .invokeMethod<Map<dynamic, dynamic>>('getVirtualBackCamera');
         debugPrint('[CAM] virtual back camera(iOS): $info');
         if (info == null) {
           // 초광각 없는 기기(iPhone SE 등): 1x부터 디지털 줌만
@@ -743,9 +819,13 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
           _maxRatio = maxZ;
           _hasUltraWide = false;
         } else {
-          final List<dynamic> switchOver = info['switchOver'] as List<dynamic>? ?? const [];
-          _iosWideFactor = switchOver.isNotEmpty ? (switchOver.first as num).toDouble() : 2.0;
-          widget.state.setSensorType(0, SensorType.wideAngle, info['uid'] as String);
+          final List<dynamic> switchOver =
+              info['switchOver'] as List<dynamic>? ?? const [];
+          _iosWideFactor = switchOver.isNotEmpty
+              ? (switchOver.first as num).toDouble()
+              : 2.0;
+          widget.state
+              .setSensorType(0, SensorType.wideAngle, info['uid'] as String);
           // 세션 재구성을 기다린 뒤 가상 디바이스 기준 maxZoom을 읽는다.
           await Future.delayed(const Duration(milliseconds: 400));
           final double? maxZ = await CamerawesomePlugin.getMaxZoom();
@@ -772,7 +852,8 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
     if (Platform.isAndroid) {
       if (_maxRatio <= _minRatio) return 0.0;
       final double r = display.clamp(_minRatio, _maxRatio);
-      return ((_maxRatio * (r - _minRatio)) / (r * (_maxRatio - _minRatio))).clamp(0.0, 1.0);
+      return ((_maxRatio * (r - _minRatio)) / (r * (_maxRatio - _minRatio)))
+          .clamp(0.0, 1.0);
     } else {
       if (_maxRatio <= 1.0) return 0.0;
       final double f = (display * _iosWideFactor).clamp(1.0, _maxRatio);
@@ -948,7 +1029,8 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
                         color: Colors.black87,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.close, size: 12, color: Colors.white),
+                      child: const Icon(Icons.close,
+                          size: 12, color: Colors.white),
                     ),
                   ),
                 ),
@@ -1070,7 +1152,8 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
                 children: [
                   for (int i = 0; i < pills.length; i++) ...[
                     if (i > 0) const SizedBox(width: 6),
-                    _buildZoomPill(state, pills[i].key, pills[i].value, i == activeIdx),
+                    _buildZoomPill(
+                        state, pills[i].key, pills[i].value, i == activeIdx),
                   ],
                 ],
               );
@@ -1096,7 +1179,8 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
           const SizedBox(width: 5),
           Text(
             label,
-            style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
+            style: TextStyle(
+                color: color, fontSize: 11, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -1127,7 +1211,8 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
     }
   }
 
-  Widget _buildZoomPill(CameraState state, String label, double value, bool isActive) {
+  Widget _buildZoomPill(
+      CameraState state, String label, double value, bool isActive) {
     // 0.5x는 라벨이 길어 캡슐형(38px), 나머지는 원형(30px). radius 15로 둘 다 자연스럽다.
     final double pillWidth = label == '0.5x' ? 38 : 30;
     return GestureDetector(
@@ -1140,7 +1225,9 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
         decoration: BoxDecoration(
           color: isActive ? Colors.white : Colors.white.withOpacity(0.12),
           borderRadius: BorderRadius.circular(15),
-          border: isActive ? null : Border.all(color: Colors.white.withOpacity(0.1), width: 0.5),
+          border: isActive
+              ? null
+              : Border.all(color: Colors.white.withOpacity(0.1), width: 0.5),
         ),
         child: Text(
           label,
@@ -1180,7 +1267,7 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
     );
   }
 
-  // ── 녹화 제한시간 선택(15/30/60초) ──
+  // ── 녹화 제한시간 선택(5/10/15/30/60초) ──
   // 모드 토글과 같은 캡슐 세그먼트 형태로 맞춰 하단 컨트롤의 결을 유지한다.
   Widget _buildDurationSelector() {
     return Container(
@@ -1188,7 +1275,8 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.30),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 0.8),
+        border:
+            Border.all(color: Colors.white.withValues(alpha: 0.12), width: 0.8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1209,7 +1297,9 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
       onTap: () {
         if (isSelected) return;
         HapticFeedback.selectionClick();
+        _durationUserSelected = true;
         setState(() => _limitSec = sec);
+        unawaited(_saveRecordLimit(sec));
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -1230,8 +1320,11 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
     );
   }
 
-  Widget _buildModeChip(CameraState state, String label, bool isSelected, CaptureMode mode) {
-    final IconData icon = mode == CaptureMode.photo ? Icons.photo_camera_rounded : Icons.videocam_rounded;
+  Widget _buildModeChip(
+      CameraState state, String label, bool isSelected, CaptureMode mode) {
+    final IconData icon = mode == CaptureMode.photo
+        ? Icons.photo_camera_rounded
+        : Icons.videocam_rounded;
     return GestureDetector(
       onTap: () {
         if (isSelected) return;
@@ -1247,7 +1340,8 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 13, color: isSelected ? Colors.black : Colors.white60),
+            Icon(icon,
+                size: 13, color: isSelected ? Colors.black : Colors.white60),
             const SizedBox(width: 5),
             Text(
               label,
@@ -1282,7 +1376,9 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
               _buildShutterButton(state),
             ],
           ),
-          isRecording ? const SizedBox(width: 48) : _buildCameraSwitchButton(state),
+          isRecording
+              ? const SizedBox(width: 48)
+              : _buildCameraSwitchButton(state),
         ],
       ),
     );
@@ -1321,7 +1417,8 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
           border: Border.all(color: Colors.white.withOpacity(0.25), width: 1.4),
         ),
         // cached(새로고침)보다 카메라 전환 의미가 분명한 아이콘으로 교체
-        child: const Icon(Icons.cameraswitch_rounded, color: Colors.white, size: 22),
+        child: const Icon(Icons.cameraswitch_rounded,
+            color: Colors.white, size: 22),
       ),
     );
   }
@@ -1416,7 +1513,8 @@ class _CamerAwesomeBottomActionsState extends State<CamerAwesomeBottomActions> {
     );
   }
 
-  Widget _shutterButtonDecoration({required Color innerColor, required bool isRecording}) {
+  Widget _shutterButtonDecoration(
+      {required Color innerColor, required bool isRecording}) {
     // 녹화 시에는 작은 사각형(정지 버튼)을 중앙에 그려 흰 원 안에 들어오게 한다.
     // (사각형을 원 크기만큼 크게 그리면 모서리가 원 밖으로 삐져나옴)
     final Widget inner = AnimatedContainer(
@@ -1466,7 +1564,8 @@ class _BlinkingDot extends StatefulWidget {
   State<_BlinkingDot> createState() => _BlinkingDotState();
 }
 
-class _BlinkingDotState extends State<_BlinkingDot> with SingleTickerProviderStateMixin {
+class _BlinkingDotState extends State<_BlinkingDot>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
@@ -1504,7 +1603,8 @@ class AwesomeCircleButton extends StatelessWidget {
   final VoidCallback onTap;
   final Widget child;
 
-  const AwesomeCircleButton({super.key, required this.onTap, required this.child});
+  const AwesomeCircleButton(
+      {super.key, required this.onTap, required this.child});
 
   @override
   Widget build(BuildContext context) {

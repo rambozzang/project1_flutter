@@ -27,6 +27,7 @@ import 'package:rich_text_view/rich_text_view.dart';
 import 'package:text_scroll/text_scroll.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'widgets/image_viewer.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 
 class ShortViewPage extends StatefulWidget {
   const ShortViewPage({super.key});
@@ -647,7 +648,7 @@ class _ShortViewPageState extends State<ShortViewPage> {
             child: Chip(
               elevation: 4,
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-              backgroundColor: const Color.fromARGB(255, 122, 110, 199), // Color.fromARGB(255, 76, 70, 124),
+              backgroundColor: SaColorsLight.accentTeal, // 흰 배경 위 칩 — 라이트 명도(이전: 페리윙클 하드코딩 사본)
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
                 side: const BorderSide(color: Color.fromARGB(0, 166, 155, 155)),

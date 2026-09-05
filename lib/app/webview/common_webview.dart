@@ -4,6 +4,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 // Import for iOS/macOS features.
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 
 class CommonWebView extends StatefulWidget {
   const CommonWebView(
@@ -182,7 +183,8 @@ class _CommonWebView2State extends State<CommonWebView>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: (on ? Colors.teal.shade600 : Colors.black).withOpacity(0.62),
+          // 켜짐 상태 = 브랜드 페리윙클(어두운 웹뷰 위이므로 다크 명도). 이전: 임의 Colors.teal
+          color: (on ? SaColorsDark.accentTeal : Colors.black).withOpacity(0.62),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(color: Colors.white.withOpacity(0.35)),
         ),

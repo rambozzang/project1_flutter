@@ -22,10 +22,11 @@ import 'package:project1/widget/custom_indicator_offstage.dart';
 
 /// 설정 화면 — "우리의 앨범"(shared_album)과 같은 디자인 토큰(SaColors/SaText)을 쓴다.
 ///
-/// 이 화면은 **라이트 고정**이다. 앨범 페이지와 달리 `SaColors.syncWith(context)`를 호출하지
-/// 않으므로 `SaColors.isLight` 기본값(true)의 라이트 팔레트가 그대로 적용된다.
-/// (다크 대응은 별도 과제. 여기서 syncWith를 부르면 설정 화면 자체가 앨범 테마 설정값을
-///  따라가 버려서, 앨범 테마를 고르는 화면이 함께 어두워지는 혼란이 생긴다.)
+/// 이 화면은 **라이트 고정**이다. `SaColors.isLight`는 앱 전역 static 변수라 앨범 탭에서
+/// 다크 테마를 켜면 `syncWith`가 그 값을 false로 남겨 두고, 이후 열리는 이 화면도 함께
+/// 어두워져 버린다(2026-09-03 발견). 그래서 build() 최상단에서 매번 `isLight = true`로
+/// 명시적으로 되돌린다. (다크 대응은 별도 과제. syncWith를 부르면 설정 화면이 앨범 테마
+///  설정값을 따라가 버려서, 앨범 테마를 고르는 화면 자체가 함께 어두워지는 혼란이 생긴다.)
 class SettingPage extends StatefulWidget {
   const SettingPage({super.key});
 
@@ -179,6 +180,7 @@ class _SettingPageState extends State<SettingPage> {
 
   @override
   Widget build(BuildContext context) {
+    SaColors.isLight = true; // 라이트 고정 — 앨범 다크모드 잔류 방지
     return Stack(
       children: [
         Scaffold(
@@ -226,13 +228,13 @@ class _SettingPageState extends State<SettingPage> {
                   items: [
                     SettingsItem(
                       onTap: () => Get.toNamed('/NotiPage'),
-                      icons: PhosphorIconsBold.signOut,
+                      icons: PhosphorIconsBold.megaphone, // 공지 — 이전 signOut(로그아웃)은 뜻이 안 맞았다
                       backgroundColor: SaColors.surface,
                       title: "공지사항",
                     ),
                     SettingsItem(
                       onTap: () => Get.toNamed('/FaqPage'),
-                      icons: PhosphorIconsBold.repeat,
+                      icons: PhosphorIconsBold.question, // FAQ — 이전 repeat(반복)은 뜻이 안 맞았다
                       title: "FAQ",
                     ),
                   ],
@@ -249,7 +251,7 @@ class _SettingPageState extends State<SettingPage> {
                       iconStyle: IconStyle(
                         iconsColor: Colors.white,
                         withBackground: true,
-                        backgroundColor: Colors.teal[300],
+                        backgroundColor: SaColors.accentTeal, // 청록 제거 — 브랜드 페리윙클
                       ),
                       title: '스카이 라운지',
                       subtitle: "게시판 등 기존 라운지 화면",
@@ -268,7 +270,7 @@ class _SettingPageState extends State<SettingPage> {
                       iconStyle: IconStyle(
                         iconsColor: Colors.white,
                         withBackground: true,
-                        backgroundColor: Colors.indigo[300],
+                        backgroundColor: SaColors.accentPink,
                       ),
                       title: '알림(PUSH) 설정',
                       subtitle: "신규글 등록, 좋아요,댓글 알림을 수신합니다.",
@@ -296,7 +298,7 @@ class _SettingPageState extends State<SettingPage> {
                       iconStyle: IconStyle(
                         iconsColor: Colors.white,
                         withBackground: true,
-                        backgroundColor: Colors.blueGrey[400],
+                        backgroundColor: SaColorsDark.surfaceElevated,
                       ),
                       title: '앨범 테마',
                       subtitle: "현재: $_albumThemeLabel",
@@ -370,7 +372,7 @@ class _SettingPageState extends State<SettingPage> {
                       backgroundColor: SaColors.surface,
                       icons: PhosphorIconsFill.info,
                       iconStyle: IconStyle(
-                        backgroundColor: Colors.purple,
+                        backgroundColor: SaColors.accentTeal, // 임의 보라 → 브랜드 페리윙클
                       ),
                       title: '개인정보 처리방침',
                       subtitle: "회사 개인정보 처리방침",
@@ -386,7 +388,7 @@ class _SettingPageState extends State<SettingPage> {
                     ),
                     SettingsItem(
                       onTap: () => Get.toNamed('/OpenSourcePage'),
-                      icons: PhosphorIconsFill.chartBar,
+                      icons: PhosphorIconsFill.fileText, // 이전 chartBar(막대그래프)는 뜻이 안 맞았다
                       iconStyle: IconStyle(
                         backgroundColor: Colors.deepOrange,
                       ),
@@ -422,7 +424,7 @@ class _SettingPageState extends State<SettingPage> {
                               MaterialPageRoute(
                                   builder: (context) => const AgreePage()));
                         },
-                        icons: PhosphorIconsBold.signOut,
+                        icons: PhosphorIconsBold.checkSquare, // 이전 signOut(로그아웃)은 뜻이 안 맞았다
                         iconStyle: IconStyle(
                           backgroundColor: Colors.deepOrange,
                         ),
@@ -809,7 +811,7 @@ class IconStyle {
   IconStyle({
     iconsColor = Colors.white,
     withBackground = true,
-    backgroundColor = Colors.blue,
+    backgroundColor = SaColorsLight.accentTeal,
     // 칩은 pill — 핸드오프 규격(칩/버튼 999). 아이콘 칩 배경색은 항목 구분용이라 원본 유지.
     borderRadius = 999,
   })  : iconsColor = iconsColor,

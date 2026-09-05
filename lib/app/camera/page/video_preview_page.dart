@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:video_player/video_player.dart';
 
 /// 영상 미리보기 페이지 — 인스타/틱톡 스타일 고도화
@@ -23,8 +24,8 @@ class VideoPreviewPage extends StatefulWidget {
 
 class _VideoPreviewPageState extends State<VideoPreviewPage>
     with SingleTickerProviderStateMixin {
-  static const Color _accent = Color(0xFF4C8DFF);
-  static const Color _textHi = Color(0xFFF2F5FA);
+  static const Color _accent = SaColorsDark.accentTeal;
+  static const Color _textHi = Color(0xFFFFF7F8);
 
   bool _initialized = false;
   bool _showControls = true;

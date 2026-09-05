@@ -14,7 +14,7 @@ class SaWeatherGradients {
   static const LinearGradient rain = LinearGradient(
     begin: _begin,
     end: _end,
-    colors: [Color(0xFF5A9FE8), Color(0xFF2B5FB0), Color(0xFF243B73)],
+    colors: [Color(0xFF6CB9C7), Color(0xFF3F8F9E), Color(0xFF2E626D)],
     stops: [0.0, 0.55, 1.0],
   );
 
@@ -30,7 +30,7 @@ class SaWeatherGradients {
   static const LinearGradient storm = LinearGradient(
     begin: _begin,
     end: _end,
-    colors: [Color(0xFF4A5C82), Color(0xFF222C48), Color(0xFF5B3B7A)],
+    colors: [Color(0xFF79616F), Color(0xFF44313C), Color(0xFF6E445A)],
     stops: [0.0, 0.55, 1.0],
   );
 
@@ -38,7 +38,7 @@ class SaWeatherGradients {
   static const LinearGradient night = LinearGradient(
     begin: _begin,
     end: _end,
-    colors: [Color(0xFF2A3F82), Color(0xFF2D1E5F), Color(0xFF0E1330)],
+    colors: [Color(0xFF49324B), Color(0xFF342433), Color(0xFF1D171F)],
     stops: [0.0, 0.60, 1.0],
   );
 
@@ -62,7 +62,7 @@ class SaWeatherGradients {
   static const LinearGradient fog = LinearGradient(
     begin: _begin,
     end: _end,
-    colors: [Color(0xFF9AA7C7), Color(0xFF6D7BA0), Color(0xFFB9A7D6)],
+    colors: [Color(0xFFB8A6B0), Color(0xFF8E747F), Color(0xFFC9AEB7)],
     stops: [0.0, 0.55, 1.0],
   );
 
@@ -70,7 +70,7 @@ class SaWeatherGradients {
   static const LinearGradient snow = LinearGradient(
     begin: _begin,
     end: _end,
-    colors: [Color(0xFFDBEEFF), Color(0xFFA9C8EC), Color(0xFFAAB8D8)],
+    colors: [Color(0xFFF5DDE2), Color(0xFFD4B2BE), Color(0xFFC0A0AE)],
     stops: [0.0, 0.55, 1.0],
   );
 

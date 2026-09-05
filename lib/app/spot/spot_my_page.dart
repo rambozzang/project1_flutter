@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:project1/app/spot/spot_submit_page.dart';
 import 'package:project1/repo/spot/data/spot_admin_data.dart';
 import 'package:project1/repo/spot/spot_repo.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 
 /// 내가 제보한 스팟 목록 (상태: 대기/승인/반려).
 class SpotMyPage extends StatefulWidget {
@@ -13,7 +14,9 @@ class SpotMyPage extends StatefulWidget {
 }
 
 class _SpotMyPageState extends State<SpotMyPage> {
-  static const Color _accent = Color(0xFF8C83DD);
+  /// 브랜드 페리윙클 — 흰 배경 화면이므로 라이트 명도(#6559CF, 흰 배경 대비 5.41:1)를 쓴다.
+  /// (이전: #8C83DD 하드코딩 사본 — 흰 배경 대비 3.28:1로 본문 기준 미달이었다)
+  static const Color _accent = SaColorsLight.accentTeal;
   final SpotRepo _repo = SpotRepo();
   List<SpotAdminData> _list = [];
   bool _loading = true;

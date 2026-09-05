@@ -6,6 +6,7 @@ import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/weather/models/geocode.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -387,7 +388,7 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0xFF4C8DFF),
+        color: SaColorsLight.accentTeal,
         borderRadius: BorderRadius.circular(14),
       ),
       child: const Text('+ 추가', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
@@ -416,7 +417,7 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> {
               const Text('나의 관심 지역',
                   style: TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.w700)),
               const Gap(6),
-              Text('${_areas.length}', style: const TextStyle(color: Color(0xFF4C8DFF), fontSize: 14, fontWeight: FontWeight.w700)),
+              Text('${_areas.length}', style: const TextStyle(color: SaColorsLight.accentTeal, fontSize: 14, fontWeight: FontWeight.w700)),
               const Spacer(),
               Text('탭하면 날씨를 볼 수 있어요', style: TextStyle(color: Colors.grey[500], fontSize: 11.5)),
             ],
@@ -447,10 +448,10 @@ class _FavoriteAreaPageState extends State<FavoriteAreaPage> {
                 width: 34,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF4C8DFF).withOpacity(0.1),
+                  color: SaColorsLight.accentTeal.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.location_on_rounded, color: Color(0xFF4C8DFF), size: 18),
+                child: const Icon(Icons.location_on_rounded, color: SaColorsLight.accentTeal, size: 18),
               ),
               const Gap(12),
               Expanded(

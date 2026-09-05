@@ -29,6 +29,7 @@ import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/cust_tag_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/utils/StringUtils.dart';
+// import 'package:project1/utils/app_promo_share.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:image_picker/image_picker.dart';
@@ -37,7 +38,6 @@ import 'package:project1/widget/custom_button.dart';
 import 'package:project1/widget/custom_indicator_offstage.dart';
 import 'package:project1/widget/media_thumbnail.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:share_plus/share_plus.dart';
 
 // 사진촬영
 // https://dariadobszai.medium.com/set-profile-photo-with-flutter-bloc-or-how-to-bloc-backward-9fb16faa56ed
@@ -329,7 +329,7 @@ class _MyPageState extends State<MyPage>
       uiSettings: [
         AndroidUiSettings(
           toolbarTitle: '사진 편집기',
-          toolbarColor: const Color(0xFF262B49),
+          toolbarColor: SaColorsDark.bgBase,
           toolbarWidgetColor: Colors.white,
           initAspectRatio: CropAspectRatioPreset.original,
           lockAspectRatio: false,
@@ -388,28 +388,14 @@ class _MyPageState extends State<MyPage>
   // 이미지 서버에 저장
   Future<String> uploadImage(File uploadFile) async {
     // 썸네일 업로드
-    final ImageUploadResult? res = await DirectUploadRepo().uploadImageFile(uploadFile);
+    final ImageUploadResult? res =
+        await DirectUploadRepo().uploadImageFile(uploadFile);
     if (res == null) {
       Utils.alert('썸네일 업로드에 실패했습니다.');
       return Future.error('썸네일 업로드에 실패했습니다.');
     }
     Lo.g('썸네일 : ${res.url}');
     return res.url;
-  }
-
-  Future<void> share() async {
-    // final result = await Share.shareXFiles([XFile('${directory.path}/image.jpg')], text: 'Great picture');
-
-    // if (result.status == ShareResultStatus.success) {
-    //     print('Thank you for sharing the picture!');
-    // }
-    // final result = await Share.shareWithResult('check out my website https://example.com');
-    final result =
-        await Share.share('check out my website https://example.com');
-
-    if (result.status == ShareResultStatus.success) {
-      print('Thank you for sharing my website!');
-    }
   }
 
   List<String> _taglist = [];
@@ -509,6 +495,7 @@ class _MyPageState extends State<MyPage>
 
   @override
   Widget build(BuildContext context) {
+    SaColors.isLight = true; // 라이트 고정 — 앨범 다크모드 잔류 방지
     super.build(context);
     return NotificationListener<UserScrollNotification>(
       onNotification: (notification) {
@@ -800,14 +787,12 @@ class _MyPageState extends State<MyPage>
                             right: -2,
                             top: -2,
                             child: Obx(() {
-                              final n =
-                                  AchievementService.to.unseenCount.value;
+                              final n = AchievementService.to.unseenCount.value;
                               if (n <= 0) return const SizedBox.shrink();
                               return Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 5, vertical: 1),
-                                constraints:
-                                    const BoxConstraints(minWidth: 16),
+                                constraints: const BoxConstraints(minWidth: 16),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFE23E28),
                                   borderRadius: BorderRadius.circular(10),
@@ -865,30 +850,44 @@ class _MyPageState extends State<MyPage>
               Text('관심지역', style: SaText.titleS),
               const Spacer(),
               Text('*리스트 구성 기준',
-                  style: SaText.caption
-                      .copyWith(color: SaColors.textTertiary)),
-              const Gap(10),
+                  style: SaText.caption.copyWith(color: SaColors.textTertiary)),
+              const Gap(6),
+              // 55x30 사각 pill이었다 — 세로 30dp는 접근성 기준(최소 44dp)에 못 미쳤고
+              // 아바타의 원형 편집 버튼(25x25)과도 모양이 달라 화면 안에서 겉돌았다.
+              // 탭 영역은 44x44로 넓히되(터치는 넓게), 보이는 원은 32dp로 작게 유지한다
+              // (보이는 크기와 탭 영역을 분리하는 건 아바타 편집 버튼과 같은 방식).
               SizedBox(
-                height: 30,
-                width: 55,
-                child: IconButton(
-                    padding: const EdgeInsets.all(0),
-                    constraints: const BoxConstraints(),
-                    style: ButtonStyle(
-                        // 칩/버튼은 pill(999) — 관심태그의 추가 버튼과 같은 모양으로 맞춘다.
-                        shape: WidgetStateProperty.all(RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999))),
-                        padding: WidgetStateProperty.all(EdgeInsets.zero),
-                        backgroundColor:
-                            WidgetStateProperty.all(SaColors.accentTeal)),
-                    onPressed: () async =>
-                        await Get.toNamed('/FavoriteAreaPage')!.then((value) =>
+                height: 44,
+                width: 44,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () async => await Get.toNamed('/FavoriteAreaPage')!
+                        .then((value) =>
                             Get.find<WeatherGogoCntr>().getLocalTag()),
-                    icon: PhosphorIcon(
-                      PhosphorIconsBold.plus,
-                      size: 20,
-                      color: SaColors.onAccent,
-                    )),
+                    child: Center(
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        // 아바타 편집 버튼·앨범 탭 검색 버튼과 같은 흰 원 + 회색 아이콘.
+                        // (포인트색 원은 "촌스럽다" → 흰색으로, 2026-09-05)
+                        decoration: BoxDecoration(
+                          color: SaColors.surface,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: SaColors.borderStrong, width: 1),
+                        ),
+                        child: Center(
+                          child: PhosphorIcon(
+                            PhosphorIconsBold.plus,
+                            size: 18,
+                            color: SaColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -900,8 +899,8 @@ class _MyPageState extends State<MyPage>
               children: <TextSpan>[
                 TextSpan(
                   text: '"학교, 지하철역, 골프장, 등산장소 , 캠핑장 , 유원지"',
-                  style: SaText.bodyMedium
-                      .copyWith(fontWeight: FontWeight.w600),
+                  style:
+                      SaText.bodyMedium.copyWith(fontWeight: FontWeight.w600),
                 ),
                 TextSpan(
                   text: '를 자유롭게 지정해 주시면 해당 영상이 리스트에 구성됩니다.',
@@ -994,32 +993,41 @@ class _MyPageState extends State<MyPage>
               Text('관심태그', style: SaText.titleS),
               const Spacer(),
               Text('*리스트 구성 기준',
-                  style: SaText.caption
-                      .copyWith(color: SaColors.textTertiary)),
-              const Gap(10),
+                  style: SaText.caption.copyWith(color: SaColors.textTertiary)),
+              const Gap(6),
+              // 관심지역과 같은 이유로 같은 모양(44 탭 영역 · 32 원)으로 통일.
               SizedBox(
-                height: 30,
-                width: 55,
-                child: IconButton(
-                    padding: const EdgeInsets.all(0),
-                    constraints: const BoxConstraints(),
-                    style: ButtonStyle(
-                      // 관심지역의 추가 버튼과 같은 pill·accentTeal. (원래는 radius 7 +
-                      // elevation 7 로 같은 역할인데 모양이 서로 달랐다 — 통일)
-                      shape: WidgetStateProperty.all(RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999))),
-                      padding: WidgetStateProperty.all(EdgeInsets.zero),
-                      backgroundColor:
-                          WidgetStateProperty.all(SaColors.accentTeal),
-                    ),
-                    onPressed: () {
+                height: 44,
+                width: 44,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () {
                       showProfileModifyModal();
                     },
-                    icon: PhosphorIcon(
-                      PhosphorIconsBold.plus,
-                      size: 20,
-                      color: SaColors.onAccent,
-                    )),
+                    child: Center(
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        // 아바타 편집 버튼·앨범 탭 검색 버튼과 같은 흰 원 + 회색 아이콘.
+                        // (포인트색 원은 "촌스럽다" → 흰색으로, 2026-09-05)
+                        decoration: BoxDecoration(
+                          color: SaColors.surface,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: SaColors.borderStrong, width: 1),
+                        ),
+                        child: Center(
+                          child: PhosphorIcon(
+                            PhosphorIconsBold.plus,
+                            size: 18,
+                            color: SaColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -1031,8 +1039,8 @@ class _MyPageState extends State<MyPage>
               children: <TextSpan>[
                 TextSpan(
                   text: '"Tag"',
-                  style: SaText.bodyMedium
-                      .copyWith(fontWeight: FontWeight.w600),
+                  style:
+                      SaText.bodyMedium.copyWith(fontWeight: FontWeight.w600),
                 ),
                 TextSpan(
                   text: '를 등록해 주시면 해당하는 영상이 리스트로 구성됩니다.',
@@ -1146,8 +1154,7 @@ class _MyPageState extends State<MyPage>
                                     color: Colors.transparent,
                                     borderRadius: BorderRadius.circular(25),
                                     border: Border.all(
-                                        color: SaColors.borderStrong,
-                                        width: 1),
+                                        color: SaColors.borderStrong, width: 1),
                                     image: DecorationImage(
                                       image: CachedNetworkImageProvider(
                                           cacheKey: Get.find<AuthCntr>()
@@ -1208,8 +1215,8 @@ class _MyPageState extends State<MyPage>
                         decoration: BoxDecoration(
                           color: SaColors.surface,
                           borderRadius: BorderRadius.circular(999),
-                          border:
-                              Border.all(color: SaColors.borderStrong, width: 1),
+                          border: Border.all(
+                              color: SaColors.borderStrong, width: 1),
                         ),
                         child: PhosphorIcon(
                           PhosphorIconsBold.plus,
@@ -1293,16 +1300,26 @@ class _MyPageState extends State<MyPage>
                 style: SaText.caption,
               ),
         const Gap(5),
+        // 관심지역/관심태그 칩과 같은 언어(테두리 + 아이콘)로 맞춘다 — 예전엔 배경색만
+        // 있고 테두리·아이콘이 없어 흰 카드 위에서 경계가 흐릿하고 다른 칩들과 겉돌았다.
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
             color: SaColors.surfaceElevated,
-            // 칩은 pill
             borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: SaColors.border),
           ),
-          child: Text(
-            data.custInfo!.email!.toString(),
-            style: SaText.caption,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PhosphorIcon(PhosphorIconsBold.envelopeSimple,
+                  size: 12, color: SaColors.textTertiary),
+              const Gap(5),
+              Text(
+                data.custInfo!.email!.toString(),
+                style: SaText.caption,
+              ),
+            ],
           ),
         ),
         SizedBox(
@@ -1338,8 +1355,8 @@ class _MyPageState extends State<MyPage>
                   children: [
                     Text(
                       '회원정보 수정',
-                      style: SaText.caption
-                          .copyWith(color: SaColors.textPrimary),
+                      style:
+                          SaText.caption.copyWith(color: SaColors.textPrimary),
                     ),
                     const Gap(2),
                     PhosphorIcon(
@@ -1354,42 +1371,19 @@ class _MyPageState extends State<MyPage>
           ),
         ),
         const Gap(15),
+        // 인스타그램 추천 버튼 — 동작이 어색해 임시 비노출(2026-09-06). 다시 켤 때 아래 주석을 해제한다.
+        // 내 프로필의 마지막 행동으로 둔다. 계정 수정과 섞이지 않으면서도,
+        // SkySnap을 실제로 쓰는 사용자가 앱을 추천하기 가장 자연스러운 지점이다.
+        // 홍보용 보조 행동 — 포인트색 틴트로 강조하면 프로필 카드 안에서 가장 큰 색 덩어리가
+        // 되어 계정 정보보다 눈에 먼저 들어왔다. 중성 톤으로 내린다.
+        // MyPageButton(
+        //   onTap: AppPromoShare.shareToInstagram,
+        //   label: '인스타그램에 SkySnap 추천',
+        //   icon: PhosphorIconsBold.instagramLogo,
+        //   emphasized: true,
+        // ),
+        // const Gap(15),
       ],
-    );
-  }
-
-  Widget _buttons() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const SizedBox(
-            width: 20.0,
-          ),
-          Expanded(
-              flex: 4,
-              child: MyPageButton(
-                  onTap: () => Get.toNamed('/MyinfoModifyPage')!
-                      .then((value) => value == true ? getCountData() : null),
-                  label: '프로필 수정')),
-          const SizedBox(
-            width: 10.0,
-          ),
-          Expanded(
-              flex: 4,
-              child: MyPageButton(onTap: () => share(), label: '프로필 공유')),
-          const SizedBox(
-            width: 20.0,
-          ),
-          // Container(
-          //     width: 40,
-          //     height: 40,
-          //     padding: const EdgeInsets.all(8.0),
-          //     decoration: BoxDecoration(color: const Color(0xfff3f3f3), borderRadius: BorderRadius.circular(4.0)),
-          //     child: const Icon(Icons.person_add))
-        ],
-      ),
     );
   }
 
@@ -1421,8 +1415,7 @@ class _MyPageState extends State<MyPage>
         children: [
           Text('${_selectedIds.length}개 선택',
               style: SaText.caption.copyWith(
-                  color: SaColors.textPrimary,
-                  fontWeight: FontWeight.w700)),
+                  color: SaColors.textPrimary, fontWeight: FontWeight.w700)),
           const Spacer(),
           TextButton.icon(
             onPressed: _selectedIds.isEmpty ? null : _bulkMove,
@@ -1436,8 +1429,8 @@ class _MyPageState extends State<MyPage>
             // 위험(삭제) 강조 — SaColors에 대응 토큰이 없어 원본 red 유지.
             icon: const PhosphorIcon(PhosphorIconsBold.trash,
                 size: 18, color: Colors.red),
-            label: Text('삭제',
-                style: SaText.caption.copyWith(color: Colors.red)),
+            label:
+                Text('삭제', style: SaText.caption.copyWith(color: Colors.red)),
           ),
           TextButton(
             onPressed: () => setState(() {
@@ -1445,8 +1438,7 @@ class _MyPageState extends State<MyPage>
               _selectedIds.clear();
             }),
             child: Text('취소',
-                style:
-                    SaText.caption.copyWith(color: SaColors.textSecondary)),
+                style: SaText.caption.copyWith(color: SaColors.textSecondary)),
           ),
         ],
       ),
@@ -1461,17 +1453,23 @@ class _MyPageState extends State<MyPage>
         title: const Text('삭제'),
         content: Text('${ids.length}개 게시물을 삭제할까요? 되돌릴 수 없습니다.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('삭제', style: TextStyle(color: Colors.red))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('취소')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('삭제', style: TextStyle(color: Colors.red))),
         ],
       ),
     );
     if (ok != true) return;
-    Get.dialog(const Center(child: CircularProgressIndicator()), barrierDismissible: false);
+    Get.dialog(const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false);
     final repo = BoardRepo();
     for (final id in ids) {
       try {
-        await repo.updateBoard(BoardUpdateData(boardId: id.toString(), delYn: 'Y'));
+        await repo
+            .updateBoard(BoardUpdateData(boardId: id.toString(), delYn: 'Y'));
       } catch (_) {}
     }
     if (Get.isDialogOpen ?? false) Get.back(); // 로딩 닫기
@@ -1491,7 +1489,8 @@ class _MyPageState extends State<MyPage>
       context: context,
       isScrollControlled: true,
       backgroundColor: SaColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(26))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(26))),
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
         child: SafeArea(
@@ -1539,11 +1538,13 @@ class _MyPageState extends State<MyPage>
       ),
     );
     if (apply != true || !changed) return;
-    Get.dialog(const Center(child: CircularProgressIndicator()), barrierDismissible: false);
+    Get.dialog(const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false);
     final repo = BoardRepo();
     for (final id in ids) {
       try {
-        await repo.updateBoard(BoardUpdateData(boardId: id.toString(), communityId: (picked ?? 0).toString()));
+        await repo.updateBoard(BoardUpdateData(
+            boardId: id.toString(), communityId: (picked ?? 0).toString()));
       } catch (_) {}
     }
     if (Get.isDialogOpen ?? false) Get.back(); // 로딩 닫기
@@ -1574,7 +1575,8 @@ class _MyPageState extends State<MyPage>
       item.contents = returnMap['contents'];
       item.hideYn = returnMap['hideYn'];
       item.anonyYn = returnMap['anonyYn'];
-      if (returnMap.containsKey('communityId')) item.communityId = returnMap['communityId'] as int?;
+      if (returnMap.containsKey('communityId'))
+        item.communityId = returnMap['communityId'] as int?;
     });
   }
 
@@ -1657,173 +1659,185 @@ class _MyPageState extends State<MyPage>
             // 화면 좌우 패딩 16
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: list.isNotEmpty
-          ? GridView.builder(
-              shrinkWrap: false,
-              // controller: myboardScrollCtrl,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3, //1 개의 행에 보여줄 item 개수
-                childAspectRatio: 3 / 5, //item 의 가로 1, 세로 1 의 비율
-                mainAxisSpacing: 6, //수평 Padding
-                crossAxisSpacing: 3, //수직 Padding
-              ),
-              itemCount: list.length,
-              itemBuilder: (context, index) => GestureDetector(
-                onTap: () {
-                  if (_selectMode) {
-                    _toggleSelect(list[index].boardId);
-                    return;
-                  }
-                  Get.toNamed('/VideoMyinfoListPage', arguments: {
-                    'datatype': 'MYFEED',
-                    'custId': Get.find<AuthCntr>()
-                        .resLoginData
-                        .value
-                        .custId
-                        .toString(),
-                    'boardId': list[index].boardId.toString()
-                  });
-                },
-                onLongPress: () => _selectMode
-                    ? _toggleSelect(list[index].boardId)
-                    : _openManageForItem(list[index]),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: SaColors.surfaceElevated,
-                    borderRadius: BorderRadius.circular(14.0),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(14.0),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        // 썸네일은 MediaThumbnail 로 통일 — GIF 썸네일을 정적 JPG 로
-                        // 정규화하고, 영상이면 우측 상단에 플레이 배지를 붙인다.
-                        MediaThumbnail(
-                          key: ValueKey(list[index].thumbnailPath),
-                          url: list[index].thumbnailPath,
-                          isVideo: _isVideoPost(list[index]),
-                          placeholder: const SizedBox.shrink(),
+                ? GridView.builder(
+                    shrinkWrap: false,
+                    // controller: myboardScrollCtrl,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3, //1 개의 행에 보여줄 item 개수
+                      childAspectRatio: 3 / 5, //item 의 가로 1, 세로 1 의 비율
+                      mainAxisSpacing: 6, //수평 Padding
+                      crossAxisSpacing: 3, //수직 Padding
+                    ),
+                    itemCount: list.length,
+                    itemBuilder: (context, index) => GestureDetector(
+                      onTap: () {
+                        if (_selectMode) {
+                          _toggleSelect(list[index].boardId);
+                          return;
+                        }
+                        Get.toNamed('/VideoMyinfoListPage', arguments: {
+                          'datatype': 'MYFEED',
+                          'custId': Get.find<AuthCntr>()
+                              .resLoginData
+                              .value
+                              .custId
+                              .toString(),
+                          'boardId': list[index].boardId.toString()
+                        });
+                      },
+                      onLongPress: () => _selectMode
+                          ? _toggleSelect(list[index].boardId)
+                          : _openManageForItem(list[index]),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: SaColors.surfaceElevated,
+                          borderRadius: BorderRadius.circular(14.0),
                         ),
-                        Align(
-                          alignment: Alignment.bottomRight,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(14.0),
+                          child: Stack(
+                            fit: StackFit.expand,
                             children: [
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 5),
+                              // 썸네일은 MediaThumbnail 로 통일 — GIF 썸네일을 정적 JPG 로
+                              // 정규화하고, 영상이면 우측 상단에 플레이 배지를 붙인다.
+                              MediaThumbnail(
+                                key: ValueKey(list[index].thumbnailPath),
+                                url: list[index].thumbnailPath,
+                                isVideo: _isVideoPost(list[index]),
+                                placeholder: const SizedBox.shrink(),
+                              ),
+                              Align(
+                                alignment: Alignment.bottomRight,
                                 child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    const PhosphorIcon(
-                                      PhosphorIconsFill.heart,
-                                      color: Colors.white,
-                                      size: 17,
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 5),
+                                      child: Row(
+                                        children: [
+                                          const PhosphorIcon(
+                                            PhosphorIconsFill.heart,
+                                            color: Colors.white,
+                                            size: 17,
+                                          ),
+                                          const Gap(5),
+                                          Text(
+                                            list[index].likeCnt.toString(),
+                                            // 영상 위에 얹히는 글자라 흰색 고정(토큰 미적용)
+                                            style: SaText.caption.copyWith(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    const Gap(5),
-                                    Text(
-                                      list[index].likeCnt.toString(),
-                                      // 영상 위에 얹히는 글자라 흰색 고정(토큰 미적용)
-                                      style: SaText.caption.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 5),
+                                      child: Row(
+                                        children: [
+                                          // 재생수 아이콘은 이번 범위 밖(별건 이슈) — 원본 Material 유지
+                                          const Icon(
+                                            Icons.play_arrow_outlined,
+                                            color: Colors.white,
+                                            size: 17,
+                                          ),
+                                          const Gap(5),
+                                          Text(
+                                            list[index].viewCnt.toString(),
+                                            style: SaText.caption.copyWith(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 5),
-                                child: Row(
-                                  children: [
-                                    // 재생수 아이콘은 이번 범위 밖(별건 이슈) — 원본 Material 유지
-                                    const Icon(
-                                      Icons.play_arrow_outlined,
-                                      color: Colors.white,
-                                      size: 17,
-                                    ),
-                                    const Gap(5),
-                                    Text(
-                                      list[index].viewCnt.toString(),
-                                      style: SaText.caption.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
+                              // 비공개(red)·익명(green)은 서로를 구분하는 상태색이라 원본 유지.
+                              if (list[index].hideYn == 'Y') ...[
+                                const Positioned(
+                                  top: 10,
+                                  left: 10,
+                                  child: PhosphorIcon(PhosphorIconsFill.lock,
+                                      color: Colors.red, size: 20),
                                 ),
-                              ),
+                              ],
+                              if (list[index].anonyYn == 'Y') ...[
+                                const Positioned(
+                                  top: 10,
+                                  right: 10,
+                                  child: PhosphorIcon(
+                                      PhosphorIconsFill.userMinus,
+                                      color: Colors.green,
+                                      size: 20),
+                                ),
+                              ],
+                              // 앨범 소속이면 좌하단 '앨범' 배지(전체 피드는 배지 없음).
+                              if (list[index].communityId != null)
+                                Positioned(
+                                  bottom: 8,
+                                  left: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    // 영상 위 스크림 배지 — black54/흰 글자는 가독성용이라 원본 유지, 칩은 pill.
+                                    decoration: BoxDecoration(
+                                        color: Colors.black54,
+                                        borderRadius:
+                                            BorderRadius.circular(999)),
+                                    child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const PhosphorIcon(
+                                              PhosphorIconsFill.images,
+                                              color: Colors.white,
+                                              size: 11),
+                                          const SizedBox(width: 3),
+                                          Text('앨범',
+                                              style: SaText.caption.copyWith(
+                                                  color: Colors.white,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w700)),
+                                        ]),
+                                  ),
+                                ),
+                              // 선택 모드: 우상단 체크 표시.
+                              if (_selectMode)
+                                Positioned(
+                                  top: 6,
+                                  right: 6,
+                                  child: PhosphorIcon(
+                                    _selectedIds.contains(list[index].boardId)
+                                        ? PhosphorIconsFill.checkCircle
+                                        : PhosphorIconsBold.circle,
+                                    // 선택 상태 = accentTeal. 비선택은 영상 위라 흰색 고정.
+                                    color: _selectedIds
+                                            .contains(list[index].boardId)
+                                        ? SaColors.accentTeal
+                                        : Colors.white,
+                                    size: 22,
+                                  ),
+                                ),
                             ],
                           ),
                         ),
-                        // 비공개(red)·익명(green)은 서로를 구분하는 상태색이라 원본 유지.
-                        if (list[index].hideYn == 'Y') ...[
-                          const Positioned(
-                            top: 10,
-                            left: 10,
-                            child: PhosphorIcon(PhosphorIconsFill.lock,
-                                color: Colors.red, size: 20),
-                          ),
-                        ],
-                        if (list[index].anonyYn == 'Y') ...[
-                          const Positioned(
-                            top: 10,
-                            right: 10,
-                            child: PhosphorIcon(PhosphorIconsFill.userMinus,
-                                color: Colors.green, size: 20),
-                          ),
-                        ],
-                        // 앨범 소속이면 좌하단 '앨범' 배지(전체 피드는 배지 없음).
-                        if (list[index].communityId != null)
-                          Positioned(
-                            bottom: 8,
-                            left: 8,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              // 영상 위 스크림 배지 — black54/흰 글자는 가독성용이라 원본 유지, 칩은 pill.
-                              decoration: BoxDecoration(
-                                  color: Colors.black54, borderRadius: BorderRadius.circular(999)),
-                              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                                const PhosphorIcon(PhosphorIconsFill.images,
-                                    color: Colors.white, size: 11),
-                                const SizedBox(width: 3),
-                                Text('앨범',
-                                    style: SaText.caption.copyWith(
-                                        color: Colors.white,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w700)),
-                              ]),
-                            ),
-                          ),
-                        // 선택 모드: 우상단 체크 표시.
-                        if (_selectMode)
-                          Positioned(
-                            top: 6,
-                            right: 6,
-                            child: PhosphorIcon(
-                              _selectedIds.contains(list[index].boardId)
-                                  ? PhosphorIconsFill.checkCircle
-                                  : PhosphorIconsBold.circle,
-                              // 선택 상태 = accentTeal. 비선택은 영상 위라 흰색 고정.
-                              color: _selectedIds.contains(list[index].boardId)
-                                  ? SaColors.accentTeal
-                                  : Colors.white,
-                              size: 22,
-                            ),
-                          ),
-                      ],
+                      ),
+                    ),
+                  )
+                : Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(40),
+                      child: Text('해당하는 게시물이 없어요',
+                          style: SaText.body
+                              .copyWith(color: SaColors.textTertiary)),
                     ),
                   ),
-                ),
-              ),
-            )
-          : Center(
-              child: Padding(
-                padding: const EdgeInsets.all(40),
-                child: Text('해당하는 게시물이 없어요',
-                    style:
-                        SaText.body.copyWith(color: SaColors.textTertiary)),
-              ),
-            ),
           ),
         ),
       ],
@@ -1941,9 +1955,9 @@ class _MyPageState extends State<MyPage>
         dividerColor: Colors.transparent,
         labelColor: SaColors.textPrimary,
         unselectedLabelColor: SaColors.textTertiary,
-        labelStyle: SaText.titleS,
-        unselectedLabelStyle:
-            SaText.titleS.copyWith(fontWeight: FontWeight.w500),
+        // otherinfo_page.dart(동일 계열 프로필 탭바)와 같은 크기로 맞춘다 — titleS(16.5)는 이 자리엔 컸다.
+        labelStyle: SaText.titleS.copyWith(fontSize: 14),
+        unselectedLabelStyle: SaText.body.copyWith(fontSize: 14),
         tabs: const [
           Tab(
             // child: Icon(Icons.grid_on),
@@ -2152,22 +2166,26 @@ class _MyPageState extends State<MyPage>
           child: Chip(
             elevation: 0,
             padding: EdgeInsets.zero,
-            // 앨범 화면의 칩과 같은 규격 — accentTeal · pill(999) · onAccent 글자
-            backgroundColor: SaColors.accentTeal,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(999),
-              side: const BorderSide(color: Colors.transparent),
+            // 칩은 '내용 태그'지 버튼이 아니다 — 중성 톤으로 둔다.
+            // 예전엔 틴트·테두리·글씨·X 아이콘까지 전부 포인트색이라 칩이 6~7개 모이면
+            // 카드 한 장이 통째로 포인트색 덩어리가 됐다("촌스럽다", 2026-09-05).
+            // 포인트색은 행동(추가 버튼·활성 탭)에만 남기고 여기선 완전히 뺀다.
+            // 파스텔 민트(accentSoft, 명도 97%) — 회색은 죽어 보이고("더 상큼하게", 2026-09-05),
+            // 진한 포인트색 틴트는 무거웠다. 아주 연한 틴트 + 검은 글씨가 '상큼'의 정답이다.
+            backgroundColor: SaColorsLight.accentSoft,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(999)),
             ),
             label: Text(
               '  $label',
               textAlign: TextAlign.center,
-              style: SaText.caption.copyWith(color: SaColors.onAccent),
+              style: SaText.caption.copyWith(color: SaColors.textPrimary),
             ),
             labelPadding:
                 const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
             onDeleted: () => removeTag(label, 'TAG'),
             deleteButtonTooltipMessage: '삭제',
-            deleteIconColor: SaColors.onAccent.withValues(alpha: 0.7),
+            deleteIconColor: SaColors.accentTeal, // 작은 점 하나라 생기만 주고 면적은 안 먹는다
           ),
         ));
   }
@@ -2184,22 +2202,26 @@ class _MyPageState extends State<MyPage>
           child: Chip(
             elevation: 0,
             padding: EdgeInsets.zero,
-            // 앨범 화면의 칩과 같은 규격 — accentTeal · pill(999) · onAccent 글자
-            backgroundColor: SaColors.accentTeal,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(999),
-              side: const BorderSide(color: Colors.transparent),
+            // 칩은 '내용 태그'지 버튼이 아니다 — 중성 톤으로 둔다.
+            // 예전엔 틴트·테두리·글씨·X 아이콘까지 전부 포인트색이라 칩이 6~7개 모이면
+            // 카드 한 장이 통째로 포인트색 덩어리가 됐다("촌스럽다", 2026-09-05).
+            // 포인트색은 행동(추가 버튼·활성 탭)에만 남기고 여기선 완전히 뺀다.
+            // 파스텔 민트(accentSoft, 명도 97%) — 회색은 죽어 보이고("더 상큼하게", 2026-09-05),
+            // 진한 포인트색 틴트는 무거웠다. 아주 연한 틴트 + 검은 글씨가 '상큼'의 정답이다.
+            backgroundColor: SaColorsLight.accentSoft,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(999)),
             ),
             label: Text(
               '  $label',
               textAlign: TextAlign.center,
-              style: SaText.caption.copyWith(color: SaColors.onAccent),
+              style: SaText.caption.copyWith(color: SaColors.textPrimary),
             ),
             labelPadding:
                 const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
             onDeleted: () => removeTag(label, 'LOCAL'),
             deleteButtonTooltipMessage: '삭제',
-            deleteIconColor: SaColors.onAccent.withValues(alpha: 0.7),
+            deleteIconColor: SaColors.accentTeal, // 작은 점 하나라 생기만 주고 면적은 안 먹는다
           ),
         ));
   }
@@ -2208,24 +2230,59 @@ class _MyPageState extends State<MyPage>
 class MyPageButton extends StatelessWidget {
   final void Function()? onTap;
   final String label;
-  const MyPageButton({super.key, this.onTap, required this.label});
+  final IconData? icon;
+  final bool emphasized;
+
+  const MyPageButton({
+    super.key,
+    this.onTap,
+    required this.label,
+    this.icon,
+    this.emphasized = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-        onTap: onTap,
-        child: Container(
-          height: 40,
-          decoration: BoxDecoration(
-              color: SaColors.surfaceElevated,
-              // 버튼은 pill
-              borderRadius: BorderRadius.circular(999)),
-          child: Center(
-              child: Text(
-            label,
-            style: SaText.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-          )),
-        ));
+    // emphasized 라도 글씨는 검정 — 밝은 포인트색(#00A26E)은 14pt 글씨로 쓰기엔 대비가 낮다(3.3:1).
+    // 포인트색은 아이콘에만 얹어 '상큼'하되 읽힘은 지킨다.
+    final foreground = SaColors.textPrimary;
+    final iconColor = emphasized ? SaColors.accentTeal : SaColors.textPrimary;
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+        color: emphasized ? SaColorsLight.accentSoft : SaColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(999),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: Container(
+            height: 44,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              border: null, // 파스텔 pill 은 테두리 없이 — 칩과 같은 결
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  PhosphorIcon(icon!, size: 17, color: iconColor),
+                  const Gap(7),
+                ],
+                Text(
+                  label,
+                  style: SaText.bodyMedium.copyWith(
+                    color: foreground,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -2280,4 +2337,5 @@ class MyPageInfo extends StatelessWidget {
 /// 판별식은 `Video_screen_page` 의 `isPhotoPost`(= `typeDtCd == 'I' ||
 /// imageUrls 있음`)를 그대로 뒤집은 것이다. `typeDtCd` 가 비어 있는 레거시
 /// 게시물이 있어 사진 URL 유무까지 함께 봐야 사진에 재생 배지가 붙지 않는다.
-bool _isVideoPost(BoardWeatherListData d) => !(d.typeDtCd == 'I' || (d.imageUrls?.isNotEmpty ?? false));
+bool _isVideoPost(BoardWeatherListData d) =>
+    !(d.typeDtCd == 'I' || (d.imageUrls?.isNotEmpty ?? false));

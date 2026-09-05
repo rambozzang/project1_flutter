@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/subscript_service.dart';
 
 /// 프리미엄 구독 페이월 — 광고 제거 + 프리미엄 날씨 + 프리미엄 앨범 테마 안내.
@@ -23,7 +24,7 @@ class PremiumPage extends StatelessWidget {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0E1525),
+      backgroundColor: SaColorsDark.bgBase,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -43,8 +44,8 @@ class PremiumPage extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF6A5CFF), Color(0xFF00C2FF)],
+                        gradient: const LinearGradient(
+                          colors: [SaColorsDark.accentTeal, SaColorsDark.accentBlue],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),

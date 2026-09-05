@@ -8,6 +8,7 @@ import 'package:project1/repo/spot/data/spot_data.dart';
 import 'package:project1/repo/spot/spot_repo.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/widget/media_thumbnail.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 
 /// 스팟 상세 — 현재 날씨 헤더 + 이 장소의 앨범 섹션 + 그 스팟 커뮤니티 영상 썸네일 그리드.
 /// 썸네일 탭 → 기존 단일 영상 뷰어(/VideoMyinfoListPage) 재사용.
@@ -24,7 +25,9 @@ class _SpotDetailPageState extends State<SpotDetailPage> {
   static const Color _bg = Color(0xFFF8F9FB);
   static const Color _surface = Colors.white;
   static const Color _border = Color(0xFFE8EAED);
-  static const Color _accent = Color(0xFF8C83DD);
+  /// 브랜드 페리윙클 — 흰 배경 화면이므로 라이트 명도(#6559CF, 흰 배경 대비 5.41:1)를 쓴다.
+  /// (이전: #8C83DD 하드코딩 사본 — 흰 배경 대비 3.28:1로 본문 기준 미달이었다)
+  static const Color _accent = SaColorsLight.accentTeal;
   static const Color _textHi = Colors.black;
   static const Color _textLo = Color(0xFF5F6368);
   static const Color _thumbBg = Color(0xFFEEF0F3);

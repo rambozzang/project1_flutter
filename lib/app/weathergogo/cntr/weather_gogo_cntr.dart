@@ -162,12 +162,25 @@ class WeatherGogoCntr extends GetxController {
 
     isLoading.value = true;
 
-    // 날씨 가져오기 (GPS 지연/타임아웃 시 마지막 위치→기존 좌표로 폴백 = 화면 멈춤 방지)
+    // 마지막으로 알려진 위치를 **먼저** 쓴다 — 앱 시작 경로([requestLocation])와 같은 방식.
+    //
+    // 이전엔 `getCurrentPosition(high, 5초)` 를 먼저 기다리고 실패해야 마지막 위치로 폴백했다.
+    // 실내나 이동 중에는 콜드 픽스가 5초를 다 쓰는 일이 잦아, 버튼을 누르고 그만큼 멈춰 있었다.
+    // (2026-09-04 "날씨 가져오기가 느리다" 원인)
+    //
+    // 이제 마지막 위치로 즉시 조회를 시작하고, 정밀 좌표는 뒤에서 갱신한다. 크게 이동한 경우가
+    // 아니면 결과가 같고, 이동했다면 다음 갱신에 반영된다.
     try {
-      positionData.value = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 5),
-      );
+      final last = await Geolocator.getLastKnownPosition();
+      if (last != null) {
+        positionData.value = last;
+        _refinePositionInBackground(); // fire-and-forget
+      } else {
+        positionData.value = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 5),
+        );
+      }
     } catch (e) {
       lo.g('getCurrentWeatherData 위치 타임아웃/오류: $e');
       positionData.value =

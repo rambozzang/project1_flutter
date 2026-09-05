@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/utils/utils.dart';
 
 // ignore: must_be_immutable
@@ -56,51 +56,14 @@ class CustomButton extends StatelessWidget {
     'T': 61,
   };
 
-  List<Color>? listDefColors = [
-    //연두색
-    // Color.fromARGB(255, 38, 162, 40),
-    // Color.fromARGB(255, 34, 112, 26),
-    // Color.fromARGB(255, 13, 104, 43),
-
-    // 검은 회색
-    // Color(0xFF3A3F65), // 기준 색상보다 약간 더 밝은 색상
-    // Color(0xFF1E2238), // 기준 색상보다 약간 더 어두운 색상
-    // Color(0xFF414766), // 기준 색상보다 약간 더 채도가 높은 색상
-
-    // 밝은 회색
-    // Color(0xFF4A5076), // 기준 색상보다 조금 더 밝은 색상
-    // Color(0xFF6A7098), // 기준 색상보다 더 밝은 색상
-    // Color(0xFF8A90BA), // 기준 색상보다 훨씬 더 밝은 색상
-
-    // 기준 퍼플
-    // const Color(0xFF483D8B), // 어두운 슬레이트 블루
-    // const Color(0xFF5A4FCF), // 슬레이트 블루
-    // const Color(0xFF7D67E8), // 미디엄 슬레이트 블루
-
-    // const Color(0xFF5A4FCF), // 슬레이트 블루
-    // const Color(0xFF5A4FCC), // 미디엄 슬레이트 블루
-
-    const Color.fromARGB(255, 44, 89, 181),
-    const Color.fromARGB(255, 47, 99, 203),
-
-    // const Color.fromARGB(255, 36, 77, 158),
-    // const Color.fromARGB(255, 35, 81, 172),
-
-    // 밝은 퍼플
-    // Color(0xFF5A4FCF), //- 바이올렛 블루
-    // Color(0xFF7D67E8), //- 라벤더 퍼플
-    // Color(0xFF9A7FFF), //- 라이트 퍼플
-  ];
-
-  // List<Color>? listDefColors2 = [
-  // Color.fromARGB(255, 140, 131, 221),
-  // Color.fromARGB(255, 140, 131, 221),
-
-  // ];
+  // build 시 공통 토큰을 참조해 핫리로드 뒤에도 이전 색을 보관하지 않는다.
+  List<Color> get listDefColors => const [
+        SaColorsLight.accentTeal,
+        SaColorsLight.accentTeal,
+      ];
 
   @override
   Widget build(BuildContext context) {
-    final theme = context.theme;
     final double fontValue = fontSize[type]!;
 
     return Material(
@@ -116,7 +79,7 @@ class CustomButton extends StatelessWidget {
           color: type != 'XL' ? (!isEnable ? Colors.grey : null) : null,
           shadows: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.3),
+              color: SaColorsLight.textPrimary.withValues(alpha: 0.08),
               spreadRadius: 1,
               blurRadius: 5,
               offset: const Offset(0, 3), // changes position of shadow
@@ -141,7 +104,7 @@ class CustomButton extends StatelessWidget {
                   ? LinearGradient(
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
-                      colors: listColors ?? listDefColors!,
+                      colors: listColors ?? listDefColors,
                     )
                   : const LinearGradient(
                       begin: Alignment.centerLeft,

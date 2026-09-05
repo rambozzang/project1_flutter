@@ -24,7 +24,6 @@ import 'package:project1/subscript_service.dart';
 import 'package:project1/utils/WeatherLottie.dart';
 import 'package:project1/widget/global_upload_indicator.dart';
 import 'package:workmanager/workmanager.dart';
-// import 'package:project1/theme/app_theme.dart';
 
 // import com.kakao.sdk.common.util.Utility
 
@@ -75,6 +74,14 @@ void main() async {
 
   // 안드로이드  : Network : CERTIFICATE_VERIFY_FAILED 오류 수정
   HttpOverrides.global = MyHttpOverrides();
+
+  // 이미지 캐시 상한 — 기본값(1,000장 / 100MB)은 이 앱엔 너무 크다.
+  // 영상 디코더가 네이티브 메모리를 따로 물고 있는데 디코딩된 비트맵까지 100MB 를 쌓으면
+  // 그리드를 길게 스크롤한 뒤 촬영·업로드로 넘어갈 때 여유가 없다.
+  // (자매 앱에서 같은 조합으로 Java 힙 상한을 쳤던 이력이 있다)
+  // 썸네일은 MediaThumbnail 이 칸 크기로 다운샘플링하므로 60MB 로도 담기는 장수는 오히려 늘어난다.
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 60 << 20; // 60MB
+  PaintingBinding.instance.imageCache.maximumSize = 300; // 장수
 
   // Get.put(ThemeController());
 

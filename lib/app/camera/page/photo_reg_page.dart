@@ -8,6 +8,7 @@ import 'package:project1/repo/board/data/board_save_weather_data.dart';
 import 'package:project1/root/cntr/root_cntr.dart';
 import 'package:project1/app/community/widget/album_target_selector.dart';
 import 'package:project1/app/feel/widgets/feel_selector_widget.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/utils/utils.dart';
 
 /// 사진(다중) 등록 화면.
@@ -22,13 +23,13 @@ class PhotoRegPage extends StatefulWidget {
 }
 
 class _PhotoRegPageState extends State<PhotoRegPage> {
-  // 다크 팔레트(영상 등록 화면과 통일감)
-  static const Color _bg = Color(0xFF14161C);
-  static const Color _surface = Color(0xFF20242E);
-  static const Color _surfaceBorder = Color(0xFF2C313D);
-  static const Color _accent = Color(0xFF4A90E2);
-  static const Color _textHi = Color(0xFFF1F4F9);
-  static const Color _textLo = Color(0xFF9AA3B2);
+  // 영상 등록 화면과 같은 전역 라이트 팔레트
+  static const Color _bg = SaColorsLight.bgBase;
+  static const Color _surface = SaColorsLight.surface;
+  static const Color _surfaceBorder = SaColorsLight.border;
+  static const Color _accent = SaColorsLight.accentTeal;
+  static const Color _textHi = SaColorsLight.textPrimary;
+  static const Color _textLo = SaColorsLight.textSecondary;
 
   final PageController _pageController = PageController();
   final TextEditingController _captionController = TextEditingController();
@@ -81,7 +82,7 @@ class _PhotoRegPageState extends State<PhotoRegPage> {
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
               child: AlbumTargetSelector(
-                dark: true,
+                dark: false,
                 selectedCommunityId: _selectedCommunityId,
                 onChanged: (c) => setState(() => _selectedCommunityId = c?.communityId),
               ),
@@ -97,7 +98,7 @@ class _PhotoRegPageState extends State<PhotoRegPage> {
                   border: Border.all(color: _surfaceBorder),
                 ),
                 child: FeelSelectorWidget(
-                  dark: true,
+                  dark: false,
                   selectedFeelCd: _selectedFeelCd,
                   onSelected: (code) => setState(() => _selectedFeelCd = code),
                 ),
@@ -116,19 +117,19 @@ class _PhotoRegPageState extends State<PhotoRegPage> {
       margin: const EdgeInsets.fromLTRB(12, 10, 12, 0),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: const Color(0x26E53935),
+        color: _surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0x55E53935)),
+        border: Border.all(color: _surfaceBorder),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: const [
-          Icon(Icons.warning_amber_rounded, size: 18, color: Color(0xFFFF7B7B)),
+          Icon(Icons.shield_outlined, size: 18, color: SaColorsLight.warn),
           SizedBox(width: 8),
           Expanded(
             child: Text(
               '음란물·불법촬영물·타인 비방 등 부적절한 콘텐츠는 게시가 제한됩니다. 위반 시 삭제·이용 정지되며 관련 법에 따라 처벌될 수 있어요.',
-              style: TextStyle(fontSize: 12, height: 1.4, color: Color(0xFFFFB3B3), fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: 12, height: 1.4, color: _textLo, fontWeight: FontWeight.w600),
             ),
           ),
         ],

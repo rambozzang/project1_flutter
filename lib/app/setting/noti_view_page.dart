@@ -62,6 +62,7 @@ class _NotiViewPageState extends State<NotiViewPage> {
 
   @override
   Widget build(BuildContext context) {
+    SaColors.isLight = true; // 라이트 고정 — 앨범 다크모드 잔류 방지
     var isChecked = false;
     return Scaffold(
       appBar: AppBar(

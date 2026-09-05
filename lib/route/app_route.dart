@@ -247,7 +247,12 @@ abstract class AppPages {
     GetPage(
       name: '/OtherInfoPage/:custId',
       page: () => const OtherInfoPage(),
-      transition: Transition.rightToLeftWithFade,
+      // 이전: rightToLeftWithFade — 슬라이드와 페이드를 동시에 합성해 두 화면이 겹쳐
+      // 비치는 동안 느리고 흐릿해 보였다. VideoMyinfoListPage(같은 피드→프로필류 이동)가
+      // 이미 쓰던 native 로 맞춘다 — 플랫폼 기본 전환(합성 1겹)이라 더 가볍고 빠르며,
+      // 안드로이드·iOS 각각의 익숙한 느낌을 그대로 따라간다. (2026-09-04)
+      transition: Transition.native,
+      transitionDuration: const Duration(milliseconds: 220),
     ),
     // GetPage(
     //   name: '/SevendayDetailPage/:initialIndex',

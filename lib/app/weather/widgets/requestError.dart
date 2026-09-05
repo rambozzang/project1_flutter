@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:project1/app/weather/cntr/weather_cntr.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 
 class RequestError extends StatelessWidget {
   const RequestError({super.key});
@@ -14,14 +15,14 @@ class RequestError extends StatelessWidget {
         children: [
           const Icon(
             Icons.wrong_location_outlined,
-            color: Colors.blue,
+            color: SaColorsLight.accentTeal,
             size: 100,
           ),
           const SizedBox(height: 10),
           const Text(
             'No Search Result',
             style: TextStyle(
-              color: Colors.blue,
+              color: SaColorsLight.accentTeal,
               fontSize: 30,
               fontWeight: FontWeight.w700,
             ),

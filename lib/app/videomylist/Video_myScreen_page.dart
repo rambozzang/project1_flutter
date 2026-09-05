@@ -28,6 +28,7 @@ import 'package:video_player/video_player.dart';
 
 // import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:project1/utils/image_decode.dart';
 
 class VideoMySreenPage extends StatefulWidget {
   const VideoMySreenPage({
@@ -543,6 +544,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
           imageUrl: imgs[i],
           cacheKey: imgs[i],
           fit: BoxFit.cover,
+          memCacheWidth: ImageDecode.fullScreen(context),
           width: double.infinity,
           height: double.infinity,
           placeholder: (_, __) => Container(color: Colors.black),

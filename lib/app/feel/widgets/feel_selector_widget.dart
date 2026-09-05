@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:project1/config/app_color.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/repo/feel/data/feel_ranking_data.dart';
 
 class FeelSelectorWidget extends StatefulWidget {
@@ -8,12 +8,14 @@ class FeelSelectorWidget extends StatefulWidget {
 
   /// 어두운 배경(사진 등록 화면 등) 위에 올릴 때 제목 텍스트 색을 밝게 처리한다.
   final bool dark;
+  final Color? accentColor;
 
   const FeelSelectorWidget({
     super.key,
     this.selectedFeelCd,
     required this.onSelected,
     this.dark = false,
+    this.accentColor,
   });
 
   @override
@@ -31,6 +33,8 @@ class _FeelSelectorWidgetState extends State<FeelSelectorWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final accent = widget.accentColor ??
+        (widget.dark ? SaColorsDark.accentTeal : SaColorsLight.accentTeal);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -41,7 +45,9 @@ class _FeelSelectorWidgetState extends State<FeelSelectorWidget> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: widget.dark ? Colors.white : Colors.black87,
+              color: widget.dark
+                  ? SaColorsDark.textPrimary
+                  : SaColorsLight.textPrimary,
             ),
           ),
         ),
@@ -59,12 +65,21 @@ class _FeelSelectorWidgetState extends State<FeelSelectorWidget> {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColor.primaryColor : Colors.grey[100],
+                  color: isSelected
+                      ? accent
+                      : (widget.dark
+                          ? SaColorsDark.surfaceElevated
+                          : SaColorsLight.surfaceElevated),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isSelected ? AppColor.primaryColor : Colors.grey[300]!,
+                    color: isSelected
+                        ? accent
+                        : (widget.dark
+                            ? SaColorsDark.borderStrong
+                            : SaColorsLight.borderStrong),
                   ),
                 ),
                 child: Row(
@@ -79,8 +94,15 @@ class _FeelSelectorWidgetState extends State<FeelSelectorWidget> {
                       entry.value['name']!,
                       style: TextStyle(
                         fontSize: 12,
-                        color: isSelected ? Colors.white : Colors.black87,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected
+                            ? (widget.dark
+                                ? SaColorsDark.onAccent
+                                : SaColorsLight.onAccent)
+                            : (widget.dark
+                                ? SaColorsDark.textPrimary
+                                : SaColorsLight.textPrimary),
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
                   ],

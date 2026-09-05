@@ -24,7 +24,7 @@ class MainWeatherDetail extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         decoration: BoxDecoration(
-          color: const Color(0xFF262B49), // backgroundBlack,
+          color: backgroundBlack,
           borderRadius: BorderRadius.circular(16.0),
         ),
         child: Column(

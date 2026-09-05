@@ -10,6 +10,7 @@ import 'package:project1/app/weatherCom/cntr/weather_com_controller.dart';
 import 'package:project1/app/weatherCom/models/weather_data.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/app/weather/helper/utils.dart';
+import 'package:project1/app/shared_album/theme/sa_colors.dart';
 
 class WeatherComPage extends StatefulWidget {
   const WeatherComPage({super.key});
@@ -66,7 +67,7 @@ class _WeatherComPageState extends State<WeatherComPage> {
     return Scaffold(
       // backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D1B2A),
+        backgroundColor: SaColorsDark.bgBase,
         // forceMaterialTransparency: true,
         title: Hero(
             tag: 'appbar',
@@ -534,7 +535,7 @@ class _WeatherComPageState extends State<WeatherComPage> {
                   height: headerHeight,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: rowIndex % 2 == 1 ? const Color(0xFF0D1B2A) : const Color(0xFF1B263B),
+                    color: rowIndex % 2 == 1 ? SaColorsDark.bgBase : SaColorsDark.surface,
                     // border: Border(right: BorderSide(color: Colors.grey[600]!, width: borderWidth)),
                   ),
                   child: Text(
@@ -549,7 +550,7 @@ class _WeatherComPageState extends State<WeatherComPage> {
                       height: 30,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: rowIndex % 2 == 1 ? const Color(0xFF0D1B2A) : const Color(0xFF1B263B),
+                    color: rowIndex % 2 == 1 ? SaColorsDark.bgBase : SaColorsDark.surface,
                         // border: Border(right: BorderSide(color: Colors.grey[600]!, width: borderWidth)),
                       ),
                       child: Text(
@@ -572,7 +573,7 @@ class _WeatherComPageState extends State<WeatherComPage> {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: index % 2 == 0 ? const Color(0xFF0D1B2A) : const Color(0xFF1B263B),
+        color: index % 2 == 0 ? SaColorsDark.bgBase : SaColorsDark.surface,
         // border: Border(right: BorderSide(color: Colors.grey[300]!, width: borderWidth)),
       ),
       child: Center(
@@ -622,7 +623,7 @@ class _WeatherComPageState extends State<WeatherComPage> {
       height: cellHeight,
       padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 0),
       decoration: BoxDecoration(
-        color: index % 2 == 0 ? const Color(0xFF0D1B2A) : const Color(0xFF1B263B),
+        color: index % 2 == 0 ? SaColorsDark.bgBase : SaColorsDark.surface,
         border: Border(
           bottom: BorderSide(color: Colors.grey[600]!, width: borderWidth),
           // right: BorderSide(color: Colors.red[300]!, width: borderWidth),
