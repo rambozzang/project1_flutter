@@ -34,8 +34,13 @@ void main() {
   });
 
   group('videoWindowSize', () {
+    // 모모앨범(album_immersive_page.dart의 _videoWindow)과 동일한 값이어야 한다.
     test('윈도우는 프리로드 페이지 수보다 작아야 한다 — 같으면 줄이는 의미가 없다', () {
       expect(kVideoWindow, lessThan(5));
+    });
+
+    test('모모앨범과 동일한 대칭 3장', () {
+      expect(kVideoWindow, 3);
     });
   });
 }
