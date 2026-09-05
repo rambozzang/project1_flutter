@@ -47,7 +47,36 @@ SYMBOLS_DIR="symbols/ios/$VER_LINE"
 mkdir -p "$SYMBOLS_DIR"
 
 info "IPA 빌드 (flutter build ipa --release --obfuscate)"
-flutter build ipa --release --obfuscate --split-debug-info="$SYMBOLS_DIR"
+if ! flutter build ipa --release --obfuscate --split-debug-info="$SYMBOLS_DIR"; then
+  # 2026-09-06: Xcode 에 Apple ID 가 로그인돼 있지 않으면 아카이브는 성공해도 내보내기가
+  # "exportArchive No Accounts" / "Provisioning profile ... doesn't include signing certificate" 로
+  # 실패한다(캐시된 스토어 프로파일이 옛 인증서 기준). flutter build ipa 는 API 키 인증을
+  # 못 넘기므로, ASC API 키로 프로파일 갱신 권한을 주고 아카이브를 직접 내보낸다.
+  ARCHIVE="build/ios/archive/Runner.xcarchive"
+  [ -d "$ARCHIVE" ] || die "아카이브 생성 자체가 실패했습니다. 위 Xcode 오류를 확인하세요."
+  [ -n "${ASC_API_KEY_ID:-}" ] && [ -n "${ASC_API_ISSUER_ID:-}" ] && [ -n "${ASC_API_KEY_PATH:-}" ] \
+    || die "IPA 내보내기 실패. Xcode 에 Apple ID 로그인이 없고 config.env 의 ASC API 키도 없습니다."
+  KEY="${ASC_API_KEY_PATH/#\~/$HOME}"; [ "${KEY:0:1}" = "/" ] || KEY="$ROOT/$KEY"
+  TEAM_ID=$(grep -m1 -oE 'DEVELOPMENT_TEAM = [A-Z0-9]+' ios/Runner.xcodeproj/project.pbxproj | awk '{print $3}')
+  warn "flutter 내보내기 실패 → ASC API 키로 xcodebuild -exportArchive 재시도 (team=$TEAM_ID)"
+  cat > build/ios/ExportOptions.plist <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>method</key><string>app-store-connect</string>
+  <key>destination</key><string>export</string>
+  <key>teamID</key><string>$TEAM_ID</string>
+  <key>signingStyle</key><string>automatic</string>
+  <key>uploadSymbols</key><true/>
+  <key>manageAppVersionAndBuildNumber</key><false/>
+</dict></plist>
+PLIST
+  rm -rf build/ios/ipa
+  xcodebuild -exportArchive -archivePath "$ARCHIVE" -exportPath build/ios/ipa \
+    -exportOptionsPlist build/ios/ExportOptions.plist -allowProvisioningUpdates \
+    -authenticationKeyPath "$KEY" -authenticationKeyID "$ASC_API_KEY_ID" \
+    -authenticationKeyIssuerID "$ASC_API_ISSUER_ID" 2>&1 | grep -E "error|EXPORT" || true
+fi
 ok "심볼: $SYMBOLS_DIR — 크래시 역난독화용, 이 릴리즈와 함께 보관하세요"
 
 IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -n 1)

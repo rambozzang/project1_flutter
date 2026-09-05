@@ -6,6 +6,13 @@
 
 ## 2026-09-06
 
+### 02:03 | Claude (Fable) | 🟡 스토어 배포 1.2.8+68 — iOS 심사 제출 완료, Android 는 Play 콘솔 선언 대기
+- `./scripts/deploy.sh all --submit` 로 1.2.7+67 → 1.2.8+68 범프. 워킹트리의 미커밋 디자인·성능 변경(73개 파일)이 그대로 포함된 빌드 — 오늘 S24 릴리즈로 확인한 상태.
+- **Android**: AAB(133MB) 빌드·업로드(versionCode 68)까지 성공, 심사 제출(edit commit)이 403 `You must let us know whether your app uses any Foreground Service permissions.` 로 거부. 이번 빌드부터 들어간 `FOREGROUND_SERVICE_DATA_SYNC`(WorkManager 전송 알림) 때문. Play Console → 앱 콘텐츠 → 포그라운드 서비스 권한 선언(Data sync)은 사람이 콘솔에서 해야 함. 선언 뒤 재빌드 없이 `PLAY_AAB_PATH=build/app/outputs/bundle/release/app-release.aab scripts/.venv-play/bin/python scripts/play_upload.py` 로 재업로드·제출. 미커밋 edit 는 폐기되므로 재업로드 필수.
+- **iOS**: `flutter build ipa` 가 아카이브는 성공했으나 내보내기에서 `exportArchive No Accounts` + 프로파일이 새 Distribution 인증서(2026-08-23 발급, 2027-08-23 만료)를 포함하지 않음 → Xcode 에 Apple ID 미로그인. ASC API 키로 `xcodebuild -exportArchive -allowProvisioningUpdates -authenticationKey*` 수동 내보내기 성공(47.6MB) → altool 업로드 `UPLOAD SUCCEEDED` → `appstore_submit.py` 로 v1.2.8 생성·릴리즈노트·심사 제출 완료(02:02). 같은 폴백을 `deploy_ios.sh` 에 반영.
+- altool 경고 90068: MinimumOSVersion 14.0 — 2027년 봄부터 15.0 이상 필수. 다음 릴리즈 전 `ios/Podfile`·프로젝트 배포 타깃 15.0 으로 올릴 것.
+- 릴리즈노트 `scripts/release_notes_ko.txt` 갱신(디자인·성능·업로드·완료 알림·10초 촬영).
+
 ### 01:04 | Claude (Fable) | ✅ 코드 반영 — 게시 완료 기기 알림 추가
 - 사용자 보고: "백그라운드에서 업로드가 끝나면 완료 푸시가 와야 하는데 안 온다". 조사 결과 기능 자체가 없었음 — 서버 알림 코드표(ALRAM 01~10)에 작성자 본인용 완료 알림이 없고, Android 는 진행 알림만, iOS·Dart 에는 완료 알림 코드 없음. 모모앨범의 "업로드 완료"도 푸시가 아니라 앱 내 인디케이터 문구.
 - 새 `lib/services/upload_notifier.dart`: 게시 성공 시 `flutter_local_notifications` 로 "게시가 완료됐어요" 로컬 알림. 전면(resumed)이면 인디케이터가 있으므로 건너뜀. 전용 채널 `skysnap_upload_result`(기본 중요도·소리), 고정 ID 로 연속 게시가 쌓이지 않음. payload 는 기존 탭 핸들러가 무시하는 형태(boardId 없음) — 서버 게시 응답에 boardId 가 없어 해당 글로 바로 가기는 2단계.
