@@ -70,7 +70,8 @@ class NativeBackgroundUpload {
 
   static bool get isAvailable => Platform.isAndroid || Platform.isIOS;
 
-  static Future<bool> enqueue(List<NativeBackgroundUploadRequest> requests) async {
+  static Future<bool> enqueue(
+      List<NativeBackgroundUploadRequest> requests) async {
     if (!isAvailable || requests.isEmpty) return false;
     try {
       await _channel.invokeMethod<void>('enqueue', {
@@ -78,7 +79,7 @@ class NativeBackgroundUpload {
       });
       return true;
     } on MissingPluginException {
-      // 개발 환경/지원하지 않는 플랫폼은 기존 Dart 업로드 경로를 쓴다.
+      // 호출 실패만으로 OS 등록 여부를 단정하지 않는다. 상위 큐가 기록을 보존한다.
       return false;
     } on PlatformException catch (e) {
       lo.g('네이티브 백그라운드 업로드 등록 실패: ${e.code} ${e.message}');
@@ -91,11 +92,13 @@ class NativeBackgroundUpload {
 
   /// null은 네이티브 상태 저장소 자체를 읽지 못했다는 뜻이다. 이 경우 전송이
   /// 실제로 사라졌다고 단정하면 기존 Dart 업로더와 중복 전송될 수 있다.
-  static Future<Map<String, NativeBackgroundUploadState>?> states(List<String> ids) async {
+  static Future<Map<String, NativeBackgroundUploadState>?> states(
+      List<String> ids) async {
     if (!isAvailable) return null;
     if (ids.isEmpty) return const {};
     try {
-      final raw = await _channel.invokeMethod<List<dynamic>>('states', {'ids': ids});
+      final raw =
+          await _channel.invokeMethod<List<dynamic>>('states', {'ids': ids});
       final states = <String, NativeBackgroundUploadState>{};
       for (final value in raw ?? const <dynamic>[]) {
         if (value is! Map) continue;
@@ -104,7 +107,7 @@ class NativeBackgroundUpload {
         if (id.isEmpty) continue;
         states[id] = NativeBackgroundUploadState(
           id: id,
-          status: map['status']?.toString() ?? 'missing',
+          status: map['status']?.toString() ?? 'unknown',
           error: map['error']?.toString(),
         );
       }

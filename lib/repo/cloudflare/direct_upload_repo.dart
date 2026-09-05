@@ -30,7 +30,8 @@ class VideoUploadTicket {
     required this.preview,
   });
 
-  factory VideoUploadTicket.fromMap(Map<String, dynamic> m) => VideoUploadTicket(
+  factory VideoUploadTicket.fromMap(Map<String, dynamic> m) =>
+      VideoUploadTicket(
         uploadUrl: m['uploadUrl']?.toString() ?? '',
         uid: m['uid']?.toString() ?? '',
         hls: m['hls']?.toString() ?? '',
@@ -56,27 +57,36 @@ class ImageUploadTicket {
   final String id;
   final String url;
 
-  ImageUploadTicket({required this.uploadUrl, required this.id, required this.url});
+  ImageUploadTicket(
+      {required this.uploadUrl, required this.id, required this.url});
 
   ImageUploadResult get result => ImageUploadResult(id: id, url: url);
 }
 
 class DirectUploadRepo {
+  /// 영속화한 티켓의 URL로 전송한다. 티켓을 몰래 재발급하지 않는다.
+  Future<bool> uploadTicket(String uploadUrl, File file) =>
+      _uploadTo(uploadUrl, file);
+
   /// 영상: 업로드 URL 발급 → 파일 업로드. 성공 시 재생 URL들이 담긴 티켓 반환, 실패 시 null.
-  Future<VideoUploadTicket?> uploadVideoFile(File videoFile, {void Function(int, int)? onProgress}) async {
+  Future<VideoUploadTicket?> uploadVideoFile(File videoFile,
+      {void Function(int, int)? onProgress}) async {
     final ticket = await _issueVideoTicket();
     if (ticket == null || ticket.uploadUrl.isEmpty) return null;
-    final ok = await _uploadTo(ticket.uploadUrl, videoFile, onProgress: onProgress);
+    final ok =
+        await _uploadTo(ticket.uploadUrl, videoFile, onProgress: onProgress);
     return ok ? ticket : null;
   }
 
   /// 이미지: (heic/heif → png 변환 후) 업로드 URL 발급 → 파일 업로드.
-  Future<ImageUploadResult?> uploadImageFile(File imageFile, {void Function(int, int)? onProgress}) async {
+  Future<ImageUploadResult?> uploadImageFile(File imageFile,
+      {void Function(int, int)? onProgress}) async {
     final File prepared = await convertIfHeif(imageFile);
     final ImageUploadTicket? ticket = await issueImageTicket();
     if (ticket == null) return null;
 
-    final ok = await _uploadTo(ticket.uploadUrl, prepared, onProgress: onProgress);
+    final ok =
+        await _uploadTo(ticket.uploadUrl, prepared, onProgress: onProgress);
     if (!ok) return null;
     return ticket.result;
   }
@@ -85,8 +95,10 @@ class DirectUploadRepo {
   /// 써야 하므로 변환만 따로 떼어 공개한다. 변환에 실패하면 원본을 그대로 돌려준다.
   Future<File> convertIfHeif(File imageFile) async {
     try {
-      if (imageFile.path.endsWith('.heif') || imageFile.path.endsWith('.heic')) {
-        final String? converted = await HeifConverter.convert(imageFile.path, format: 'png');
+      final path = imageFile.path.toLowerCase();
+      if (path.endsWith('.heif') || path.endsWith('.heic')) {
+        final String? converted =
+            await HeifConverter.convert(imageFile.path, format: 'png');
         if (converted != null) return File(converted);
       }
     } catch (e) {
@@ -113,7 +125,8 @@ class DirectUploadRepo {
   Future<bool> deleteImage(String imageId) async {
     try {
       final dio = await AuthDio.instance.getDio();
-      final res = await dio.post('${UrlConfig.baseURL}/cloudflare/deleteImage', queryParameters: {'imageId': imageId});
+      final res = await dio.post('${UrlConfig.baseURL}/cloudflare/deleteImage',
+          queryParameters: {'imageId': imageId});
       final data = AuthDio.instance.dioResponse(res);
       return data.code == '00' && data.data == true;
     } catch (e) {
@@ -145,7 +158,8 @@ class DirectUploadRepo {
   }
 
   /// 발급받은 일회용 URL로 멀티파트 업로드(인증 헤더 불필요).
-  Future<bool> _uploadTo(String uploadUrl, File file, {void Function(int, int)? onProgress}) async {
+  Future<bool> _uploadTo(String uploadUrl, File file,
+      {void Function(int, int)? onProgress}) async {
     try {
       final dio = Dio(BaseOptions(
         connectTimeout: const Duration(seconds: 30),
@@ -153,8 +167,10 @@ class DirectUploadRepo {
         sendTimeout: const Duration(minutes: 30),
         receiveTimeout: const Duration(minutes: 2),
       ));
-      final form = FormData.fromMap({'file': await MultipartFile.fromFile(file.path)});
-      final res = await dio.post(uploadUrl, data: form, onSendProgress: onProgress);
+      final form =
+          FormData.fromMap({'file': await MultipartFile.fromFile(file.path)});
+      final res =
+          await dio.post(uploadUrl, data: form, onSendProgress: onProgress);
       final int code = res.statusCode ?? 0;
       if (code < 200 || code >= 300) {
         lo.g('direct upload 실패: HTTP $code');

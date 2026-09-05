@@ -7,6 +7,19 @@ import 'package:project1/repo/board/data/board_update_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 
 class BoardRepo {
+  // 영속 큐 전용. 구버전 saveAll로 폴백하면 응답 유실 시 중복 게시될 수 있다.
+  Future<ResData> saveUpload(BoardSaveData data, String key) async {
+    final dio = await AuthDio.instance.getDio();
+    try {
+      final response = await dio.post('${UrlConfig.baseURL}/board/saveUpload',
+          data: data.toJson(),
+          options: Options(headers: {'Idempotency-Key': key}));
+      return AuthDio.instance.dioResponse(response);
+    } on DioException catch (e) {
+      return AuthDio.instance.dioException(e);
+    }
+  }
+
   // Board 저장
   Future<ResData> save(BoardSaveData data) async {
     final dio = await AuthDio.instance.getDio();
@@ -28,19 +41,26 @@ class BoardRepo {
 //   "pageNum": 1,
 //   "pageSize": 2
 // }
-  Future<ResData> searchBoardBylatlon(String lat, String lon, int pageNum, int pageSize) async {
+  Future<ResData> searchBoardBylatlon(
+      String lat, String lon, int pageNum, int pageSize) async {
     final dio = await AuthDio.instance.getDio();
     try {
       var url = '${UrlConfig.baseURL}/board/searchBoardBylatlon';
 
-      Response response = await dio.post(url, data: {'lat': lat, 'lon': lon, 'pageNum': pageNum, 'pageSize': pageSize});
+      Response response = await dio.post(url, data: {
+        'lat': lat,
+        'lon': lon,
+        'pageNum': pageNum,
+        'pageSize': pageSize
+      });
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);
     } finally {}
   }
 
-  Future<ResData> searchBoardListByMaplonlatAndDay(LatLng southWest, LatLng northEast, int day, int pageNum, int pageSize) async {
+  Future<ResData> searchBoardListByMaplonlatAndDay(LatLng southWest,
+      LatLng northEast, int day, int pageNum, int pageSize) async {
     final dio = await AuthDio.instance.getDio();
     try {
       String minX = southWest.longitude.toString();
@@ -51,21 +71,34 @@ class BoardRepo {
 
       var url = '${UrlConfig.baseURL}/board/searchBoardListByMaplonlatAndDay';
 
-      Response response = await dio
-          .post(url, data: {'minX': minX, 'minY': minY, 'maxX': maxX, 'maxY': maxY, 'day': day, 'pageNum': pageNum, 'pageSize': pageSize});
+      Response response = await dio.post(url, data: {
+        'minX': minX,
+        'minY': minY,
+        'maxX': maxX,
+        'maxY': maxY,
+        'day': day,
+        'pageNum': pageNum,
+        'pageSize': pageSize
+      });
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);
     } finally {}
   }
 
-  Future<ResData> searchOriginList(String typeCd, String typeDtCd, int pageNum, int pageSize, String topYn) async {
+  Future<ResData> searchOriginList(String typeCd, String typeDtCd, int pageNum,
+      int pageSize, String topYn) async {
     final dio = await AuthDio.instance.getDio();
     try {
       var url = '${UrlConfig.baseURL}/board/searchOriginList';
 
-      Response response =
-          await dio.post(url, data: {'typeCd': typeCd, 'typeDtCd': typeDtCd, 'pageNum': pageNum, 'pageSize': pageSize, "topYn": topYn});
+      Response response = await dio.post(url, data: {
+        'typeCd': typeCd,
+        'typeDtCd': typeDtCd,
+        'pageNum': pageNum,
+        'pageSize': pageSize,
+        "topYn": topYn
+      });
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);
@@ -73,11 +106,16 @@ class BoardRepo {
   }
 
   // 댓글 조회
-  Future<ResData> searchComment(String boardId, int pageNum, int pageSize) async {
+  Future<ResData> searchComment(
+      String boardId, int pageNum, int pageSize) async {
     final dio = await AuthDio.instance.getDio(debug: false);
     try {
       var url = '${UrlConfig.baseURL}/board/searchComment';
-      Response response = await dio.post(url, data: {'parentId': boardId, 'pageNum': pageNum, 'pageSize': pageSize});
+      Response response = await dio.post(url, data: {
+        'parentId': boardId,
+        'pageNum': pageNum,
+        'pageSize': pageSize
+      });
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);
@@ -85,10 +123,12 @@ class BoardRepo {
   }
 
   // 좋아요 클릭시
-  Future<ResData> like(String boardId, String custId, String pushYn, {String? alramCd}) async {
+  Future<ResData> like(String boardId, String custId, String pushYn,
+      {String? alramCd}) async {
     final dio = await AuthDio.instance.getDio(debug: true);
     try {
-      var url = '${UrlConfig.baseURL}/like/save?boardId=$boardId&custId=$custId&pushYn=$pushYn&alramCd=$alramCd';
+      var url =
+          '${UrlConfig.baseURL}/like/save?boardId=$boardId&custId=$custId&pushYn=$pushYn&alramCd=$alramCd';
       Response response = await dio.post(url);
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
@@ -162,7 +202,8 @@ class BoardRepo {
   Future<ResData> getMyBoard(String custId, int pageNum, int pageSize) async {
     final dio = await AuthDio.instance.getDio(debug: true);
     try {
-      var url = '${UrlConfig.baseURL}/board/getMyBoard?custId=$custId&pageNum=$pageNum&pageSize=$pageSize';
+      var url =
+          '${UrlConfig.baseURL}/board/getMyBoard?custId=$custId&pageNum=$pageNum&pageSize=$pageSize';
       Response response = await dio.post(url);
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
@@ -183,10 +224,12 @@ class BoardRepo {
   }
 
   // 팔로우 게시물 가져오기
-  Future<ResData> getFollowBoard(String custId, int pageNum, int pageSize) async {
+  Future<ResData> getFollowBoard(
+      String custId, int pageNum, int pageSize) async {
     final dio = await AuthDio.instance.getDio(debug: true);
     try {
-      var url = '${UrlConfig.baseURL}/board/getFollowBoard?custId=$custId&pageNum=$pageNum&pageSize=$pageSize';
+      var url =
+          '${UrlConfig.baseURL}/board/getFollowBoard?custId=$custId&pageNum=$pageNum&pageSize=$pageSize';
       Response response = await dio.post(url);
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
@@ -198,7 +241,8 @@ class BoardRepo {
   Future<ResData> getLikeBoard(String custId, int pageNum, int pageSize) async {
     final dio = await AuthDio.instance.getDio();
     try {
-      var url = '${UrlConfig.baseURL}/board/getLikeBoard?custId=$custId&pageNum=$pageNum&pageSize=$pageSize';
+      var url =
+          '${UrlConfig.baseURL}/board/getLikeBoard?custId=$custId&pageNum=$pageNum&pageSize=$pageSize';
       Response response = await dio.post(url);
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
@@ -219,12 +263,18 @@ class BoardRepo {
   }
 
   // 검생어로 조회하기
-  Future<ResData> getSearchBoard(String lat, String lon, int pageNum, int pageSize, String searchWord) async {
+  Future<ResData> getSearchBoard(String lat, String lon, int pageNum,
+      int pageSize, String searchWord) async {
     final dio = await AuthDio.instance.getDio();
     try {
       var url = '${UrlConfig.baseURL}/board/getSearchBoard';
-      Response response =
-          await dio.post(url, data: {'lat': lat, 'lon': lon, 'pageNum': pageNum, 'pageSize': pageSize, 'searchWord': searchWord});
+      Response response = await dio.post(url, data: {
+        'lat': lat,
+        'lon': lon,
+        'pageNum': pageNum,
+        'pageSize': pageSize,
+        'searchWord': searchWord
+      });
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);
@@ -235,7 +285,8 @@ class BoardRepo {
   Future<ResData> changeFollowAlram(String custId, String alramYn) async {
     final dio = await AuthDio.instance.getDio();
     try {
-      var url = '${UrlConfig.baseURL}/follow/updateAlramYn?custId=$custId&alramYn=$alramYn';
+      var url =
+          '${UrlConfig.baseURL}/follow/updateAlramYn?custId=$custId&alramYn=$alramYn';
       Response response = await dio.post(url);
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
@@ -268,12 +319,17 @@ class BoardRepo {
   }
 
   //신고하기
-  Future<ResData> saveSingo(String boardId, String reasonCd, String custId, String reason) async {
+  Future<ResData> saveSingo(
+      String boardId, String reasonCd, String custId, String reason) async {
     final dio = await AuthDio.instance.getDio();
     try {
       var url = '${UrlConfig.baseURL}/singo/save';
-      Response response =
-          await dio.post(url, queryParameters: {'boardId': boardId, 'reasonCd': reasonCd, 'custId': custId, 'reason': reason});
+      Response response = await dio.post(url, queryParameters: {
+        'boardId': boardId,
+        'reasonCd': reasonCd,
+        'custId': custId,
+        'reason': reason
+      });
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);
@@ -281,12 +337,18 @@ class BoardRepo {
   }
 
   // 거리 + 태그 + 관심지역 3개 쿼리를 유니온으로 데이터 조회
-  Future<ResData> getTotalBoardList(String lat, String lon, int pageNum, int pageSize) async {
+  Future<ResData> getTotalBoardList(
+      String lat, String lon, int pageNum, int pageSize) async {
     final dio = await AuthDio.instance.getDio(debug: true);
     try {
       var url = '${UrlConfig.baseURL}/board/getTotalBoardList';
 
-      Response response = await dio.post(url, data: {'lat': lat, 'lon': lon, 'pageNum': pageNum, 'pageSize': pageSize});
+      Response response = await dio.post(url, data: {
+        'lat': lat,
+        'lon': lon,
+        'pageNum': pageNum,
+        'pageSize': pageSize
+      });
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);
@@ -294,12 +356,18 @@ class BoardRepo {
   }
 
   // 관심지역  쿼리로 데이터 조회
-  Future<ResData> getLocalBoardList(String lat, String lon, int pageNum, int pageSize) async {
+  Future<ResData> getLocalBoardList(
+      String lat, String lon, int pageNum, int pageSize) async {
     final dio = await AuthDio.instance.getDio();
     try {
       var url = '${UrlConfig.baseURL}/board/getLocalBoardList';
 
-      Response response = await dio.post(url, data: {'lat': lat, 'lon': lon, 'pageNum': pageNum, 'pageSize': pageSize});
+      Response response = await dio.post(url, data: {
+        'lat': lat,
+        'lon': lon,
+        'pageNum': pageNum,
+        'pageSize': pageSize
+      });
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);
@@ -307,12 +375,18 @@ class BoardRepo {
   }
 
   // 태그  쿼리로 데이터 조회
-  Future<ResData> getTagBoardList(String lat, String lon, int pageNum, int pageSize) async {
+  Future<ResData> getTagBoardList(
+      String lat, String lon, int pageNum, int pageSize) async {
     final dio = await AuthDio.instance.getDio();
     try {
       var url = '${UrlConfig.baseURL}/board/getTagBoardList';
 
-      Response response = await dio.post(url, data: {'lat': lat, 'lon': lon, 'pageNum': pageNum, 'pageSize': pageSize});
+      Response response = await dio.post(url, data: {
+        'lat': lat,
+        'lon': lon,
+        'pageNum': pageNum,
+        'pageSize': pageSize
+      });
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);
@@ -320,12 +394,18 @@ class BoardRepo {
   }
 
   // 거리  쿼리로 데이터 조회
-  Future<ResData> getDistinceBoardList(String lat, String lon, int pageNum, int pageSize) async {
+  Future<ResData> getDistinceBoardList(
+      String lat, String lon, int pageNum, int pageSize) async {
     final dio = await AuthDio.instance.getDio();
     try {
       var url = '${UrlConfig.baseURL}/board/getDistinceBoardList';
 
-      Response response = await dio.post(url, data: {'lat': lat, 'lon': lon, 'pageNum': pageNum, 'pageSize': pageSize});
+      Response response = await dio.post(url, data: {
+        'lat': lat,
+        'lon': lon,
+        'pageNum': pageNum,
+        'pageSize': pageSize
+      });
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);
@@ -333,12 +413,18 @@ class BoardRepo {
   }
 
   //  follow  쿼리로 데이터 조회
-  Future<ResData> getFollowBoardList(String lat, String lon, int pageNum, int pageSize) async {
+  Future<ResData> getFollowBoardList(
+      String lat, String lon, int pageNum, int pageSize) async {
     final dio = await AuthDio.instance.getDio();
     try {
       var url = '${UrlConfig.baseURL}/board/getFollowBoardList';
 
-      Response response = await dio.post(url, data: {'lat': lat, 'lon': lon, 'pageNum': pageNum, 'pageSize': pageSize});
+      Response response = await dio.post(url, data: {
+        'lat': lat,
+        'lon': lon,
+        'pageNum': pageNum,
+        'pageSize': pageSize
+      });
       return AuthDio.instance.dioResponse(response);
     } on DioException catch (e) {
       return AuthDio.instance.dioException(e);

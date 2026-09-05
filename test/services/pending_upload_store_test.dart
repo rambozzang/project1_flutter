@@ -24,16 +24,18 @@ void main() {
     return f;
   }
 
-  BoardSaveData makeBoard({int? communityId, String? capturedAt, String? feelCd}) => BoardSaveData()
-    ..boardMastInVo = (BoardSaveMainData()
-      ..contents = '오늘 하늘'
-      ..typeCd = 'V'
-      ..typeDtCd = 'I'
-      ..anonyYn = 'N'
-      ..hideYn = 'N'
-      ..communityId = communityId
-      ..capturedAt = capturedAt)
-    ..boardWeatherVo = (BoardSaveWeatherData()..feelCd = feelCd);
+  BoardSaveData makeBoard(
+          {int? communityId, String? capturedAt, String? feelCd}) =>
+      BoardSaveData()
+        ..boardMastInVo = (BoardSaveMainData()
+          ..contents = '오늘 하늘'
+          ..typeCd = 'V'
+          ..typeDtCd = 'I'
+          ..anonyYn = 'N'
+          ..hideYn = 'N'
+          ..communityId = communityId
+          ..capturedAt = capturedAt)
+        ..boardWeatherVo = (BoardSaveWeatherData()..feelCd = feelCd);
 
   setUp(() async {
     tmp = await Directory.systemTemp.createTemp('pending_upload_store_test');
@@ -88,7 +90,8 @@ void main() {
         await makeSource('p1.jpg', 'two'),
         await makeSource('p2.jpg', 'three'),
       ];
-      await PendingUploadStore.enqueue(files: files, data: makeBoard(), isVideo: false);
+      await PendingUploadStore.enqueue(
+          files: files, data: makeBoard(), isVideo: false);
 
       final listed = (await PendingUploadStore.list()).single;
       expect(listed.isVideo, isFalse);
@@ -100,7 +103,8 @@ void main() {
 
     test('원본이 사라져도 큐 사본은 남는다 — 이게 경로가 아니라 복사를 하는 이유다', () async {
       final src = await makeSource('a.mp4', 'video-bytes');
-      await PendingUploadStore.enqueue(files: [src], data: makeBoard(), isVideo: true);
+      await PendingUploadStore.enqueue(
+          files: [src], data: makeBoard(), isVideo: true);
 
       // OS 가 임시 폴더를 비운 상황.
       await src.delete();
@@ -111,35 +115,73 @@ void main() {
     });
 
     test('빈 목록과 존재하지 않는 파일은 job 을 만들지 않는다', () async {
-      expect(await PendingUploadStore.enqueue(files: [], data: makeBoard(), isVideo: true), isNull);
+      expect(
+          await PendingUploadStore.enqueue(
+              files: [], data: makeBoard(), isVideo: true),
+          isNull);
 
       final ghost = File('${tmp.path}/src/없는파일.mp4');
-      expect(await PendingUploadStore.enqueue(files: [ghost], data: makeBoard(), isVideo: true), isNull);
+      expect(
+          await PendingUploadStore.enqueue(
+              files: [ghost], data: makeBoard(), isVideo: true),
+          isNull);
       expect(await PendingUploadStore.list(), isEmpty);
     });
 
     test('오래된 것부터 돌려준다 — 찍은 순서대로 올라가야 한다', () async {
       final first = await PendingUploadStore.enqueue(
-          files: [await makeSource('1.jpg', '1')], data: makeBoard(), isVideo: false);
+          files: [await makeSource('1.jpg', '1')],
+          data: makeBoard(),
+          isVideo: false);
       final second = await PendingUploadStore.enqueue(
-          files: [await makeSource('2.jpg', '2')], data: makeBoard(), isVideo: false);
+          files: [await makeSource('2.jpg', '2')],
+          data: makeBoard(),
+          isVideo: false);
 
       final ids = (await PendingUploadStore.list()).map((j) => j.id).toList();
       expect(ids, [first!.id, second!.id]);
+    });
+
+    test('여러 원본 중 하나가 없으면 일부 사진만 접수하지 않는다', () async {
+      final first = await makeSource('first.jpg', 'first');
+      final missing = File('${tmp.path}/src/missing.jpg');
+      final job = await PendingUploadStore.enqueue(
+          files: [first, missing], data: makeBoard(), isVideo: false);
+      expect(job, isNull);
+      expect(await PendingUploadStore.list(), isEmpty);
+      expect(await first.readAsString(), 'first');
+    });
+
+    test('보관 파일이 사라져도 슬롯을 제거하여 사진 순서를 바꾸지 않는다', () async {
+      final job = (await PendingUploadStore.enqueue(files: [
+        await makeSource('first.jpg', 'first'),
+        await makeSource('second.jpg', 'second'),
+      ], data: makeBoard(), isVideo: false))!;
+      await job.files.first.delete();
+      final restored = (await PendingUploadStore.list()).single;
+      expect(restored.files, hasLength(2));
+      expect(restored.files.first.path, job.files.first.path);
+      expect(await restored.files.first.exists(), isFalse);
+      expect(await restored.files[1].readAsString(), 'second');
     });
   });
 
   group('job.json 쓰기', () {
     test('원자적 쓰기 — 임시(.tmp) 파일을 남기지 않고 유효한 JSON 만 남는다', () async {
       final src = await makeSource('a.mp4', 'v');
-      final job = await PendingUploadStore.enqueue(files: [src], data: makeBoard(), isVideo: true);
+      final job = await PendingUploadStore.enqueue(
+          files: [src], data: makeBoard(), isVideo: true);
       await PendingUploadStore.touch(job!.id);
 
       final jobDir = Directory('${tmp.path}/pending_uploads/${job.id}');
-      final names = await jobDir.list().map((e) => e.path.split('/').last).toList();
-      expect(names.where((n) => n.endsWith('.tmp')), isEmpty, reason: '임시 파일이 남으면 원자적 교체가 안 된 것');
+      final names =
+          await jobDir.list().map((e) => e.path.split('/').last).toList();
+      expect(names.where((n) => n.endsWith('.tmp')), isEmpty,
+          reason: '임시 파일이 남으면 원자적 교체가 안 된 것');
 
-      final map = jsonDecode(await File('${jobDir.path}/job.json').readAsString()) as Map<String, dynamic>;
+      final map =
+          jsonDecode(await File('${jobDir.path}/job.json').readAsString())
+              as Map<String, dynamic>;
       expect(map['id'], job.id);
       expect(map['isVideo'], true);
       expect(map['files'], ['f0.mp4']);
@@ -147,7 +189,8 @@ void main() {
 
     test('touch 는 시도 횟수를 올린다', () async {
       final src = await makeSource('a.mp4', 'v');
-      final job = await PendingUploadStore.enqueue(files: [src], data: makeBoard(), isVideo: true);
+      final job = await PendingUploadStore.enqueue(
+          files: [src], data: makeBoard(), isVideo: true);
 
       await PendingUploadStore.touch(job!.id);
       expect((await PendingUploadStore.list()).single.attempts, 1);
@@ -159,15 +202,18 @@ void main() {
 
     test('touch 가 겹쳐도 카운트를 잃지 않는다 — job 단위 쓰기 직렬화', () async {
       final src = await makeSource('a.mp4', 'v');
-      final job = await PendingUploadStore.enqueue(files: [src], data: makeBoard(), isVideo: true);
+      final job = await PendingUploadStore.enqueue(
+          files: [src], data: makeBoard(), isVideo: true);
 
-      await Future.wait(List.generate(5, (_) => PendingUploadStore.touch(job!.id)));
+      await Future.wait(
+          List.generate(5, (_) => PendingUploadStore.touch(job!.id)));
       expect((await PendingUploadStore.list()).single.attempts, 5);
     });
 
     test('job.json 이 깨져도 .bak 으로 복구한다', () async {
       final src = await makeSource('a.mp4', 'v');
-      final job = await PendingUploadStore.enqueue(files: [src], data: makeBoard(), isVideo: true);
+      final job = await PendingUploadStore.enqueue(
+          files: [src], data: makeBoard(), isVideo: true);
       // .bak 이 생기려면 한 번 더 써야 한다(첫 쓰기는 이전본이 없다).
       await PendingUploadStore.touch(job!.id);
 
@@ -183,7 +229,8 @@ void main() {
 
     test('메타가 아예 없으면 자동 삭제하지 않고 보존한다 — 서버에 없는 유일본이다', () async {
       final src = await makeSource('a.mp4', 'v');
-      final job = await PendingUploadStore.enqueue(files: [src], data: makeBoard(), isVideo: true);
+      final job = await PendingUploadStore.enqueue(
+          files: [src], data: makeBoard(), isVideo: true);
       final jobDir = Directory('${tmp.path}/pending_uploads/${job!.id}');
       await File('${jobDir.path}/job.json').delete();
 
@@ -197,12 +244,14 @@ void main() {
   group('remove / removeAll', () {
     test('remove 는 job 과 복사본을 함께 지운다', () async {
       final src = await makeSource('a.mp4', 'v');
-      final job = await PendingUploadStore.enqueue(files: [src], data: makeBoard(), isVideo: true);
+      final job = await PendingUploadStore.enqueue(
+          files: [src], data: makeBoard(), isVideo: true);
 
       await PendingUploadStore.remove(job!.id);
 
       expect(await PendingUploadStore.list(), isEmpty);
-      expect(await Directory('${tmp.path}/pending_uploads/${job.id}').exists(), isFalse);
+      expect(await Directory('${tmp.path}/pending_uploads/${job.id}').exists(),
+          isFalse);
     });
 
     test('없는 id 를 지워도 던지지 않는다', () async {
@@ -211,8 +260,14 @@ void main() {
     });
 
     test('removeAll 은 전부 비운다', () async {
-      await PendingUploadStore.enqueue(files: [await makeSource('1.jpg', '1')], data: makeBoard(), isVideo: false);
-      await PendingUploadStore.enqueue(files: [await makeSource('2.jpg', '2')], data: makeBoard(), isVideo: false);
+      await PendingUploadStore.enqueue(
+          files: [await makeSource('1.jpg', '1')],
+          data: makeBoard(),
+          isVideo: false);
+      await PendingUploadStore.enqueue(
+          files: [await makeSource('2.jpg', '2')],
+          data: makeBoard(),
+          isVideo: false);
       expect(await PendingUploadStore.list(), hasLength(2));
 
       await PendingUploadStore.removeAll();
@@ -234,19 +289,30 @@ void main() {
       final now = DateTime(2026, 9, 3, 12);
       expect(PendingUploadStore.staleAfter, const Duration(days: 7));
 
-      expect(PendingUploadStore.isStale(jobQueuedAt(now.subtract(const Duration(days: 7))), now: now), isTrue);
       expect(
-        PendingUploadStore.isStale(jobQueuedAt(now.subtract(const Duration(days: 7) - const Duration(seconds: 1))),
+          PendingUploadStore.isStale(
+              jobQueuedAt(now.subtract(const Duration(days: 7))),
+              now: now),
+          isTrue);
+      expect(
+        PendingUploadStore.isStale(
+            jobQueuedAt(now.subtract(
+                const Duration(days: 7) - const Duration(seconds: 1))),
             now: now),
         isFalse,
       );
-      expect(PendingUploadStore.isStale(jobQueuedAt(now.subtract(const Duration(days: 30))), now: now), isTrue);
+      expect(
+          PendingUploadStore.isStale(
+              jobQueuedAt(now.subtract(const Duration(days: 30))),
+              now: now),
+          isTrue);
       expect(PendingUploadStore.isStale(jobQueuedAt(now), now: now), isFalse);
     });
 
     test('오래된 항목도 purgeStale 이 지우지 않는다 — 자동 삭제 금지 정책', () async {
       final src = await makeSource('a.mp4', 'v');
-      await PendingUploadStore.enqueue(files: [src], data: makeBoard(), isVideo: true);
+      await PendingUploadStore.enqueue(
+          files: [src], data: makeBoard(), isVideo: true);
 
       await PendingUploadStore.purgeStale();
 
@@ -266,7 +332,10 @@ void main() {
       expect(await PendingUploadStore.list(), hasLength(19));
       expect(await PendingUploadStore.isOverflowing(), isFalse);
 
-      await PendingUploadStore.enqueue(files: [await makeSource('f19.jpg', '19')], data: makeBoard(), isVideo: false);
+      await PendingUploadStore.enqueue(
+          files: [await makeSource('f19.jpg', '19')],
+          data: makeBoard(),
+          isVideo: false);
       expect(await PendingUploadStore.isOverflowing(), isTrue);
     });
 
@@ -284,7 +353,8 @@ void main() {
         isVideo: false,
       );
       expect(extra, isNotNull);
-      expect(await PendingUploadStore.list(), hasLength(PendingUploadStore.maxJobs + 2));
+      expect(await PendingUploadStore.list(),
+          hasLength(PendingUploadStore.maxJobs + 2));
     });
   });
 }

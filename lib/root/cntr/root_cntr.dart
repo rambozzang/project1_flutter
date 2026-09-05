@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
@@ -19,6 +17,7 @@ import 'package:project1/repo/cloudflare/data/cloudflare_req_save_data.dart';
 import 'package:project1/repo/cloudflare/direct_upload_repo.dart';
 import 'package:project1/services/analytics_service.dart';
 import 'package:project1/services/native_background_upload.dart';
+import 'package:project1/services/durable_upload.dart';
 import 'package:project1/services/pending_upload_store.dart';
 import 'package:project1/services/review_service.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -39,19 +38,11 @@ class RootCntrBinding extends Bindings {
 
 enum UploadingType { NONE, UPLOADING, SUCCESS, FAIL }
 
-/// 네이티브 전송 한 건 — 보낼 파일과 그 파일을 받을 일회용 URL.
-class _NativeTransfer {
-  const _NativeTransfer({required this.id, required this.file, required this.uploadUrl});
-
-  final String id;
-  final File file;
-  final String uploadUrl;
-}
-
 class RootCntr extends GetxController {
   static RootCntr get to => Get.find();
 
-  final StreamController<bool> bottomBarStreamController = StreamController<bool>();
+  final StreamController<bool> bottomBarStreamController =
+      StreamController<bool>();
 
   RxInt rootPageIndex = 0.obs;
   GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -116,13 +107,19 @@ class RootCntr extends GetxController {
 
   @override
   void onInit() {
-    hideButtonController1.addListener(() => changeScrollListner(hideButtonController1));
+    hideButtonController1
+        .addListener(() => changeScrollListner(hideButtonController1));
     // hideButtonController11.addListener(() => changeScrollListner(hideButtonController11));
-    hideButtonController12.addListener(() => changeScrollListner(hideButtonController12));
-    hideButtonController2.addListener(() => changeScrollListner(hideButtonController2));
-    hideButtonController3.addListener(() => changeScrollListner(hideButtonController3));
-    hideButtonController4.addListener(() => changeScrollListner(hideButtonController4));
-    hideButtonController5.addListener(() => changeScrollListner(hideButtonController5));
+    hideButtonController12
+        .addListener(() => changeScrollListner(hideButtonController12));
+    hideButtonController2
+        .addListener(() => changeScrollListner(hideButtonController2));
+    hideButtonController3
+        .addListener(() => changeScrollListner(hideButtonController3));
+    hideButtonController4
+        .addListener(() => changeScrollListner(hideButtonController4));
+    hideButtonController5
+        .addListener(() => changeScrollListner(hideButtonController5));
 
     super.onInit();
   }
@@ -134,7 +131,8 @@ class RootCntr extends GetxController {
         isVisible.value = false;
         bottomBarStreamController.sink.add(isVisible.value);
       }
-    } else if (scrollData.position.userScrollDirection == ScrollDirection.forward) {
+    } else if (scrollData.position.userScrollDirection ==
+        ScrollDirection.forward) {
       if (!isVisible.value) {
         isVisible.value = true;
         bottomBarStreamController.sink.add(isVisible.value);
@@ -164,74 +162,53 @@ class RootCntr extends GetxController {
   //
   // [resume] 가 있으면 영속 큐에서 되살린 재시도다. 이때는 큐에 다시 적지 않는다 —
   // 다시 적으면 같은 영상의 사본이 두 벌 쌓인다.
-  Future<void> uploadCloudflare(File videoFile, BoardSaveData boardSaveData, {PendingUpload? resume}) async {
+  Future<void> _uploadCloudflare(File videoFile, BoardSaveData boardSaveData,
+      {PendingUpload? resume}) async {
     isFileUploading.value = UploadingType.UPLOADING;
 
     // 바이트를 한 개도 보내기 전에 먼저 적어둔다. 압축 중이든 전송 중이든 여기서
     // 앱이 죽으면, 다음 실행이 이 기록과 큐 폴더의 사본을 보고 이어 올린다.
-    final PendingUpload? job =
-        resume ?? await PendingUploadStore.enqueue(files: [videoFile], data: boardSaveData, isVideo: true);
-    if (job != null) await PendingUploadStore.touch(job.id);
+    final PendingUpload? job = resume ??
+        await PendingUploadStore.enqueue(
+            files: [videoFile], data: boardSaveData, isVideo: true);
+    if (job == null) {
+      _markUploadFailed('원본 보관 실패', null);
+      Utils.alert('업로드 파일을 보관하지 못했습니다. 저장 공간을 확인해주세요.');
+      return;
+    }
+    await PendingUploadStore.touch(job.id);
+    final journal = UploadJournal(job);
+    videoFile = job.files.first;
 
     // 날씨는 영상 업로드와 "병렬"로 가져온다.
     // 사용자는 게시 버튼을 누른 즉시 백그라운드 업로드로 넘어가고,
     // 느린 파일 업로드가 진행되는 동안 현위치 날씨를 받아 저장 직전에 합친다.
-    final Future<BoardSaveWeatherData> weatherFuture = WeatherForBoard.fetch();
-
     final DirectUploadRepo directUpload = DirectUploadRepo();
     final CloudflareRepo cloudflare = CloudflareRepo();
 
     try {
-      bool needsCompression = await shouldCompressVideo(videoFile.path);
-      late MediaInfo? pickedFile;
-
-      lo.e('shouldCompressVideo needsCompression : $needsCompression');
-      if (kDebugMode && needsCompression) {
-        Utils.alert('압축 진행합니다.');
-      }
-      try {
-        if (needsCompression) {
-          pickedFile = await VideoCompress.compressVideo(
-            videoFile.path,
-            quality: VideoQuality.HighestQuality,
-            deleteOrigin: false,
-            includeAudio: true,
-          );
-        } else {
-          pickedFile = await VideoCompress.getMediaInfo(videoFile.path);
-        }
-      } catch (e) {
-        lo.g('비디오 압축 에러 : $e');
-        if (needsCompression) {
-          // VideoCompress.cancelCompression();
-        }
-        pickedFile = await VideoCompress.getMediaInfo(videoFile.path);
-      }
-
-      Lo.g('비디오 압축 결과 : ${pickedFile!.toJson()}');
-
-      File uploadVideoFile = File(pickedFile.path.toString());
-      // 백엔드에서 일회용 업로드 URL 발급 → 해당 URL로 직접 업로드 (앱에 Cloudflare 토큰 없음).
-      // 전송 자체는 가능하면 OS 에 넘긴다 — 앱을 닫아도 이어진다.
-      final VideoUploadTicket? ticket = await _uploadVideoPreferNative(directUpload, uploadVideoFile, job);
-
-      if (ticket == null) {
-        Utils.alert('파일 업로드에 실패했습니다.');
-        // 실패 — job 과 사본을 남긴다. 지우면 이어올릴 게 없어진다.
-        _markUploadFailed('영상 업로드 티켓 발급/전송 실패', job);
+      if (journal.data['published'] == true) {
+        await _finishUpload(journal);
+        isFileUploading.value = UploadingType.SUCCESS;
         return;
       }
+      if (await _resumePublication(journal)) return;
+      final Future<BoardSaveWeatherData> weatherFuture =
+          WeatherForBoard.fetch();
+      final ticket =
+          await _uploadVideoPreferNative(directUpload, videoFile, journal);
       CloudflareReqSaveData cloudSaveData = CloudflareReqSaveData();
       cloudSaveData.uid = ticket.uid;
       cloudSaveData.preview = ticket.preview;
-      cloudSaveData.size = pickedFile.filesize;
+      cloudSaveData.size = (journal.data['videoSize'] as num?)?.toInt();
       // 썸네일은 정적 JPG 로 저장한다. animatedThumbnail(GIF)은 한 장이 수 MB 라
       // 목록 화면에서 데이터·메모리를 크게 먹고, 정지 화면이어야 할 그리드에서 혼자 움직인다.
       cloudSaveData.thumbnail = ticket.thumbnail;
       cloudSaveData.dash = ticket.dash;
       cloudSaveData.hls = ticket.hls;
       cloudSaveData.mp4 = '';
-      cloudSaveData.range = pickedFile.duration?.toInt() ?? 0;
+      cloudSaveData.range =
+          (journal.data['videoDuration'] as num?)?.toInt() ?? 0;
       cloudSaveData.total = 0;
 
       ResData resCloudData = await cloudflare.save(cloudSaveData);
@@ -256,10 +233,11 @@ class RootCntr extends GetxController {
       boardSaveData.boardWeatherVo = weatherVo;
 
       // 🔎 진단: 게시 직전 실제 전송되는 내용(contents) 확인
-      lo.g('📤[영상] 게시 contents="${boardSaveData.boardMastInVo?.contents}" subject="${boardSaveData.boardMastInVo?.subject}"');
+      lo.g(
+          '📤[영상] 게시 contents="${boardSaveData.boardMastInVo?.contents}" subject="${boardSaveData.boardMastInVo?.subject}"');
       lo.g('📤[영상] payload=${boardSaveData.toJson()}');
 
-      ResData resData = await boardRepo.save(boardSaveData);
+      ResData resData = await _publishUpload(boardRepo, boardSaveData, journal);
 
       if (resData.code != '00') {
         Utils.alert(resData.msg.toString());
@@ -269,22 +247,12 @@ class RootCntr extends GetxController {
       }
       isFileUploading.value = UploadingType.SUCCESS;
       // 게시까지 끝났다 — 이제서야 큐에서 지운다(사본도 같이 사라진다).
-      if (job != null) await PendingUploadStore.remove(job.id);
+      await _finishUpload(journal);
       // 영상 업로드 성공 계측 + 긍정적 순간 리뷰 요청(게이팅)
-      AnalyticsService.instance.logContentUpload(contentType: 'video', feel: boardSaveData.boardWeatherVo?.feelCd);
+      AnalyticsService.instance.logContentUpload(
+          contentType: 'video', feel: boardSaveData.boardWeatherVo?.feelCd);
       ReviewService.instance.onPositiveMoment();
       // Utils.alert('정상 등록되었습니다!');
-      final String compressedPath = pickedFile.path.toString();
-      Future.delayed(const Duration(milliseconds: 2000), () {
-        isFileUploading.value = UploadingType.NONE;
-        // 성공 경로에서만 지운다. 큐 정리로 이미 사라졌을 수 있어 조용히 처리한다.
-        _deleteQuietly(compressedPath);
-        _deleteQuietly(videoFile.path);
-        if (needsCompression) {
-          // VideoCompress.deleteAllCache();
-          // VideoCompress.cancelCompression();
-        }
-      });
     } catch (e) {
       // 예외로 빠져나와도 job 은 남긴다 — 다음 실행에서 이어 올린다.
       _markUploadFailed('영상 업로드 예외: $e', job);
@@ -326,54 +294,67 @@ class RootCntr extends GetxController {
   // 영상 업로드(uploadCloudflare)와 동일하게 날씨는 병렬로 수집해 저장 직전에 합친다.
   //
   // [resume] 가 있으면 영속 큐에서 되살린 재시도다(영상과 동일).
-  Future<void> uploadPhotos(List<File> photoFiles, BoardSaveData boardSaveData, {PendingUpload? resume}) async {
+  Future<void> _uploadPhotos(List<File> photoFiles, BoardSaveData boardSaveData,
+      {PendingUpload? resume}) async {
     isFileUploading.value = UploadingType.UPLOADING;
 
     // 영상과 같은 규칙 — 첫 바이트를 보내기 전에 먼저 적어둔다.
-    final PendingUpload? job =
-        resume ?? await PendingUploadStore.enqueue(files: photoFiles, data: boardSaveData, isVideo: false);
-    if (job != null) await PendingUploadStore.touch(job.id);
-
-    final Future<BoardSaveWeatherData> weatherFuture = WeatherForBoard.fetch();
+    final PendingUpload? job = resume ??
+        await PendingUploadStore.enqueue(
+            files: photoFiles, data: boardSaveData, isVideo: false);
+    if (job == null) {
+      _markUploadFailed('원본 보관 실패', null);
+      Utils.alert('업로드 파일을 보관하지 못했습니다. 저장 공간을 확인해주세요.');
+      return;
+    }
+    await PendingUploadStore.touch(job.id);
+    final journal = UploadJournal(job);
+    photoFiles = job.files;
 
     final DirectUploadRepo directUpload = DirectUploadRepo();
 
     try {
       final List<String> imageUrls = [];
+      if (journal.data['published'] == true) {
+        await _finishUpload(journal);
+        isFileUploading.value = UploadingType.SUCCESS;
+        return;
+      }
+      if (await _resumePublication(journal)) return;
+      final Future<BoardSaveWeatherData> weatherFuture =
+          WeatherForBoard.fetch();
       final List<String> imageIds = [];
 
       // 각 사진을 순차 업로드(안정성 우선). 백엔드가 발급한 일회용 URL로 직접 업로드.
       // 전송 자체는 가능하면 OS 에 넘긴다 — 앱을 닫아도 이어진다.
-      final List<ImageUploadResult>? results = await _uploadPhotosPreferNative(directUpload, photoFiles, job);
-      if (results == null) {
-        Utils.alert('사진 업로드에 실패했습니다.');
-        // 실패 — job 과 사본을 남긴다. 재개 시 처음부터 다시 올린다.
-        _markUploadFailed('사진 업로드 실패(${photoFiles.length}장)', job);
-        return;
-      }
+      final List<ImageUploadResult> results =
+          await _uploadPhotosPreferNative(directUpload, photoFiles, journal);
       for (final ImageUploadResult res in results) {
         imageUrls.add(res.url);
         imageIds.add(res.id);
       }
 
       // 사진 EXIF 촬영일 → 게시물 대표 촬영일(capturedAt). 2a 타임라인이 이 값으로 그룹핑(없으면 서버가 업로드일 폴백).
-      boardSaveData.boardMastInVo?.capturedAt = await ExifUtil.earliestCapturedAt(photoFiles);
+      boardSaveData.boardMastInVo?.capturedAt =
+          await ExifUtil.earliestCapturedAt(photoFiles);
 
       // 병렬 수집한 날씨를 합쳐 게시.
       final BoardSaveWeatherData weatherVo = await weatherFuture;
       weatherVo.imageUrls = imageUrls;
       weatherVo.imageIds = imageIds;
-      weatherVo.thumbnailPath = imageUrls.isNotEmpty ? imageUrls.first : null; // 대표 썸네일=첫 사진
+      weatherVo.thumbnailPath =
+          imageUrls.isNotEmpty ? imageUrls.first : null; // 대표 썸네일=첫 사진
       // 사용자가 고른 체감 날씨 태그 보존
       weatherVo.feelCd = boardSaveData.boardWeatherVo?.feelCd;
       boardSaveData.boardWeatherVo = weatherVo;
 
       // 🔎 진단: 게시 직전 실제 전송되는 내용(contents) 확인
-      lo.g('📤[사진] 게시 contents="${boardSaveData.boardMastInVo?.contents}" subject="${boardSaveData.boardMastInVo?.subject}"');
+      lo.g(
+          '📤[사진] 게시 contents="${boardSaveData.boardMastInVo?.contents}" subject="${boardSaveData.boardMastInVo?.subject}"');
       lo.g('📤[사진] payload=${boardSaveData.toJson()}');
 
       BoardRepo boardRepo = BoardRepo();
-      ResData resData = await boardRepo.save(boardSaveData);
+      ResData resData = await _publishUpload(boardRepo, boardSaveData, journal);
       if (resData.code != '00') {
         Utils.alert(resData.msg.toString());
         _markUploadFailed('사진 boardRepo.save 실패: ${resData.msg}', job);
@@ -382,172 +363,237 @@ class RootCntr extends GetxController {
 
       isFileUploading.value = UploadingType.SUCCESS;
       // 게시까지 끝났다 — 이제서야 큐에서 지운다(사본도 같이 사라진다).
-      if (job != null) await PendingUploadStore.remove(job.id);
+      await _finishUpload(journal);
 
       // 사진 업로드 성공 계측 + 긍정적 순간 리뷰 요청(게이팅)
-      AnalyticsService.instance.logContentUpload(contentType: 'photo', feel: boardSaveData.boardWeatherVo?.feelCd);
+      AnalyticsService.instance.logContentUpload(
+          contentType: 'photo', feel: boardSaveData.boardWeatherVo?.feelCd);
       ReviewService.instance.onPositiveMoment();
 
       // 사진 게시도 영상 업로드와 동일하게 오늘 챌린지를 완료 처리한다.
       _completeTodayChallengeAfterUpload();
-
-      Future.delayed(const Duration(milliseconds: 2000), () {
-        isFileUploading.value = UploadingType.NONE;
-      });
     } catch (e) {
       // 예외로 빠져나와도 job 은 남긴다 — 다음 실행에서 이어 올린다.
       _markUploadFailed('사진 업로드 예외: $e', job);
     }
   }
 
-  // ─────────────────────── 네이티브(OS) 백그라운드 전송 ───────────────────────
-  //
-  // 앱을 닫아도 파일 전송이 이어지도록 **바이트 전송만** OS 에 넘긴다
-  // (Android WorkManager / iOS background URLSession). 티켓 발급과 게시는 인증이
-  // 필요해 Dart 만 할 수 있으므로 여기서 하고, 그 사이의 전송만 위임한다.
-  //
-  // 전송 성공/실패 판정은 오직 [NativeBackgroundUpload.states] 로만 한다.
-  // SkySnap 백엔드에는 업로드 세션 조회 API 가 없어 서버에 되물을 방법이 없다.
+  DurableUpload _uploader(DirectUploadRepo repo) => DurableUpload(
+        nativeAvailable: NativeBackgroundUpload.isAvailable,
+        enqueue: NativeBackgroundUpload.enqueue,
+        states: NativeBackgroundUpload.states,
+        sendDirect: repo.uploadTicket,
+      );
 
-  /// 폴링 간격. iOS 는 앱이 백그라운드로 가면 Dart 타이머가 멈췄다가 복귀할 때 이어진다.
-  static const Duration _nativePollInterval = Duration(seconds: 2);
+  // 새 업로드와 재개 업로드 모두 한 큐를 통과한다. 전역 상태/압축기가 경합하지 않는다.
+  Future<void> _uploadTail = Future<void>.value();
+  Timer? _uploadNoticeTimer;
+  Future<void> _serialUpload(Future<void> Function() action) {
+    final next = _uploadTail.then((_) async {
+      _uploadNoticeTimer?.cancel();
+      await action();
+      // 재개/정리만 수행한 성공도 동일하게 안내를 닫는다. 다음 작업 표시를 지우지 않는다.
+      if (isFileUploading.value == UploadingType.SUCCESS) {
+        _uploadNoticeTimer = Timer(const Duration(seconds: 2), () {
+          if (isFileUploading.value == UploadingType.SUCCESS) {
+            isFileUploading.value = UploadingType.NONE;
+          }
+        });
+      }
+    });
+    _uploadTail =
+        next.then<void>((_) {}, onError: (Object _, StackTrace __) {});
+    return next;
+  }
 
-  /// 상태 조회가 연달아 실패한 횟수의 상한. null 은 "네이티브 저장소를 못 읽었다"는
-  /// 뜻이지 "전송이 사라졌다"는 뜻이 아니라, 한 번으로 실패를 단정하지 않는다.
-  static const int _nativeStateFailureLimit = 5;
+  Future<void> uploadCloudflare(File file, BoardSaveData data,
+          {PendingUpload? resume}) =>
+      _acceptUpload([file], data, true, resume);
 
-  /// 무한 대기 방지용 최후 방어선. queued/running 이 보이는 동안은 OS 가 실제로
-  /// 들고 있다는 뜻이므로 그 자체로는 포기하지 않는다.
-  static const Duration _nativeTransferDeadline = Duration(hours: 2);
+  Future<void> uploadPhotos(List<File> files, BoardSaveData data,
+          {PendingUpload? resume}) =>
+      _acceptUpload(files, data, false, resume);
 
-  /// 영상 한 건을 올리고 성공한 전송에 대응하는 티켓을 돌려준다.
-  /// 네이티브가 없거나 실패하면 기존 Dart 업로드로 그대로 내려간다.
-  Future<VideoUploadTicket?> _uploadVideoPreferNative(
-    DirectUploadRepo directUpload,
+  Future<void> _acceptUpload(List<File> files, BoardSaveData data, bool video,
+      PendingUpload? resume) async {
+    final owner = AuthCntr.to.resLoginData.value.custId.toString();
+    // 대기열 앞 작업이 오래 걸려도 새 파일은 즉시 디스크에 보관한다.
+    final job = resume ??
+        await PendingUploadStore.enqueue(
+            files: files, data: data, isVideo: video);
+    if (job == null) {
+      _markUploadFailed('원본 보관 실패', null);
+      Utils.alert('업로드 파일을 보관하지 못했습니다. 저장 공간을 확인해주세요.');
+      return;
+    }
+    try {
+      if (resume == null) {
+        final journal = UploadJournal(job);
+        journal.data['owner'] = owner;
+        await journal.save();
+      }
+      await _serialUpload(() async {
+        if (AuthCntr.to.resLoginData.value.custId.toString() != owner) {
+          throw StateError('업로드 계정이 변경되었습니다.');
+        }
+        final current =
+            (await PendingUploadStore.list()).where((j) => j.id == job.id);
+        if (current.isEmpty) return; // 앞서 같은 작업이 완료되어 정리된 경우
+        final restored = current.single;
+        // 재개 요청의 오래된 스냅샷으로 진행 중 작업 기록을 덮어쓰지 않는다.
+        final journal = UploadJournal(restored);
+        if (journal.data['owner'] != null && journal.data['owner'] != owner) {
+          throw StateError('업로드를 시작한 계정으로 로그인해주세요.');
+        }
+        if (journal.data['owner'] == null) {
+          journal.data['owner'] = owner;
+          await journal.save();
+          restored.checkpoint['owner'] = owner;
+        }
+        if (video) {
+          await _uploadCloudflare(restored.files.first, restored.data,
+              resume: restored);
+        } else {
+          await _uploadPhotos(restored.files, restored.data, resume: restored);
+        }
+      });
+    } catch (e) {
+      _markUploadFailed('업로드 준비 실패: $e', job);
+    }
+  }
+
+  Future<VideoUploadTicket> _uploadVideoPreferNative(
+    DirectUploadRepo repo,
     File file,
-    PendingUpload? job,
+    UploadJournal journal,
   ) async {
-    // 영상은 큐 사본이 아니라 **압축본**을 올려야 한다(큐에는 원본이 들어 있다).
-    // 압축본은 임시 폴더에 있어 OS 가 지울 수 있는데, 그때는 네이티브가 file_missing
-    // 으로 실패하고 아래 폴백이 받는다. 원본은 큐에 그대로 남아 있어 잃지 않는다.
-    final VideoUploadTicket? ticket = await directUpload.issueVideoTicket();
-    if (ticket != null && ticket.uploadUrl.isNotEmpty) {
-      final String batchId = 'video-${job?.id ?? DateTime.now().microsecondsSinceEpoch}';
-      final bool sent = await _transferViaNative(batchId, [
-        _NativeTransfer(id: '$batchId-0', file: file, uploadUrl: ticket.uploadUrl),
-      ]);
-      if (sent) return ticket;
-    }
-    // 폴백 — 위 URL 은 일회용이라 재사용하지 않는다. 새 티켓을 받아 Dart 가 올린다.
-    return directUpload.uploadVideoFile(file);
+    final result = await _uploader(repo).transfer(
+      journal: journal,
+      slot: 'video',
+      prepare: () => _prepareUploadVideo(file, journal),
+      issueTicket: () async {
+        final ticket = await repo.issueVideoTicket();
+        if (ticket == null) throw StateError('영상 업로드 주소 발급 실패');
+        return {
+          'uploadUrl': ticket.uploadUrl,
+          'uid': ticket.uid,
+          'hls': ticket.hls,
+          'dash': ticket.dash,
+          'thumbnail': ticket.thumbnail,
+          'animatedThumbnail': ticket.animatedThumbnail,
+          'preview': ticket.preview,
+        };
+      },
+    );
+    return VideoUploadTicket.fromMap(result);
   }
 
-  /// 사진 묶음을 올리고 결과를 **입력 순서대로** 돌려준다. 한 장이라도 실패하면 null.
-  Future<List<ImageUploadResult>?> _uploadPhotosPreferNative(
-    DirectUploadRepo directUpload,
-    List<File> photoFiles,
-    PendingUpload? job,
-  ) async {
-    // 큐 사본이 있으면 그쪽을 쓴다. 갤러리·카메라가 준 원본은 임시 폴더에 있어
-    // 전송 도중 OS 가 지울 수 있다. 개수가 다르면(복사 중 일부 유실) 짝을 맞출 수
-    // 없으므로 원본을 쓴다.
-    final List<File> sources =
-        (job != null && job.files.length == photoFiles.length) ? job.files : photoFiles;
-    // heic/heif 는 png 로 바꿔 올린다. 네이티브도 같은 변환본을 써야 한다.
-    final List<File> prepared = [
-      for (final File f in sources) await directUpload.convertIfHeif(f),
-    ];
-
-    final String batchId = 'photo-${job?.id ?? DateTime.now().microsecondsSinceEpoch}';
-    final List<ImageUploadTicket> tickets = [];
-    for (var i = 0; i < prepared.length; i++) {
-      final ImageUploadTicket? ticket = await directUpload.issueImageTicket();
-      if (ticket == null) break;
-      tickets.add(ticket);
+  Future<File> _prepareUploadVideo(File source, UploadJournal journal) async {
+    final savedPath = journal.data['preparedVideo'] as String?;
+    if (savedPath != null && await File(savedPath).exists()) {
+      return File(savedPath);
     }
-    // 한 장이라도 티켓을 못 받으면 묶음 전체를 네이티브로 넘기지 않는다.
-    if (tickets.length == prepared.length) {
-      final bool sent = await _transferViaNative(batchId, [
-        for (var i = 0; i < prepared.length; i++)
-          _NativeTransfer(id: '$batchId-$i', file: prepared[i], uploadUrl: tickets[i].uploadUrl),
-      ]);
-      if (sent) return [for (final ImageUploadTicket t in tickets) t.result];
+    final needsCompression = await shouldCompressVideo(source.path);
+    MediaInfo info;
+    try {
+      info = needsCompression
+          ? (await VideoCompress.compressVideo(source.path,
+                  quality: VideoQuality.HighestQuality,
+                  deleteOrigin: false,
+                  includeAudio: true) ??
+              await VideoCompress.getMediaInfo(source.path))
+          : await VideoCompress.getMediaInfo(source.path);
+    } catch (_) {
+      info = await VideoCompress.getMediaInfo(source.path);
     }
-
-    // 폴백 — 위 URL 들은 일회용이라 재사용하지 않는다. 새 티켓으로 한 장씩 올린다.
-    final List<ImageUploadResult> results = [];
-    for (final File f in prepared) {
-      final ImageUploadResult? res = await directUpload.uploadImageFile(f);
-      if (res == null) return null;
-      results.add(res);
+    File prepared = File(info.path ?? source.path);
+    // 압축 결과도 큐 폴더에 보관한다. Android 전송 중 임시 캐시가 사라져도 유지된다.
+    if (prepared.path != source.path) {
+      final temporary = prepared;
+      prepared =
+          await temporary.copy('${source.parent.path}/prepared-video.mp4');
+      await _deleteQuietly(temporary.path);
     }
-    return results;
+    journal.data['preparedVideo'] = prepared.path;
+    journal.data['videoSize'] = await prepared.length();
+    journal.data['videoDuration'] = info.duration?.toInt() ?? 0;
+    await journal.save();
+    return prepared;
   }
 
-  /// 묶음을 네이티브 전송기에 넘기고 전부 끝날 때까지 기다린다.
-  /// true 는 **모든 파일이 실제로 전송 완료**됐다는 뜻이다.
-  Future<bool> _transferViaNative(String batchId, List<_NativeTransfer> items) async {
-    if (items.isEmpty) return false;
-    final List<String> ids = [for (final _NativeTransfer item in items) item.id];
-    final bool queued = await NativeBackgroundUpload.enqueue([
-      for (final _NativeTransfer item in items)
-        NativeBackgroundUploadRequest(
-          id: item.id,
-          batchId: batchId,
-          filePath: item.file.path,
-          uploadUrl: item.uploadUrl,
+  Future<List<ImageUploadResult>> _uploadPhotosPreferNative(
+    DirectUploadRepo repo,
+    List<File> files,
+    UploadJournal journal,
+  ) async {
+    final tickets = await _uploader(repo).transferMany(journal, [
+      for (var i = 0; i < files.length; i++)
+        UploadItem(
+          slot: 'photo-$i',
+          prepare: () => _prepareUploadPhoto(repo, files[i], i),
+          issueTicket: () async {
+            final ticket = await repo.issueImageTicket();
+            if (ticket == null) throw StateError('사진 업로드 주소 발급 실패');
+            return {
+              'uploadUrl': ticket.uploadUrl,
+              'id': ticket.id,
+              'url': ticket.url
+            };
+          },
         ),
     ]);
-    // 네이티브가 없는 환경(테스트·미지원 플랫폼)은 여기서 조용히 빠진다.
-    if (!queued) return false;
-
-    try {
-      return await _awaitNativeTransfer(ids);
-    } finally {
-      // 상태 기록만 지운다. OS 가 진행 중인 전송을 취소하지는 않는다.
-      await NativeBackgroundUpload.forget(ids);
-    }
+    return [
+      for (final ticket in tickets)
+        ImageUploadResult(
+            id: ticket['id'] as String, url: ticket['url'] as String),
+    ];
   }
 
-  /// 모든 id 가 success 가 될 때까지 폴링한다. 하나라도 종료 실패면 즉시 false.
-  Future<bool> _awaitNativeTransfer(List<String> ids) async {
-    final Set<String> pending = ids.toSet();
-    final DateTime deadline = DateTime.now().add(_nativeTransferDeadline);
-    int consecutiveUnknown = 0;
+  Future<File> _prepareUploadPhoto(
+      DirectUploadRepo repo, File source, int index) async {
+    final saved = File('${source.parent.path}/prepared-photo-$index.png');
+    if (await saved.exists()) return saved;
+    final converted = await repo.convertIfHeif(source);
+    if (converted.path == source.path) return source;
+    // 변환 캐시가 OS에 의해 지워져도 등록된 백그라운드 전송의 파일은 남긴다.
+    final staged = await converted.copy('${saved.path}.tmp');
+    final result = await staged.rename(saved.path);
+    await _deleteQuietly(converted.path);
+    return result;
+  }
 
-    while (pending.isNotEmpty) {
-      if (DateTime.now().isAfter(deadline)) {
-        lo.g('네이티브 전송 대기 한도 초과 — Dart 업로드로 내려갑니다(남은 ${pending.length}건)');
-        return false;
-      }
+  Future<void> _finishUpload(UploadJournal journal) async {
+    journal.data['published'] = true;
+    await journal.save();
+    // 게시 완료를 먼저 영속화한다. 정리 중 종료되어도 다음 실행에서 재게시하지 않는다.
+    await NativeBackgroundUpload.forget(journal.transferIds);
+    await PendingUploadStore.remove(journal.job.id);
+  }
 
-      final states = await NativeBackgroundUpload.states(pending.toList());
-      if (states == null) {
-        // 저장소를 못 읽었다. 전송이 사라졌다고 단정하면 중복 전송이 된다.
-        consecutiveUnknown++;
-        if (consecutiveUnknown >= _nativeStateFailureLimit) {
-          lo.g('네이티브 전송 상태를 읽지 못했습니다 — Dart 업로드로 내려갑니다');
-          return false;
-        }
-        await Future.delayed(_nativePollInterval);
-        continue;
-      }
-      consecutiveUnknown = 0;
-
-      for (final String id in pending.toList()) {
-        final NativeBackgroundUploadState? state = states[id];
-        // 조회 결과에 없으면 판정을 미루고 다음 폴링에서 다시 본다.
-        if (state == null) continue;
-        if (state.isSuccess) {
-          pending.remove(id);
-        } else if (state.isTerminalFailure) {
-          lo.g('네이티브 전송 실패($id): ${state.status} ${state.error ?? ''}');
-          return false;
-        }
-      }
-      if (pending.isEmpty) break;
-      await Future.delayed(_nativePollInterval);
+  Future<ResData> _publishUpload(
+      BoardRepo repo, BoardSaveData data, UploadJournal journal) async {
+    // 응답 유실 후 재시도해도 날씨/촬영일 등 본문이 달라지지 않도록 확정본을 저장한다.
+    journal.data['publishPayload'] ??= data.toMap();
+    await journal.save();
+    final frozen = BoardSaveData.fromMap(
+        Map<String, dynamic>.from(journal.data['publishPayload'] as Map));
+    if (journal.data['owner'] !=
+        AuthCntr.to.resLoginData.value.custId.toString()) {
+      throw StateError('업로드를 시작한 계정으로 로그인해주세요.');
     }
+    return repo.saveUpload(frozen, 'skysnap-${journal.job.id}');
+  }
+
+  Future<bool> _resumePublication(UploadJournal journal) async {
+    final payload = journal.data['publishPayload'];
+    if (payload == null) return false;
+    final result = await _publishUpload(
+        BoardRepo(),
+        BoardSaveData.fromMap(Map<String, dynamic>.from(payload as Map)),
+        journal);
+    if (result.code != '00') throw StateError('게시 저장을 완료하지 못했습니다.');
+    await _finishUpload(journal);
+    isFileUploading.value = UploadingType.SUCCESS;
     return true;
   }
 
@@ -558,6 +604,9 @@ class RootCntr extends GetxController {
   void _markUploadFailed(String reason, PendingUpload? job) {
     isFileUploading.value = UploadingType.FAIL;
     lo.g('업로드 실패 → 대기 큐 보존(job=${job?.id ?? '기록없음'}): $reason');
+    if (job != null) {
+      Utils.alert('업로드를 완료하지 못했습니다. 파일은 보관되어 다음 실행에서 다시 시도할 수 있어요.');
+    }
   }
 
   /// 성공 경로 전용 파일 정리. 큐 정리(remove)로 이미 사라졌거나 OS 가 먼저 지운
@@ -612,6 +661,7 @@ class RootCntr extends GetxController {
 
   @override
   void dispose() {
+    _uploadNoticeTimer?.cancel();
     hideButtonController1.dispose();
     // hideButtonController11.dispose();
     hideButtonController12.dispose();
@@ -698,15 +748,20 @@ class RootCntr extends GetxController {
       if (todayRes.code != '00') return;
 
       final todayChallenge = ChallengeRepo.parseTodayData(todayRes.data);
-      if (todayChallenge?.challengeId == null || todayChallenge?.completeYn == 'Y') return;
+      if (todayChallenge?.challengeId == null ||
+          todayChallenge?.completeYn == 'Y') return;
 
-      final completeRes = await ChallengeRepo().completeChallenge(todayChallenge!.challengeId!, custId);
+      final completeRes = await ChallengeRepo()
+          .completeChallenge(todayChallenge!.challengeId!, custId);
       if (completeRes.code == '00') {
-        final ChallengeCompleteData? result = ChallengeRepo.parseCompleteData(completeRes.data);
+        final ChallengeCompleteData? result =
+            ChallengeRepo.parseCompleteData(completeRes.data);
         if (result?.message != null && result!.message!.isNotEmpty) {
-          Utils.alertIcon(result.message!, icontype: 'S', duration: const Duration(seconds: 3));
+          Utils.alertIcon(result.message!,
+              icontype: 'S', duration: const Duration(seconds: 3));
         } else {
-          Utils.alertIcon('챌린지 완료! 오늘도 출석 체크 되었어요.', icontype: 'S', duration: const Duration(seconds: 2));
+          Utils.alertIcon('챌린지 완료! 오늘도 출석 체크 되었어요.',
+              icontype: 'S', duration: const Duration(seconds: 2));
         }
       }
     } catch (e) {

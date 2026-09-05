@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:project1/repo/board/data/board_save_data.dart';
 import 'package:project1/services/native_background_upload.dart';
 import 'package:project1/utils/log_utils.dart';
+import 'package:uuid/uuid.dart';
 
 /// 아직 못 올린 업로드 한 건.
 class PendingUpload {
@@ -16,6 +17,7 @@ class PendingUpload {
     required this.isVideo,
     required this.queuedAt,
     required this.attempts,
+    this.checkpoint = const {},
   });
 
   final String id;
@@ -30,6 +32,7 @@ class PendingUpload {
 
   /// 시도한 횟수. 계속 실패하는 건을 가려내는 용도.
   final int attempts;
+  final Map<String, dynamic> checkpoint;
 }
 
 /// 올리다 만 업로드를 기기에 남겨두는 큐.
@@ -43,12 +46,10 @@ class PendingUpload {
 /// 파일 **전송**은 가능하면 OS 에 넘긴다(`NativeBackgroundUpload`). 다만 티켓 발급과
 /// 게시(`boardRepo.save`)는 인증이 필요해 Dart 만 할 수 있으므로, 전송이 끝난 뒤
 /// 나머지는 `RootCntr.uploadCloudflare` / `uploadPhotos` 가 이어서 처리한다.
-/// 네이티브가 없거나 전송이 실패하면 같은 함수가 기존 Dart 업로드로 그대로 내려간다.
+/// 네이티브 미지원 플랫폼만 Dart로 전송한다. OS 상태 조회 실패 시에는 큐를 보존한다.
 ///
-/// 여기엔 네이티브 계획(plan) 필드가 없다. 발급한 티켓을 큐에 적어두려면 서버 쪽
-/// 업로드 세션 조회 API 가 있어야 재기동 후 "이미 올라갔는지"를 판정할 수 있는데,
-/// SkySnap 백엔드에는 아직 그 API 가 없다. 그래서 프로세스가 죽어 되살아난 경우엔
-/// 새 티켓으로 다시 올린다 — 바이트는 낭비돼도 게시물이 중복되지는 않는다.
+/// checkpoint에는 파일별 티켓·전송 ID·완료 결과와 게시 단계를 저장한다.
+/// 네이티브 상태는 반드시 같은 티켓의 ID로 조회하고, 게시 성공 이후에만 지운다.
 class PendingUploadStore {
   PendingUploadStore._();
 
@@ -64,7 +65,8 @@ class PendingUploadStore {
   /// 캐시가 아니라 문서 폴더인 이유: 캐시는 OS 가 언제든 지운다.
   /// 여기 있는 건 아직 서버에 없는 유일본이라 지워지면 영상이 사라진다.
   static Future<Directory> _root() async {
-    final Directory base = debugRootOverride ?? await getApplicationDocumentsDirectory();
+    final Directory base =
+        debugRootOverride ?? await getApplicationDocumentsDirectory();
     final dir = Directory('${base.path}/pending_uploads');
     if (!await dir.exists()) await dir.create(recursive: true);
     // 큐에는 아직 서버 어디에도 없는 원본과 일회용 업로드 URL 이 들어 있다. 복원
@@ -106,7 +108,7 @@ class PendingUploadStore {
     Directory? jobDir;
     try {
       final root = await _root();
-      final id = DateTime.now().microsecondsSinceEpoch.toString();
+      final id = const Uuid().v4();
       jobDir = Directory('${root.path}/$id');
       await jobDir.create(recursive: true);
 
@@ -114,7 +116,7 @@ class PendingUploadStore {
       final copied = <File>[];
       for (var i = 0; i < files.length; i++) {
         final src = files[i];
-        if (!await src.exists()) continue;
+        if (!await src.exists()) throw StateError('업로드 원본이 없습니다.');
         final name = 'f$i${_extOf(src.path)}';
         final dst = await src.copy('${jobDir.path}/$name');
         names.add(name);
@@ -187,7 +189,8 @@ class PendingUploadStore {
       final files = <File>[];
       for (final name in (map['files'] as List? ?? const [])) {
         final f = File('${dir.path}/$name');
-        if (await f.exists()) files.add(f);
+        // 일부 파일이 사라져도 순번을 당기지 않는다. 다른 사진의 완료 결과와 섞이면 안 된다.
+        files.add(f);
       }
       if (files.isEmpty) {
         // 올릴 파일이 하나도 안 남았으면 이 job 으로 할 수 있는 일이 없다.
@@ -197,10 +200,14 @@ class PendingUploadStore {
       return PendingUpload(
         id: map['id']?.toString() ?? dir.path.split('/').last,
         files: files,
-        data: BoardSaveData.fromMap(Map<String, dynamic>.from(map['board'] as Map)),
+        data: BoardSaveData.fromMap(
+            Map<String, dynamic>.from(map['board'] as Map)),
         isVideo: map['isVideo'] == true,
-        queuedAt: DateTime.tryParse(map['queuedAt']?.toString() ?? '') ?? DateTime.now(),
+        queuedAt: DateTime.tryParse(map['queuedAt']?.toString() ?? '') ??
+            DateTime.now(),
         attempts: (map['attempts'] as num?)?.toInt() ?? 0,
+        checkpoint:
+            Map<String, dynamic>.from(map['checkpoint'] as Map? ?? const {}),
       );
     } catch (e) {
       lo.g('업로드 큐 항목 읽기 실패(${dir.path}): $e');
@@ -217,6 +224,13 @@ class PendingUploadStore {
     } catch (e) {
       lo.g('업로드 큐 시도 기록 실패: $e');
     }
+  }
+
+  /// 전송/게시 전에 반드시 완료해야 하는 체크포인트. 저장 실패를 삼키지 않는다.
+  static Future<void> saveCheckpoint(
+      String id, Map<String, dynamic> checkpoint) async {
+    final saved = await _mutate(id, (map) => map['checkpoint'] = checkpoint);
+    if (!saved) throw StateError('업로드 진행 정보를 저장하지 못했습니다.');
   }
 
   /// 올라갔으면 지운다. 복사해둔 파일도 같이 사라진다.
@@ -254,7 +268,8 @@ class PendingUploadStore {
 
   /// 원자적 rename 전에는 마지막 정상본을 .bak 에 남긴다. 앱이 write 중 강제 종료돼도
   /// job.json 또는 .bak 중 하나는 완전한 JSON 으로 남아 업로드 대상을 잃지 않는다.
-  static Future<void> _writeMapAtomically(File target, Map<String, dynamic> map, {bool keepPrevious = true}) async {
+  static Future<void> _writeMapAtomically(File target, Map<String, dynamic> map,
+      {bool keepPrevious = true}) async {
     final json = jsonEncode(map);
     if (keepPrevious && await target.exists()) {
       final previous = await target.readAsString();
@@ -264,7 +279,8 @@ class PendingUploadStore {
   }
 
   static Future<void> _writeStringAtomically(File target, String value) async {
-    final temp = File('${target.path}.${DateTime.now().microsecondsSinceEpoch}.tmp');
+    final temp =
+        File('${target.path}.${DateTime.now().microsecondsSinceEpoch}.tmp');
     try {
       await temp.writeAsString(value, flush: true);
       // Android/iOS의 POSIX rename 은 기존 파일을 한 번에 교체한다. delete → write 와
@@ -297,9 +313,11 @@ class PendingUploadStore {
     }
   }
 
-  static Map<String, dynamic> _decodeMap(String raw) => Map<String, dynamic>.from(jsonDecode(raw) as Map);
+  static Map<String, dynamic> _decodeMap(String raw) =>
+      Map<String, dynamic>.from(jsonDecode(raw) as Map);
 
-  static Future<bool> _mutate(String id, void Function(Map<String, dynamic> map) mutate) {
+  static Future<bool> _mutate(
+      String id, void Function(Map<String, dynamic> map) mutate) {
     return _serialiseJob(id, () async {
       final meta = File('${(await _root()).path}/$id/job.json');
       if (!await meta.exists()) return false;
