@@ -18,6 +18,8 @@ import 'package:project1/repo/cloudflare/direct_upload_repo.dart';
 import 'package:project1/services/analytics_service.dart';
 import 'package:project1/services/native_background_upload.dart';
 import 'package:project1/services/durable_upload.dart';
+import 'package:project1/services/upload_policy.dart';
+import 'package:project1/services/upload_notifier.dart';
 import 'package:project1/services/pending_upload_store.dart';
 import 'package:project1/services/review_service.dart';
 import 'package:project1/repo/common/res_data.dart';
@@ -253,6 +255,12 @@ class RootCntr extends GetxController {
           contentType: 'video', feel: boardSaveData.boardWeatherVo?.feelCd);
       ReviewService.instance.onPositiveMoment();
       // Utils.alert('정상 등록되었습니다!');
+    } on UploadTooLargeException catch (e) {
+      // 압축 뒤에도 상한을 넘는 파일은 다음 실행에 다시 올려도 결과가 같다.
+      // 큐에 남기면 실행할 때마다 같은 실패를 되풀이하므로 여기서 내린다.
+      await _abandonUpload(journal, '영상 크기 초과: $e');
+      Utils.alert('영상이 너무 커서 올릴 수 없어요 (압축 후 ${e.megabytes}MB, '
+          '최대 ${kDirectUploadMaxMegabytes}MB). 더 짧게 잘라서 올려주세요.');
     } catch (e) {
       // 예외로 빠져나와도 job 은 남긴다 — 다음 실행에서 이어 올린다.
       _markUploadFailed('영상 업로드 예외: $e', job);
@@ -417,6 +425,9 @@ class RootCntr extends GetxController {
   Future<void> _acceptUpload(List<File> files, BoardSaveData data, bool video,
       PendingUpload? resume) async {
     final owner = AuthCntr.to.resLoginData.value.custId.toString();
+    // 새 게시는 사용자가 게시 버튼을 누른 전면 시점이다. Android 13+ 알림 권한을 여기서
+    // 묻는다 — 게시가 끝나는 백그라운드 시점에는 물을 수 없다. 기다리지 않는다(내부 try/catch).
+    if (resume == null) UploadNotifier.ensureAndroidPermission();
     // 대기열 앞 작업이 오래 걸려도 새 파일은 즉시 디스크에 보관한다.
     final job = resume ??
         await PendingUploadStore.enqueue(
@@ -491,14 +502,16 @@ class RootCntr extends GetxController {
   Future<File> _prepareUploadVideo(File source, UploadJournal journal) async {
     final savedPath = journal.data['preparedVideo'] as String?;
     if (savedPath != null && await File(savedPath).exists()) {
-      return File(savedPath);
+      return _ensureUploadable(File(savedPath));
     }
     final needsCompression = await shouldCompressVideo(source.path);
     MediaInfo info;
     try {
       info = needsCompression
           ? (await VideoCompress.compressVideo(source.path,
-                  quality: VideoQuality.HighestQuality,
+                  // 1080p 다운스케일. HighestQuality 는 해상도를 유지해 iOS 는 용량이
+                  // 안 줄고 Android 는 3.7Mbps 고정으로 화질만 깨졌다(upload_policy.dart).
+                  quality: VideoQuality.Res1920x1080Quality,
                   deleteOrigin: false,
                   includeAudio: true) ??
               await VideoCompress.getMediaInfo(source.path))
@@ -518,7 +531,17 @@ class RootCntr extends GetxController {
     journal.data['videoSize'] = await prepared.length();
     journal.data['videoDuration'] = info.duration?.toInt() ?? 0;
     await journal.save();
-    return prepared;
+    return _ensureUploadable(prepared);
+  }
+
+  /// 압축을 거쳐도 [kDirectUploadMaxBytes] 를 넘으면 전송해봐야 서버가 거부한다.
+  /// 재시도로 달라질 게 없으니 종료형 예외로 끊고, 호출자가 큐에서 내린다.
+  Future<File> _ensureUploadable(File file) async {
+    final int bytes = await file.length();
+    if (bytes > kDirectUploadMaxBytes) {
+      throw UploadTooLargeException(bytes);
+    }
+    return file;
   }
 
   Future<List<ImageUploadResult>> _uploadPhotosPreferNative(
@@ -568,6 +591,10 @@ class RootCntr extends GetxController {
     // 게시 완료를 먼저 영속화한다. 정리 중 종료되어도 다음 실행에서 재게시하지 않는다.
     await NativeBackgroundUpload.forget(journal.transferIds);
     await PendingUploadStore.remove(journal.job.id);
+    // 큐 정리까지 끝난 뒤에 알린다. 알림을 보고 앱을 열었을 때 "올리다 만 게시물"
+    // 팝업이 같이 뜨면 안 된다. 전면이면 인디케이터가 보여주므로 내부에서 건너뛴다.
+    await UploadNotifier.notifyPublished(
+        isVideo: journal.job.isVideo, count: journal.job.files.length);
   }
 
   Future<ResData> _publishUpload(
@@ -607,6 +634,16 @@ class RootCntr extends GetxController {
     if (job != null) {
       Utils.alert('업로드를 완료하지 못했습니다. 파일은 보관되어 다음 실행에서 다시 시도할 수 있어요.');
     }
+  }
+
+  /// 종료형 실패 전용. [_markUploadFailed] 와 달리 job 과 사본을 **지운다** —
+  /// 재시도해도 같은 결과가 나오는 실패(파일 크기 초과 등)를 큐에 남기면
+  /// 실행할 때마다 사용자에게 같은 실패를 알리게 된다. 안내는 호출자가 사유별로 띄운다.
+  Future<void> _abandonUpload(UploadJournal journal, String reason) async {
+    isFileUploading.value = UploadingType.FAIL;
+    lo.g('업로드 포기 → 큐에서 제거(job=${journal.job.id}): $reason');
+    await NativeBackgroundUpload.forget(journal.transferIds);
+    await PendingUploadStore.remove(journal.job.id);
   }
 
   /// 성공 경로 전용 파일 정리. 큐 정리(remove)로 이미 사라졌거나 OS 가 먼저 지운
@@ -674,63 +711,24 @@ class RootCntr extends GetxController {
     super.dispose();
   }
 
-  // 압축여부
-  //   bool needsCompression = await VideoCompressionHelper.shouldCompressVideo(videoPath);
-
-  Future<bool> shouldCompressVideo(
-    String filePath, {
-    // int sizeThreshold = 50 * 1024 * 1024, // 50MB
-    // int widthThreshold = 1920,
-    // int heightThreshold = 1080,
-    // double bitrateThreshold = 5000000, // 5 Mbps
-    int sizeThreshold = 70 * 1024 * 1024, // 60MB
-    int widthThreshold = 1080,
-    int heightThreshold = 1920,
-    double bitrateThreshold = 7000000, // 7 Mbps
-  }) async {
-    File file = File(filePath);
-    int fileSize = await file.length();
-
-    MediaInfo? mediaInfo = await VideoCompress.getMediaInfo(filePath);
-
-    int width = mediaInfo.width ?? 0;
-    int height = mediaInfo.height ?? 0;
-
-    // bitrate를 직접 계산합니다 (bps 단위)
-    double bitrate = 0;
-    if (mediaInfo.filesize != null && mediaInfo.duration != null) {
-      // duration이 이미 초 단위일 수 있으므로, 직접 사용합니다.
-      double durationInSeconds = mediaInfo.duration ?? 0;
-      if (durationInSeconds > 0) {
-        bitrate = (mediaInfo.filesize! * 8) / durationInSeconds;
-      }
-    }
-    if (fileSize > sizeThreshold) {
-      return true;
-    }
-
-    // width, height 체크 더 큰게 height 으로 재설정
-    int widthT = 0;
-    int heightT = 0;
-
-    if (width > height) {
-      heightT = width;
-      widthT = height;
-    } else {
-      heightT = height;
-      widthT = width;
-    }
-    width = widthT;
-    height = heightT;
-
-    if (width > widthThreshold || height > heightThreshold) {
-      return true;
-    }
-    if (bitrate > bitrateThreshold) {
-      return true;
-    }
-
-    return false;
+  /// 압축 여부. 판단 규칙은 `upload_policy.dart` 의 [needsVideoCompression] 에 있다.
+  /// 여기서는 플러그인에서 규격·비트레이트만 읽어 넘긴다.
+  Future<bool> shouldCompressVideo(String filePath) async {
+    final MediaInfo mediaInfo = await VideoCompress.getMediaInfo(filePath);
+    // MediaInfo.duration 은 ms 다. (이전에는 초로 나눠 비트레이트가 1000분의 1로
+    // 나왔고, 그래서 비트레이트 조건이 한 번도 걸리지 않았다.)
+    final double durationSec = (mediaInfo.duration ?? 0) / 1000;
+    final int fileSize = mediaInfo.filesize ?? await File(filePath).length();
+    final double bitrate = durationSec > 0 ? fileSize * 8 / durationSec : 0;
+    final bool needed = needsVideoCompression(
+      width: mediaInfo.width ?? 0,
+      height: mediaInfo.height ?? 0,
+      bitrate: bitrate,
+    );
+    lo.g('압축 판단: ${mediaInfo.width}x${mediaInfo.height} '
+        '${(bitrate / 1e6).toStringAsFixed(1)}Mbps '
+        '${(fileSize / (1 << 20)).toStringAsFixed(0)}MB → ${needed ? '압축' : '원본'}');
+    return needed;
   }
 
   /// 영상 업로드 성공 후 오늘 챌린지 완료 처리
