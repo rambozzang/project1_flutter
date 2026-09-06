@@ -6,6 +6,14 @@
 
 ## 2026-09-06
 
+### 11:08 | Claude (Fable) | ✅ 운영 정리 — 우라칸 9/6 테스트 영상 3건 삭제(Cloudflare + DB)
+- 대상: board_id 3092(00:20), 3093(00:30), 3094(00:54). 작성자 우라칸(`000964.24d0…0834`). 9/6 업로드 재개 검증 과정에서 생긴 테스트 게시물.
+- 사전 점검: board_id 참조 테이블 12개 전수 확인 → 실제 참조는 tb_board_view 6건뿐(like/image/files/reaction/singo/activity/alram/broadcast/achievement 모두 0, 댓글 자식글 없음).
+- 백업: 서버 `/tmp/bk_master.csv`, `bk_weather.csv`, `bk_view.csv` (각 3/3/6행).
+- Cloudflare Stream 영상 3건 DELETE → 재조회 404 확인. 토큰은 서버 `/vdata/jar/skysnap/config/application.yml`(jenkins 소유, sudo 필요)에서 읽어 **서버에서만** 사용, 로컬로 반출하지 않음.
+- DB: 한 트랜잭션으로 view 6 → weather 3 → master 3 삭제, 커밋. 잔여 0 확인. 앱의 기본 삭제는 `del_yn='Y'` 소프트 삭제지만, 영상 실체를 지웠으므로 행도 하드 삭제함.
+- 남은 것: board_id 3095(9/6 10:34, 구글 계정 3523487940) — Play 포그라운드 서비스 시연 녹화용으로 내가 올린 테스트 게시물. 삭제 여부 사용자 확인 대기.
+
 ### 11:00 | Claude (Fable) | ✅ 스토어 배포 완료 — Android 1.2.8+68 심사 제출 (iOS 는 02:02 제출됨)
 - 사용자가 Play Console 에서 포그라운드 서비스 권한 선언(FOREGROUND_SERVICE_DATA_SYNC)을 제출. 선언 폼이 요구한 시연 영상은 S24 실기기 adb 화면녹화로 제작(36초): 게시하기 → 홈으로 백그라운드 → 알림 74%→100% → "게시가 완료됐어요". `~/Desktop/skysnap_foreground_service_demo.mp4`.
 - 시연을 위해 제출본 AAB(68)에서 bundletool 로 서명된 universal APK 를 뽑아 S24 에 설치(앱이 지워져 있었음). 어제 추가한 게시 완료 알림이 실기기에서 정상 동작함을 처음 확인.
