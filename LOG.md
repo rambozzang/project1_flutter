@@ -6,6 +6,12 @@
 
 ## 2026-09-06
 
+### 11:00 | Claude (Fable) | ✅ 스토어 배포 완료 — Android 1.2.8+68 심사 제출 (iOS 는 02:02 제출됨)
+- 사용자가 Play Console 에서 포그라운드 서비스 권한 선언(FOREGROUND_SERVICE_DATA_SYNC)을 제출. 선언 폼이 요구한 시연 영상은 S24 실기기 adb 화면녹화로 제작(36초): 게시하기 → 홈으로 백그라운드 → 알림 74%→100% → "게시가 완료됐어요". `~/Desktop/skysnap_foreground_service_demo.mp4`.
+- 시연을 위해 제출본 AAB(68)에서 bundletool 로 서명된 universal APK 를 뽑아 S24 에 설치(앱이 지워져 있었음). 어제 추가한 게시 완료 알림이 실기기에서 정상 동작함을 처음 확인.
+- `PLAY_PROMOTE_VERSION_CODE=68` 로 draft → completed 승격, production 심사 제출 완료. 재업로드 없이 같은 번들 사용.
+- 부수 효과: 구글 로그인으로 시연했고 시연 게시물 1건(board_id 3095)이 전체 피드에 남아 있음. 삭제 여부 사용자 확인 대기.
+
 ### 10:12 | Claude (Fable) | 🟡 Android 1.2.8+68 초안 커밋 성공 — 콘솔 선언 대기
 - 사용자 지적: 포그라운드 서비스 선언 폼은 해당 권한이 든 번들이 트랙에 올라간 뒤에만 노출됨(콘솔 최신은 67). 미커밋 edit 는 폐기되므로 "선언 먼저" 는 불가.
 - `play_upload.py` 에 `PLAY_RELEASE_STATUS=draft`(심사 미제출 초안 커밋)·`PLAY_PROMOTE_VERSION_CODE`(업로드 생략, 기존 번들을 트랙 릴리즈로) 추가. draft 로 versionCode 68 production 초안 커밋 성공(10:12).
