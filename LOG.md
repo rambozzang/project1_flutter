@@ -6,6 +6,22 @@
 
 ## 2026-09-06
 
+### 11:51 | Claude (Fable) | ✅ 코드 반영 — 앨범 몰입뷰 음소거 + R8 난독화 정상화(난독화율 2.7%→34.6%)
+**1) 우리의 앨범 몰입뷰 음소거 (사용자 요청)**
+- 새 `lib/services/video_mute.dart`: 앱 전역 단일 음소거 상태(`ValueNotifier`) + `shared_preferences` 저장. 한 번 끄면 다음 영상도, 앱을 다시 켜도 꺼진 채 재생된다.
+- `album_immersive_page.dart`: 액션 레일에 스피커 아이콘 추가(영상 게시물에만 노출). 플레이어 초기화 시·재생 시작 시 볼륨 적용, 재생 중 토글도 즉시 반영(리스너), dispose 에서 해제. 인접 프리로드 디코더도 같이 맞춰 스와이프 시 소리가 튀지 않는다.
+- `main.dart` 부팅 시 `VideoMute.load()` (unawaited).
+- 기존 피드(`VideoListCntr.soundOff`)는 컨트롤러마다 따로라 화면 이동 시 초기화됨 — 이번엔 건드리지 않음. 새 화면은 `VideoMute` 를 쓴다.
+
+**2) Play "앱 최적화 기준점 미만(난독화 4%)" 경고 처리**
+- 원인은 R8 미적용이 아님. `isMinifyEnabled=true` 는 이미 켜져 있었고, `proguard-rules.pro` 의 **`-keep class !com.rive.** { *; }`** 한 줄이 범인. `!` 는 클래스 필터 부정이라 "rive 를 제외한 전 클래스 보존" = 난독화 무력화. rive 는 이 앱 의존성도 아님(옛 커밋 b6ac3db 잔재).
+- 함께 제거: `-keep class com.google.android.gms.** { *; }` 통짜 규칙(1.3만 클래스). 로그인에 필요한 auth/common/tasks/base/signin/identity/phone 개별 규칙은 그대로 유지.
+- 리플렉션 보호 추가: `-keep class * extends androidx.work.ListenableWorker { *; }`(WorkManager 가 워커 클래스명을 DB에 저장 → 업데이트 시 대기 중 업로드가 깨질 수 있음), `-keep class com.dexterous.** { *; }`(flutter_local_notifications Gson), `-keepattributes SourceFile,LineNumberTable` + `-renamesourcefileattribute`(크래시 역추적).
+- 측정(mapping.txt 클래스명 기준): 난독화 **2.7% → 34.6%**, 전체 클래스 44,452 → 25,336(미사용 코드 제거). 우리 앱 코드는 3개만 보존(MainActivity·JobService=매니페스트, Worker=신규 규칙), 나머지 전부 난독화 — APK DEX 로 직접 확인.
+- 검증: `flutter test` 97/97, 변경 파일 analyze error/warning 0, 릴리즈 APK 빌드 성공(54.2MB).
+- ⚠️ **실기기 검증 미완**: 검증 도중 USB 연결이 끊겨 설치·구동 확인을 못 했다. 난독화가 실제로 켜진 첫 빌드이므로 배포 전 반드시 실기기에서 로그인·피드/네이티브광고·앨범 스와이프+음소거·영상 업로드(WorkManager 경로)·완료 알림을 확인할 것.
+- 미배포. 다음 버전(1.2.9)에 함께 올린다.
+
 ### 11:08 | Claude (Fable) | ✅ 운영 정리 — 우라칸 9/6 테스트 영상 3건 삭제(Cloudflare + DB)
 - 대상: board_id 3092(00:20), 3093(00:30), 3094(00:54). 작성자 우라칸(`000964.24d0…0834`). 9/6 업로드 재개 검증 과정에서 생긴 테스트 게시물.
 - 사전 점검: board_id 참조 테이블 12개 전수 확인 → 실제 참조는 tb_board_view 6건뿐(like/image/files/reaction/singo/activity/alram/broadcast/achievement 모두 0, 댓글 자식글 없음).

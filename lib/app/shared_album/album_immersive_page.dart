@@ -13,6 +13,7 @@ import 'package:project1/app/shared_album/theme/sa_weather_gradients.dart';
 import 'package:project1/app/shared_album/widget/sa_glass_chip.dart';
 import 'package:project1/app/videocomment/comment_page.dart';
 import 'package:project1/app/videolist/video_decoder_window.dart';
+import 'package:project1/services/video_mute.dart';
 import 'package:project1/app/videolist/video_list_page.dart' show FastPageScrollPhysics;
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/community/community_repo.dart';
@@ -730,6 +731,20 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
           ),
         ),
         const SizedBox(height: 18),
+        // 음소거는 영상에만 의미가 있다. 상태는 화면·페이지를 넘어 하나(VideoMute)라
+        // 여기서 끄면 다음 영상도, 앱을 다시 켜도 꺼진 채로 재생된다.
+        if (item.typeDtCd == 'V') ...[
+          ValueListenableBuilder<bool>(
+            valueListenable: VideoMute.muted,
+            builder: (context, muted, _) => _railButton(
+              icon: muted ? PhosphorIconsFill.speakerSimpleSlash : PhosphorIconsFill.speakerSimpleHigh,
+              color: Colors.white,
+              label: muted ? '음소거' : '소리',
+              onTap: VideoMute.toggle,
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         _railButton(
           icon: PhosphorIconsFill.heart,
           color: liked ? SaColorsDark.accentPink : Colors.white,
@@ -911,9 +926,15 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
   @override
   void initState() {
     super.initState();
+    // 재생 중에 버튼을 눌러도 바로 반영되도록 구독한다.
+    VideoMute.muted.addListener(_applyMute);
     // 멀리 있는 페이지(videoActive=false)는 디코더를 만들지 않는다.
     if (_isVideo && widget.videoActive) _initVideo();
   }
+
+  /// 음소거 상태가 바뀌면 이 페이지의 플레이어에 즉시 반영한다.
+  /// 인접 페이지(미리 만들어 둔 디코더)도 같이 맞춰 둬야 넘겼을 때 소리가 튀지 않는다.
+  void _applyMute() => _controller?.setVolume(VideoMute.volume);
 
   /// 부모가 현재 페이지를 옮기면 이 값이 바뀐다.
   /// 멀어지면 디코더를 놓고, 돌아오면 다시 만든다.
@@ -1010,6 +1031,7 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
       }
       ctrl
         ..setLooping(true)
+        ..setVolume(VideoMute.volume) // 넘겨온 음소거 상태를 그대로 이어받는다
         ..pause(); // 재생은 VisibilityDetector가 보일 때 시작
       _initialized.value = true;
     } catch (e) {
@@ -1044,6 +1066,7 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
 
   @override
   void dispose() {
+    VideoMute.muted.removeListener(_applyMute);
     final ctrl = _controller;
     if (ctrl != null) {
       widget.onHiddenVideo(ctrl);
@@ -1086,6 +1109,7 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
                     final ctrl = _controller;
                     if (ctrl == null || !mounted) return;
                     if (info.visibleFraction > 0.1) {
+                      ctrl.setVolume(VideoMute.volume);
                       ctrl.play();
                       widget.onVisibleVideo(ctrl);
                     } else if (info.visibleFraction < 0.3) {

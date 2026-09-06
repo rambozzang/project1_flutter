@@ -17,6 +17,7 @@ import 'package:project1/config/app_theme.dart';
 import 'package:project1/firebase/firebase_service.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
 import 'package:project1/route/app_route.dart';
+import 'package:project1/services/video_mute.dart';
 import 'package:project1/services/analytics_service.dart';
 import 'package:project1/services/deep_link_service.dart';
 import 'package:project1/services/weather_notification_service.dart';
@@ -82,6 +83,8 @@ void main() async {
   // 썸네일은 MediaThumbnail 이 칸 크기로 다운샘플링하므로 60MB 로도 담기는 장수는 오히려 늘어난다.
   PaintingBinding.instance.imageCache.maximumSizeBytes = 60 << 20; // 60MB
   PaintingBinding.instance.imageCache.maximumSize = 300; // 장수
+  // 영상 음소거 설정을 먼저 읽어 첫 영상부터 같은 상태로 재생한다.
+  unawaited(VideoMute.load());
 
   // Get.put(ThemeController());
 
