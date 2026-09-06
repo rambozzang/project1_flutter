@@ -6,6 +6,11 @@
 
 ## 2026-09-06
 
+### 10:12 | Claude (Fable) | 🟡 Android 1.2.8+68 초안 커밋 성공 — 콘솔 선언 대기
+- 사용자 지적: 포그라운드 서비스 선언 폼은 해당 권한이 든 번들이 트랙에 올라간 뒤에만 노출됨(콘솔 최신은 67). 미커밋 edit 는 폐기되므로 "선언 먼저" 는 불가.
+- `play_upload.py` 에 `PLAY_RELEASE_STATUS=draft`(심사 미제출 초안 커밋)·`PLAY_PROMOTE_VERSION_CODE`(업로드 생략, 기존 번들을 트랙 릴리즈로) 추가. draft 로 versionCode 68 production 초안 커밋 성공(10:12).
+- 다음: 콘솔 앱 콘텐츠 → 포그라운드 서비스 권한(Data sync) 선언 후 `PLAY_PROMOTE_VERSION_CODE=68 scripts/.venv-play/bin/python scripts/play_upload.py` 로 completed 커밋 = 심사 제출.
+
 ### 02:03 | Claude (Fable) | 🟡 스토어 배포 1.2.8+68 — iOS 심사 제출 완료, Android 는 Play 콘솔 선언 대기
 - `./scripts/deploy.sh all --submit` 로 1.2.7+67 → 1.2.8+68 범프. 워킹트리의 미커밋 디자인·성능 변경(73개 파일)이 그대로 포함된 빌드 — 오늘 S24 릴리즈로 확인한 상태.
 - **Android**: AAB(133MB) 빌드·업로드(versionCode 68)까지 성공, 심사 제출(edit commit)이 403 `You must let us know whether your app uses any Foreground Service permissions.` 로 거부. 이번 빌드부터 들어간 `FOREGROUND_SERVICE_DATA_SYNC`(WorkManager 전송 알림) 때문. Play Console → 앱 콘텐츠 → 포그라운드 서비스 권한 선언(Data sync)은 사람이 콘솔에서 해야 함. 선언 뒤 재빌드 없이 `PLAY_AAB_PATH=build/app/outputs/bundle/release/app-release.aab scripts/.venv-play/bin/python scripts/play_upload.py` 로 재업로드·제출. 미커밋 edit 는 폐기되므로 재업로드 필수.
