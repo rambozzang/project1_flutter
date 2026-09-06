@@ -6,6 +6,21 @@
 
 ## 2026-09-06
 
+### 14:28 | Claude (Fable) | ✅ 실기기 검증 통과 + 1.2.9+69 양대 스토어 배포 완료
+**난독화 빌드 실기기 검증(S24, 릴리즈 APK)** — 치명적 예외 0건
+- 콜드런치·로그인 유지(secure storage)·날씨 API·위치·AdMob 배너 정상
+- 피드 영상 재생 정상, 앨범 몰입뷰 진입 정상
+- 신규 음소거: 버튼 노출 → 토글 시 "음소거"로 전환 → **다음 영상에서도 유지** → **앱 강제종료 후 재실행에도 유지**(shared_preferences)
+- 영상 게시 전 구간: 게시하기 → 포그라운드 서비스 업로드 알림 +4초 → 게시 완료 알림 +6초, 서버에 게시물 생성 확인. WorkManager/JobService 경로가 난독화 후에도 동작함
+- QR 스캔(MLKit), 내정보 정상
+- 테스트 게시물 3095·3096 은 Cloudflare 영상 삭제(404 확인) + DB 하드 삭제(alram 3, view 2, weather 2, master 2). 백업 `/tmp/bk2_*.csv`. 9/6 게시물 잔여 0.
+
+**배포(`./scripts/deploy.sh all --submit`)**
+- 1.2.8+68 → **1.2.9+69**. 릴리즈노트: 앨범 음소거 + 코드 최적화.
+- Android: AAB 125MB(난독화·리소스 축소로 133MB→125MB), production 심사 제출 완료. 지난번 403(포그라운드 서비스 선언)은 사용자가 콘솔에서 선언을 마쳐 재발하지 않음. API 재확인 결과 `1.2.9 status=completed codes=['69']`.
+- iOS: `flutter build ipa` 가 이번엔 자체적으로 성공(직전 수동 exportArchive 로 프로비저닝 프로파일이 갱신된 덕). 업로드 → 심사 제출 완료 v1.2.9(69).
+- 남은 경고: altool 90068 MinimumOSVersion 14.0 — 2027년 봄부터 15.0 필수. 다음 작업 후보.
+
 ### 11:51 | Claude (Fable) | ✅ 코드 반영 — 앨범 몰입뷰 음소거 + R8 난독화 정상화(난독화율 2.7%→34.6%)
 **1) 우리의 앨범 몰입뷰 음소거 (사용자 요청)**
 - 새 `lib/services/video_mute.dart`: 앱 전역 단일 음소거 상태(`ValueNotifier`) + `shared_preferences` 저장. 한 번 끄면 다음 영상도, 앱을 다시 켜도 꺼진 채 재생된다.
