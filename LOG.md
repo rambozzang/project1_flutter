@@ -4,6 +4,16 @@
 
 ---
 
+## 2026-09-07
+
+### 09:44 | Claude (Fable) | ✅ 코드 반영(미배포) — iOS 최소 지원 버전 14.0 → 15.0
+- 배경: 1.2.9 업로드 때 altool 경고 90068. Apple 은 2027년 봄부터 MinimumOSVersion 15.0 미만 앱의 업로드를 거부한다. 미리 올려 두고 다음 릴리즈에 함께 나가게 한다.
+- 변경: `ios/Podfile` `platform :ios, '15.0'`, `ios/Runner.xcodeproj/project.pbxproj` 의 `IPHONEOS_DEPLOYMENT_TARGET` 6곳 전부 15.0, `pod install` 로 `Podfile.lock` 갱신(69개 팟).
+- 검증: `flutter build ios --release --no-codesign` 성공(96.6초, Runner.app 77.6MB). 산출물 `Info.plist` 의 `MinimumOSVersion` = **15.0** 확인. 배포 타깃 관련 경고 없음.
+- **미배포**: 스토어에 올리지 않았다. 다음 배포(1.3.0 또는 1.2.10) 때 자동으로 포함된다.
+- 참고: iOS 14 사용자는 이 버전부터 업데이트를 받지 못한다(App Store 가 마지막 호환 버전을 계속 제공).
+- 별건: `ios/build/` 가 git 에 추적되고 있어 빌드할 때마다 대량의 삭제/변경이 뜬다. `.gitignore` 정리 대상.
+
 ## 2026-09-06
 
 ### 14:28 | Claude (Fable) | ✅ 실기기 검증 통과 + 1.2.9+69 양대 스토어 배포 완료
