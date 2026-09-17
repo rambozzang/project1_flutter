@@ -34,6 +34,13 @@ migrate_working_dir/
 /build/
 # Gradle 빌드 산출물 (실수로 추적되던 것 — android/build/ios/XCBuildData 등)
 /android/build/
+/android/app/build/
+/ios/build/
+
+# Flutter 가 빌드마다 다시 쓰는 생성 파일. 절대 경로가 박혀 있어 머신마다 달라진다.
+**/Flutter/Generated.xcconfig
+**/Flutter/flutter_export_environment.sh
+**/ephemeral/
 
 # Symbolication related
 app.*.symbols
