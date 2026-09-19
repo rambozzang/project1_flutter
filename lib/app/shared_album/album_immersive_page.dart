@@ -29,6 +29,7 @@ import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/media/media_interaction_repo.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:project1/utils/cf_media_url.dart';
 import 'package:project1/utils/image_decode.dart';
 
 /// 앨범 상세 — 1e 몰입 뷰(틱톡식 세로 풀스크린).
@@ -1099,11 +1100,21 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
     return ValueListenableBuilder<bool>(
       valueListenable: _initialized,
       builder: (context, ready, _) {
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 250),
-          // 디코더를 놓은 상태(멀어진 페이지)면 컨트롤러가 없다 → 썸네일.
-          child: (ready && _controller != null)
-              ? VisibilityDetector(
+        // 썸네일을 **늘 바닥에 깔고**, 준비되면 영상이 그 위를 덮는다.
+        //
+        // 예전에는 AnimatedSwitcher 로 250ms 교차 페이드했다. 나가는 썸네일과
+        // 들어오는 영상이 동시에 반투명해지는 중간(t=0.5)에서 합성 불투명도가
+        // **0.75 까지 떨어져 뒤 배경이 25% 비친다** — 화면이 한 번 어두워졌다
+        // 밝아진다(2026-09-20 momoalbum 제보로 원인 확인).
+        //
+        // 둘은 같은 0초 장면이라 페이드 없이 덮어도 티가 안 난다.
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            _thumbnail(key: ValueKey('sa_thumb_${widget.item.boardId}')),
+            // 디코더를 놓은 상태(멀어진 페이지)면 컨트롤러가 없다 → 썸네일만.
+            if (ready && _controller != null)
+              VisibilityDetector(
                   key: ValueKey('sa_vis_${widget.item.boardId}'),
                   onVisibilityChanged: (info) {
                     final ctrl = _controller;
@@ -1129,8 +1140,8 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
                       ),
                     ),
                   ),
-                )
-              : _thumbnail(key: ValueKey('sa_thumb_${widget.item.boardId}')),
+                ),
+          ],
         );
       },
     );
@@ -1207,10 +1218,13 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
   Widget _thumbnail({required Key key}) {
     final item = widget.item;
     String img = item.thumbnailPath ?? '';
-    // 애니메이션 gif 썸네일이면 정지 jpg로 변환(로딩 가볍게, 기본 피드와 동일)
-    if (img.endsWith('thumbnail.gif')) img = img.replaceAll('thumbnail.gif', 'thumbnail.jpg');
-    if (img.isEmpty && (item.videoPath ?? '').contains('/manifest/')) {
-      img = item.videoPath!.replaceAll('/manifest/video.m3u8', '/thumbnails/thumbnail.jpg');
+    if (img.isEmpty) img = item.videoPath ?? '';
+    // 애니메이션 gif·manifest 를 정지 jpg 로 정규화하고, **화면 폭을 지정해** 받는다.
+    // 폭을 안 주면 Cloudflare 가 360×640 을 내준다 — 1440px 기기에서 4배로 늘어나
+    // 흐리다(2026-09-20 실측). Cloudflare Stream 이 아닌 주소는 그대로 둔다.
+    if (CfMediaUrl.isCfStream(img)) {
+      img = CfMediaUrl.streamPoster(img,
+          width: CfMediaUrl.posterWidth(ImageDecode.fullScreen(context)));
     }
     if (img.isEmpty) return SizedBox.expand(key: key);
     return SizedBox.expand(

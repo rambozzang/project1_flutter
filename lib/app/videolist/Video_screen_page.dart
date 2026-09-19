@@ -21,6 +21,8 @@ import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
+import 'package:project1/utils/cf_media_url.dart';
+import 'package:project1/utils/image_decode.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 import 'package:project1/utils/sns_share.dart';
@@ -461,25 +463,30 @@ class VideoScreenPageState extends State<VideoScreenPage> {
                 child: ValueListenableBuilder<bool>(
                   valueListenable: initialized,
                   builder: (builder, value, child) {
-                    return AnimatedSwitcher(
-                        key: ValueKey('${widget.data.boardId.toString()}AnimatedSwitcher'),
-                        duration: const Duration(milliseconds: 250),
-                        switchInCurve: Curves.easeInOut,
-                        switchOutCurve: Curves.easeInOut,
-                        transitionBuilder: (Widget child, Animation<double> animation) {
-                          return FadeTransition(
-                            key: ValueKey('${widget.data.boardId.toString()}FadeTransition'),
-                            opacity: animation,
-                            child: child,
-                          );
-                        },
-                        child: isVideoProcessing
-                            // 인코딩 대기 중 — 재생을 시도하지 않고 준비 중임을 알린다
-                            ? buildProcessing(ValueKey('${widget.data.boardId.toString()}processing'))
-                            : value == false
-                                // 영상 버퍼링 동안 썸네일을 즉시 표시 → 스와이프 시 즉각 보이는 체감 속도 확보
-                                ? buildLoading(ValueKey('${widget.data.boardId.toString()}loading'))
-                                : buildVideoScreen(ValueKey('${widget.data.boardId.toString()}videoScreen'), value));
+                    // 썸네일을 **늘 바닥에 깔고**, 준비되면 영상이 그 위를 덮는다.
+                    //
+                    // 예전에는 AnimatedSwitcher 로 250ms 교차 페이드했다. 나가는
+                    // 썸네일과 들어오는 영상이 동시에 반투명해지는 중간(t=0.5)에서
+                    // 합성 불투명도가 **0.75 까지 떨어져 뒤 배경이 25% 비친다** —
+                    // 화면이 한 번 어두워졌다 밝아진다. momoalbum 에서 같은 증상을
+                    // 제보받아 원인을 확인했다(2026-09-20: "첫영상이 한번 깜빡이면서
+                    // 시작한다").
+                    //
+                    // 썸네일과 영상 첫 프레임은 같은 0초 장면이라, 페이드 없이 그냥
+                    // 덮어도 티가 안 난다. 첫 프레임이 늦게 와서 검은 게 아니냐는
+                    // 의심도 재 봤는데 아니었다 — ExoPlayer 실측으로 첫 프레임은
+                    // 준비 완료와 같거나 **먼저** 온다.
+                    return Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        buildPoster(ValueKey('${widget.data.boardId}poster')),
+                        if (!isVideoProcessing && value)
+                          buildVideoScreen(
+                              ValueKey('${widget.data.boardId}videoScreen'), value),
+                        // 인코딩 대기 중 — 재생을 시도하지 않고 준비 중임을 알린다
+                        if (isVideoProcessing) buildProcessingOverlay(),
+                      ],
+                    );
                   },
                 ),
               ),
@@ -663,17 +670,30 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     );
   }
 
-  Widget buildLoading(Key key) {
-    String imgPath = widget.data.videoPath!.replaceAll('/manifest/video.m3u8', '/thumbnails/thumbnail.jpg');
+  /// 영상 버퍼링 동안 깔아 두는 정지 썸네일.
+  ///
+  /// **폭을 반드시 준다.** 안 주면 Cloudflare 가 **360×640** 을 내준다 —
+  /// 1440px 기기에서 4배로 늘어나 눈에 띄게 흐리고, 영상이 붙는 순간 또렷해져
+  /// 화면이 한 번 바뀐 것처럼 보인다(2026-09-20 실측).
+  ///
+  /// **`BoxFit.fill` 이었다.** 비율을 무시하고 늘여서 세로 영상이 찌그러졌고,
+  /// 정작 영상은 `BoxFit.cover` 라 둘의 그림이 서로 달랐다 — 갈아치우는 순간
+  /// 화면이 한 번 움찔한다. 영상과 같은 cover 로 맞춘다.
+  Widget buildPoster(Key key) {
+    final String raw = widget.data.videoPath ?? '';
+    // Cloudflare Stream 주소가 아니면 손대지 않는다 — 경로를 갈아치우면
+    // 멀쩡한 URL 이 깨진다.
+    final String img = CfMediaUrl.isCfStream(raw)
+        ? CfMediaUrl.streamPoster(raw,
+            width: CfMediaUrl.posterWidth(ImageDecode.fullScreen(context)))
+        : '';
+    if (img.isEmpty) return Container(key: key, color: Colors.black);
     return Container(
       key: key, // key를 상위 Container에 적용
       decoration: BoxDecoration(
         image: DecorationImage(
-          image: CachedNetworkImageProvider(
-            imgPath,
-            cacheKey: imgPath,
-          ),
-          fit: BoxFit.fill,
+          image: CachedNetworkImageProvider(img, cacheKey: img),
+          fit: BoxFit.cover,
         ),
       ),
     );
@@ -685,23 +705,10 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   /// 12분 가까이 걸린 적도 있다. 그 사이 재생을 시도하면 무조건 실패하는데, 예전에는
   /// 그냥 로딩처럼 보여서 "영상이 안 나온다"는 오해를 샀다.
   ///
-  /// 썸네일은 인코딩 전에도 나오는 경우가 있어 배경으로 깔되, 어둡게 덮고
-  /// 준비 중임을 명시한다.
-  Widget buildProcessing(Key key) {
-    final String imgPath =
-        (widget.data.videoPath ?? '').replaceAll('/manifest/video.m3u8', '/thumbnails/thumbnail.jpg');
-
+  /// 썸네일은 인코딩 전에도 나오는 경우가 있어 [buildPoster] 가 이미 배경으로
+  /// 깔려 있다. 여기서는 **그 위를 어둡게 덮고** 준비 중임을 명시하기만 한다.
+  Widget buildProcessingOverlay() {
     return Container(
-      key: key,
-      decoration: imgPath.isEmpty
-          ? const BoxDecoration(color: Colors.black)
-          : BoxDecoration(
-              image: DecorationImage(
-                image: CachedNetworkImageProvider(imgPath, cacheKey: imgPath),
-                fit: BoxFit.fill,
-              ),
-            ),
-      child: Container(
         color: Colors.black.withOpacity(0.55),
         child: Center(
           child: Column(
@@ -725,33 +732,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget buildLoading21111111() {
-    String imgPath = widget.data.videoPath!.replaceAll('/manifest/video.m3u8', '/thumbnails/thumbnail.jpg');
-    return ClipRect(
-      // ClipRect을 사용하여 블러 효과가 자식 위젯 영역을 벗어나지 않도록 합니다.
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 25.0, sigmaY: 25.0),
-        child: Container(
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: CachedNetworkImageProvider(
-                imgPath,
-                cacheKey: imgPath,
-              ),
-              fit: BoxFit.cover,
-            ),
-          ),
-          child: Container(
-            color: Colors.black.withOpacity(0.3), // 약간의 어두운 오버레이 추가
-          ),
-        ),
-      ),
-    );
+        ));
   }
 
   // 하단 컨텐츠

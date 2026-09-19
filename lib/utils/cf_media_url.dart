@@ -36,6 +36,38 @@ class CfMediaUrl {
     return streamHosts.any((h) => host == h || host.endsWith('.$h'));
   }
 
+  /// 화면을 꽉 채울 포스터를 받을 가로 픽셀 수.
+  ///
+  /// [screenPixels] 는 화면 가로의 **실제 픽셀**(논리 폭 × 배율)이다.
+  ///
+  /// **왜 필요한가.** 피드의 영상 썸네일은 폭을 아예 안 주고 받아 왔다.
+  /// 그러면 Cloudflare 가 **360×640** 을 준다 — 1440px 기기에서 **4배로**
+  /// 늘어나 눈에 띄게 흐리고, 영상이 붙는 순간 또렷해져 화면이 한 번 바뀐
+  /// 것처럼 보인다(2026-09-20 실측).
+  ///
+  /// **1080 에서 멈추는 이유**: 포스터는 버퍼링 동안만 보이는 그림이라
+  /// 빨리 뜨는 게 선명한 것보다 중요하다. 같은 영상 실측(2026-09-20):
+  ///
+  /// | 요청 폭 | 실제 | 바이트 |
+  /// |---|---|---|
+  /// | (없음) | 360×640 | 32KB |
+  /// | 720 | 720×1280 | 88KB |
+  /// | **1080** | 1080×1920 | **149KB** |
+  /// | 1440 | 1440×2560 | 228KB |
+  ///
+  /// 1440 은 1080 보다 1.5배 무겁다. 1440px 기기에서 1080 이면 1.33배 늘어나지만
+  /// 1초도 안 보이는 그림이라 눈에 띄지 않는다.
+  ///
+  /// 360 단위로 올리는 건 기기마다 폭이 달라 변형이 잘게 쪼개지는 걸 막기 위해서다.
+  static const int posterMaxWidth = 1080;
+
+  static int posterWidth(int screenPixels) {
+    if (screenPixels <= 0) return posterMaxWidth;
+    const int step = 360;
+    final int rounded = ((screenPixels + step - 1) ~/ step) * step;
+    return rounded > posterMaxWidth ? posterMaxWidth : rounded;
+  }
+
   /// Stream 의 GIF/JPG/manifest URL 을 정적 JPG 썸네일 URL 로 정규화한다.
   ///
   /// 이미 붙어 있는 `time` 같은 안전한 옵션은 보존하되 GIF 전용 `duration`,

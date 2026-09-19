@@ -28,6 +28,7 @@ import 'package:video_player/video_player.dart';
 
 // import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:project1/utils/cf_media_url.dart';
 import 'package:project1/utils/image_decode.dart';
 
 class VideoMySreenPage extends StatefulWidget {
@@ -331,15 +332,27 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
     }
   }
 
-  // 로딩 중 썸네일 표시 (VideoScreenPage와 동일한 방식)
+  /// 영상 버퍼링 동안 깔아 두는 정지 썸네일 (VideoScreenPage.buildPoster 와 동일).
+  ///
+  /// **폭을 반드시 준다.** 안 주면 Cloudflare 가 **360×640** 을 내준다 —
+  /// 1440px 기기에서 4배로 늘어나 흐리다(2026-09-20 실측).
+  ///
+  /// **`BoxFit.fill` 이었다.** 비율을 무시해 세로 영상이 찌그러졌고, 정작 영상은
+  /// `BoxFit.cover` 라 둘의 그림이 달랐다 — 갈아치울 때 화면이 움찔한다.
   Widget _buildThumbnail(Key key) {
-    String imgPath = widget.data.videoPath!.replaceAll('/manifest/video.m3u8', '/thumbnails/thumbnail.jpg');
+    final String raw = widget.data.videoPath ?? '';
+    // Cloudflare Stream 주소가 아니면 손대지 않는다.
+    final String img = CfMediaUrl.isCfStream(raw)
+        ? CfMediaUrl.streamPoster(raw,
+            width: CfMediaUrl.posterWidth(ImageDecode.fullScreen(context)))
+        : '';
+    if (img.isEmpty) return Container(key: key, color: Colors.black);
     return Container(
       key: key,
       decoration: BoxDecoration(
         image: DecorationImage(
-          image: CachedNetworkImageProvider(imgPath, cacheKey: imgPath),
-          fit: BoxFit.fill,
+          image: CachedNetworkImageProvider(img, cacheKey: img),
+          fit: BoxFit.cover,
         ),
       ),
     );
@@ -390,20 +403,21 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                       ctrl.play();
                     }
                   },
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    switchInCurve: Curves.fastOutSlowIn,
-                    switchOutCurve: Curves.fastLinearToSlowEaseIn,
-                    transitionBuilder: (Widget child, Animation<double> animation) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      );
-                    },
-                    // 초기화 전이거나 디코더를 놓은 상태(멀어진 페이지)면 썸네일을 깐다.
-                    child: (initialized == false || _controller == null)
-                        ? _buildThumbnail(ValueKey('${widget.data.boardId.toString()}loading'))
-                        : VisibilityDetector(
+                  // 썸네일을 **늘 바닥에 깔고**, 준비되면 영상이 그 위를 덮는다.
+                  //
+                  // 예전에는 AnimatedSwitcher 로 250ms 교차 페이드했다. 나가는
+                  // 썸네일과 들어오는 영상이 동시에 반투명해지는 중간(t=0.5)에서
+                  // 합성 불투명도가 **0.75 까지 떨어져 뒤 배경이 25% 비친다** —
+                  // 화면이 한 번 어두워졌다 밝아진다(2026-09-20, momoalbum 에서
+                  // 같은 증상으로 원인 확인). 썸네일과 영상 첫 프레임은 같은 0초
+                  // 장면이라 페이드 없이 덮어도 티가 안 난다.
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      _buildThumbnail(ValueKey('${widget.data.boardId}poster')),
+                      // 초기화 전이거나 디코더를 놓은 상태(멀어진 페이지)면 썸네일만 보인다.
+                      if (initialized && _controller != null)
+                        VisibilityDetector(
                             onVisibilityChanged: (info) {
                               // 콜백이 도착할 때 컨트롤러가 이미 해제됐을 수 있다.
                               final ctrl = _controller;
@@ -431,17 +445,8 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                                 ),
                               ),
                             ),
-                            // child: SizedBox.expand(
-                            //   child: FittedBox(
-                            //     fit: BoxFit.cover,
-                            //     child: SizedBox(
-                            //       width: _controller.value.size.width,
-                            //       height: _controller.value.size.height,
-                            //       child: VideoPlayer(_controller),
-                            //     ),
-                            //   ),
-                            // ),
-                          ),
+                        ),
+                    ],
                   ),
                 ),
                 // // 오른쪽 상단 close 버튼
