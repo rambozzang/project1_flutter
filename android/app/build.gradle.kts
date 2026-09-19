@@ -118,6 +118,19 @@ configurations.all {
 }
 
 dependencies {
+    // 영상 피드 전용 네이티브 플레이어(MomoVideo) — 자매 앱(모모앨범)에서 이식.
+    //
+    // video_player 플러그인이 전이 의존으로 media3 를 가져오지만, 우리 코드가
+    // 직접 쓰므로 **버전을 명시**한다. 전이 의존에 기대면 플러그인이 올라갈 때
+    // 조용히 같이 올라가 API 가 바뀐다.
+    //
+    // 왜 직접 쓰나: 플러그인은 `DefaultLoadControl` 의 **뒤 버퍼만** 열어 준다.
+    // 메모리를 먹는 앞 버퍼(기본 50초·플레이어당 최대 125MB)는 손댈 수 없어
+    // 모모앨범 실기기에서 자바 힙 상한 256MB 를 쳤다(2026-09-19 OOM 두 건).
+    implementation("androidx.media3:media3-exoplayer:1.9.2")
+    implementation("androidx.media3:media3-exoplayer-hls:1.9.2")
+    implementation("androidx.media3:media3-exoplayer-dash:1.9.2")
+
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.24")
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.6.1")

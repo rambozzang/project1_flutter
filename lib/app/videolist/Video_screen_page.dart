@@ -21,6 +21,7 @@ import 'package:project1/repo/board/board_repo.dart';
 import 'package:project1/repo/board/data/board_weather_list_data.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/app/weathergogo/services/weather_data_processor.dart';
+import 'package:project1/services/video/momo_video.dart';
 import 'package:project1/utils/cf_media_url.dart';
 import 'package:project1/utils/image_decode.dart';
 import 'package:project1/utils/log_utils.dart';
@@ -56,7 +57,7 @@ class VideoScreenPage extends StatefulWidget {
 class VideoScreenPageState extends State<VideoScreenPage> {
   // videoActive=false 인 먼 페이지는 컨트롤러를 아예 만들지 않는다.
   // late 로 두면 그 상태의 모든 접근이 LateInitializationError 가 되므로 nullable 로 둔다.
-  VideoPlayerController? _controller;
+  MomoVideo? _controller;
 
   final TransformationController transformationController = TransformationController();
   final double scale = 1.0;
@@ -177,27 +178,13 @@ class VideoScreenPageState extends State<VideoScreenPage> {
         lo.g("iOS: Using HLS format - $finalUrl");
       }
 
-      final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
-      final lastModified = _formatHttpDate(sevenDaysAgo);
-
-      // VideoMyScreen과 동일한 캐싱 헤더 적용 + VideoPlayerOptions
-      final ctrl = VideoPlayerController.networkUrl(
-        Uri.parse(finalUrl),
-        httpHeaders: {
-          'Connection': 'keep-alive',
-          'Cache-Control': 'max-age=3600, stale-while-revalidate=86400',
-          'Etg': widget.data.boardId.toString(),
-          'Last-Modified': lastModified,
-          'If-None-Match': widget.data.boardId.toString(),
-          'If-Modified-Since': lastModified,
-          'Vary': 'Accept-Encoding, User-Agent',
-        },
-        videoPlayerOptions: VideoPlayerOptions(
-          mixWithOthers: true,
-          allowBackgroundPlayback: false,
-        ),
-        formatHint: format,
-      );
+      // 안드로이드는 우리가 만든 네이티브 풀로, iOS 는 기존 플러그인으로 간다.
+      // 고르는 건 MomoVideo.network 가 한다.
+      //
+      // 캐시 헤더는 넘기지 않는다 — HLS/DASH 매니페스트와 세그먼트는 Cloudflare
+      // CDN 이 자체 캐시한다. 임의의 ETag/Last-Modified 를 보내면 실제 검증값과
+      // 달라 오히려 캐시 적중을 방해한다.
+      final ctrl = MomoVideo.network(Uri.parse(finalUrl), formatHint: format);
       _controller = ctrl;
 
       // await 로 초기화 완료/실패를 직접 받는다.
@@ -251,12 +238,6 @@ class VideoScreenPageState extends State<VideoScreenPage> {
       final isCurrentlyPlaying = ctrl.value.isPlaying;
       final duration = ctrl.value.duration;
       final position = ctrl.value.position;
-
-      // 에러 체크
-      if (ctrl.value.hasError) {
-        lo.e("Video player error: ${ctrl.value.errorDescription}");
-        return;
-      }
 
       // 상태 업데이트
       if (isPlay.value != isCurrentlyPlaying) {
@@ -316,7 +297,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
         finalUrl = finalUrl.replaceAll('.m3u8', '.mpd');
         format = VideoFormat.dash;
       }
-      final ctrl = VideoPlayerController.networkUrl(Uri.parse(finalUrl), formatHint: format);
+      final ctrl = MomoVideo.network(Uri.parse(finalUrl), formatHint: format);
       _controller = ctrl;
       await ctrl.initialize().timeout(_initializeTimeout);
       if (!mounted || !identical(_controller, ctrl)) {
@@ -637,7 +618,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
               child: SizedBox(
                 width: ctrl.value.size.width,
                 height: ctrl.value.size.height,
-                child: VideoPlayer(ctrl),
+                child: ctrl.buildView(),
               ),
             ),
           ),

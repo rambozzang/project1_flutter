@@ -29,6 +29,7 @@ import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/media/media_interaction_repo.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:project1/services/video/momo_video.dart';
 import 'package:project1/utils/cf_media_url.dart';
 import 'package:project1/utils/image_decode.dart';
 
@@ -66,7 +67,7 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
   static const int _preloadCount = 5;
 
   // 현재 화면에 보이는 페이지의 플레이어(스크러버 표시용) — 각 페이지가 자기 플레이어를 소유한다
-  final ValueNotifier<VideoPlayerController?> _activeVideo = ValueNotifier<VideoPlayerController?>(null);
+  final ValueNotifier<MomoVideo?> _activeVideo = ValueNotifier<MomoVideo?>(null);
 
   // 더블탭 하트 애니메이션
   late final AnimationController _heartCtrl;
@@ -109,6 +110,10 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
   @override
   void dispose() {
     _hintTimer?.cancel();
+    // 화면을 완전히 떠나면 풀이 세워 둔 플레이어까지 돌려준다.
+    // 슬롯을 반납해도 풀은 플레이어를 살려 두므로(다시 들어올 때 바로 틀려고),
+    // 여기서 놓지 않으면 앨범 목록으로 돌아간 뒤에도 메모리를 잡고 있다.
+    unawaited(MomoVideo.releasePool());
     _activeVideo.dispose();
     _pageCtrl.dispose();
     _heartCtrl.dispose();
@@ -846,7 +851,7 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
 
   // 스크러버는 현재 페이지 플레이어(ValueNotifier)만 구독 — 페이지 전체 rebuild 없음(기본 피드 방식)
   Widget _buildBottomBar() {
-    return ValueListenableBuilder<VideoPlayerController?>(
+    return ValueListenableBuilder<MomoVideo?>(
       valueListenable: _activeVideo,
       builder: (context, v, _) {
         return Row(
@@ -854,7 +859,7 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
           children: [
             if (v != null && v.value.isInitialized) ...[
               Expanded(
-                child: ValueListenableBuilder<VideoPlayerValue>(
+                child: ValueListenableBuilder<MomoVideoValue>(
                   valueListenable: v,
                   builder: (context, val, __) {
                     return ClipRRect(
@@ -870,7 +875,7 @@ class _AlbumImmersivePageState extends State<AlbumImmersivePage> with SingleTick
                 ),
               ),
               const SizedBox(width: 10),
-              ValueListenableBuilder<VideoPlayerValue>(
+              ValueListenableBuilder<MomoVideoValue>(
                 valueListenable: v,
                 builder: (context, val, __) => Text('${_fmtDuration(val.position)} / ${_fmtDuration(val.duration)}',
                     style: SaText.mono(fontSize: 10, color: Colors.white70)),
@@ -905,8 +910,8 @@ class _ImmersiveMediaItem extends StatefulWidget {
   final BoardWeatherListData item;
   final String gradientKey;
   final VoidCallback onDoubleTap;
-  final ValueChanged<VideoPlayerController?> onVisibleVideo;
-  final ValueChanged<VideoPlayerController?> onHiddenVideo;
+  final ValueChanged<MomoVideo?> onVisibleVideo;
+  final ValueChanged<MomoVideo?> onHiddenVideo;
 
   /// 이 페이지가 **지금 네이티브 디코더를 물고 있을지.**
   ///
@@ -919,7 +924,7 @@ class _ImmersiveMediaItem extends StatefulWidget {
 }
 
 class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
-  VideoPlayerController? _controller;
+  MomoVideo? _controller;
   final ValueNotifier<bool> _initialized = ValueNotifier<bool>(false);
 
   bool get _isVideo => widget.item.typeDtCd == 'V';
@@ -955,6 +960,25 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
     } else {
       _releaseVideo();
     }
+  }
+
+  /// 영상 표면. 크기를 알면 비율을 맞추고, 모르면 그냥 채운다.
+  ///
+  /// 크기를 **모를 때도 그린다.** 예전에는 늘 `SizedBox(width: size.width, ...)`
+  /// 로 감쌌는데, 비디오 크기는 재생이 시작된 뒤에야 정해질 수 있다. 그때까지
+  /// (0,0) 이라 화면이 통째로 잘려 **소리만 나고 그림이 안 보인다**
+  /// (모모앨범 2026-09-19 제보). 늘어난 그 순간은 위에 깔린 썸네일이 덮는다.
+  Widget _videoSurface() {
+    final ctrl = _controller;
+    if (ctrl == null) return const SizedBox.expand();
+    final view = ctrl.buildView();
+    final size = ctrl.value.size;
+    if (size.width <= 0 || size.height <= 0) return view;
+    return FittedBox(
+      fit: BoxFit.cover,
+      clipBehavior: Clip.hardEdge,
+      child: SizedBox(width: size.width, height: size.height, child: view),
+    );
   }
 
   /// 멀어진 페이지의 디코더를 놓는다.
@@ -1006,20 +1030,13 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
     try {
       final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
       final lastModified = _formatHttpDate(sevenDaysAgo);
-      final ctrl = VideoPlayerController.networkUrl(
-        Uri.parse(url),
-        httpHeaders: {
-          'Connection': 'keep-alive',
-          'Cache-Control': 'max-age=3600, stale-while-revalidate=86400',
-          'Etg': item.boardId.toString(),
-          'Last-Modified': lastModified,
-          'If-None-Match': item.boardId.toString(),
-          'If-Modified-Since': lastModified,
-          'Vary': 'Accept-Encoding, User-Agent',
-        },
-        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true, allowBackgroundPlayback: false),
-        formatHint: format,
-      );
+      // 안드로이드는 우리가 만든 네이티브 풀로, iOS 는 기존 플러그인으로 간다.
+      // 고르는 건 MomoVideo.network 가 한다.
+      //
+      // 캐시 헤더는 넘기지 않는다 — HLS/DASH 매니페스트와 세그먼트는 Cloudflare
+      // CDN 이 자체 캐시한다. 임의의 ETag/Last-Modified 를 보내면 실제 검증값과
+      // 달라 오히려 캐시 적중을 방해한다.
+      final ctrl = MomoVideo.network(Uri.parse(url), formatHint: format);
       _controller = ctrl;
       // 타임아웃이 없으면 응답 없는 네트워크에서 영구 pending 되어 아래 재시도조차 타지 않는다.
       await ctrl.initialize().timeout(_initializeTimeout);
@@ -1129,17 +1146,7 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
                       widget.onHiddenVideo(ctrl);
                     }
                   },
-                  child: SizedBox.expand(
-                    child: FittedBox(
-                      fit: BoxFit.cover,
-                      clipBehavior: Clip.hardEdge,
-                      child: SizedBox(
-                        width: _controller!.value.size.width,
-                        height: _controller!.value.size.height,
-                        child: VideoPlayer(_controller!),
-                      ),
-                    ),
-                  ),
+                  child: SizedBox.expand(child: _videoSurface()),
                 ),
           ],
         );

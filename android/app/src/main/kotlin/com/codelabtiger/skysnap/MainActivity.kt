@@ -14,6 +14,23 @@ class MainActivity : FlutterFragmentActivity() {
             .setMethodCallHandler { call, result ->
                 BackgroundUpload.handle(applicationContext, call, result)
             }
+
+        // 영상 피드 전용 플레이어. 플레이어를 돌려쓰고 버퍼를 줄인다 —
+        // 이유는 MomoVideo.kt 주석 참고(모모앨범 2026-09-19 OOM 두 건).
+        val videoChannel =
+            MethodChannel(flutterEngine.dartExecutor.binaryMessenger, MomoVideo.CHANNEL)
+        momoVideo = MomoVideo(applicationContext, flutterEngine.renderer, videoChannel)
+            .also { player -> videoChannel.setMethodCallHandler(player::handle) }
+    }
+
+    /** 영상 피드 플레이어. 화면이 사라질 때 네이티브 자원을 돌려줘야 한다. */
+    private var momoVideo: MomoVideo? = null
+
+    override fun onDestroy() {
+        // 액티비티가 죽는데 ExoPlayer 를 들고 있으면 디코더와 버퍼가 그대로 남는다.
+        momoVideo?.dispose()
+        momoVideo = null
+        super.onDestroy()
     }
 }
 // class MainActivity: FlutterFragmentActivity() {

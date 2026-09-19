@@ -28,6 +28,7 @@ import 'package:video_player/video_player.dart';
 
 // import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:project1/services/video/momo_video.dart';
 import 'package:project1/utils/cf_media_url.dart';
 import 'package:project1/utils/image_decode.dart';
 
@@ -56,7 +57,7 @@ class VideoMySreenPage extends StatefulWidget {
 class _VideoMySreenPageState extends State<VideoMySreenPage> {
   // videoActive=false 인 먼 페이지는 컨트롤러를 아예 만들지 않는다.
   // late 로 두면 그 상태의 모든 접근이 LateInitializationError 가 되므로 nullable 로 둔다.
-  VideoPlayerController? _controller;
+  MomoVideo? _controller;
   bool initialized = false;
 
   final ValueNotifier<bool> soundOff = ValueNotifier<bool>(false);
@@ -163,21 +164,13 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
       lo.g(
           '@@@  VideoScreenPage init(${Get.find<VideoMyinfoListCntr>().currentIndex.value}) ${widget.index} : ${widget.data.boardId} : 1.Start ');
 
-      final ctrl = VideoPlayerController.networkUrl(Uri.parse(finalUrl),
-          httpHeaders: {
-            'Connection': 'keep-alive',
-            'Cache-Control': 'max-age=3600, stale-while-revalidate=86400',
-            'Etg': widget.data.boardId.toString(),
-            'Last-Modified': lastModified,
-            'If-None-Match': widget.data.boardId.toString(),
-            'If-Modified-Since': lastModified,
-            'Vary': 'Accept-Encoding, User-Agent',
-          },
-          videoPlayerOptions: VideoPlayerOptions(
-            mixWithOthers: true,
-            allowBackgroundPlayback: false,
-          ),
-          formatHint: format);
+      // 안드로이드는 우리가 만든 네이티브 풀로, iOS 는 기존 플러그인으로 간다.
+      // 고르는 건 MomoVideo.network 가 한다.
+      //
+      // 캐시 헤더는 넘기지 않는다 — HLS/DASH 매니페스트와 세그먼트는 Cloudflare
+      // CDN 이 자체 캐시한다. 임의의 ETag/Last-Modified 를 보내면 실제 검증값과
+      // 달라 오히려 캐시 적중을 방해한다.
+      final ctrl = MomoVideo.network(Uri.parse(finalUrl), formatHint: format);
       _controller = ctrl;
 
       // await 로 초기화 완료/실패를 직접 받는다.
@@ -221,7 +214,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
   ///
   /// 재시도나 디코더 윈도우로 컨트롤러 인스턴스가 교체될 수 있으므로
   /// 필드가 아니라 지역 변수를 캡처한다.
-  void _setupVideoListener(VideoPlayerController ctrl) {
+  void _setupVideoListener(MomoVideo ctrl) {
     ctrl.addListener(() {
       // dispose 이후 도착하는 플랫폼 이벤트가 해제된 ValueNotifier 를 건드리지 않게 한다.
       if (!mounted) return;
@@ -232,9 +225,6 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
       progress.value = (position.inSeconds / max * 100).isNaN ? 0 : position.inSeconds / max * 100;
       if (isPlay.value) {
         updateCount();
-      }
-      if (ctrl.value.hasError) {
-        lo.g('Video error: ${ctrl.value.errorDescription}');
       }
     });
   }
@@ -441,7 +431,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                                 child: SizedBox(
                                   width: _controller!.value.size.width,
                                   height: _controller!.value.size.height,
-                                  child: VideoPlayer(_controller!),
+                                  child: _controller!.buildView(),
                                 ),
                               ),
                             ),
