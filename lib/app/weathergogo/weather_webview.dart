@@ -533,12 +533,14 @@ class WeatherMapViewerPage extends StatelessWidget {
     required this.url,
     this.injectJs,
     this.denyLocation = false,
+    this.radarEcho = false,
   });
 
   final String title;
   final String url;
   final String? injectJs;
   final bool denyLocation;
+  final bool radarEcho;
 
   /// 실시간 레이더(RainViewer).
   static void openRadar() => Get.to(
@@ -546,6 +548,7 @@ class WeatherMapViewerPage extends StatelessWidget {
           title: '실시간 레이더',
           url: RealtimeRadarPage.rainviewerUrl,
           denyLocation: true,
+          radarEcho: true,
         ),
         transition: Transition.cupertino,
       );
@@ -578,6 +581,8 @@ class WeatherMapViewerPage extends StatelessWidget {
         url: url,
         injectJs: injectJs,
         denyLocation: denyLocation,
+        // 카드에서 보던 그림을 그대로 깔아 화면이 이어져 보이게 한다.
+        loadingBackground: WeatherMapPreview(radarEcho: radarEcho),
       ),
     );
   }
@@ -611,11 +616,6 @@ class WeatherMapEntryCard extends StatelessWidget {
   /// true 면 지도 위에 레이더 에코(비구름)를 겹쳐 그린다.
   final bool radarEcho;
 
-  /// 번들 이미지(정사각 도법 세계지도)에서 **한반도 부근**을 잘라 쓴다.
-  /// 경도 127°E → (127+180)/360 = 0.853, 위도 37°N → (90-37)/180 = 0.294.
-  /// Alignment 는 -1~1 이라 각각 2배 하고 1을 뺀다.
-  static const Alignment _koreaCrop = Alignment(0.71, -0.41);
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -629,34 +629,7 @@ class WeatherMapEntryCard extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // ⚠️ `BoxFit.cover` + `alignment` 만으로는 **가로가 안 잘린다.**
-                // 카드가 5:1 로 납작한데 원본은 2:1 이라, cover 는 가로를 꽉
-                // 채우고 세로만 자른다 — 그래서 처음엔 아프리카·유럽이 보였다
-                // (2026-09-20). 한반도로 당기려면 직접 확대해야 한다.
-                //
-                // 2.2배로 둔 이유: 더 당기면 원본에서 쓰는 영역이 좁아져 흐려진다.
-                // 이 배율이면 동아시아 + 서태평양이 들어와 '우리 지역' 으로 읽히고
-                // 선명도도 버틴다.
-                // 확대의 **고정점을 오른쪽 끝**에 둔다. 가운데를 고정하면 확대해도
-                // 한반도가 오른쪽 구석에 그대로 남는다(경도 127°E = 원본 가로 85%
-                // 지점이라 그렇다). 오른쪽을 고정하고 3배로 당기면 한반도가
-                // 카드 중앙(≈56%)으로 들어오고, 왼쪽은 이미지로 계속 덮인다.
-                Transform.scale(
-                  scale: 3.0,
-                  alignment: const Alignment(1.0, -0.41),
-                  child: Image.asset(
-                    'assets/images/earth_equirectangular_v2.jpg',
-                    fit: BoxFit.cover,
-                    alignment: _koreaCrop,
-                  ),
-                ),
-                // 레이더는 위성과 한눈에 구분돼야 한다. 지도를 어둡게 깔고
-                // 그 위에 에코를 얹으면 레이더 화면처럼 읽힌다.
-                if (radarEcho)
-                  Positioned.fill(
-                    child: ColoredBox(color: const Color(0xFF0B1B2B).withOpacity(0.55)),
-                  ),
-                if (radarEcho) const Positioned.fill(child: _RadarEchoOverlay()),
+                WeatherMapPreview(radarEcho: radarEcho),
                 // 글자가 지도 위에서도 읽히도록 아래를 어둡게 깐다.
                 Positioned.fill(
                   child: DecoratedBox(
@@ -735,6 +708,49 @@ class WeatherMapEntryCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 카드와 로딩 배경이 함께 쓰는 **지도 미리보기 그림.**
+/// 실시간 데이터가 아니라 "여기가 어떤 화면인지" 알리는 그림이다.
+class WeatherMapPreview extends StatelessWidget {
+  const WeatherMapPreview({super.key, this.radarEcho = false});
+
+  final bool radarEcho;
+
+  /// 정사각 도법 세계지도에서 한반도 지점.
+  /// 경도 127°E → (127+180)/360 = 0.853, 위도 37°N → (90-37)/180 = 0.294.
+  static const Alignment _koreaCrop = Alignment(0.71, -0.41);
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // ⚠️ `BoxFit.cover` + `alignment` 만으로는 **가로가 안 잘린다.**
+        // 카드가 납작한데 원본은 2:1 이라 cover 는 가로를 꽉 채우고 세로만
+        // 자른다 — 처음엔 그래서 아프리카·유럽이 보였다(2026-09-20).
+        //
+        // 확대의 **고정점을 오른쪽 끝**에 둔다. 가운데를 고정하면 확대해도
+        // 한반도가 오른쪽 구석에 남는다(경도 127°E = 원본 가로 85% 지점).
+        // 오른쪽을 고정하고 3배로 당겨야 중앙(≈56%)으로 들어온다.
+        Transform.scale(
+          scale: 3.0,
+          alignment: const Alignment(1.0, -0.41),
+          child: Image.asset(
+            'assets/images/earth_equirectangular_v2.jpg',
+            fit: BoxFit.cover,
+            alignment: _koreaCrop,
+          ),
+        ),
+        // 레이더는 위성과 한눈에 구분돼야 한다. 지도를 어둡게 깔고 에코를 얹는다.
+        if (radarEcho)
+          Positioned.fill(
+            child: ColoredBox(color: const Color(0xFF0B1B2B).withOpacity(0.55)),
+          ),
+        if (radarEcho) const Positioned.fill(child: _RadarEchoOverlay()),
+      ],
     );
   }
 }

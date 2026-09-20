@@ -14,7 +14,8 @@ class CommonWebView extends StatefulWidget {
       this.injectJs,
       this.denyLocation = false,
       this.touchToggle = false,
-      this.externalTouchEnabled});
+      this.externalTouchEnabled,
+      this.loadingBackground});
   final bool isBackBtn;
   final String url;
   // 페이지 로드 완료 후 실행할 JS(예: 특정 요소만 남기기). null이면 미실행.
@@ -25,6 +26,13 @@ class CommonWebView extends StatefulWidget {
   final bool touchToggle;
   // null이 아니면 외부 버튼이 지도 조작 상태를 제어한다(내부 토글 버튼은 숨김).
   final ValueNotifier<bool>? externalTouchEnabled;
+
+  /// 로딩 동안 스피너 뒤에 깔 그림. 안 주면 검은 배경.
+  ///
+  /// 검은 화면 + 스피너는 **같은 대기 시간도 더 길게 느껴지게 한다.** 들어오기
+  /// 직전에 보던 카드 그림을 그대로 깔면 화면이 이어져 보이고, 그 위로 실제
+  /// 지도가 채워진다.
+  final Widget? loadingBackground;
 
   @override
   State<CommonWebView> createState() => _CommonWebView2State();
@@ -78,7 +86,23 @@ class _CommonWebView2State extends State<CommonWebView>
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
         NavigationDelegate(
-          onProgress: (int progress) {},
+          // **다 로드될 때까지 기다리지 않는다.**
+          //
+          // 예전에는 `onPageFinished` 에서만 스피너를 내렸다. 웹페이지는
+          // 점진적으로 그려지는데 다 될 때까지 가려 둔 셈이라, 레이더를 열면
+          // **3.5초 동안 빈 화면**이었다(2026-09-20 실측: 0~2.8초 스피너,
+          // 3.5초에 지도 등장).
+          //
+          // 60% 면 문서와 주요 리소스가 올라와 지도 바탕이 그려지기 시작한다.
+          // 그때 내려 주면 사용자는 타일이 채워지는 걸 보게 된다 — 같은 시간이
+          // 걸려도 '멈춰 있다' 가 아니라 '오고 있다' 로 보인다.
+          onProgress: (int progress) {
+            // 60 에서 걷었더니 **빈 화면이 한 번 깜빡였다** — 문서는 올라왔는데
+            // 지도가 아직 안 그려진 구간이 있다(2026-09-20 실측: 1.4초에 빈
+            // 화면, 2.1초에 지도). 85 면 타일까지 대체로 그려져 있다.
+            // 어차피 뒤에 미리보기 그림이 깔려 있으니 조금 더 두는 편이 낫다.
+            if (progress >= 85) isLoading.value = false;
+          },
           onPageStarted: (String url) {
             isLoading.value = true;
           },
@@ -135,21 +159,30 @@ class _CommonWebView2State extends State<CommonWebView>
       body: Stack(
         children: [
           // touchToggle: 기본은 포인터 무시(부모 스크롤 통과) → 버튼으로 켜면 지도 조작(줌/이동) 가능.
+          // 웹뷰는 **늘 트리에 둔다.** 스피너는 그 위에 얹었다가 걷는다.
+          // 예전처럼 AnimatedSwitcher 로 갈아끼우면 로드가 끝난 뒤에야 웹뷰가
+          // 만들어져, 화면에 나타나는 시점이 그만큼 더 늦는다.
           IgnorePointer(
             ignoring: widget.touchToggle && !_touchOn,
-            child: ValueListenableBuilder<bool>(
-                valueListenable: isLoading,
-                builder: (context, value, snapshot) {
-                  return AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 350),
-                    switchInCurve: Curves.easeIn,
-                    child: value
-                        ? const Center(
-                            child: CircularProgressIndicator(),
-                          )
-                        : WebViewWidget(controller: controller),
-                  );
-                }),
+            child: WebViewWidget(controller: controller),
+          ),
+          ValueListenableBuilder<bool>(
+            valueListenable: isLoading,
+            builder: (context, loading, _) => IgnorePointer(
+              ignoring: !loading,
+              child: AnimatedOpacity(
+                opacity: loading ? 1 : 0,
+                duration: const Duration(milliseconds: 180),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    widget.loadingBackground ??
+                        const ColoredBox(color: Colors.black),
+                    const Center(child: CircularProgressIndicator()),
+                  ],
+                ),
+              ),
+            ),
           ),
           if (widget.isBackBtn)
             Positioned(
