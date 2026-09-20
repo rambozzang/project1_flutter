@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
@@ -127,7 +128,8 @@ class RealtimeRadarPage extends StatelessWidget {
   // 컨트롤 표시: oAP=재생/일시정지, oF=전체화면, oCS=범례, oC=커버리지 / c=색상, o=불투명도, sm=부드러운전환.
   // ts=1 → 라이트 모드 강제(미지정 시 기기 prefers-color-scheme를 따라 다크폰에선 다크가 됨).
   // (기본값은 컨트롤이 꺼져 있어 각 토글을 1로 켠다.) 현재위치 요청은 denyLocation으로 자동 거부.
-  static const String _rainviewerUrl =
+  /// 전체화면 뷰어도 같은 URL 을 쓴다.
+  static const String rainviewerUrl =
       'https://www.rainviewer.com/map.html?loc=36.5,127.8,4&oAP=1&oF=1&oCS=1&oC=1&c=3&o=83&sm=1&ts=1';
 
   @override
@@ -136,7 +138,7 @@ class RealtimeRadarPage extends StatelessWidget {
       children: [
         _RadarPanel(
           title: '실시간 레이더',
-          url: _rainviewerUrl,
+          url: rainviewerUrl,
           denyLocation: true,
           touchToggleBelow: true,
           loadDelay: Duration(seconds: 2),
@@ -153,7 +155,11 @@ class RealtimeSatellitePage extends StatelessWidget {
   const RealtimeSatellitePage({super.key});
 
   // URL의 날짜와 시각은 기기 시간대와 무관하게 한국 표준시(UTC+9)의 현재 값을 사용한다.
-  static String get _url {
+  /// 전체화면 뷰어도 같은 URL 을 쓴다. 현재 시각이 들어가므로 매번 새로 만든다.
+  /// 안내 레이어 닫기 + 타임랩스 자동재생. 전체화면 뷰어도 같은 것을 쓴다.
+  static String get viewerInjectJs => '$_dismissContinuePopupJs\n$_autoPlayJs';
+
+  static String get satelliteUrl {
     final nowKst = DateTime.now().toUtc().add(const Duration(hours: 9));
     final year = nowKst.year.toString().padLeft(4, '0');
     final month = nowKst.month.toString().padLeft(2, '0');
@@ -259,10 +265,10 @@ class RealtimeSatellitePage extends StatelessWidget {
       children: [
         _RadarPanel(
           title: '실시간 위성영상',
-          url: _url,
+          url: satelliteUrl,
           icon: Icons.satellite_alt,
           // 팝업 자동 닫기 + 타임랩스 자동 재생을 함께 주입한다.
-          injectJs: '$_dismissContinuePopupJs\n$_autoPlayJs',
+          injectJs: viewerInjectJs,
           touchToggleBelow: true,
           loadDelay: const Duration(seconds: 4),
         ),
@@ -491,6 +497,145 @@ class _AirInfoFullPageState extends State<AirInfoFullPage> {
             url: widget.url,
             injectJs: widget.injectJs,
             denyLocation: widget.denyLocation),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 지도를 **열었을 때만** 만든다
+//
+// 예전에는 레이더·위성 지도를 날씨 페이지 안에 상시 붙여 두었다. 날씨 화면은
+// `FadeIndexedStack` 안이라 앱이 끝날 때까지 살아 있고, 한 번 스크롤해 내려가
+// 웹뷰가 뜨면 **Feed 를 보든 앨범을 보든 지도는 계속 돌았다** — 실측으로
+// 크로미움 스레드가 CPU 14% 를 계속 먹었다(2026-09-20, SM-N976N, 프로파일 빌드).
+//
+// ⚠️ 떠 있는 웹뷰를 JS 로 재우는 것은 **실패했다.** `requestAnimationFrame` 을
+// 끊으면 13.9% → 27.3%, 1초로 늦추면 21.6% 로 **오히려 올랐다.** 지도
+// 라이브러리는 콜백이 제때 안 오면 루프가 끝난 줄 알고 계속 다시 요청한다.
+// 그래서 재우는 게 아니라 **안 만드는** 쪽으로 간다 — 안 만들면 크로미움
+// 프로세스 자체가 안 뜬다.
+//
+// 사용자 불편을 줄이려고 두 가지를 같이 한다:
+//  1. 원래 있던 자리(스크롤 하단)에 **같은 제목의 카드**를 남긴다 — 찾던 곳에서
+//     그대로 찾을 수 있다.
+//  2. 상단 검색줄에도 바로 가는 버튼을 둔다 — 스크롤 없이 한 번에 연다.
+//
+// 덤으로 조작이 나아진다. 페이지 안에 박힌 지도는 스크롤과 싸워서 '지도 조작하기'
+// 토글을 눌러야 움직였는데, 전체화면에서는 그 단계가 필요 없다.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// 지도 한 장을 전체화면으로 연다. 이 화면을 닫으면 웹뷰도 함께 사라진다.
+class WeatherMapViewerPage extends StatelessWidget {
+  const WeatherMapViewerPage({
+    super.key,
+    required this.title,
+    required this.url,
+    this.injectJs,
+    this.denyLocation = false,
+  });
+
+  final String title;
+  final String url;
+  final String? injectJs;
+  final bool denyLocation;
+
+  /// 실시간 레이더(RainViewer).
+  static void openRadar() => Get.to(
+        () => WeatherMapViewerPage(
+          title: '실시간 레이더',
+          url: RealtimeRadarPage.rainviewerUrl,
+          denyLocation: true,
+        ),
+        transition: Transition.cupertino,
+      );
+
+  /// 실시간 위성영상(Zoom Earth). URL 에 현재 시각이 들어가므로 열 때 만든다.
+  static void openSatellite() => Get.to(
+        () => WeatherMapViewerPage(
+          title: '실시간 위성영상',
+          url: RealtimeSatellitePage.satelliteUrl,
+          injectJs: RealtimeSatellitePage.viewerInjectJs,
+        ),
+        transition: Transition.cupertino,
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: Text(title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+      ),
+      // touchToggle 을 주지 않는다 — 전체화면에서는 스크롤과 싸울 일이 없어서
+      // '지도 조작하기' 를 누르지 않고 바로 줌·이동할 수 있다.
+      body: CommonWebView(
+        isBackBtn: false,
+        url: url,
+        injectJs: injectJs,
+        denyLocation: denyLocation,
+      ),
+    );
+  }
+}
+
+/// 날씨 페이지 하단에 남는 **진입 카드**. 웹뷰를 만들지 않는다.
+class WeatherMapEntryCard extends StatelessWidget {
+  const WeatherMapEntryCard({
+    super.key,
+    required this.title,
+    required this.desc,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String title;
+  final String desc;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.14)),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: Colors.white, size: 26),
+              const Gap(14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700)),
+                    const Gap(3),
+                    Text(desc,
+                        style: TextStyle(
+                            color: Colors.white.withOpacity(0.7), fontSize: 12)),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: Colors.white.withOpacity(0.6)),
+            ],
+          ),
+        ),
       ),
     );
   }

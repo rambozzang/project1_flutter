@@ -11,6 +11,7 @@ import 'package:project1/repo/cust/cust_repo.dart';
 import 'package:project1/repo/cust/data/cust_tag_data.dart';
 import 'package:project1/repo/kakao/kakao_repo.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
+import 'package:project1/app/weathergogo/weather_webview.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
 
@@ -27,34 +28,89 @@ class WeathergogoKakaoSearchPage extends StatelessWidget {
       alignment: Alignment.topCenter,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 3, 12, 0),
-        child: GestureDetector(
-          onTap: () => Get.to(() => const WeatherSearchPage(),
-              transition: Transition.fadeIn,
-              duration: const Duration(milliseconds: 180)),
-          child: Container(
-            height: 46,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: const [
-                BoxShadow(
-                    color: Colors.black12, blurRadius: 4, offset: Offset(0, 1))
-              ],
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '국내 지명, 주소를 검색해주세요.',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                    overflow: TextOverflow.ellipsis,
+        child: Row(
+          children: [
+            // 검색은 한 줄을 다 쓸 만큼 자주 쓰지 않는다. 폭을 줄여 남는 자리에
+            // 레이더·위성 바로가기를 둔다 — 예전에는 한참 스크롤해야 나왔다.
+            Expanded(
+              child: GestureDetector(
+                onTap: () => Get.to(() => const WeatherSearchPage(),
+                    transition: Transition.fadeIn,
+                    duration: const Duration(milliseconds: 180)),
+                child: Container(
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: const [
+                      BoxShadow(
+                          color: Colors.black12, blurRadius: 4, offset: Offset(0, 1))
+                    ],
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '지명·주소 검색',
+                          style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const Icon(Icons.search, color: primaryBlue, size: 20),
+                    ],
                   ),
                 ),
-                const Icon(Icons.search, color: primaryBlue, size: 22),
-              ],
+              ),
             ),
-          ),
+            const SizedBox(width: 8),
+            _MapShortcut(
+                icon: Icons.radar,
+                label: '레이더',
+                onTap: WeatherMapViewerPage.openRadar),
+            const SizedBox(width: 8),
+            _MapShortcut(
+                icon: Icons.satellite_alt,
+                label: '위성',
+                onTap: WeatherMapViewerPage.openSatellite),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 검색창 옆 지도 바로가기. **누를 때만** 웹뷰가 만들어진다
+/// (이유는 `weather_webview.dart` 의 "지도를 열었을 때만 만든다" 주석).
+class _MapShortcut extends StatelessWidget {
+  const _MapShortcut({required this.icon, required this.label, required this.onTap});
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 42,
+        padding: const EdgeInsets.symmetric(horizontal: 11),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: const [
+            BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 1))
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 17, color: primaryBlue),
+            const SizedBox(width: 5),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w700, color: Colors.black87)),
+          ],
         ),
       ),
     );
