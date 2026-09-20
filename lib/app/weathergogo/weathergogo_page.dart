@@ -120,13 +120,14 @@ class WeathgergogoPageState extends State<WeathgergogoPage>
       // 계속 먹었다(2026-09-20 실측). 찾던 자리는 그대로 두되 카드만 남긴다.
       () => WeatherMapEntryCard(
             title: '실시간 레이더',
-            desc: '비구름 이동을 지도에서 봅니다',
+            desc: '비구름이 어디로 가는지 지도에서',
             icon: Icons.radar,
+            radarEcho: true,
             onTap: WeatherMapViewerPage.openRadar,
           ),
       () => WeatherMapEntryCard(
             title: '실시간 위성영상',
-            desc: '구름 위성 타임랩스를 봅니다',
+            desc: '구름 흐름을 타임랩스로',
             icon: Icons.satellite_alt,
             onTap: WeatherMapViewerPage.openSatellite,
           ),

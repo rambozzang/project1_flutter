@@ -584,6 +584,15 @@ class WeatherMapViewerPage extends StatelessWidget {
 }
 
 /// 날씨 페이지 하단에 남는 **진입 카드**. 웹뷰를 만들지 않는다.
+///
+/// 줄 하나짜리 메뉴로 뒀더니 "눌러서 들어갈 것 같지 않다"는 지적을 받았다
+/// (2026-09-20). 그래서 **그 페이지가 어떤 화면인지 미리 보여 준다** —
+/// 번들된 지구 이미지의 한반도 부근을 잘라 깔고, 레이더는 그 위에 에코를
+/// 겹쳐 레이더 화면처럼 보이게 한다.
+///
+/// ⚠️ 이 그림은 **실시간 데이터가 아니다.** 카드에 '탭하면 실시간' 이라고
+/// 적어 두는 이유다 — 미리보기를 실제 관측으로 오해하면 안 된다.
+/// 실시간을 그대로 쓰려면 웹뷰를 띄워야 하는데, 그게 바로 없애려던 비용이다.
 class WeatherMapEntryCard extends StatelessWidget {
   const WeatherMapEntryCard({
     super.key,
@@ -591,6 +600,7 @@ class WeatherMapEntryCard extends StatelessWidget {
     required this.desc,
     required this.icon,
     required this.onTap,
+    this.radarEcho = false,
   });
 
   final String title;
@@ -598,45 +608,185 @@ class WeatherMapEntryCard extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
+  /// true 면 지도 위에 레이더 에코(비구름)를 겹쳐 그린다.
+  final bool radarEcho;
+
+  /// 번들 이미지(정사각 도법 세계지도)에서 **한반도 부근**을 잘라 쓴다.
+  /// 경도 127°E → (127+180)/360 = 0.853, 위도 37°N → (90-37)/180 = 0.294.
+  /// Alignment 는 -1~1 이라 각각 2배 하고 1을 뺀다.
+  static const Alignment _koreaCrop = Alignment(0.71, -0.41);
+
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
-      child: InkWell(
+      child: GestureDetector(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.14)),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: Colors.white, size: 26),
-              const Gap(14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700)),
-                    const Gap(3),
-                    Text(desc,
-                        style: TextStyle(
-                            color: Colors.white.withOpacity(0.7), fontSize: 12)),
-                  ],
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: SizedBox(
+            height: 168,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // ⚠️ `BoxFit.cover` + `alignment` 만으로는 **가로가 안 잘린다.**
+                // 카드가 5:1 로 납작한데 원본은 2:1 이라, cover 는 가로를 꽉
+                // 채우고 세로만 자른다 — 그래서 처음엔 아프리카·유럽이 보였다
+                // (2026-09-20). 한반도로 당기려면 직접 확대해야 한다.
+                //
+                // 2.2배로 둔 이유: 더 당기면 원본에서 쓰는 영역이 좁아져 흐려진다.
+                // 이 배율이면 동아시아 + 서태평양이 들어와 '우리 지역' 으로 읽히고
+                // 선명도도 버틴다.
+                // 확대의 **고정점을 오른쪽 끝**에 둔다. 가운데를 고정하면 확대해도
+                // 한반도가 오른쪽 구석에 그대로 남는다(경도 127°E = 원본 가로 85%
+                // 지점이라 그렇다). 오른쪽을 고정하고 3배로 당기면 한반도가
+                // 카드 중앙(≈56%)으로 들어오고, 왼쪽은 이미지로 계속 덮인다.
+                Transform.scale(
+                  scale: 3.0,
+                  alignment: const Alignment(1.0, -0.41),
+                  child: Image.asset(
+                    'assets/images/earth_equirectangular_v2.jpg',
+                    fit: BoxFit.cover,
+                    alignment: _koreaCrop,
+                  ),
                 ),
-              ),
-              Icon(Icons.chevron_right, color: Colors.white.withOpacity(0.6)),
-            ],
+                // 레이더는 위성과 한눈에 구분돼야 한다. 지도를 어둡게 깔고
+                // 그 위에 에코를 얹으면 레이더 화면처럼 읽힌다.
+                if (radarEcho)
+                  Positioned.fill(
+                    child: ColoredBox(color: const Color(0xFF0B1B2B).withOpacity(0.55)),
+                  ),
+                if (radarEcho) const Positioned.fill(child: _RadarEchoOverlay()),
+                // 글자가 지도 위에서도 읽히도록 아래를 어둡게 깐다.
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.10),
+                          Colors.black.withOpacity(0.72),
+                        ],
+                        stops: const [0.35, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 14,
+                  right: 14,
+                  bottom: 12,
+                  child: Row(
+                    children: [
+                      Icon(icon, color: Colors.white, size: 22),
+                      const Gap(10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(title,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800)),
+                            const Gap(2),
+                            Text(desc,
+                                style: TextStyle(
+                                    color: Colors.white.withOpacity(0.82),
+                                    fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.92),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: const Text('열기',
+                            style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.black87)),
+                      ),
+                    ],
+                  ),
+                ),
+                // 미리보기임을 분명히 한다.
+                Positioned(
+                  top: 10,
+                  left: 14,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.45),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: const Text('탭하면 실시간',
+                        style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white)),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+/// 레이더 카드용 장식 — 거리 원과 비구름 에코.
+/// 실제 관측이 아니라 "이게 레이더 화면"임을 알리는 그림이다.
+class _RadarEchoOverlay extends StatelessWidget {
+  const _RadarEchoOverlay();
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(painter: _RadarEchoPainter());
+}
+
+class _RadarEchoPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width * 0.5, size.height * 0.46);
+
+    // 거리 원 3개
+    final ring = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = Colors.white.withOpacity(0.34);
+    for (final r in [0.18, 0.34, 0.5]) {
+      canvas.drawCircle(center, size.width * r, ring);
+    }
+
+    // 비구름 에코 — 약한 비(초록) → 강한 비(노랑) 순으로 겹친다.
+    void echo(Offset o, double r, Color c, double a) {
+      canvas.drawCircle(
+        o,
+        r,
+        Paint()
+          ..color = c.withOpacity(a)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
+      );
+    }
+
+    echo(Offset(size.width * 0.34, size.height * 0.42), size.width * 0.115,
+        const Color(0xFF22C55E), 0.85);
+    echo(Offset(size.width * 0.41, size.height * 0.33), size.width * 0.075,
+        const Color(0xFFFACC15), 0.85);
+    echo(Offset(size.width * 0.45, size.height * 0.30), size.width * 0.038,
+        const Color(0xFFF97316), 0.8);
+    echo(Offset(size.width * 0.63, size.height * 0.55), size.width * 0.095,
+        const Color(0xFF22C55E), 0.8);
+    echo(Offset(size.width * 0.67, size.height * 0.50), size.width * 0.045,
+        const Color(0xFFEF4444), 0.75);
+    echo(Offset(size.width * 0.52, size.height * 0.66), size.width * 0.07,
+        const Color(0xFF22C55E), 0.6);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
