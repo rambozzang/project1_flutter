@@ -15,5 +15,8 @@
     "dart.previewFlutterUiGuidesCustomTracking": true,
     "CodeGPT.apiKey": "CodeGPT Plus Beta",
     "java.compile.nullAnalysis.mode": "automatic",
-    
+    // CocoaPods가 UTF-8 로케일을 요구 — IDE가 물려준 환경에 LANG이 없어도 flutter 프로세스에 주입
+    "dart.env": {
+        "LANG": "en_US.UTF-8"
+    }
 }

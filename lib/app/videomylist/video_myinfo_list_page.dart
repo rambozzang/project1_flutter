@@ -124,8 +124,9 @@ class _VideoMyinfoListPageState extends State<VideoMyinfoListPage> {
   }
 
   Widget buildCloseButton() {
+    // 풀스크린 영상 위에 뜨는 버튼 — 상태바·노치 아래로 내린다(고정 40 은 기기에 따라 겹쳤다).
     return Positioned(
-      top: 40,
+      top: MediaQuery.viewPaddingOf(context).top + 8,
       right: 10,
       child: IconButton(
         icon: const Icon(Icons.close, color: Colors.white),

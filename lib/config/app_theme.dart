@@ -34,10 +34,16 @@ class AppTheme {
         scaffoldBackgroundColor: SaColorsLight.bgBase,
         appBarTheme: const AppBarTheme(
           backgroundColor: SaColorsLight.surface,
+          // 아이콘 색은 여기서 고정하지 않는다. AppBar 는 `widget.iconTheme ??
+          // appBarTheme.iconTheme ?? 기본값.copyWith(color: foregroundColor)` 순으로
+          // 고르기 때문에, 테마에 iconTheme 을 박아 두면 **페이지가 준
+          // `foregroundColor` 를 이깁니다.** 그래서 검은 앱바(실시간 레이더·위성영상)에
+          // 흰 제목은 나오는데 뒤로가기 화살표만 짙은 잉크색으로 그려져 배경에 묻혔다
+          // (2026-09-21). 지금은 foregroundColor 가 아이콘까지 정하므로 밝은 앱바는
+          // 예전과 같은 잉크색, 어두운 앱바는 흰색이 된다.
           foregroundColor: SaColorsLight.textPrimary,
           surfaceTintColor: Colors.transparent,
           elevation: 0,
-          iconTheme: IconThemeData(color: SaColorsLight.textPrimary),
         ),
         dialogTheme: const DialogThemeData(
           backgroundColor: SaColorsLight.surface,

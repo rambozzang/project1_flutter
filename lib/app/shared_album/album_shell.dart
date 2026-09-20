@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:project1/app/camera/page/camera_awesome_page.dart';
+import 'package:project1/app/community/community_members_page.dart';
 import 'package:project1/app/community/community_home_body.dart';
 import 'package:project1/app/shared_album/activity_view.dart';
 import 'package:project1/app/shared_album/recap_view.dart';
@@ -51,7 +52,7 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
   bool _onlyMine = false; // '내 사진만' 필터 — 내가 올린 미디어만 표시
   final ScrollController _homeScrollCtrl = ScrollController();
 
-  int _tab = 0; // 0 홈 / 1 회고 / 2 활동 (멤버는 별도 화면으로 바로 진입)
+  int _tab = 0; // 0 홈 / 1 회고 / 2 활동 / 3 멤버
 
   bool get _canPost {
     final c = _community;
@@ -359,24 +360,13 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
     if (ok) _load();
   }
 
-  Future<void> _openMembersPage() async {
-    final wasJoined = _community?.isJoined == true;
-    final wasOwner = _community?.isOwner == true;
-    final changed = await Get.toNamed('/CommunityMembersPage', arguments: {
-      'communityId': _communityId,
-      'communityName': _community?.name,
-      'isOwner': _community?.isOwner == true,
-      'isApproval': _community?.isApproval == true,
-    });
-    if (!mounted || changed != true) return;
-    final updated = await _repo.getDetail(_communityId);
-    if (!mounted) return;
-    if (wasJoined && !wasOwner && updated?.isJoined != true) {
-      Get.back(result: true);
-      return;
-    }
-    await _load();
-  }
+  /// 멤버 탭으로 전환한다.
+  ///
+  /// 예전엔 `/CommunityMembersPage` 를 라우트로 띄웠는데, 그러면 다른 탭과 달리
+  /// 셸의 하단 탭바가 사라져 "멤버만 보이고 메뉴가 없어진다"는 지적을 받았다
+  /// (2026-09-21). 이제 같은 본문([CommunityMembersBody])을 셸 안에 끼운다.
+  /// 탈퇴·승인·강퇴 같은 변경은 본문의 콜백으로 받는다([_buildTabBody] case 3).
+  void _openMembersPage() => setState(() => _tab = 3);
 
   void _openInvite() {
     final c = _community;
@@ -590,6 +580,24 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
             if (idx >= 0) _openMedia(idx);
           },
         );
+      case 3:
+        // 멤버 탭 — 라우트 페이지와 같은 본문을 셸 안에서 그린다(하단 탭바 유지).
+        // 배경은 라우트 페이지 톤(#F6F7FB)을 그대로 써 흰 카드가 같은 대비로 보이게 한다.
+        return ColoredBox(
+          color: const Color(0xFFF6F7FB),
+          child: CommunityMembersBody(
+            key: ValueKey('album-members-$_communityId'),
+            communityId: _communityId,
+            communityName: _community?.name ?? '이 앨범',
+            isOwner: _community?.isOwner == true,
+            isApproval: _community?.isApproval == true,
+            bottomPadding: 100, // 셸 하단 바(82) 아래 여유 — 홈 탭과 같은 값
+            // 승인·강퇴로 멤버 수가 바뀌면 상단 "MEDIA · 멤버 수"도 같이 갱신한다.
+            onChanged: _load,
+            // 탈퇴했으면 이 앨범에 더 있을 이유가 없다 — 목록으로 돌아가며 새로고침 신호.
+            onLeft: () => Get.back(result: true),
+          ),
+        );
       default:
         return const SizedBox.shrink();
     }
@@ -682,7 +690,7 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
               _tabItem(1, PhosphorIconsFill.sparkle, PhosphorIconsBold.sparkle, '회고'),
               _centerButton(),
               _tabItem(2, PhosphorIconsFill.bell, PhosphorIconsBold.bell, '활동'),
-              _actionTabItem(PhosphorIconsBold.usersThree, '멤버', _openMembersPage),
+              _tabItem(3, PhosphorIconsFill.usersThree, PhosphorIconsBold.usersThree, '멤버'),
             ],
           ),
         ),
@@ -714,30 +722,6 @@ class _AlbumShellPageState extends State<AlbumShellPage> {
     );
   }
 
-  Widget _actionTabItem(IconData icon, String label, VoidCallback onTap) {
-    return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            PhosphorIcon(icon, size: 23, color: SaColors.textTertiary),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'Pretendard',
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                color: SaColors.textTertiary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _centerButton() {
     return SizedBox(

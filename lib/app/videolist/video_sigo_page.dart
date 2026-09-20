@@ -167,7 +167,13 @@ class _SigoPageState extends State<SigoPage> {
   @override
   Widget build(BuildContext context) {
     Lo.g('SigoPage2 build');
-    //  padding: MediaQuery.of(context).viewInsets, // EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+    // '신고 완료' 버튼을 시스템 내비게이션 바(3버튼/제스처) 위로 올린다.
+    // Scaffold 는 bottomNavigationBar 가 있으면 body 의 하단 SafeArea 를 지우므로
+    // 여기서 직접 처리해야 한다. 키보드가 열리면 viewInsets 가 이미 밀어올리므로
+    // 그때는 내비게이션 바 여백을 더하지 않는다(comment_page 의 navInset 과 같은 규칙).
+    final double keyboardInset = MediaQuery.of(context).viewInsets.bottom;
+    final double navInset =
+        keyboardInset > 0 ? 0 : MediaQuery.of(context).viewPadding.bottom;
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: PreferredSize(
@@ -415,7 +421,7 @@ class _SigoPageState extends State<SigoPage> {
       ),
       bottomNavigationBar: Padding(
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 10,
+          bottom: keyboardInset + navInset + 10,
           left: 20,
           right: 20,
           top: 10,

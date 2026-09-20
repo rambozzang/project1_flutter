@@ -64,9 +64,15 @@ class _BbsListPageState extends State<BbsListPage> with AutomaticKeepAliveClient
     super.build(context);
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6.0),
-        child: _buildBody(),
+      // AppBar 가 없는 페이지다. `/BbsListPage` 로 직접 뜨면 첫 항목이 상태바와
+      // 겹치고, ListView 에 padding 을 직접 줘서 하단 제스처 바 여백도 자동으로
+      // 안 붙는다. 알림 탭(TabBarView) 안에서는 상단 인셋이 이미 소비돼 0 이라
+      // 두 경우 모두 SafeArea 하나로 맞다.
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6.0),
+          child: _buildBody(),
+        ),
       ),
       floatingActionButton: _buildFloatingActionButton(),
     );

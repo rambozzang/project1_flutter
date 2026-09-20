@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 // import 'package:flutter_gemini/flutter_gemini.dart';
@@ -20,6 +21,7 @@ import 'package:project1/route/app_route.dart';
 import 'package:project1/services/video_mute.dart';
 import 'package:project1/services/analytics_service.dart';
 import 'package:project1/services/deep_link_service.dart';
+import 'package:project1/services/marionette_service.dart';
 import 'package:project1/services/weather_notification_service.dart';
 import 'package:project1/subscript_service.dart';
 import 'package:project1/utils/WeatherLottie.dart';
@@ -29,7 +31,14 @@ import 'package:workmanager/workmanager.dart';
 // import com.kakao.sdk.common.util.Utility
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  // 디버그 빌드에서만 Marionette 바인딩(AI 에이전트가 MCP 로 앱을 조작)을 올린다.
+  // MarionetteBinding 은 WidgetsFlutterBinding 의 서브클래스이므로 둘 중 하나만
+  // 초기화해야 하고, 다른 초기화보다 반드시 먼저 와야 한다.
+  if (kDebugMode) {
+    MarionetteService.ensureInitialized();
+  } else {
+    WidgetsFlutterBinding.ensureInitialized();
+  }
 
   // 앱 전체 세로 화면 고정(가로 회전 비활성화)
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);

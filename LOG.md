@@ -4,6 +4,73 @@
 
 ---
 
+## 2026-09-21
+
+### 00:55 | Claude (Opus) | ✅ 코드 반영(미커밋) — 실시간 레이더·위성영상 뒤로가기 화살표가 안 보이던 문제
+- 증상(사용자 지적): 두 지도 뷰어 페이지 상단에 백버튼이 보이지 않음. 제목('실시간 레이더')은 흰색으로 잘 보이는데 화살표만 사라짐.
+- 원인: 전역 테마 `AppTheme.theme` 의 `appBarTheme.iconTheme` 이 `SaColorsLight.textPrimary`(#202725, 거의 검정)로 **고정**돼 있었다. Flutter 의 AppBar 는 아이콘 색을 `widget.iconTheme ?? appBarTheme.iconTheme ?? 기본값.copyWith(color: foregroundColor)` 순으로 고르므로, 테마의 iconTheme 이 페이지가 준 `foregroundColor: Colors.white` 를 **이긴다**. 검은 앱바 위에 검은 화살표가 그려져 배경에 묻혔다. 제목은 foregroundColor 를 쓰므로 흰색으로 정상 표시 → "화살표만 안 보인다" 증상.
+- 수정: `lib/config/app_theme.dart` 의 `appBarTheme` 에서 `iconTheme` 한 줄 제거(사유 주석 추가). 테마의 `foregroundColor` 가 그대로 `textPrimary` 라 **밝은 앱바의 아이콘 색은 이전과 동일**하고, 어두운 앱바에 `foregroundColor: Colors.white` 를 준 페이지만 흰 아이콘으로 고쳐진다. 페이지별 `iconTheme` 을 직접 지정한 9곳(앨범 스캔·커뮤니티 등)은 widget 쪽이 우선이라 영향 없음.
+- 같은 결함을 함께 해소: `AirInfoFullPage`(실시간 대기정보 전체화면, 현재 미사용)의 `leading` 화살표도 같은 이유로 검정이었다. 테마 수정으로 함께 흰색이 된다. `attendance_calendar_page`·`album_scan_page` 는 아이콘 색을 직접 지정해 두어 원래 정상.
+- 조사 범위: 라우트 등록 58개 페이지를 전수 점검해 '뒤로가기 수단이 없는' 후보를 추렸다. `MapPage` 는 `MapSearchPage` 오버레이에 화살표가 있어 정상, `BbsListPage`·`BbsSearchListPage`·`BlockListPage` 는 라우트만 있고 호출처가 없는 미도달 페이지였다.
+- 검증: `flutter analyze` 해당 파일 이슈 0, `flutter test` 97개 통과. S24 실기기 핫리스타트 후 '실시간 위성영상' 뷰어에서 흰 화살표 확인, '내 정보 수정'(밝은 화면) 정상 확인.
+
+### 00:40 | Claude (Fable) | ✅ 코드 반영(미커밋) — SafeArea 전수 점검·수정 + 앨범 '멤버' 탭이 하단 바를 없애던 문제
+**SafeArea 전수 점검** (Scaffold 100파일, 바텀시트 17파일 — 탐색 에이전트 2개로 조사 후 판정)
+- 전역 구조: `main.dart` builder 는 SafeArea 를 씌우지 않고(Android 에서 시스템 내비바 뒤에 흰 덮개만), 루트 탭바는 `bottomNavigationBar` 가 아니라 **FAB 로 떠 있는 바**라 탭 페이지들은 하단 인셋을 못 받는다 → 각자 하단 여백을 둬야 한다.
+- 수정(살아 있는 코드만):
+  - `video_sigo_page.dart` 신고 시트: `bottomNavigationBar` 여백이 `viewInsets.bottom`(키보드)만 반영 → 키보드 닫힘 시 `viewPadding.bottom` 추가(comment_page 의 navInset 규칙). 호출 6곳 동시 해결.
+  - `myinfo_page.dart` 관심태그 추가 시트: 고정 높이 180 → `180 + navInset`, 내부 컨테이너 하단 padding 추가.
+  - `myinfo_page.dart` 내정보 탭 그리드 하단 padding 8 → 152(앨범 탭과 동일 — 떠 있는 탭바 + 홈바 아래로 마지막 줄이 숨지 않게).
+  - `bbs_list_page.dart`: AppBar 없이 라우트로도 뜨는 페이지 → body `SafeArea`.
+  - `image_list_preview.dart`, `video_myinfo_list_page.dart`: 전체화면 뷰어의 닫기 버튼 `top: 40` 고정 → `viewPadding.top + 8`(본문은 풀블리드 유지).
+- 제외(특성상 풀블리드가 맞음): 카메라 프리뷰, 피드 풀스크린 영상/사진, 앨범 몰입뷰(파일 주석에 규칙 명시), QR 스캐너, 전면 지도, 스플래시/로그인 배경, 전체화면 지도 뷰어(AppBar 있음).
+- 제외(데드코드/미진입): `cctv_page.dart`(호출처 없음), `myboard_list_page.dart`·`myfollowing_list_page.dart`·`follow_page.dart`(import 없음), `short_write_page.dart`(진입 경로 없음), `test/*`.
+- 미수정('하단 경미'): AppBar 가 있고 스크롤 콘텐츠가 바닥까지 이어지는 설정·목록류 40여 화면. 고정 UI 가 없어 실사용 영향이 적고, 40파일 일괄 수정은 회귀 위험 대비 이득이 작아 보류(사용자 판단).
+
+**앨범 셸 '멤버' 탭** (사용자 지적: 멤버만 보이고 하단 5개 메뉴가 사라짐)
+- 원인: 다른 탭은 셸 안에서 본문만 바꾸는데 멤버만 `Get.toNamed('/CommunityMembersPage')` 로 **별도 라우트**를 띄우고 있었다(주석 "멤버는 별도 화면으로 바로 진입").
+- 수정: `community_members_page.dart` 본문을 `CommunityMembersBody`(communityId·name·isOwner·isApproval + onLeft/onChanged/bottomPadding)로 분리. 라우트 페이지는 Get.arguments 를 읽어 AppBar 와 함께 감싸기만 하고(다른 진입처 4곳 동작 유지), `album_shell.dart` 는 멤버를 4번째 탭(`_tab = 3`)으로 셸 안에 그린다. 탈퇴 → `Get.back(result:true)`, 승인/강퇴 → `_load()` 로 멤버 수 갱신. `_actionTabItem` 제거.
+- 검증: S24 실기기에서 '오재성클럽' → 멤버 탭: 셸 앱바·하단 5개 메뉴 유지, '멤버' 활성 표시, 목록·'앨범 탈퇴' 정상 표시.
+
+**검증 공통**: 변경 파일 `flutter analyze` error 0(warning 은 전부 기존 미사용 선언), `flutter test` 97개 통과. 실기기: 내정보 탭 하단 여백 확인. 신고 시트·관심태그 시트·게시판 목록은 코드 검토만(시트 진입을 자동화하지 못함).
+
+**레이더·위성 뷰어 로딩(질문에 대한 조사, 수정 없음)**: `common_webview.dart` 의 `dispose()` 가 `controller.clearCache()` 를 호출해 **닫을 때마다 웹뷰 캐시를 지운다**(11월 일괄 커밋에서 유입, 사유 기록 없음). 그래서 두 번째 열 때도 JS 번들·타일을 전부 다시 받는다. 지도를 열 때 웹뷰를 새로 만드는 구조(CPU 문제로 의도된 결정)라 첫 로딩은 불가피하지만, 재방문은 캐시를 남기면 빨라진다. 후보: ① 지도 뷰어에서는 clearCache 생략 ② 앱 idle 시 WebView 엔진 예열(Android 첫 생성 비용) ③ 진행률 표시.
+
+## 2026-09-20
+
+### 23:58 | Claude (Fable) | ✅ 코드 반영(미커밋) — 지도 타일 고해상 에셋 + 움직임 + 하단 여백
+- 사용자 피드백: 타일 마음에 듦, "좀 더 선명한 이미지 + 약간의 움직임", "타일 아래 100px 정도 여백".
+- **선명도**: 세계지도 1024×512 를 46° 로 잘라 늘려 쓰던 것을, NASA Blue Marble(구름 포함) 8192×4096 원본에서 **동아시아(경도 96–160°E, 위도 8–58°N)만 잘라 낸 전용 에셋** `assets/images/earth_east_asia.jpg`(1456×1138, 551KB, JPEG q86)로 교체. 타일 폭에 1,047px 이 들어와 3x 기기(≈550px)보다 촘촘하다. 원본: `https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57735/land_ocean_ice_cloud_8192.tif`(공개 도메인). 기존 세계지도 에셋은 `sun_times_view.dart` 가 써서 그대로 둠.
+  - `_EarthCrop` 을 지역 에셋 기준(경위도 범위 → px/deg)으로 다시 계산. 상자가 크면(전체화면 로딩 배경) 빈 곳이 안 생기게 배율을 낮춰 채운다.
+- **움직임**: `_MapTile` 을 StatefulWidget 으로 올려 `AnimationController` 보유. 레이더는 스윕 7초/바퀴 + 에코 ±3px 표류, 위성은 1.00↔1.06 켄 번즈 18초 왕복. 비싼 층(사진·블러 에코)은 `RepaintBoundary` 로 한 번만 래스터하고 프레임마다 옮기거나 키우기만 한다. 레이더 페인터를 눈금/에코/스윕 세 개로 분리.
+  - **화면에 보일 때만 돈다**(`VisibilityDetector` > 0.1). 날씨 홈이 IndexedStack 안에 살아 있어 이 게이트가 없으면 Feed 를 보는 동안에도 계속 그린다. 시스템 '동작 줄이기'(`MediaQuery.disableAnimationsOf`)면 돌리지 않음.
+  - 실측: 타일이 보일 때/화면 밖일 때 앱 CPU 모두 ≈120%(S24) — 홈의 별 반짝임 등 기본 부하이고 타일 때문이 아님. 스크롤로 타일이 사라지면 `visible=false` 로 정지되는 것을 로그로 확인.
+- **하단 여백**: 목록 끝 `SizedBox` 40 → 140(떠 있는 탭바 ≈80 + 60). 이 목록은 initState 의 클로저라 핫리로드로는 안 바뀌고 핫리스타트가 필요했다.
+- 함정: SweepGradient 각을 캔버스 회전 + 고정 각으로 바꿔 음수 각 문제를 구조적으로 피함. Marionette `take_screenshots` 가 VisibilityDetector 게이트 애니메이션을 멈추게 해 프레임이 얼어 보였다 — `adb screencap` 두 장 비교로 실제 동작 확인(스윕 1.5초에 ≈77° 회전). `docs/MARIONETTE_MCP.md` 에 기록.
+- 검증: 변경 파일 analyze error 0, `flutter test` 97개 통과, S24 실기기 확인. 미커밋(새 에셋 파일 포함).
+
+### 23:35 | Claude (Fable) | ✅ 코드 반영(미커밋) — 날씨 홈 하단 레이더·위성 진입 카드 재설계
+- 배경: 넓은 배너 두 장을 세로로 쌓은 진입 카드가 같은 사진을 두 번 반복해 광고처럼 보이고, 레이더 카드는 한반도가 오른쪽 구석으로 밀려 에코가 중국 위에 떠 있었다(S24 실기기 확인).
+- 변경(`lib/app/weathergogo/weather_webview.dart`, `weathergogo_page.dart`):
+  - `WeatherMapEntryCard` 두 장 → `WeatherMapEntrySection` 하나. 이웃 '일출 · 일몰'과 같은 헤더 문법(Phosphor 아이콘 + 17 bold 흰 글자)으로 "실시간 지도" 섹션을 만들고, 오른쪽에 '탭하면 실시간 지도가 열려요'를 한 번만 적어 미리보기임을 밝힌다. 그 아래 반폭 타일 두 장(높이 152, radius 18). 세로 공간 절반.
+  - `_EarthCrop` 신규: 정사각 도법 이미지에서 한반도가 상자 중앙에 오도록 배율·alignment 를 LayoutBuilder 로 직접 계산(가로 46°). 이전 `Transform.scale` 방식은 상자 크기가 바뀌면 한반도가 달아났다.
+  - 레이더 타일: 사진에 `BlendMode.hue` 로 색조만 청색으로 옮긴 베이스맵 + 흰 거리 원·십자선 + 민트 스윕(SweepGradient) + 에코. 위성 타일은 구름이 든 지구 사진 그대로. 글자 아래 절반에만 남색 스크림, 오른쪽 위 열기 화살표(↗), 누르면 0.97 로 눌리는 `_PressScale`.
+  - 뷰어 로딩 배경(`WeatherMapPreview`)도 같은 그림을 쓰므로 카드→전체화면이 이어져 보인다.
+- 시행착오(코드 주석에도 남김): ① 채도 25% + 하늘색 워시 → 잿빛으로 가라앉음(이전 '먹빛' 실패와 같은 결). ② SweepGradient 에 음수 각을 넘기면 전 구간이 범위 밖으로 처리돼 그라데이션 없는 부채꼴 판이 찍힌다 → 각을 [0, 2π) 로.
+- 검증: `flutter analyze` 변경 파일 error/warning 0(기존 info). `flutter test` 97개 통과. S24 실기기 Marionette 로 전/후 스크린샷, 탭→전체화면 뷰어 열림→뒤로가기 확인. iPhone 실기기: 위젯 트리 bounds 로 동일 배치 확인(스크린샷은 3x 이미지가 MCP 한도를 넘어 미수신).
+- 별건: `docs/MARIONETTE_MCP.md` 의 `sleep infinity` 가 macOS BSD sleep 에서 실패해 `sleep 2147483647` 로 고침. 상위 `CLAUDE.md` 의 같은 문구는 손대지 않음.
+- 미커밋. 작업 트리에 다른 작업(marionette 연동 등) 변경이 함께 있어 커밋은 사용자 판단에 맡김.
+
+## 2026-09-19
+
+### 13:55 | Claude (Opus 5) | ✅ 코드 반영(미배포) — Marionette MCP 연동(AI 에이전트가 디버그 앱 조작)
+- 배경: AI 에이전트가 실행 중인 앱의 위젯 트리를 읽고 탭/입력/스크린샷/로그를 볼 수 있도록. MCP 서버(`marionette_mcp` 0.6.0)는 전역에 이미 등록돼 있었고 앱 쪽 바인딩만 없었다.
+- 변경: `pubspec.yaml` 에 `marionette_flutter: ^0.6.0`, 신규 `lib/services/marionette_service.dart`(바인딩 + `debugPrint` 래핑으로 `get_logs` 배선), `main.dart` 첫 줄을 `kDebugMode ? MarionetteBinding : WidgetsFlutterBinding` 분기로 교체. 문서 `docs/MARIONETTE_MCP.md`.
+- 검증: 실기기 SM N976N 디버그 실행 → `connect` 성공, `get_interactive_elements` 83건, `get_logs` 55건(앱 `Lo.g`/`lo.e` 전부 포착), `take_screenshots` 정상, `tap(text: "Feed")` 로 탭 이동 확인. `flutter analyze` error 0건. 릴리즈 빌드 성공(arm64 56.8MB)이며 `libapp.so` 에 marionette 문자열 0건 → 릴리즈에서 완전히 트리셰이킹됨.
+- 함정: 에이전트가 백그라운드로 `flutter run` 을 띄우면 stdin EOF 로 빌드 직후 exit 0 종료 → `sleep infinity | flutter run ...` 로 실행할 것.
+
+---
+
 ## 2026-09-07
 
 ### 09:44 | Claude (Fable) | ✅ 코드 반영(미배포) — iOS 최소 지원 버전 14.0 → 15.0

@@ -80,9 +80,10 @@ class _ImageListPreviewState extends State<ImageListPreview> {
               carouselController: _carouselController,
             ),
           ),
-          // Close button
+          // Close button — 전체화면 뷰어라 본문은 풀블리드가 맞지만, 버튼은
+          // 상태바·노치 아래로 내려야 한다(고정 40 은 기기에 따라 겹쳤다).
           Positioned(
-            top: 40,
+            top: MediaQuery.viewPaddingOf(context).top + 8,
             right: 10,
             child: CircleAvatar(
               backgroundColor: Colors.grey.withOpacity(0.5),

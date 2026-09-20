@@ -1656,8 +1656,10 @@ class _MyPageState extends State<MyPage>
         _selectMode ? _selectionBar() : _myBoardFilterChips(fullList),
         Expanded(
           child: Padding(
-            // 화면 좌우 패딩 16
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            // 화면 좌우 패딩 16. 하단 152 는 앨범 탭(album_list_page)과 같은 값 —
+            // 루트 탭바가 body 위에 떠 있어(FAB) 하단 인셋이 오지 않으므로
+            // 탭바 + 홈 제스처 바 높이만큼 직접 비워야 마지막 줄이 보인다.
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 152),
             child: list.isNotEmpty
                 ? GridView.builder(
                     shrinkWrap: false,
@@ -1846,8 +1848,8 @@ class _MyPageState extends State<MyPage>
 
   Widget _followFeeds(List<BoardWeatherListData> list) {
     return Padding(
-      // 화면 좌우 패딩 16
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      // 화면 좌우 패딩 16, 하단 152 는 위 _myFeeds 와 같은 이유.
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 152),
       child: MasonryGridView.count(
           crossAxisCount: 3,
           mainAxisSpacing: 4,
@@ -2025,10 +2027,16 @@ class _MyPageState extends State<MyPage>
               topLeft: Radius.circular(26.0), topRight: Radius.circular(26.0))),
       context: context,
       builder: (BuildContext context) {
+        // '등록하기' 를 시스템 내비게이션 바(3버튼/제스처) 위로 올린다. 시트 높이가
+        // 고정이라 SafeArea 만 씌우면 안쪽이 넘치므로 높이에도 같은 값을 더한다.
+        // 키보드가 열리면 아래 Padding(viewInsets) 이 이미 밀어올리므로 그때는 0.
+        final double navInset = MediaQuery.of(context).viewInsets.bottom > 0
+            ? 0
+            : MediaQuery.of(context).viewPadding.bottom;
         return Padding(
           padding: MediaQuery.of(context).viewInsets,
           child: SizedBox(
-            height: 180,
+            height: 180 + navInset,
             child: Column(
               children: [
                 Container(
@@ -2064,12 +2072,8 @@ class _MyPageState extends State<MyPage>
                   ),
                 ),
                 Container(
-                  height: 130,
-                  // padding: const EdgeInsets.only(
-                  //   right: 16,
-                  //   left: 16,
-                  // ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  height: 130 + navInset,
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, navInset),
                   color: SaColors.surface,
 
                   child:

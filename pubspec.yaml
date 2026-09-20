@@ -148,6 +148,7 @@ dependencies:
   pretty_animated_text: ^2.0.0
   webviewtube: ^3.1.0
   korean_profanity_filter: ^1.0.0
+  marionette_flutter: ^0.6.0
   # extended_nested_scroll_view: ^6.2.1
   
   

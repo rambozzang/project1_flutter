@@ -118,23 +118,13 @@ class WeathgergogoPageState extends State<WeathgergogoPage>
       // 예전에는 여기에 지도를 상시 박아 뒀는데, 날씨 화면이 IndexedStack 안이라
       // 앱이 끝날 때까지 살아 있어서 Feed 를 보는 동안에도 크로미움이 CPU 14%를
       // 계속 먹었다(2026-09-20 실측). 찾던 자리는 그대로 두되 카드만 남긴다.
-      () => WeatherMapEntryCard(
-            title: '실시간 레이더',
-            desc: '비구름이 어디로 가는지 지도에서',
-            icon: Icons.radar,
-            radarEcho: true,
-            onTap: WeatherMapViewerPage.openRadar,
-          ),
-      () => WeatherMapEntryCard(
-            title: '실시간 위성영상',
-            desc: '구름 흐름을 타임랩스로',
-            icon: Icons.satellite_alt,
-            onTap: WeatherMapViewerPage.openSatellite,
-          ),
+      () => const WeatherMapEntrySection(),
       // 대기 흐름(earth.nullschool) — 추후 다시 사용 예정
       // () => const WeatherWEbviewPage(),
+      // 맨 아래 여백. 하단 탭바가 내용 위에 떠 있어서 40 으로는 마지막 타일이
+      // 탭바에 가려진 채 스크롤이 끝났다. 탭바 높이(≈80) + 숨 쉴 공간 60.
       () => const SizedBox(
-            height: 40,
+            height: 140,
           ),
     ]);
     Get.find<WeatherGogoCntr>().getLocalTag();

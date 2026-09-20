@@ -7,20 +7,74 @@ import 'package:project1/repo/community/data/community_member_data.dart';
 import 'package:project1/utils/utils.dart';
 
 /// 앨범 멤버 목록 + (방장/매니저) 가입 승인 관리 + 매니저 지정/해제 + 강퇴.
-class CommunityMembersPage extends StatefulWidget {
+///
+/// 라우트(`/CommunityMembersPage`)로 뜨는 페이지. 본문은 [CommunityMembersBody] 가
+/// 그리고, 이 위젯은 인자를 읽어 AppBar 와 함께 감싸기만 한다. 앨범 셸의 '멤버' 탭은
+/// 같은 본문을 셸 안에 끼워 넣어 하단 탭바가 유지되게 한다(2026-09-21).
+class CommunityMembersPage extends StatelessWidget {
   const CommunityMembersPage({super.key});
 
   @override
-  State<CommunityMembersPage> createState() => _CommunityMembersPageState();
+  Widget build(BuildContext context) {
+    final args = Get.arguments ?? {};
+    return Scaffold(
+      backgroundColor: const Color(0xFFF6F7FB),
+      appBar: AppBar(
+        forceMaterialTransparency: true,
+        iconTheme: const IconThemeData(color: Colors.black87),
+        title: const Text('멤버', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        centerTitle: true,
+      ),
+      body: CommunityMembersBody(
+        communityId: (args['communityId'] as num).toInt(),
+        communityName: args['communityName']?.toString() ?? '이 앨범',
+        isOwner: args['isOwner'] == true,
+        isApproval: args['isApproval'] == true,
+        // 탈퇴하면 이 페이지를 닫고 호출한 쪽에 변경 신호를 보낸다(기존 동작 유지).
+        onLeft: () => Get.back(result: true),
+      ),
+    );
+  }
 }
 
-class _CommunityMembersPageState extends State<CommunityMembersPage> {
+/// 멤버 목록 본문. 라우트 페이지와 앨범 셸의 '멤버' 탭이 함께 쓴다.
+class CommunityMembersBody extends StatefulWidget {
+  const CommunityMembersBody({
+    super.key,
+    required this.communityId,
+    required this.communityName,
+    required this.isOwner,
+    required this.isApproval,
+    this.onLeft,
+    this.onChanged,
+    this.bottomPadding = 150,
+  });
+
+  final int communityId;
+  final String communityName;
+  final bool isOwner;
+  final bool isApproval;
+
+  /// 탈퇴에 성공한 뒤 호출된다(호스트가 화면을 닫거나 목록으로 돌아간다).
+  final VoidCallback? onLeft;
+
+  /// 승인·매니저 지정·강퇴처럼 멤버 구성이 바뀐 뒤 호출된다(호스트가 멤버 수 등을 갱신).
+  final VoidCallback? onChanged;
+
+  /// 목록 아래 여백. 셸 안에서는 떠 있는 하단 탭바(82) 아래 여유를 준다.
+  final double bottomPadding;
+
+  @override
+  State<CommunityMembersBody> createState() => _CommunityMembersBodyState();
+}
+
+class _CommunityMembersBodyState extends State<CommunityMembersBody> {
   final CommunityRepo _repo = CommunityRepo();
 
-  late final int _communityId;
-  late final bool _isOwner;
-  late final bool _isApproval;
-  late final String _communityName;
+  int get _communityId => widget.communityId;
+  bool get _isOwner => widget.isOwner;
+  bool get _isApproval => widget.isApproval;
+  String get _communityName => widget.communityName;
   late final String _myCustId;
 
   List<CommunityMemberData> _members = [];
@@ -30,13 +84,14 @@ class _CommunityMembersPageState extends State<CommunityMembersPage> {
   @override
   void initState() {
     super.initState();
-    final args = Get.arguments ?? {};
-    _communityId = (args['communityId'] as num).toInt();
-    _isOwner = args['isOwner'] == true;
-    _isApproval = args['isApproval'] == true;
-    _communityName = args['communityName']?.toString() ?? '이 앨범';
     _myCustId = Get.find<AuthCntr>().resLoginData.value.custId.toString();
     _load();
+  }
+
+  /// 멤버 구성이 바뀐 뒤 — 목록을 다시 읽고 호스트에 알린다.
+  Future<void> _changed() async {
+    await _load();
+    widget.onChanged?.call();
   }
 
   Future<void> _load() async {
@@ -57,7 +112,7 @@ class _CommunityMembersPageState extends State<CommunityMembersPage> {
   Future<void> _approve(CommunityMemberData m) async {
     final (ok, msg) = await _repo.approve(_communityId, m.custId);
     Utils.alert(msg.isEmpty ? (ok ? '승인했습니다.' : '실패했습니다.') : msg);
-    if (ok) _load();
+    if (ok) _changed();
   }
 
   Future<void> _leave() async {
@@ -72,7 +127,7 @@ class _CommunityMembersPageState extends State<CommunityMembersPage> {
     if (confirmed != true) return;
     final (ok, msg) = await _repo.leave(_communityId);
     Utils.alert(msg.isEmpty ? (ok ? '탈퇴했습니다.' : '실패했습니다.') : msg);
-    if (ok) Get.back(result: true);
+    if (ok) widget.onLeft?.call();
   }
 
   /// 내가 매니저(방장 포함)인지. 방장은 인자로 이미 확정되고, 아니면 멤버 목록에서 내 role로 판단.
@@ -93,7 +148,7 @@ class _CommunityMembersPageState extends State<CommunityMembersPage> {
     final makeManager = !m.isManager;
     final (ok, msg) = await _repo.setManager(_communityId, m.custId, makeManager);
     Utils.alert(msg.isEmpty ? (ok ? '처리되었습니다.' : '실패했습니다.') : msg);
-    if (ok) _load();
+    if (ok) _changed();
   }
 
   Future<void> _kick(CommunityMemberData m) async {
@@ -125,7 +180,7 @@ class _CommunityMembersPageState extends State<CommunityMembersPage> {
     if (confirmed != true) return;
     final (ok, msg) = await _repo.kickMember(_communityId, m.custId, reason: reasonCtrl.text.trim());
     Utils.alert(msg.isEmpty ? (ok ? '강퇴했습니다.' : '실패했습니다.') : msg);
-    if (ok) _load();
+    if (ok) _changed();
   }
 
   void _showActionSheet(CommunityMemberData m) {
@@ -169,20 +224,12 @@ class _CommunityMembersPageState extends State<CommunityMembersPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F7FB),
-      appBar: AppBar(
-        forceMaterialTransparency: true,
-        iconTheme: const IconThemeData(color: Colors.black87),
-        title: const Text('멤버', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        centerTitle: true,
-      ),
-      body: _loading
+    return _loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 150),
+                padding: EdgeInsets.fromLTRB(16, 12, 16, widget.bottomPadding),
                 children: [
                   if (_pending.isNotEmpty) ...[
                     _sectionTitle('가입 승인 대기 ${_pending.length}'),
@@ -208,8 +255,7 @@ class _CommunityMembersPageState extends State<CommunityMembersPage> {
                   ],
                 ],
               ),
-            ),
-    );
+            );
   }
 
   Widget _sectionTitle(String t) => Text(t, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87));
