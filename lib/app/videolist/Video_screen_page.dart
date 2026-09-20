@@ -155,6 +155,10 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     _controller = null;
     initialized.value = false;
     initPlay = false;
+    // 다시 열면 크기를 처음부터 모르는 상태여야 한다 — 남겨 두면 다음 영상이
+    // 엉뚱한 비율로 한 프레임 그려진다.
+    _videoSize.value = Size.zero;
+    ctrl.removeListener(_watchVideoSize);
     ctrl.dispose();
   }
 
@@ -204,6 +208,9 @@ class VideoScreenPageState extends State<VideoScreenPage> {
       timeDesc.value = '${stopwatch.elapsedMilliseconds}ms';
       ctrl.setLooping(true);
       ctrl.pause();
+      // 크기는 지금 이미 왔을 수도, 곧 올 수도 있다. 둘 다 잡는다.
+      ctrl.addListener(_watchVideoSize);
+      _watchVideoSize();
       initialized.value = true;
       _setupVideoListener();
     } catch (e) {
@@ -306,6 +313,8 @@ class VideoScreenPageState extends State<VideoScreenPage> {
       }
       ctrl.setLooping(true);
       ctrl.pause();
+      ctrl.addListener(_watchVideoSize);
+      _watchVideoSize();
       initialized.value = true;
       _setupVideoListener();
       lo.g("영상 초기화 재시도 성공($_retryCount)");
@@ -387,8 +396,10 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     initialized.dispose();
     _photoController.dispose();
     _photoIndex.dispose();
+    _videoSize.dispose();
     // 컨트롤러 유무가 곧 진실이다. isPhotoPost / isVideoProcessing / videoActive
     // 세 조건을 여기서 다시 조합하면 initState 조건과 어긋날 때 누수가 난다.
+    _controller?.removeListener(_watchVideoSize);
     _controller?.dispose();
     _controller = null;
     super.dispose();
@@ -582,6 +593,49 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     );
   }
 
+  /// 영상의 실제 크기. [Size.zero] 면 **아직 모른다.**
+  ///
+  /// ExoPlayer 는 준비 완료(`STATE_READY`)를 크기보다 **먼저** 보낼 수 있다 —
+  /// 비디오 트랙을 디코딩하기 전에는 (0,0) 이다. 느린 기기일수록 잘 벌어진다.
+  ///
+  /// 예전에는 `SizedBox(width: size.width, height: size.height)` 로 감쌌다.
+  /// 크기를 모르면 **0×0 이 되어 텍스처가 통째로 잘리고, 게다가 크기가 와도
+  /// 다시 그릴 계기가 없어 영영 그대로다** — 소리만 나고 그림은 멈춘다
+  /// (2026-09-20 SM-N976N 제보. 모모앨범에서 2026-09-19 에 똑같이 겪고 고쳤는데
+  /// 여기 두 화면에는 안 옮겨 놓았다).
+  ///
+  /// 크기가 실제로 바뀔 때만 담는다 — 컨트롤러 값 전체를 구독하면 재생 위치가
+  /// 바뀔 때마다 영상 위젯이 다시 만들어진다.
+  final ValueNotifier<Size> _videoSize = ValueNotifier<Size>(Size.zero);
+
+  void _watchVideoSize() {
+    final ctrl = _controller;
+    if (ctrl == null) return;
+    final s = ctrl.value.size;
+    if (s.width <= 0 || s.height <= 0) return;
+    if (s != _videoSize.value) _videoSize.value = s;
+  }
+
+  /// 크기를 알면 그 비율로 cover, 모르면 **그냥 화면을 채운다.**
+  ///
+  /// 잠깐 비율이 어긋나는 편이 아무것도 안 보이는 것보다 낫다. 그 순간은
+  /// 아래 깔린 썸네일(`buildPoster`)이 가려 준다. 텍스처는 트리에 그대로
+  /// 둬야 표면이 만들어지고 프레임이 흐른다.
+  Widget _videoSurface(MomoVideo ctrl) {
+    return ValueListenableBuilder<Size>(
+      valueListenable: _videoSize,
+      builder: (context, size, _) {
+        final view = ctrl.buildView();
+        if (size.width <= 0 || size.height <= 0) return view;
+        return FittedBox(
+          fit: BoxFit.cover,
+          clipBehavior: Clip.hardEdge,
+          child: SizedBox(width: size.width, height: size.height, child: view),
+        );
+      },
+    );
+  }
+
   Widget buildVideoScreen(Key key, bool init) {
     final ctrl = _controller;
     if (ctrl == null) return const SizedBox.shrink();
@@ -610,18 +664,8 @@ class VideoScreenPageState extends State<VideoScreenPage> {
           }
         },
         child: Center(
-          child: SizedBox.expand(
-            // 왜곡 없이 화면을 채우고 상·하 균등 크롭 (영상 하단 짤림 방지)
-            child: FittedBox(
-              fit: BoxFit.cover,
-              clipBehavior: Clip.hardEdge,
-              child: SizedBox(
-                width: ctrl.value.size.width,
-                height: ctrl.value.size.height,
-                child: ctrl.buildView(),
-              ),
-            ),
-          ),
+          // 왜곡 없이 화면을 채우고 상·하 균등 크롭 (영상 하단 짤림 방지)
+          child: SizedBox.expand(child: _videoSurface(ctrl)),
         ),
       ),
     );

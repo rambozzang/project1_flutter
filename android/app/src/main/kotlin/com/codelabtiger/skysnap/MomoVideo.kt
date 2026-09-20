@@ -442,9 +442,20 @@ class MomoVideo(
      * 멀리 있어 오래전에 자리를 잡은 장이고, 그 장으로 돌아가면 그때 다시 잡는다.
      */
     private fun evictOldest(): Slot? {
-        val victim = slots.filter { !it.inUse }.minByOrNull { it.touchedAt }
-            ?: slots.minByOrNull { it.touchedAt }
-            ?: return null
+        val free = slots.filter { !it.inUse }.minByOrNull { it.touchedAt }
+        val victim = free ?: slots.minByOrNull { it.touchedAt } ?: return null
+        // ⚠️ **뺏는 순간을 반드시 남긴다.**
+        //
+        // 예전에는 로그가 없어서 밀려남이 보이지 않았다. 화면 여러 개가 풀
+        // 하나를 나눠 쓰면 서로 뺏고 뺏기며 200ms 마다 다시 준비하는 상태에
+        // 빠질 수 있는데(`MomoVideoNative._onEvicted`), 그래도 영상은 그럭저럭
+        // 나와서 **증상 없이 배터리와 데이터만 태운다.**
+        // `stolen=true` 가 계속 찍히면 그 상태다 — 창을 줄이거나 안 보이는
+        // 화면이 슬롯을 놓게 해야 한다.
+        android.util.Log.i(
+            TAG,
+            "evict slot=${victim.id} stolen=${free == null} inUsePool=${slots.count { it.inUse }}/${slots.size}",
+        )
         victim.player.stop()
         victim.player.clearMediaItems()
         victim.url = null

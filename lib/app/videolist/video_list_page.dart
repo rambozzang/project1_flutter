@@ -108,6 +108,29 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
   /// 페이저를 직접 리빌드할 수 있는 알림원이 필요하다.
   final ValueNotifier<int> _currentVideoIndex = ValueNotifier<int>(0);
 
+  /// **이 화면이 맨 위에 있나.** 위에 다른 화면이 덮이면 false.
+  ///
+  /// 피드는 `FadeIndexedStack` 안에 있어서 **한 번 만들어지면 앱이 끝날 때까지
+  /// 살아 있다**(`root_page` 가 시작 400ms 뒤 미리 만든다). 그 상태로 앨범
+  /// 몰입뷰나 내 피드를 열면, 보이지도 않는 피드가 네이티브 플레이어
+  /// **8개(풀 전체)를 계속 물고 있다** — 실측으로 피드만으로 slot 0~7 이 전부
+  /// 찼다(2026-09-20, SM-N976N).
+  ///
+  /// 풀은 앱 전체에서 하나뿐이라 그 뒤에 열리는 화면은 남의 자리를 뺏어야 하고,
+  /// 뺏긴 쪽은 200ms 뒤 다시 잡는다(`MomoVideoNative._onEvicted`). 서로 뺏고
+  /// 뺏기면 **증상 없이 배터리·데이터만 탄다.**
+  ///
+  /// 덮이면 놓는다. 안 보이는 화면이 디코더를 쥐고 있을 이유가 없다.
+  /// 되돌아오면 `videoActive` 가 다시 true 가 되어 알아서 다시 잡는다.
+  final ValueNotifier<bool> _onTop = ValueNotifier<bool>(true);
+  Animation<double>? _secondary;
+
+  /// 위에 덮인 화면의 전환 애니메이션을 본다. 0 이면 아무것도 안 덮여 있다.
+  void _syncOnTop() {
+    final v = (_secondary?.value ?? 0) == 0;
+    if (_onTop.value != v) _onTop.value = v;
+  }
+
   GlobalKey<ScaffoldState> scaffoldkey = GlobalKey<ScaffoldState>();
   AdManager adManager = AdManager();
   // static const String AD_UNIT_NAME = 'VideoPage';
@@ -141,7 +164,20 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final anim = ModalRoute.of(context)?.secondaryAnimation;
+    if (identical(anim, _secondary)) return;
+    _secondary?.removeListener(_syncOnTop);
+    _secondary = anim;
+    _secondary?.addListener(_syncOnTop);
+    _syncOnTop();
+  }
+
+  @override
   void dispose() {
+    _secondary?.removeListener(_syncOnTop);
+    _onTop.dispose();
     _controller.dispose();
     scrollController.dispose();
     _currentVideoIndex.dispose();
@@ -300,51 +336,56 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
         return ValueListenableBuilder<int>(
           valueListenable: _currentVideoIndex,
           builder: (context, currentVideoIndex, _) {
-            return PreloadPageView.builder(
-              key: const PageStorageKey("tigerBkPageView"),
-              controller: _controller,
-              preloadPagesCount: cntr.preLoadingCount,
-              scrollDirection: Axis.vertical,
-              itemCount: _pageCount(data.length),
-              physics: const FastPageScrollPhysics(),
-              onPageChanged: (int page) {
-                RootCntr.to.bottomBarStreamController.sink.add(true);
-                // 광고 페이지면 현재영상 인덱스/페이징을 건드리지 않는다(list[currentIndex] 정합 유지).
-                if (_isAdPage(page)) return;
-                final int videoIndex = _pageToVideoIndex(page);
-                // 좋아요/팔로우가 현재 영상을 정확히 가리키도록 '데이터 인덱스'를 저장.
-                cntr.currentIndex.value = videoIndex;
-                // 디코더 윈도우 재판정을 유발한다(위 ValueListenableBuilder).
-                _currentVideoIndex.value = videoIndex;
-                if (videoIndex >= cntr.list.length - (cntr.preLoadingCount + 1)) {
-                  cntr.getDataWithPagination();
-                }
-              },
-              itemBuilder: (context, page) {
-                // 10장마다 끼워넣는 틱톡형 인라인 광고 페이지
-                if (_isAdPage(page)) {
-                  return const SizedBox.expand(child: NativeFeedAdPage());
-                }
-                final int videoIndex = _pageToVideoIndex(page);
-                if (videoIndex < 0 || videoIndex >= data.length) {
-                  return const SizedBox.shrink();
-                }
-                return SizedBox(
-                  width: MediaQuery.of(context).size.width,
-                  height: MediaQuery.of(context).size.height,
-                  child: VideoScreenPage(
-                    // 인덱스가 아니라 boardId 로 고정한다. 앞쪽에 항목이 끼거나
-                    // 빠지면 인덱스 기준 키는 다른 영상의 State 를 재사용한다.
-                    key: ValueKey('video_${data[videoIndex].boardId}'),
-                    index: videoIndex,
-                    data: data[videoIndex],
-                    videoActive: isVideoActive(
-                      videoIndex: videoIndex,
-                      currentVideoIndex: currentVideoIndex,
+            // 덮여 있으면 디코더를 통째로 놓는다([_onTop] 주석).
+            return ValueListenableBuilder<bool>(
+              valueListenable: _onTop,
+              builder: (context, onTop, __) => PreloadPageView.builder(
+                key: const PageStorageKey("tigerBkPageView"),
+                controller: _controller,
+                preloadPagesCount: cntr.preLoadingCount,
+                scrollDirection: Axis.vertical,
+                itemCount: _pageCount(data.length),
+                physics: const FastPageScrollPhysics(),
+                onPageChanged: (int page) {
+                  RootCntr.to.bottomBarStreamController.sink.add(true);
+                  // 광고 페이지면 현재영상 인덱스/페이징을 건드리지 않는다(list[currentIndex] 정합 유지).
+                  if (_isAdPage(page)) return;
+                  final int videoIndex = _pageToVideoIndex(page);
+                  // 좋아요/팔로우가 현재 영상을 정확히 가리키도록 '데이터 인덱스'를 저장.
+                  cntr.currentIndex.value = videoIndex;
+                  // 디코더 윈도우 재판정을 유발한다(위 ValueListenableBuilder).
+                  _currentVideoIndex.value = videoIndex;
+                  if (videoIndex >= cntr.list.length - (cntr.preLoadingCount + 1)) {
+                    cntr.getDataWithPagination();
+                  }
+                },
+                itemBuilder: (context, page) {
+                  // 10장마다 끼워넣는 틱톡형 인라인 광고 페이지
+                  if (_isAdPage(page)) {
+                    return const SizedBox.expand(child: NativeFeedAdPage());
+                  }
+                  final int videoIndex = _pageToVideoIndex(page);
+                  if (videoIndex < 0 || videoIndex >= data.length) {
+                    return const SizedBox.shrink();
+                  }
+                  return SizedBox(
+                    width: MediaQuery.of(context).size.width,
+                    height: MediaQuery.of(context).size.height,
+                    child: VideoScreenPage(
+                      // 인덱스가 아니라 boardId 로 고정한다. 앞쪽에 항목이 끼거나
+                      // 빠지면 인덱스 기준 키는 다른 영상의 State 를 재사용한다.
+                      key: ValueKey('video_${data[videoIndex].boardId}'),
+                      index: videoIndex,
+                      data: data[videoIndex],
+                      videoActive: onTop &&
+                          isVideoActive(
+                            videoIndex: videoIndex,
+                            currentVideoIndex: currentVideoIndex,
+                          ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             );
           },
         );
@@ -587,16 +628,20 @@ class _VideoListPageState extends State<VideoListPage> with AutomaticKeepAliveCl
                       child: Container(
                         decoration: BoxDecoration(
                           border: Border.all(
-                              color:
-                                  (Get.find<VideoListCntr>().list[Get.find<VideoListCntr>().currentIndex.value].boardId == element.boardId)
-                                      ? Colors.yellow
-                                      : Colors.transparent,
+                              color: (Get.find<VideoListCntr>()
+                                          .list[Get.find<VideoListCntr>().currentIndex.value]
+                                          .boardId ==
+                                      element.boardId)
+                                  ? Colors.yellow
+                                  : Colors.transparent,
                               width: 1),
                           borderRadius: BorderRadius.circular(5),
                         ),
                         child: Text(element.boardId.toString(),
                             style: TextStyle(
-                              color: (Get.find<VideoListCntr>().mountedList.contains(element.boardId)) ? Colors.white : Colors.yellow,
+                              color: (Get.find<VideoListCntr>().mountedList.contains(element.boardId))
+                                  ? Colors.white
+                                  : Colors.yellow,
                               fontSize: 12,
                             )),
                       ));

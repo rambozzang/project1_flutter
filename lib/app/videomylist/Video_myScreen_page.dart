@@ -140,6 +140,8 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
     _controller = null;
     initialized = false;
     initPlay = false;
+    _videoSize.value = Size.zero;
+    ctrl.removeListener(_watchVideoSize);
     ctrl.dispose();
   }
 
@@ -195,6 +197,9 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
 
       ctrl.setLooping(true);
       ctrl.pause();
+      // 크기는 지금 이미 왔을 수도, 곧 올 수도 있다. 둘 다 잡는다.
+      ctrl.addListener(_watchVideoSize);
+      _watchVideoSize();
       setState(() {
         initialized = true;
       });
@@ -322,6 +327,39 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
     }
   }
 
+  /// 영상의 실제 크기. [Size.zero] 면 **아직 모른다.**
+  ///
+  /// ExoPlayer 는 준비 완료를 크기보다 **먼저** 보낼 수 있다 — 느린 기기일수록
+  /// 잘 벌어진다. 예전에는 `SizedBox(width: size.width, ...)` 로 감싸서, 크기를
+  /// 모르면 **0×0 이 되어 텍스처가 통째로 잘리고 다시 그릴 계기도 없어 영영
+  /// 그대로였다** — 소리만 나고 그림은 멈춘다(2026-09-20 SM-N976N 제보).
+  final ValueNotifier<Size> _videoSize = ValueNotifier<Size>(Size.zero);
+
+  void _watchVideoSize() {
+    final ctrl = _controller;
+    if (ctrl == null) return;
+    final s = ctrl.value.size;
+    if (s.width <= 0 || s.height <= 0) return;
+    if (s != _videoSize.value) _videoSize.value = s;
+  }
+
+  /// 크기를 알면 그 비율로 cover, 모르면 **그냥 채운다.** 그 순간은 아래 깔린
+  /// 썸네일이 가려 준다. 텍스처는 트리에 그대로 둬야 표면이 만들어진다.
+  Widget _videoSurface(MomoVideo ctrl) {
+    return ValueListenableBuilder<Size>(
+      valueListenable: _videoSize,
+      builder: (context, size, _) {
+        final view = ctrl.buildView();
+        if (size.width <= 0 || size.height <= 0) return view;
+        return FittedBox(
+          fit: BoxFit.cover,
+          clipBehavior: Clip.hardEdge,
+          child: SizedBox(width: size.width, height: size.height, child: view),
+        );
+      },
+    );
+  }
+
   /// 영상 버퍼링 동안 깔아 두는 정지 썸네일 (VideoScreenPage.buildPoster 와 동일).
   ///
   /// **폭을 반드시 준다.** 안 주면 Cloudflare 가 **360×640** 을 내준다 —
@@ -350,6 +388,8 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
 
   @override
   void dispose() {
+    _videoSize.dispose();
+    _controller?.removeListener(_watchVideoSize);
     initialized = false;
     // 컨트롤러를 가장 먼저 놓는다. 해제 과정이 리스너를 한 번 더 깨우는데,
     // 그 리스너가 아래 ValueNotifier 들을 건드리기 때문이다(해제 후면 터진다).
@@ -423,18 +463,8 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
                               }
                             },
                             key: ValueKey('${widget.data.boardId.toString()}videoScreen'),
-                            child: SizedBox.expand(
-                              // 왜곡 없이 화면 채우고 상·하 균등 크롭 (하단 짤림 방지)
-                              child: FittedBox(
-                                fit: BoxFit.cover,
-                                clipBehavior: Clip.hardEdge,
-                                child: SizedBox(
-                                  width: _controller!.value.size.width,
-                                  height: _controller!.value.size.height,
-                                  child: _controller!.buildView(),
-                                ),
-                              ),
-                            ),
+                            // 왜곡 없이 화면 채우고 상·하 균등 크롭 (하단 짤림 방지)
+                            child: SizedBox.expand(child: _videoSurface(_controller!)),
                         ),
                     ],
                   ),
