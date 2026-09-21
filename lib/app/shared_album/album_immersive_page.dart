@@ -927,6 +927,31 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
   MomoVideo? _controller;
   final ValueNotifier<bool> _initialized = ValueNotifier<bool>(false);
 
+  /// 영상의 실제 크기. [Size.zero] 면 **아직 모른다.**
+  ///
+  /// 크기는 준비 완료보다 **늦게** 올 수 있다. 예전에는 `_initialized` 에만
+  /// 리빌드가 걸려 있어서, 늦게 온 크기를 영영 반영하지 못했다 — 비율을 못
+  /// 맞춘 채 화면에 늘어난 그림이 그대로 남는다.
+  final ValueNotifier<Size> _videoSize = ValueNotifier<Size>(Size.zero);
+
+  /// 네이티브 표면이 이 영상 크기로 맞춰졌나(안드로이드 전용, iOS 는 늘 true).
+  ///
+  /// 맞기 전에 텍스처를 보여 주면 가로 영상이 세로 표면 안에 레터박스로 먼저
+  /// 그려져 **작게 나왔다가 커진다.** 그때까지는 썸네일로 덮는다.
+  final ValueNotifier<bool> _surfaceReady = ValueNotifier<bool>(false);
+
+  void _watchVideoSize() {
+    final ctrl = _controller;
+    if (ctrl == null) return;
+    final v = ctrl.value;
+    if (_surfaceReady.value != v.surfaceReady) {
+      _surfaceReady.value = v.surfaceReady;
+    }
+    final s = v.size;
+    if (s.width <= 0 || s.height <= 0) return;
+    if (s != _videoSize.value) _videoSize.value = s;
+  }
+
   bool get _isVideo => widget.item.typeDtCd == 'V';
 
   @override
@@ -967,17 +992,37 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
   /// 크기를 **모를 때도 그린다.** 예전에는 늘 `SizedBox(width: size.width, ...)`
   /// 로 감쌌는데, 비디오 크기는 재생이 시작된 뒤에야 정해질 수 있다. 그때까지
   /// (0,0) 이라 화면이 통째로 잘려 **소리만 나고 그림이 안 보인다**
-  /// (모모앨범 2026-09-19 제보). 늘어난 그 순간은 위에 깔린 썸네일이 덮는다.
+  /// (모모앨범 2026-09-19 제보). 늘어난 그 순간은 위에 덮는 썸네일이 가린다.
   Widget _videoSurface() {
-    final ctrl = _controller;
-    if (ctrl == null) return const SizedBox.expand();
-    final view = ctrl.buildView();
-    final size = ctrl.value.size;
-    if (size.width <= 0 || size.height <= 0) return view;
-    return FittedBox(
-      fit: BoxFit.cover,
-      clipBehavior: Clip.hardEdge,
-      child: SizedBox(width: size.width, height: size.height, child: view),
+    return ValueListenableBuilder<Size>(
+      valueListenable: _videoSize,
+      builder: (context, size, _) => ValueListenableBuilder<bool>(
+        valueListenable: _surfaceReady,
+        builder: (context, surfaceReady, __) {
+          final ctrl = _controller;
+          if (ctrl == null) return const SizedBox.expand();
+          final view = ctrl.buildView();
+          final Widget fitted = (size.width <= 0 || size.height <= 0)
+              ? view
+              : FittedBox(
+                  fit: BoxFit.cover,
+                  clipBehavior: Clip.hardEdge,
+                  child:
+                      SizedBox(width: size.width, height: size.height, child: view),
+                );
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              fitted,
+              // 크기를 모르거나 **표면이 아직 이 영상 크기가 아닐 때** 덮는다.
+              // 썸네일은 이미 같은 자리에 같은 cover 로 깔려 있었으므로 이어
+              // 붙어도 티가 안 난다.
+              if (size.width <= 0 || size.height <= 0 || !surfaceReady)
+                _thumbnail(key: const ValueKey('sa_video_cover')),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -990,6 +1035,11 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
     if (ctrl == null) return;
     _controller = null;
     _initialized.value = false;
+    // 다시 열면 크기를 처음부터 모르는 상태여야 한다 — 남겨 두면 다음 영상이
+    // 엉뚱한 비율로 한 프레임 그려진다.
+    _videoSize.value = Size.zero;
+    _surfaceReady.value = false;
+    ctrl.removeListener(_watchVideoSize);
     widget.onHiddenVideo(ctrl);
     ctrl.dispose();
   }
@@ -1051,6 +1101,9 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
         ..setLooping(true)
         ..setVolume(VideoMute.volume) // 넘겨온 음소거 상태를 그대로 이어받는다
         ..pause(); // 재생은 VisibilityDetector가 보일 때 시작
+      // 크기는 지금 이미 왔을 수도, 곧 올 수도 있다. 둘 다 잡는다.
+      ctrl.addListener(_watchVideoSize);
+      _watchVideoSize();
       _initialized.value = true;
     } catch (e) {
       lo.g('몰입뷰 영상 초기화 실패($url): $e');
@@ -1090,6 +1143,9 @@ class _ImmersiveMediaItemState extends State<_ImmersiveMediaItem> {
       widget.onHiddenVideo(ctrl);
       ctrl.dispose();
     }
+    _controller?.removeListener(_watchVideoSize);
+    _videoSize.dispose();
+    _surfaceReady.dispose();
     _initialized.dispose();
     super.dispose();
   }

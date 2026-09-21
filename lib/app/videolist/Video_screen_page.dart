@@ -158,6 +158,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     // 다시 열면 크기를 처음부터 모르는 상태여야 한다 — 남겨 두면 다음 영상이
     // 엉뚱한 비율로 한 프레임 그려진다.
     _videoSize.value = Size.zero;
+    _surfaceReady.value = false;
     ctrl.removeListener(_watchVideoSize);
     ctrl.dispose();
   }
@@ -397,6 +398,7 @@ class VideoScreenPageState extends State<VideoScreenPage> {
     _photoController.dispose();
     _photoIndex.dispose();
     _videoSize.dispose();
+    _surfaceReady.dispose();
     // 컨트롤러 유무가 곧 진실이다. isPhotoPost / isVideoProcessing / videoActive
     // 세 조건을 여기서 다시 조합하면 initState 조건과 어긋날 때 누수가 난다.
     _controller?.removeListener(_watchVideoSize);
@@ -608,10 +610,20 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   /// 바뀔 때마다 영상 위젯이 다시 만들어진다.
   final ValueNotifier<Size> _videoSize = ValueNotifier<Size>(Size.zero);
 
+  /// 네이티브 표면이 이 영상 크기로 맞춰졌나(안드로이드 전용, iOS 는 늘 true).
+  ///
+  /// 맞기 전에 텍스처를 보여 주면 가로 영상이 세로 표면 안에 레터박스로 먼저
+  /// 그려져 **작게 나왔다가 커진다.** 그때까지는 썸네일로 덮는다.
+  final ValueNotifier<bool> _surfaceReady = ValueNotifier<bool>(false);
+
   void _watchVideoSize() {
     final ctrl = _controller;
     if (ctrl == null) return;
-    final s = ctrl.value.size;
+    final v = ctrl.value;
+    if (_surfaceReady.value != v.surfaceReady) {
+      _surfaceReady.value = v.surfaceReady;
+    }
+    final s = v.size;
     if (s.width <= 0 || s.height <= 0) return;
     if (s != _videoSize.value) _videoSize.value = s;
   }
@@ -619,20 +631,36 @@ class VideoScreenPageState extends State<VideoScreenPage> {
   /// 크기를 알면 그 비율로 cover, 모르면 **그냥 화면을 채운다.**
   ///
   /// 잠깐 비율이 어긋나는 편이 아무것도 안 보이는 것보다 낫다. 그 순간은
-  /// 아래 깔린 썸네일(`buildPoster`)이 가려 준다. 텍스처는 트리에 그대로
-  /// 둬야 표면이 만들어지고 프레임이 흐른다.
+  /// 위에 덮는 썸네일이 가려 준다. 텍스처는 트리에 그대로 둬야 표면이
+  /// 만들어지고 프레임이 흐른다 — 빼면 영영 준비되지 않는다.
   Widget _videoSurface(MomoVideo ctrl) {
     return ValueListenableBuilder<Size>(
       valueListenable: _videoSize,
-      builder: (context, size, _) {
-        final view = ctrl.buildView();
-        if (size.width <= 0 || size.height <= 0) return view;
-        return FittedBox(
-          fit: BoxFit.cover,
-          clipBehavior: Clip.hardEdge,
-          child: SizedBox(width: size.width, height: size.height, child: view),
-        );
-      },
+      builder: (context, size, _) => ValueListenableBuilder<bool>(
+        valueListenable: _surfaceReady,
+        builder: (context, surfaceReady, __) {
+          final view = ctrl.buildView();
+          final Widget fitted = (size.width <= 0 || size.height <= 0)
+              ? view
+              : FittedBox(
+                  fit: BoxFit.cover,
+                  clipBehavior: Clip.hardEdge,
+                  child:
+                      SizedBox(width: size.width, height: size.height, child: view),
+                );
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              fitted,
+              // 크기를 모르거나 **표면이 아직 이 영상 크기가 아닐 때** 덮는다.
+              // 썸네일은 이미 같은 자리에 같은 cover 로 깔려 있었으므로 이어
+              // 붙어도 티가 안 난다.
+              if (size.width <= 0 || size.height <= 0 || !surfaceReady)
+                buildPoster(const ValueKey('videoCover')),
+            ],
+          );
+        },
+      ),
     );
   }
 

@@ -356,6 +356,11 @@ class MomoVideo(
                 if (videoSize.width == slot.surfaceW &&
                     videoSize.height == slot.surfaceH
                 ) {
+                    // 표면은 이미 맞다. 다시 붙이지 않는다(되먹임 차단).
+                    // **그래도 Dart 에는 알린다** — Dart 는 이 신호를 받아야
+                    // 텍스처를 보여 준다. 여기서 빠지면 같은 크기 영상이
+                    // 연달아 올 때 화면이 영영 썸네일에 머문다.
+                    notifySize(slot, videoSize.width, videoSize.height)
                     return
                 }
                 slot.surfaceW = videoSize.width
@@ -419,6 +424,24 @@ class MomoVideo(
                     "width" to slot.player.videoSize.width,
                     "height" to slot.player.videoSize.height,
                 ),
+            )
+        }
+    }
+
+    /// 표면이 이 크기로 **맞춰졌다**는 것을 Dart 에 알린다.
+    ///
+    /// Dart 는 이 신호를 받고서야 텍스처를 보여 준다. 그 전까지는 썸네일이 덮는다.
+    ///
+    /// 왜 필요한가: 표면은 슬롯을 만들 때 1080×1920(흔한 세로) 으로 열린다.
+    /// 1920×1080 가로 영상이 오면 ExoPlayer 가 **그 세로 표면 안에 레터박스로**
+    /// 먼저 그리고, 그 다음에야 표면이 가로로 바뀐다. 그 사이 한두 프레임 동안
+    /// 화면에 **작게 나왔다가 커지는** 것이 보인다(momoalbum 2026-09-21 실측:
+    /// 60fps 녹화에서 3~4 프레임, 약 50~65ms).
+    private fun notifySize(slot: Slot, w: Int, h: Int) {
+        main.post {
+            channel.invokeMethod(
+                "onSize",
+                mapOf("slot" to slot.id, "width" to w, "height" to h),
             )
         }
     }

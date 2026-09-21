@@ -14,7 +14,8 @@ import 'momo_video.dart';
 /// 스크러버 하나 때문에 초당 수십 번 오가게 된다 — 재생 중일 때만 200ms 간격으로
 /// 한 번씩 맞춘다.
 class MomoVideoNative extends ValueNotifier<MomoVideoValue> implements MomoVideo {
-  MomoVideoNative(this.uri) : super(const MomoVideoValue());
+  // 표면은 아직 이 영상 크기가 아니다. `onSize` 가 올 때까지 썸네일이 덮는다.
+  MomoVideoNative(this.uri) : super(const MomoVideoValue(surfaceReady: false));
 
   final Uri uri;
 
@@ -87,7 +88,7 @@ class MomoVideoNative extends ValueNotifier<MomoVideoValue> implements MomoVideo
     if (slot != null) _bySlot.remove(slot);
     _slot = null;
     _stopTicker();
-    value = const MomoVideoValue();
+    value = const MomoVideoValue(surfaceReady: false);
     Future.delayed(const Duration(milliseconds: 200), () {
       if (_disposed || _slot != null) return;
       initialize().catchError((_) {
@@ -96,18 +97,24 @@ class MomoVideoNative extends ValueNotifier<MomoVideoValue> implements MomoVideo
     });
   }
 
+  /// 표면이 이 크기로 **맞춰졌다**는 네이티브의 통지.
+  ///
+  /// `onReady` 가 주는 크기는 *플레이어가 아는* 크기일 뿐, 표면이 그 크기로
+  /// 바뀌었다는 뜻이 아니다. 화면에 내보내도 되는 시점은 이 신호다.
   void _onSize(Map<String, dynamic> args) {
     if (_disposed) return;
     final w = (args['width'] as num?)?.toDouble() ?? 0;
     final h = (args['height'] as num?)?.toDouble() ?? 0;
     if (w <= 0 || h <= 0) return;
-    value = value.copyWith(size: Size(w, h));
+    value = value.copyWith(size: Size(w, h), surfaceReady: true);
   }
 
   void _onReady(Map<String, dynamic> args) {
     if (_disposed) return;
     final w = (args['width'] as num?)?.toDouble() ?? 0;
     final h = (args['height'] as num?)?.toDouble() ?? 0;
+    // ⚠️ 여기서 surfaceReady 를 켜지 않는다. 준비됐다는 것과 표면이 맞춰졌다는
+    // 것은 다르다 — 그 차이가 '작게 나왔다가 커지는' 구간이다.
     value = value.copyWith(
       isInitialized: true,
       duration: Duration(milliseconds: (args['durationMs'] as num?)?.toInt() ?? 0),
@@ -135,7 +142,8 @@ class MomoVideoNative extends ValueNotifier<MomoVideoValue> implements MomoVideo
     // 이미 같은 URL 을 물고 있던 슬롯이면 준비가 끝나 있다. onReady 가 다시
     // 오지 않으므로 여기서 초기화 표시를 해 준다.
     if (res['reused'] == true) {
-      value = value.copyWith(isInitialized: true);
+      // 같은 URL 을 이미 물고 있던 슬롯이라 표면도 이미 그 크기다.
+      value = value.copyWith(isInitialized: true, surfaceReady: true);
       unawaited(_syncPosition());
     }
   }

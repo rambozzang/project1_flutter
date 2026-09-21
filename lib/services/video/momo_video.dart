@@ -15,6 +15,7 @@ class MomoVideoValue {
     this.position = Duration.zero,
     this.duration = Duration.zero,
     this.size = Size.zero,
+    this.surfaceReady = true,
   });
 
   final bool isInitialized;
@@ -23,12 +24,23 @@ class MomoVideoValue {
   final Duration duration;
   final Size size;
 
+  /// **네이티브 표면이 이 영상 크기로 맞춰졌나.**
+  ///
+  /// 안드로이드 전용 개념이다. 표면은 슬롯을 만들 때 1080×1920 으로 열리는데,
+  /// 1920×1080 가로 영상이 오면 ExoPlayer 가 **그 세로 표면 안에 레터박스로**
+  /// 먼저 그린다. 그 상태를 그대로 보여 주면 **작게 나왔다가 커지는** 것이
+  /// 보인다(momoalbum 2026-09-21 60fps 녹화 실측: 3~4 프레임, 약 50~65ms).
+  ///
+  /// 맞춰지기 전까지는 썸네일로 덮는다. iOS 에는 이 개념이 없으므로 늘 true 다.
+  final bool surfaceReady;
+
   MomoVideoValue copyWith({
     bool? isInitialized,
     bool? isPlaying,
     Duration? position,
     Duration? duration,
     Size? size,
+    bool? surfaceReady,
   }) =>
       MomoVideoValue(
         isInitialized: isInitialized ?? this.isInitialized,
@@ -36,6 +48,7 @@ class MomoVideoValue {
         position: position ?? this.position,
         duration: duration ?? this.duration,
         size: size ?? this.size,
+        surfaceReady: surfaceReady ?? this.surfaceReady,
       );
 }
 

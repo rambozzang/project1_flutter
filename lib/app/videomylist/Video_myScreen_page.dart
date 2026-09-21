@@ -141,6 +141,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
     initialized = false;
     initPlay = false;
     _videoSize.value = Size.zero;
+    _surfaceReady.value = false;
     ctrl.removeListener(_watchVideoSize);
     ctrl.dispose();
   }
@@ -335,28 +336,54 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
   /// 그대로였다** — 소리만 나고 그림은 멈춘다(2026-09-20 SM-N976N 제보).
   final ValueNotifier<Size> _videoSize = ValueNotifier<Size>(Size.zero);
 
+  /// 네이티브 표면이 이 영상 크기로 맞춰졌나(안드로이드 전용, iOS 는 늘 true).
+  ///
+  /// 맞기 전에 텍스처를 보여 주면 가로 영상이 세로 표면 안에 레터박스로 먼저
+  /// 그려져 **작게 나왔다가 커진다.** 그때까지는 썸네일로 덮는다.
+  final ValueNotifier<bool> _surfaceReady = ValueNotifier<bool>(false);
+
   void _watchVideoSize() {
     final ctrl = _controller;
     if (ctrl == null) return;
-    final s = ctrl.value.size;
+    final v = ctrl.value;
+    if (_surfaceReady.value != v.surfaceReady) {
+      _surfaceReady.value = v.surfaceReady;
+    }
+    final s = v.size;
     if (s.width <= 0 || s.height <= 0) return;
     if (s != _videoSize.value) _videoSize.value = s;
   }
 
-  /// 크기를 알면 그 비율로 cover, 모르면 **그냥 채운다.** 그 순간은 아래 깔린
+  /// 크기를 알면 그 비율로 cover, 모르면 **그냥 채운다.** 그 순간은 위에 덮는
   /// 썸네일이 가려 준다. 텍스처는 트리에 그대로 둬야 표면이 만들어진다.
   Widget _videoSurface(MomoVideo ctrl) {
     return ValueListenableBuilder<Size>(
       valueListenable: _videoSize,
-      builder: (context, size, _) {
-        final view = ctrl.buildView();
-        if (size.width <= 0 || size.height <= 0) return view;
-        return FittedBox(
-          fit: BoxFit.cover,
-          clipBehavior: Clip.hardEdge,
-          child: SizedBox(width: size.width, height: size.height, child: view),
-        );
-      },
+      builder: (context, size, _) => ValueListenableBuilder<bool>(
+        valueListenable: _surfaceReady,
+        builder: (context, surfaceReady, __) {
+          final view = ctrl.buildView();
+          final Widget fitted = (size.width <= 0 || size.height <= 0)
+              ? view
+              : FittedBox(
+                  fit: BoxFit.cover,
+                  clipBehavior: Clip.hardEdge,
+                  child:
+                      SizedBox(width: size.width, height: size.height, child: view),
+                );
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              fitted,
+              // 크기를 모르거나 **표면이 아직 이 영상 크기가 아닐 때** 덮는다.
+              // 썸네일은 이미 같은 자리에 같은 cover 로 깔려 있었으므로 이어
+              // 붙어도 티가 안 난다.
+              if (size.width <= 0 || size.height <= 0 || !surfaceReady)
+                _buildThumbnail(const ValueKey('videoCover')),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -389,6 +416,7 @@ class _VideoMySreenPageState extends State<VideoMySreenPage> {
   @override
   void dispose() {
     _videoSize.dispose();
+    _surfaceReady.dispose();
     _controller?.removeListener(_watchVideoSize);
     initialized = false;
     // 컨트롤러를 가장 먼저 놓는다. 해제 과정이 리스너를 한 번 더 깨우는데,
