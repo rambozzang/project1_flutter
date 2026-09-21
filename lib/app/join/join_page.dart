@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kReleaseMode;
+import 'package:project1/app/auth/cntr/auth_cntr.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
@@ -395,9 +397,65 @@ class _JoinPageState extends State<JoinPage> with SingleTickerProviderStateMixin
               style: TextStyle(color: Colors.white),
             ),
           ),
-        )
+        ),
+        // ── 개발용 테스트 로그인 (릴리즈에는 없다) ──
+        //
+        // `kReleaseMode` 는 컴파일 타임 상수라 스토어 빌드는 이 가지를
+        // 트리쉐이킹으로 통째로 떨군다.
+        if (!kReleaseMode) ...[
+          const Gap(18),
+          _buildTestLoginButton(),
+        ],
       ],
     );
+  }
+
+  /// 개발용 테스트 로그인 버튼.
+  ///
+  /// 소셜 로그인은 카카오 키해시·네이버·Firebase OAuth 가 전부 **패키지명
+  /// 단위**로 등록돼 있어 개발 빌드(다른 서명/패키지)에서는 통과하지 못한다.
+  /// 실기기에서 화면을 눈으로 확인하려면 이 길이 있어야 한다.
+  Widget _buildTestLoginButton() {
+    return InkWell(
+      onTap: _testSignIn,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.amber.withOpacity(0.8), width: 1.1),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.science_outlined, size: 17, color: Colors.amber),
+            Gap(7),
+            Text(
+              '테스트 계정으로 로그인 (개발용)',
+              style: TextStyle(color: Colors.amber, fontSize: 13, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 더미 계정으로 로그인한 뒤 스플래시(AuthPage)로 보내 홈까지 라우팅한다.
+  /// 약관 화면(`/AgreePage`)은 거치지 않는다 — 백엔드에 이미 동의가 남아 있다.
+  Future<void> _testSignIn() async {
+    try {
+      isLoading.value = true;
+      final ResData res = await AuthCntr.to.testSignIn();
+      isLoading.value = false;
+      if (res.code != "00") {
+        Utils.alert('테스트 로그인 실패: ${res.msg ?? ''}');
+        return;
+      }
+      Get.offAllNamed('/AuthPage');
+    } catch (e) {
+      isLoading.value = false;
+      Utils.alert(e.toString());
+    }
   }
 
   // 소셜 로그인 버튼 위젯

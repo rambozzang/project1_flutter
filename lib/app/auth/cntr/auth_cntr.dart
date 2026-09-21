@@ -12,6 +12,8 @@ import 'package:project1/repo/api/naver_api.dart';
 import 'package:project1/repo/attendance/attendance_repo.dart';
 import 'package:project1/repo/common/res_data.dart';
 import 'package:project1/repo/cust/cust_repo.dart';
+import 'package:uuid/uuid.dart';
+import 'package:project1/repo/cust/data/google_join_data.dart';
 import 'package:project1/app/auth/cntr/login_data.dart';
 import 'package:project1/repo/secure_storge.dart';
 import 'package:project1/utils/StringUtils.dart';
@@ -195,6 +197,45 @@ class AuthCntr extends GetxController with SecureStorage {
       //   Get.offAllNamed("/JoinPage");
       //   return false;
     }
+  }
+
+  /// 개발용 테스트 계정 로그인.
+  ///
+  /// **왜 필요한가:** 폰에 깔린 스토어 빌드는 Play 재서명 키라 우리 개발 빌드로
+  /// 덮어쓸 수 없다(`INSTALL_FAILED_UPDATE_INCOMPATIBLE`). 패키지명을 갈라
+  /// 나란히 깔려 해도 카카오 키해시·네이버·Firebase OAuth 가 전부 **패키지명
+  /// 단위**로 등록돼 있어 소셜 로그인이 막힌다 — 첫 화면(`/AuthPage`)에서 더
+  /// 못 간다. 그래서 실기기에서 화면을 확인할 방법이 아예 없었다(2026-09-21,
+  /// 영상 표면 수정을 눈으로 못 보고 넘어감).
+  ///
+  /// 고정 uid 의 더미 계정을 백엔드에 만들고(이미 있으면 재사용), 실제 소셜
+  /// 로그인과 **똑같은** `signUpProc` 경로를 그대로 태운다. 자매 앱(모모앨범)의
+  /// 같은 이름 함수를 옮긴 것이다.
+  ///
+  /// ⚠️ 릴리즈 빌드에 노출되면 안 된다. 호출하는 UI 에서 `kReleaseMode` 로
+  /// 가드할 것 — 그쪽이 컴파일 타임 상수라 트리쉐이킹으로 통째로 떨어진다.
+  Future<ResData> testSignIn() async {
+    const String testUid = 'test_skysnap_0001';
+    final GoogleJoinData data = GoogleJoinData(
+      uid: testUid,
+      email: 'test@skysnap.dev',
+      displayName: '테스트 사용자',
+      phoneNumber: '',
+      photoURL: '',
+      chatId: '',
+      deviceId: const Uuid().v4(),
+    );
+
+    // 백엔드 가입: uid 가 이미 있으면 deviceId 만 갱신하는 idempotent 처리라
+    // 몇 번을 눌러도 같은 계정으로 로그인된다.
+    final ResData joinRes = await _custRepo.createGoogleCust(data);
+    if (joinRes.code != '00') return joinRes;
+
+    // login 시 Device-ID 헤더가 DB 의 device_id 와 일치해야 하므로 로컬에도
+    // 저장한다 — signUpProc 안의 getDeviceId() 가 이 값을 읽어 헤더로 쓴다.
+    await saveDeviceId(data.deviceId!);
+
+    return signUpProc(testUid);
   }
 
   void upDateNickNmAndCustName(String nickNm, String custNm) {

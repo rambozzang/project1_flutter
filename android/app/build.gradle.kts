@@ -69,8 +69,29 @@ android {
         }
     }
 
+    // 개발 빌드를 **스토어 설치본과 나란히** 깔기 위한 별도 패키지.
+    //
+    // 폰에 깔린 스토어 빌드는 Play 재서명 키라 우리 키로 만든 빌드가 덮어쓰지
+    // 못한다(INSTALL_FAILED_UPDATE_INCOMPATIBLE). 지우고 깔면 로그인·데이터가
+    // 날아가므로, 패키지명을 갈라 둘을 같이 둔다.
+    //
+    // **기본은 꺼져 있다.** `-PdevId` 를 줄 때만 켜진다 — 스토어·CI 경로는 손대지
+    // 않는다.
+    //
+    //     flutter build apk --profile -P devId
+    //
+    // ⚠️ 이 빌드에서는 **소셜 로그인이 안 된다.** 카카오 키해시·네이버·Firebase
+    //    OAuth 가 전부 패키지명 단위로 등록돼 있다. 로그인 화면의
+    //    `테스트 계정으로 로그인 (개발용)` 으로 들어간다(kReleaseMode 로 가려져
+    //    릴리즈에는 없다).
+    // ⚠️ FCM·Firebase Auth 도 기대하지 말 것. 화면을 눈으로 보려고 만든 길이다.
+    //
+    // 자세한 건 `src/README-dev-package.md`.
+    val useDevId = project.hasProperty("devId")
+
     buildTypes {
         getByName("debug") {
+            if (useDevId) applicationIdSuffix = ".dev"
             signingConfig = signingConfigs.getByName("debug")
             packaging {
                 jniLibs {
@@ -95,6 +116,11 @@ android {
                     useLegacyPackaging = false
                 }
             }
+        }
+        // profile 은 flutter gradle plugin 이 만든다. 성능은 profile 로만 잴 수
+        // 있으므로(debug 는 JIT 라 UI 스레드가 3~10배 느리다) 여기에도 붙인다.
+        findByName("profile")?.apply {
+            if (useDevId) applicationIdSuffix = ".dev"
         }
     }
 

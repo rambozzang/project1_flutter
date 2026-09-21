@@ -1,0 +1,99 @@
+{
+  "project_info": {
+    "project_number": "1092869368728",
+    "project_id": "skysnap-426204",
+    "storage_bucket": "skysnap-426204.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1092869368728:android:ec463ff125b8ac362519ed",
+        "android_client_info": {
+          "package_name": "com.codelabtiger.skysnap"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1092869368728-0o4kl4jhv4gbm7t4250sorua1mrdtnse.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.codelabtiger.skysnap",
+            "certificate_hash": "0ab8bfc87fa8c8c0cbcf085233a2a59f16da6b4b"
+          }
+        },
+        {
+          "client_id": "1092869368728-fah4qobf07qhmcvqeqmib6j2nq1na71f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.codelabtiger.skysnap",
+            "certificate_hash": "a6764facbb0720d9b88e8c42f049e4265f8b4dc7"
+          }
+        },
+        {
+          "client_id": "1092869368728-i0t5r6ae77466cjof1pbnr96tg6n18vo.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.codelabtiger.skysnap",
+            "certificate_hash": "f4c5f23e647d75c053d309f61a97a18221256211"
+          }
+        },
+        {
+          "client_id": "1092869368728-pu6lkqrhuc4p5eatjkkovop4flrt1dsm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.codelabtiger.skysnap",
+            "certificate_hash": "f964e9f587ded83b1e124713f9685ae380a6d258"
+          }
+        },
+        {
+          "client_id": "1092869368728-j4drsav8486270cj9ts4pr6m3khbdd7m.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.codelabtiger.skysnap",
+            "certificate_hash": "d0c2c3eed4d57b553c504c53c34ae2231a8acee1"
+          }
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDwEDfKhIZFpLls0pdwb3on8XcVMYLKPjs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1092869368728-hasaq9r3428a56tq2hqsfeejs2ga417a.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.codelabtiger.skysnap"
+              }
+            }
+          ]
+        }
+      },
+      "admob_app_id": "ca-app-pub-7861255216779015~2088764563"
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1092869368728:android:ec463ff125b8ac362519ed",
+        "android_client_info": {
+          "package_name": "com.codelabtiger.skysnap.dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDwEDfKhIZFpLls0pdwb3on8XcVMYLKPjs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      },
+      "admob_app_id": "ca-app-pub-7861255216779015~2088764563"
+    }
+  ],
+  "configuration_version": "1"
+}
