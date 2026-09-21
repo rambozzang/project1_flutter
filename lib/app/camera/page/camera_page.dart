@@ -17,6 +17,8 @@ import 'package:project1/app/camera/page/widgets/camera_preview_widget.dart';
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/utils/log_utils.dart';
 import 'package:project1/utils/utils.dart';
+import 'package:project1/config/photo_limit.dart';
+import 'package:project1/services/picked_media_filter.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 // https://github.com/rajaniket/camera_bloc
@@ -103,11 +105,29 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
     try {
       // 사진 모드: 갤러리에서 여러 장 선택 → 바로 컴포저로 이동
       if (_photoMode) {
-        final List<XFile> picked = await ImagePicker().pickMultiImage();
-        if (picked.isNotEmpty) {
-          setState(() => _photos.addAll(picked.map((e) => File(e.path))));
-          _openPhotoComposer();
+        // 남은 만큼만 고르게 한다 — 다 고른 뒤에 거절당하는 흐름을 만들지 않는다.
+        final int remaining = PhotoLimit.perPost - _photos.length;
+        if (remaining <= 0) {
+          Utils.alert('사진은 한 번에 ${PhotoLimit.perPost}장까지 올릴 수 있습니다.');
+          return;
         }
+        final List<XFile> picked =
+            await ImagePicker().pickMultiImage(limit: remaining);
+        if (picked.isEmpty || !mounted) return;
+        // 동기화가 덜 끝난 0바이트 사진을 여기서 걸러낸다.
+        final added = await PickedMediaFilter.usable(
+          picked.map((e) => File(e.path)),
+          onSkipped: (n) => Utils.alert('올릴 수 없는 파일 $n개를 제외했습니다.'),
+        );
+        if (added.isEmpty || !mounted) return;
+        // 고른 뒤에도 자른다 — 안드로이드 선택기가 `GET_CONTENT` 경로로 뜨면
+        // `limit` 을 무시한다(S24+ 실측).
+        final List<File> capped = added.take(remaining).toList();
+        if (capped.length < added.length) {
+          Utils.alert('${PhotoLimit.perPost}장까지만 담았습니다.');
+        }
+        setState(() => _photos.addAll(capped));
+        _openPhotoComposer();
         return;
       }
       // 영상 모드: 기존대로 영상 1개 선택
@@ -128,6 +148,11 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
 
   // 사진 1장 촬영 → 목록에 누적(셔터 연속 촬영 가능)
   Future<void> _capturePhoto() async {
+    // 셔터도 상한을 지켜야 한다. 갤러리 선택만 막으면 계속 찍어서 넘길 수 있다.
+    if (_photos.length >= PhotoLimit.perPost) {
+      Utils.alert('사진은 한 번에 ${PhotoLimit.perPost}장까지 올릴 수 있습니다.');
+      return;
+    }
     HapticFeedback.mediumImpact();
     final XFile? shot = await cameraBloc.takePhoto();
     if (shot != null && mounted) {
@@ -600,7 +625,13 @@ class _CameraPageState extends State<CameraPage> with WidgetsBindingObserver {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.file(_photos[i], height: 62, width: 48, fit: BoxFit.cover),
+                  // 48x62 로 그리면서 원본(12MP=49MB)을 통째로 디코딩하면 안 된다.
+                  child: Image.file(_photos[i],
+                      height: 62,
+                      width: 48,
+                      fit: BoxFit.cover,
+                      cacheWidth: 96,
+                      cacheHeight: 124),
                 ),
                 Positioned(
                   top: -4,

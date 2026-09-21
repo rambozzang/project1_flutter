@@ -12,6 +12,8 @@ import 'package:project1/app/camera/page/video_reg_page.dart';
 import 'package:project1/app/camera/page/widgets/record_progress_ring.dart';
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/utils/utils.dart';
+import 'package:project1/config/photo_limit.dart';
+import 'package:project1/services/picked_media_filter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 카메라 권한 화면 상태.
@@ -359,6 +361,12 @@ class _CameraAwesomePageState extends State<CameraAwesomePage>
       });
     } else if (mediaCapture.isPicture) {
       // 사진 모드: 즉시 이동하지 않고 목록에 누적
+      //
+      // 셔터도 상한을 지켜야 한다. 갤러리 선택만 막으면 계속 찍어서 넘길 수 있다.
+      if (_photos.length >= PhotoLimit.perPost) {
+        Utils.alert('사진은 한 번에 ${PhotoLimit.perPost}장까지 올릴 수 있습니다.');
+        return;
+      }
       setState(() {
         _photos.add(file);
       });
@@ -378,13 +386,32 @@ class _CameraAwesomePageState extends State<CameraAwesomePage>
   Future<void> _openGallery(CameraState state) async {
     final isPhoto = state is PhotoCameraState;
     if (isPhoto) {
-      final List<XFile> picked = await ImagePicker().pickMultiImage();
-      if (picked.isNotEmpty && mounted) {
-        setState(() {
-          _photos.addAll(picked.map((e) => File(e.path)));
-        });
-        _goToPhotoRegPage();
+      // 남은 만큼만 고르게 한다 — 다 고른 뒤에 거절당하는 흐름을 만들지 않는다.
+      final int remaining = PhotoLimit.perPost - _photos.length;
+      if (remaining <= 0) {
+        Utils.alert('사진은 한 번에 ${PhotoLimit.perPost}장까지 올릴 수 있습니다.');
+        return;
       }
+      final List<XFile> picked =
+          await ImagePicker().pickMultiImage(limit: remaining);
+      if (picked.isEmpty || !mounted) return;
+      // 동기화가 덜 끝난 0바이트 사진을 여기서 걸러낸다. 안 그러면 업로드
+      // 단계에서야 실패한다.
+      final added = await PickedMediaFilter.usable(
+        picked.map((e) => File(e.path)),
+        onSkipped: (n) => Utils.alert('올릴 수 없는 파일 $n개를 제외했습니다.'),
+      );
+      if (added.isEmpty || !mounted) return;
+      // 고른 뒤에도 자른다 — 안드로이드 선택기가 `GET_CONTENT` 경로로 뜨면
+      // `limit` 을 무시한다(S24+ 실측).
+      final List<File> capped = added.take(remaining).toList();
+      if (capped.length < added.length) {
+        Utils.alert('${PhotoLimit.perPost}장까지만 담았습니다.');
+      }
+      setState(() {
+        _photos.addAll(capped);
+      });
+      _goToPhotoRegPage();
     } else {
       final XFile? picked =
           await ImagePicker().pickVideo(source: ImageSource.gallery);

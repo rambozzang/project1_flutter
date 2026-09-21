@@ -11,6 +11,8 @@ import 'package:project1/app/shared_album/theme/sa_colors.dart';
 import 'package:project1/app/shared_album/theme/sa_text_styles.dart';
 import 'package:project1/app/shared_album/widget/sa_gradient_button.dart';
 import 'package:project1/app/weathergogo/cntr/weather_gogo_cntr.dart';
+import 'package:project1/config/photo_limit.dart';
+import 'package:project1/services/picked_media_filter.dart';
 import 'package:project1/repo/board/data/board_save_data.dart';
 import 'package:project1/repo/board/data/board_save_main_data.dart';
 import 'package:project1/repo/board/data/board_save_weather_data.dart';
@@ -63,9 +65,29 @@ class _AlbumUploadPageState extends State<AlbumUploadPage> {
   }
 
   Future<void> _addMore() async {
-    final picked = await ImagePicker().pickMultiImage(imageQuality: 90);
+    // 남은 만큼만 고르게 한다 — 다 고른 뒤에 거절당하는 흐름을 만들지 않는다.
+    final int remaining = PhotoLimit.perPost - _files.length;
+    if (remaining <= 0) {
+      Utils.alert('사진은 한 번에 ${PhotoLimit.perPost}장까지 올릴 수 있습니다.');
+      return;
+    }
+    // ⚠️ `imageQuality` 를 주지 않는다. 값을 주면 고른 사진을 **전부 다시
+    // 인코딩**하느라 화면이 멈춘다. 크기는 Cloudflare 가 variant 로 줄여 준다.
+    final picked = await ImagePicker().pickMultiImage(limit: remaining);
     if (picked.isEmpty || !mounted) return;
-    setState(() => _files.addAll(picked.map((e) => File(e.path))));
+    final added = await PickedMediaFilter.usable(
+      picked.map((e) => File(e.path)),
+      onSkipped: (n) => Utils.alert('올릴 수 없는 파일 $n개를 제외했습니다.'),
+    );
+    if (added.isEmpty || !mounted) return;
+    // 고른 뒤에도 자른다. 안드로이드 사진 선택기가 `GET_CONTENT` 경로로 뜨면
+    // `limit` 을 **무시한다**(S24+ 실측: PhotopickerGetContentActivity). 선택기만
+    // 믿으면 상한이 조용히 뚫린다.
+    final List<File> capped = added.take(remaining).toList();
+    if (capped.length < added.length) {
+      Utils.alert('${PhotoLimit.perPost}장까지만 담았습니다.');
+    }
+    setState(() => _files.addAll(capped));
   }
 
   BoardSaveWeatherData _weatherData() {
@@ -256,12 +278,19 @@ class _AlbumUploadPageState extends State<AlbumUploadPage> {
   }
 
   Widget _mediaTile(int index) {
+    // **디코드 폭을 반드시 준다.** 안 주면 12MP 사진 한 장이 원본 해상도로
+    // 펼쳐져 4032×3024×4 ≈ 49MB 를 쓴다. 30장이면 1.5GB — 아이폰이 죽는다
+    // (자매 앱 모모앨범에서 실제로 죽었다). 타일 폭만큼만 디코딩하면 된다.
+    final MediaQueryData mq = MediaQuery.of(context);
+    final double tileWidth = mq.size.width / 3;
+    final int cacheWidth = (tileWidth * mq.devicePixelRatio).round();
     return Stack(
       fit: StackFit.expand,
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
-          child: Image.file(_files[index], fit: BoxFit.cover),
+          child: Image.file(_files[index],
+              fit: BoxFit.cover, cacheWidth: cacheWidth),
         ),
         Positioned(
           right: 5,

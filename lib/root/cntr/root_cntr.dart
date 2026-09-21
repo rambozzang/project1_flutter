@@ -576,7 +576,10 @@ class RootCntr extends GetxController {
       DirectUploadRepo repo, File source, int index) async {
     final saved = File('${source.parent.path}/prepared-photo-$index.png');
     if (await saved.exists()) return saved;
-    final converted = await repo.convertIfHeif(source);
+    // Cloudflare 가 받아 주는 포맷이면 원본을 그대로 돌려준다(대부분 여기서 끝난다).
+    // 변환이 실제로 일어나는 건 Cloudflare 가 거절하는 포맷뿐이다 —
+    // `DirectUploadRepo.prepareForUpload` 주석 참고.
+    final converted = await repo.prepareForUpload(source);
     if (converted.path == source.path) return source;
     // 변환 캐시가 OS에 의해 지워져도 등록된 백그라운드 전송의 파일은 남긴다.
     final staged = await converted.copy('${saved.path}.tmp');

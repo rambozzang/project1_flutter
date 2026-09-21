@@ -86,20 +86,37 @@ class ShortModifyController extends GetxController {
   // 업로드된 이미지 목록 가져오기
   List<ImageData> get uploadedImages => imageList.where((image) => image.isUploaded).toList();
 
+  /// 한 글에 붙일 수 있는 이미지 수. 고르기 **전과 담는 루프 양쪽**에서 지킨다 —
+  /// 앞에서만 보면 한 번에 50장을 고를 때 50장이 그대로 들어간다.
+  static const int _maxImages = 10;
+
   Future<void> pickImage() async {
-    // 최대 10개
-    if (imageList.length >= 10) {
-      Utils.alert('이미지는 최대 10개까지 업로드 가능합니다.');
+    if (imageList.length >= _maxImages) {
+      Utils.alert('이미지는 최대 $_maxImages개까지 업로드 가능합니다.');
       return;
     }
 
+    // 남은 만큼만 고르게 한다. 예전에는 상한을 **고르기 전에만** 보고 루프에서
+    // 전부 담아서, 10개 제한이 있는데도 한 번에 50장을 고르면 50장이 들어갔다.
+    final int remaining = _maxImages - imageList.length;
     final ImagePicker picker = ImagePicker();
-    final List<XFile> list = await picker.pickMultiImage();
+    final List<XFile> list = await picker.pickMultiImage(limit: remaining);
 
     if (list.isNotEmpty) {
       for (var file in list) {
-        // 파일 크기 확인 (10MB = 10 * 1024 * 1024 bytes)
+        // 선택기가 `GET_CONTENT` 경로로 뜨면 `limit` 을 무시한다(S24+ 실측).
+        // 담는 쪽에서도 막아야 상한이 뚫리지 않는다.
+        if (imageList.length >= _maxImages) {
+          Utils.alert('이미지는 최대 $_maxImages개까지 업로드 가능합니다.');
+          break;
+        }
+        // 동기화가 덜 끝났거나 원본이 기기에 없는 사진은 0바이트로 온다.
         final fileSize = await file.length();
+        if (fileSize <= 0) {
+          Utils.alert('${file.name}은(는) 올릴 수 없는 파일이라 제외했습니다.');
+          continue;
+        }
+        // 파일 크기 확인 (10MB = 10 * 1024 * 1024 bytes)
         if (fileSize > 10 * 1024 * 1024) {
           Utils.alert('${file.name}의 크기가 10MB를 초과합니다. 이 파일은 업로드되지 않습니다.');
           continue; // 이 파일을 건너뛰고 다음 파일로 진행

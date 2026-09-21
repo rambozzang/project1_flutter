@@ -146,10 +146,16 @@ class _PhotoRegPageState extends State<PhotoRegPage> {
           itemCount: photos.length,
           onPageChanged: (i) => setState(() => _currentPage = i),
           itemBuilder: (context, i) {
+            // 화면 폭만큼만 디코딩한다. 12MP 원본을 그대로 펼치면 한 장에
+            // 4032×3024×4 ≈ 49MB 이고, PageView 는 앞뒤 장을 함께 들고 있다.
+            final MediaQueryData mq = MediaQuery.of(context);
+            final int cacheWidth =
+                (mq.size.width * mq.devicePixelRatio).round();
             return Container(
               color: Colors.black,
               alignment: Alignment.center,
-              child: Image.file(photos[i], fit: BoxFit.contain),
+              child: Image.file(photos[i],
+                  fit: BoxFit.contain, cacheWidth: cacheWidth),
             );
           },
         ),
