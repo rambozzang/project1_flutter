@@ -5,6 +5,8 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 // Import for iOS/macOS features.
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:project1/app/shared_album/theme/sa_colors.dart';
+import 'package:project1/app/webview/webview_warmup.dart';
+import 'package:project1/utils/log_utils.dart';
 
 class CommonWebView extends StatefulWidget {
   const CommonWebView(
@@ -45,6 +47,10 @@ class _CommonWebView2State extends State<CommonWebView>
   late final PlatformWebViewControllerCreationParams params;
 
   ValueNotifier<bool> isLoading = ValueNotifier<bool>(false);
+
+  /// 이 화면이 열린 시각 / 지도가 보이기 시작한 시각. 진단 로그에만 쓴다.
+  final int _openedAtMs = DateTime.now().millisecondsSinceEpoch;
+  int? _shownAtMs;
   bool _isFirstResumed = true;
   bool _touchOn = false; // touchToggle 활성 시 지도 조작 on/off 상태(기본 off=스크롤 통과)
 
@@ -101,7 +107,18 @@ class _CommonWebView2State extends State<CommonWebView>
             // 지도가 아직 안 그려진 구간이 있다(2026-09-20 실측: 1.4초에 빈
             // 화면, 2.1초에 지도). 85 면 타일까지 대체로 그려져 있다.
             // 어차피 뒤에 미리보기 그림이 깔려 있으니 조금 더 두는 편이 낫다.
-            if (progress >= 85) isLoading.value = false;
+            if (progress >= 85) {
+              isLoading.value = false;
+              // 진입부터 지도가 보이기까지 실제로 몇 ms 인지 남긴다.
+              // "느리다"는 체감을 고칠 때 추측하지 않으려면 이 값이 필요하다
+              // (엔진 예열 효과도 이 숫자로 비교한다 — WebViewWarmup).
+              if (_shownAtMs == null) {
+                _shownAtMs = DateTime.now().millisecondsSinceEpoch;
+                lo.g('[webview] 표시까지 '
+                    '${_shownAtMs! - _openedAtMs}ms '
+                    '(예열 ${WebViewWarmup.isWarmed ? "O" : "X"})');
+              }
+            }
           },
           onPageStarted: (String url) {
             isLoading.value = true;

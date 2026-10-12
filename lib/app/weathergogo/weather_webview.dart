@@ -1,12 +1,14 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:project1/app/weather/theme/textStyle.dart';
+import 'package:project1/app/weathergogo/map/kma_image_loop_page.dart';
+import 'package:project1/app/weathergogo/map/nation_weather_map_page.dart';
 import 'package:project1/app/webview/common_webview.dart';
+import 'package:project1/app/webview/webview_warmup.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 class WeatherWEbviewPage extends StatelessWidget {
@@ -546,25 +548,30 @@ class WeatherMapViewerPage extends StatelessWidget {
   final bool denyLocation;
   final bool radarEcho;
 
-  /// 실시간 레이더(RainViewer).
-  static void openRadar() => Get.to(
-        () => WeatherMapViewerPage(
+  /// 실시간 레이더 — 기상청 레이더 영상을 먼저 시도하고, 못 받으면 RainViewer 웹뷰로.
+  ///
+  /// 웹뷰는 운영에서도 느렸다(크로미움 기동 + 남의 사이트 스크립트, 2026-09-21).
+  /// 기상청 영상은 그림만 받으니 훨씬 가볍다. 공공데이터포털 활용 승인 전에는
+  /// 영상 목록이 비어 오므로 그때는 지금까지와 똑같이 웹뷰가 뜬다.
+  static void openRadar() => KmaImageLoopPage.open(
+        radar: true,
+        fallback: () => const WeatherMapViewerPage(
           title: '실시간 레이더',
           url: RealtimeRadarPage.rainviewerUrl,
           denyLocation: true,
           radarEcho: true,
         ),
-        transition: Transition.cupertino,
       );
 
-  /// 실시간 위성영상(Zoom Earth). URL 에 현재 시각이 들어가므로 열 때 만든다.
-  static void openSatellite() => Get.to(
-        () => WeatherMapViewerPage(
+  /// 실시간 위성영상 — 기상청 천리안 2A 영상 우선, 못 받으면 Zoom Earth 웹뷰로.
+  /// 웹뷰 주소에는 현재 시각이 들어가므로 대신 띄울 때 만든다.
+  static void openSatellite() => KmaImageLoopPage.open(
+        radar: false,
+        fallback: () => WeatherMapViewerPage(
           title: '실시간 위성영상',
           url: RealtimeSatellitePage.satelliteUrl,
           injectJs: RealtimeSatellitePage.viewerInjectJs,
         ),
-        transition: Transition.cupertino,
       );
 
   @override
@@ -609,6 +616,15 @@ class WeatherMapEntrySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 카드가 만들어지는 시점에 웹뷰 엔진을 미리 깨운다.
+    //
+    // 이 카드를 봤다는 건 곧 누를 수 있다는 뜻이고, 탭한 뒤에 크로미움을
+    // 처음 띄우면 그 시간이 고스란히 대기로 보인다. 빈 페이지로 한 번
+    // 올려 두면 그 단계가 미리 끝나 있다(자세한 이유는 WebViewWarmup).
+    //
+    // build 에서 부르지만 내부에 1회 가드가 있어 몇 번 리빌드되든 실제
+    // 예열은 한 번뿐이다.
+    WebViewWarmup.warm();
     return Padding(
       // 이웃 섹션(SunTimesView)과 같은 좌우 8, 위 14.
       padding: const EdgeInsets.fromLTRB(8, 14, 8, 0),
@@ -638,6 +654,8 @@ class WeatherMapEntrySection extends StatelessWidget {
             ),
           ),
           const Gap(8),
+          const _NationMapEntry(),
+          const Gap(8),
           SizedBox(
             height: 152,
             child: Row(
@@ -662,6 +680,49 @@ class WeatherMapEntrySection extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// 전국 날씨 지도 입구 — 예보·관측·특보·지진·태풍을 네이버 지도 위에 본다.
+///
+/// 레이더·위성 타일과 같은 테두리·모서리를 써서 한 섹션으로 읽히게 했다.
+class _NationMapEntry extends StatelessWidget {
+  const _NationMapEntry();
+
+  @override
+  Widget build(BuildContext context) {
+    return _PressScale(
+      onTap: NationWeatherMapPage.open,
+      child: Container(
+        height: 64,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+        ),
+        child: const Row(
+          children: [
+            Text('🗺️', style: TextStyle(fontSize: 24)),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('전국 날씨 지도',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+                  SizedBox(height: 2),
+                  Text('예보 · 관측 · 특보 · 지진·태풍',
+                      style: TextStyle(fontSize: 11.5, color: Colors.white70)),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: Colors.white70),
+          ],
+        ),
       ),
     );
   }

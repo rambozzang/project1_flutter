@@ -60,7 +60,9 @@ class MapCntr extends GetxController {
   void init() async {
     lo.g('init');
 
-    await NaverMapSdk.instance.initialize(
+    // 옛 NaverMapSdk.initialize 는 폐기된 옛 지도 인증 주소를 쓴다. 새 인증으로 맞춘다
+    // (전국 날씨 지도와 같은 방식, 2026-10-13).
+    await FlutterNaverMap().init(
         clientId: '1gvb59zfma',
         onAuthFailed: (ex) {
           Lo.g("********* 네이버맵 인증오류 : $ex *********");
