@@ -55,8 +55,12 @@ enum NationMapLayer {
 
   static List<NationMapLayer> of(NationMapGroup g) => values.where((e) => e.group == g).toList();
 
-  /// 대기질은 17개 시도 평균이라 면으로 이으면 경계가 뭉개진다. 글자만 찍는다.
-  bool get paintsField => group != NationMapGroup.air && this != lightning;
+  /// 색 면은 **비·눈·파도처럼 "오는 곳"을 보여 줘야 하는 층에만** 깐다.
+  ///
+  /// 처음엔 네이버처럼 기온에도 깔았는데, 전국 기온이 15~21℃ 로 고르면 지도 전체가 같은
+  /// 노랑 한 색으로 덮여 정보 없이 바탕 지도만 가렸다(2026-10-13 사용자 지적). 기온·습도·
+  /// 풍속은 숫자 알약만으로 충분하다. 대기질은 시도 평균이라, 낙뢰는 점 자료라 제외.
+  bool get paintsField => sparse && group != NationMapGroup.air && this != lightning;
 
   double? value(Map<String, dynamic> p) {
     final v = p[key];

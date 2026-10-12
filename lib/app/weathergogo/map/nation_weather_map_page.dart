@@ -9,7 +9,7 @@ import 'package:project1/utils/log_utils.dart';
 
 /// 전국 날씨 지도 — 네이버 날씨 지도와 같은 구성.
 ///
-/// - 오른쪽 세로 버튼: 예보 · 영상 · 관측 · 대기질 / 바람 · CCTV / 특보 · 지진태풍 · 제보.
+/// - 오른쪽 세로 버튼: 예보 · 영상 · 관측 · 대기질 / 바람 · CCTV / 특보 · 지진태풍.
 ///   누르면 왼쪽으로 하위 메뉴가 펼쳐지고 고른 버튼은 파란색이 된다.
 /// - 지도 전체에 연속 색 면 + 흰 알약 값. 왼쪽 위에 세로 색 막대 범례.
 /// - 아래에 어두운 시간 막대(예보·강수예측)와 지점 카드(지도를 누른 곳의 값).
@@ -31,13 +31,18 @@ class _NationWeatherMapPageState extends State<NationWeatherMapPage> {
   late final NationWeatherMapCntr c = Get.put(NationWeatherMapCntr());
 
   /// 지도 키 초기화는 앱에서 한 번이면 된다.
-  /// 옛 NaverMapSdk.initialize 는 폐기된 인증 주소로 붙어 거부됐다(2026-10-13) — 새 방식을 쓴다.
+  ///
+  /// ⚠️ 기존 검색 지도(MapCntr)와 **같은 옛 방식**(NaverMapSdk.initialize)을 쓴다. 우리 키
+  /// '1gvb59zfma' 는 옛 방식으로 발급된 키라, 새 방식(FlutterNaverMap.init)으로 붙이면
+  /// "Bundle Identifier 를 잘못 등록함"(401)으로 거부된다(2026-10-13 확인). 새 방식으로
+  /// 옮기려면 네이버 클라우드 콘솔에서 새 Maps 응용 프로그램 키를 따로 받아야 한다.
   static Future<void>? _sdkReady;
 
   @override
   void initState() {
     super.initState();
-    _sdkReady ??= FlutterNaverMap().init(
+    // ignore: deprecated_member_use
+    _sdkReady ??= NaverMapSdk.instance.initialize(
       clientId: '1gvb59zfma',
       onAuthFailed: (e) => lo.g('네이버 지도 인증 실패: $e'),
     );
@@ -110,6 +115,8 @@ class _NationWeatherMapPageState extends State<NationWeatherMapPage> {
     return Obx(() {
       final l = c.layer.value;
       if (l.group == NationMapGroup.air) return _airLegend(l);
+      // 색 면을 깔지 않는 층(기온·습도·풍속)은 숫자 알약만 보이므로 색 막대가 필요 없다.
+      if (!l.paintsField) return const SizedBox.shrink();
       final ticks = l.ticks;
       final top = ticks.first, bottom = ticks.last;
       return Container(
@@ -213,8 +220,6 @@ class _NationWeatherMapPageState extends State<NationWeatherMapPage> {
               active: c.safety.value == SafetyPanel.quake,
               onTap: () => c.toggleSafety(SafetyPanel.quake),
             ),
-            const Gap(6),
-            _RailButton(label: '제보', icon: Icons.photo_camera_outlined, onTap: () => Get.toNamed('/MapPage')),
           ],
         ),
       );
