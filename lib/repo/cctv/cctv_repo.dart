@@ -23,7 +23,9 @@ import 'dart:convert' as convert;
 class CctvRepo {
   var distance = const Distance();
 
-  Future<List<CctvResData>> fetchCctv(LatLng southWest, LatLng northEast, double lat, double lng) async {
+  /// [type] its: 국도 / ex: 고속도로. 기본은 예전처럼 국도.
+  Future<List<CctvResData>> fetchCctv(LatLng southWest, LatLng northEast, double lat, double lng,
+      {String type = 'its'}) async {
     List<CctvResData> cctvs = [];
 
     ///
@@ -32,7 +34,7 @@ class CctvRepo {
     //req.apiKey = 'test';
     req.apiKey = '347fd434194345e184b3e15b362d30d8';
     req.cctvType = '1'; // CCTV 유형(1: 실시간 스트리밍(HLS) / 2: 동영상 파일 / 3: 정지 영상)
-    req.type = 'its'; // its : 국도 / ex : 고속도로
+    req.type = type; // its : 국도 / ex : 고속도로
     req.getType = 'xml'; // 출력 결과 형식(xml, json / 기본: xml)
 
     req.minX = southWest.longitude;

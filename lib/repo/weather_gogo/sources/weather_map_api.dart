@@ -41,6 +41,19 @@ class WeatherMapApi {
   Future<Map<String, dynamic>> forecast(String time) =>
       _post('/weather/map/forecast', query: {'time': time});
 
+  /// 강수예측 시각 목록(초단기예보 6시간)
+  Future<List<String>> nowcastTimes() async {
+    final res = await _post('/weather/map/nowcast/times');
+    final list = res['list'];
+    return list is List ? list.map((e) => e.toString()).toList() : const [];
+  }
+
+  /// 한 시각의 강수예측 — {time, points:[{lat,lon,RN1_MM,LGT,PTY,SKY,T1H}]}
+  Future<Map<String, dynamic>> nowcast(String time) => _post('/weather/map/nowcast', query: {'time': time});
+
+  /// 시도별 미세먼지 — {dataTime, points:[{sido,lat,lon,PM10,PM25}]}
+  Future<Map<String, dynamic>> air() => _post('/weather/map/air');
+
   /// {available, items:[기상청 원문]}
   Future<Map<String, dynamic>> earthquakes() => _post('/weather/map/earthquake');
 
