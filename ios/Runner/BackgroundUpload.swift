@@ -1,5 +1,8 @@
 import Foundation
 import Flutter
+import UIKit
+import BackgroundTasks
+import Network
 
 /// iOS가 소유하는 background URLSession Direct Upload 전송기.
 /// Dart가 멈춰도 URLSession이 파일을 계속 보내고, 결과는 UserDefaults에 남겨 다음
@@ -27,6 +30,40 @@ final class BackgroundUpload: NSObject, URLSessionTaskDelegate, URLSessionDataDe
   private var completionHandler: (() -> Void)?
   private var methodChannel: FlutterMethodChannel?
 
+  // ── 전송 제한·재시도·이어서 처리 (모모앨범 2026-09-26·10-10 실측에서 옮김) ──
+  //
+  // 사진 전송은 한 번에 몇 장씩만 실제로 시작한다. HTTP/2·3은 연결 하나에 전송을 전부
+  // 겹쳐 싣기 때문에 30장을 한꺼번에 시작하면 장마다 회선의 1/30만 받는다. 한 장이 끝나는
+  // 데 수 분이 걸리고, 그 사이 연결이 통째로 끊겨(-1005) 처음부터 다시 했다.
+  // 데이터 통신(LTE·5G)에서는 4장도 많았다 — 장마다 22~35초, Cloudflare 408로 끊겼다.
+  // 그래서 데이터 통신이거나 한 장이라도 일시 실패가 나면 대기열이 빌 때까지 한 장씩 보낸다.
+  // tus(영상)는 조각 단위로 따로 이어지므로 이 제한에 넣지 않는다.
+  private static let maxActiveUploads = 4
+  private static let constrainedActiveUploads = 1
+  // 차례를 기다리는 동안 끊기지 않도록 무응답 한도를 넉넉히 준다(기본 60초에 -1001로 끊겼다).
+  private static let requestIdleTimeout: TimeInterval = 900
+  private static let livePrefix = "live:"
+  private let limiterQueue = DispatchQueue(label: "com.skysnap.background-upload-limiter")
+  private let pathMonitor = NWPathMonitor()
+  // 아래는 모두 limiterQueue에서만 만진다.
+  private var heldTasks: [URLSessionTask] = []
+  private var activeKeys = Set<String>()
+  private var trackedKeys = Set<String>()
+  private var inBackground = false
+  private var onExpensiveNetwork = false
+  private var congested = false
+  // iOS 26+ 이어서 처리(BGContinuedProcessingTask). 사진이 남은 채 앱을 벗어나면 신청한다.
+  // 그 동안은 앱이 살아 있어 위 제한을 지키며 하나 끝날 때마다 다음을 보낼 수 있다.
+  private var continuedTask: BGTask?
+  private var continuedPending = false
+  private var continuedRequestID: String?
+  private var continuedFailed = false
+  private var progressTotal: Int64 = 0
+  private var progressDone: Int64 = 0
+  private var partialProgress: [String: Double] = [:]
+  private var lastProgressReport = Date.distantPast
+  private var lastSubtitle = ""
+
   private struct Record: Codable {
     var status: String
     var error: String?
@@ -41,6 +78,10 @@ final class BackgroundUpload: NSObject, URLSessionTaskDelegate, URLSessionDataDe
     var uploadLength: Int64? = nil
     var tusOffset: Int64? = nil
     var tusRetryCount: Int? = nil
+    // 사진 한 장을 같은 URL로 다시 보낸 횟수(retryTransientMultipart).
+    var retryCount: Int? = nil
+    // 이어서 처리 중 앱 내 세션(liveSession)으로 보내는 중인가.
+    var live: Bool? = nil
   }
 
   private lazy var session: URLSession = {
@@ -52,13 +93,74 @@ final class BackgroundUpload: NSObject, URLSessionTaskDelegate, URLSessionDataDe
     // 사진 한 묶음이 회선을 모두 점유하지 않도록 같은 Cloudflare 호스트에는 한 전송만
     // 활성화한다. 나머지는 URLSession이 OS 수준에서 대기시킨다.
     config.httpMaximumConnectionsPerHost = 1
+    config.timeoutIntervalForRequest = Self.requestIdleTimeout
+    config.timeoutIntervalForResource = 24 * 60 * 60
     return URLSession(configuration: config, delegate: self, delegateQueue: nil)
   }()
+
+  /// 이어서 처리 중(앱이 백그라운드지만 iOS가 살려 두는 동안)에만 쓰는 앱 내 세션.
+  /// 백그라운드 세션은 앱이 백그라운드일 때 시작한 전송을 "나중에 해도 되는 일"로 미룬다
+  /// (모모앨범 실측: 7분 넘게 안 나감). 앱 내 세션은 그 판단을 받지 않는다. 대신 앱이 멈추면
+  /// 같이 끊기므로 이어서 처리가 끝날 때 백그라운드 세션으로 되돌린다.
+  private lazy var liveSession: URLSession = {
+    let config = URLSessionConfiguration.default
+    config.timeoutIntervalForRequest = Self.requestIdleTimeout
+    config.timeoutIntervalForResource = 24 * 60 * 60
+    config.allowsCellularAccess = true
+    return URLSession(configuration: config, delegate: self, delegateQueue: nil)
+  }()
+
+  private func key(_ task: URLSessionTask) -> String {
+    (task.taskDescription?.hasPrefix(Self.livePrefix) == true ? "L" : "B") + String(task.taskIdentifier)
+  }
 
   private override init() {
     super.init()
     // 세션을 즉시 만들어야 OS가 백그라운드 완료를 위해 재기동했을 때 delegate가 붙는다.
     _ = session
+    pathMonitor.pathUpdateHandler = { [weak self] path in
+      guard let self else { return }
+      self.onExpensiveNetwork = path.isExpensive || path.usesInterfaceType(.cellular)
+    }
+    pathMonitor.start(queue: limiterQueue)
+    // 화면을 벗어나기 직전(아직 화면에 있을 때)에만 이어서 처리를 신청할 수 있다.
+    NotificationCenter.default.addObserver(
+      forName: UIApplication.willResignActiveNotification, object: nil, queue: nil
+    ) { [weak self] _ in
+      // 사진 고르기·공유 창은 앱 밖이라 이 알림이 오지만 사용자는 앱 안에 있다.
+      if Self.isPresentingSystemSheet() { return }
+      self?.submitContinuedIfNeeded()
+    }
+    NotificationCenter.default.addObserver(
+      forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: nil
+    ) { [weak self] _ in
+      self?.releaseHeldForBackground()
+    }
+    NotificationCenter.default.addObserver(
+      forName: UIApplication.willEnterForegroundNotification, object: nil, queue: nil
+    ) { [weak self] _ in
+      self?.limiterQueue.async {
+        self?.inBackground = false
+        self?.pumpLocked()
+      }
+    }
+    // 차례를 기다리던 작업은 앱이 죽으면 대기 목록과 함께 사라진다. OS에는 멈춘 작업으로
+    // 남으므로 다시 붙잡아 차례대로 시작한다. 이미 돌던 작업은 자리 수에 넣는다.
+    session.getAllTasks { [weak self] tasks in
+      guard let self else { return }
+      self.limiterQueue.async {
+        for task in tasks where task.taskDescription?.hasPrefix("tus-head:") != true {
+          guard self.records()[self.idFromDescription(task.taskDescription) ?? ""]?
+            .uploadProtocol != "tus" else { continue }
+          if task.state == .running {
+            self.activeKeys.insert(self.key(task))
+          } else if task.state == .suspended {
+            self.heldTasks.append(task)
+          }
+        }
+        self.pumpLocked()
+      }
+    }
   }
 
   func accepts(identifier: String) -> Bool { identifier == Self.sessionIdentifier }
@@ -195,6 +297,8 @@ final class BackgroundUpload: NSObject, URLSessionTaskDelegate, URLSessionDataDe
         let attributes = try FileManager.default.attributesOfItem(atPath: item.body.path)
         let length = (attributes[.size] as? NSNumber)?.intValue ?? 0
         request.setValue(String(length), forHTTPHeaderField: "Content-Length")
+        // URLRequest마다 기본 60초가 따로 박혀 있어 세션 설정과 같은 값을 넣는다.
+        request.timeoutInterval = Self.requestIdleTimeout
         let task = session.uploadTask(with: request, fromFile: item.body)
         task.taskDescription = item.upload.id
         tasks.append((item.upload, task, item.body))
@@ -214,7 +318,10 @@ final class BackgroundUpload: NSObject, URLSessionTaskDelegate, URLSessionDataDe
         tusOffset: upload.uploadProtocol == "tus" ? 0 : nil, tusRetryCount: 0
       ))
     }
-    tasks.forEach { $0.1.resume() }
+    // 영상(tus)은 바로 시작하고, 사진은 대기열에 넣어 몇 장씩만 시작한다.
+    tasks.filter { $0.0.uploadProtocol == "tus" }.forEach { $0.1.resume() }
+    let photos: [URLSessionTask] = tasks.filter { $0.0.uploadProtocol != "tus" }.map { $0.1 }
+    limiterQueue.async { self.scheduleLocked(photos) }
   }
 
   private func parseUpload(_ raw: [String: Any]) throws -> Upload {
@@ -362,10 +469,28 @@ final class BackgroundUpload: NSObject, URLSessionTaskDelegate, URLSessionDataDe
   func urlSession(_ session: URLSession, task: URLSessionTask,
                   didSendBodyData bytesSent: Int64, totalBytesSent: Int64,
                   totalBytesExpectedToSend: Int64) {
-    if let id = id(for: task) { updateStatus(id: id, status: "running", error: nil) }
+    if let id = id(for: task), records()[id]?.status != "running" {
+      updateStatus(id: id, status: "running", error: nil)
+    }
+    guard totalBytesExpectedToSend > 0 else { return }
+    let fraction = min(1, Double(totalBytesSent) / Double(totalBytesExpectedToSend))
+    let taskKey = key(task)
+    limiterQueue.async {
+      guard self.trackedKeys.contains(taskKey) else { return }
+      self.partialProgress[taskKey] = fraction
+      // 이어서 처리는 진행 보고가 끊기면 iOS가 멈춘 것으로 보고 "작업 실패"로 끝낸다.
+      if Date().timeIntervalSince(self.lastProgressReport) >= 1 {
+        self.updateContinuedProgressLocked()
+      }
+    }
   }
 
   func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+    // 세션을 옮기며 취소한 옛 작업(앱 내 ↔ 백그라운드)의 콜백은 무시한다.
+    if (error as NSError?)?.code == NSURLErrorCancelled, !isCurrentTask(task) {
+      limiterQueue.async { self.recordFinishedLocked(key: self.key(task), succeeded: false, tracked: false) }
+      return
+    }
     guard let id = id(for: task) else { return }
     if task.taskDescription?.hasPrefix("tus-head:") == true {
       handleTusHead(id: id, task: task, error: error)
@@ -375,13 +500,17 @@ final class BackgroundUpload: NSObject, URLSessionTaskDelegate, URLSessionDataDe
       handleTusPatch(id: id, task: task, error: error)
       return
     }
+    if retryTransientMultipart(id: id, task: task, error: error) { return }
     let code = (task.response as? HTTPURLResponse)?.statusCode ?? 0
-    if error == nil && (200...299).contains(code) {
+    // 409: 같은 URL로 이미 도착한 사진을 다시 보낸 경우다(재시도 중 앞선 전송이 사실 성공).
+    let succeeded = error == nil && ((200...299).contains(code) || code == 409)
+    if succeeded {
       updateStatus(id: id, status: "success", error: nil)
     } else {
       let description = error?.localizedDescription ?? "HTTP \(code)"
       updateStatus(id: id, status: "failed", error: description)
     }
+    taskFinished(task, succeeded: succeeded)
   }
 
   func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask,
@@ -517,11 +646,18 @@ final class BackgroundUpload: NSObject, URLSessionTaskDelegate, URLSessionDataDe
   /// background URLSession 작업이 남지 않으므로, 오래된 queued/running 레코드를
   /// failed(task_missing)로 바꿔 Dart가 안전한 기존 업로더로 복구할 수 있게 한다.
   private func stateRows(ids: [String], completion: @escaping ([[String: String]]) -> Void) {
-    session.getAllTasks { [weak self] tasks in
+    liveSession.getAllTasks { [weak self] liveTasks in
       guard let self else {
         completion(ids.map { ["id": $0, "status": "missing", "error": "" ] })
         return
       }
+      self.session.getAllTasks { [weak self] backgroundTasks in
+      guard let self else {
+        completion(ids.map { ["id": $0, "status": "missing", "error": "" ] })
+        return
+      }
+      // 앱 내 세션으로 보내는 중인 사진도 살아 있는 작업이다(이어서 처리 중).
+      let tasks = backgroundTasks + liveTasks
       let activeDescriptions = Set(tasks.compactMap { task -> String? in
         switch task.state {
         case .running, .suspended, .canceling:
@@ -548,6 +684,7 @@ final class BackgroundUpload: NSObject, URLSessionTaskDelegate, URLSessionDataDe
         activeTaskIdentifiers: activeTaskIdentifiers
       )
       completion(self.storedStateRows(ids: ids))
+      }
     }
   }
 
@@ -619,6 +756,7 @@ final class BackgroundUpload: NSObject, URLSessionTaskDelegate, URLSessionDataDe
 
   private func idFromDescription(_ description: String?) -> String? {
     guard let description, !description.isEmpty else { return nil }
+    if description.hasPrefix(Self.livePrefix) { return String(description.dropFirst(Self.livePrefix.count)) }
     return description.hasPrefix("tus-head:")
       ? String(description.dropFirst("tus-head:".count)) : description
   }
@@ -642,5 +780,376 @@ final class BackgroundUpload: NSObject, URLSessionTaskDelegate, URLSessionDataDe
         UserDefaults.standard.set(encoded, forKey: Self.storageKey)
       }
     }
+  }
+  // MARK: 전송 제한(한 번에 몇 장씩)
+
+  /// 지금 한 번에 보낼 장수. limiterQueue 안에서만 부른다.
+  private func activeLimitLocked() -> Int {
+    (onExpensiveNetwork || congested) ? Self.constrainedActiveUploads : Self.maxActiveUploads
+  }
+
+  /// 사진 전송을 대기열에 넣고 자리가 나는 만큼만 시작한다. limiterQueue 안에서만.
+  private func scheduleLocked(_ tasks: [URLSessionTask]) {
+    guard !tasks.isEmpty else { return }
+    heldTasks.append(contentsOf: tasks)
+    tasks.forEach { trackedKeys.insert(key($0)) }
+    progressTotal += Int64(tasks.count)
+    updateContinuedProgressLocked()
+    pumpLocked()
+  }
+
+  private func pumpLocked() {
+    heldTasks.removeAll { $0.state == .completed || $0.state == .canceling }
+    // 대기열이 비면 다음 업로드는 다시 여러 장씩 시작한다.
+    if congested, heldTasks.isEmpty, activeKeys.isEmpty { congested = false }
+    while activeKeys.count < activeLimitLocked(), !heldTasks.isEmpty {
+      let task = heldTasks.removeFirst()
+      // 이어서 처리로 살아 있는 백그라운드에서는 앱 내 세션으로 바꿔 보낸다(liveSession 참고).
+      if inBackground, continuedTask != nil, let live = makeLiveTaskLocked(replacing: task) {
+        partialProgress.removeValue(forKey: key(task))
+        if trackedKeys.remove(key(task)) != nil { trackedKeys.insert(key(live)) }
+        activeKeys.insert(key(live))
+        live.resume()
+        task.cancel()
+        continue
+      }
+      activeKeys.insert(key(task))
+      task.resume()
+    }
+    if inBackground && continuedTask == nil && !continuedPending {
+      releaseHeldLocked()
+    }
+    finishContinuedIfIdleLocked()
+  }
+
+  /// 끝난 작업의 자리를 비우고 다음 작업을 시작한다.
+  private func taskFinished(_ task: URLSessionTask, succeeded: Bool) {
+    limiterQueue.async {
+      self.recordFinishedLocked(key: self.key(task), succeeded: succeeded, tracked: true)
+      self.pumpLocked()
+    }
+  }
+
+  /// limiterQueue 안에서만. tracked=false면 자리만 비우고 집계하지 않는다(세션 이동으로 취소한 옛 작업).
+  private func recordFinishedLocked(key: String, succeeded: Bool, tracked: Bool) {
+    activeKeys.remove(key)
+    partialProgress.removeValue(forKey: key)
+    guard tracked, trackedKeys.remove(key) != nil else { return }
+    if !succeeded { continuedFailed = true }
+    progressDone += 1
+    updateContinuedProgressLocked()
+  }
+
+  /// 이 작업이 레코드가 가리키는 현재 작업인가(세션을 옮기며 버린 옛 작업이 아닌가).
+  private func isCurrentTask(_ task: URLSessionTask) -> Bool {
+    guard let id = idFromDescription(task.taskDescription), let record = records()[id] else { return false }
+    let isLive = task.taskDescription?.hasPrefix(Self.livePrefix) == true
+    if (record.live == true) != isLive { return false }
+    if !isLive, let current = record.taskIdentifier, current != task.taskIdentifier { return false }
+    return true
+  }
+
+  /// 앱이 백그라운드로 가면 iOS가 곧 앱을 멈춘다. 이어서 처리가 없으면 "하나 끝나면 다음 시작"을
+  /// 해 줄 사람이 없으므로 남은 작업을 전부 OS에 넘긴다(예전 방식). 무응답 한도를 길게 둬서
+  /// 한꺼번에 겹쳐도 끊기지 않게 했다.
+  private func releaseHeldForBackground() {
+    var identifier = UIBackgroundTaskIdentifier.invalid
+    identifier = UIApplication.shared.beginBackgroundTask(withName: "skysnap-upload-release") {
+      UIApplication.shared.endBackgroundTask(identifier)
+    }
+    limiterQueue.sync {
+      inBackground = true
+      if continuedTask == nil && !continuedPending { releaseHeldLocked() }
+    }
+    if identifier != .invalid { UIApplication.shared.endBackgroundTask(identifier) }
+  }
+
+  /// limiterQueue 안에서만.
+  private func releaseHeldLocked() {
+    heldTasks.removeAll { $0.state == .completed || $0.state == .canceling }
+    guard !heldTasks.isEmpty else { return }
+    for task in heldTasks {
+      activeKeys.insert(key(task))
+      task.resume()
+    }
+    heldTasks.removeAll()
+  }
+
+  // MARK: 한 장 재시도
+
+  /// 사진 한 장이 일시적으로 실패하면(408·429·5xx·연결 끊김·시간 초과) 그 한 장만 같은 URL로
+  /// 다시 보낸다. 실패한 전송은 URL을 쓰지 않았으므로 같은 URL이 유효하다. 혹시 서버에 도착했었다면
+  /// 409가 오고 그건 성공으로 본다. 3번까지만 하고 그 뒤엔 실패로 넘긴다.
+  private func retryTransientMultipart(id: String, task: URLSessionTask, error: Error?) -> Bool {
+    guard var record = records()[id], record.uploadProtocol != "tus" else { return false }
+    let code = (task.response as? HTTPURLResponse)?.statusCode ?? 0
+    let nsError = error as NSError?
+    if nsError?.code == NSURLErrorCancelled { return false }
+    let transient = nsError != nil || code == 408 || code == 429 || code >= 500
+    let attempts = record.retryCount ?? 0
+    guard transient, attempts < 3,
+          let bodyPath = record.bodyPath, FileManager.default.fileExists(atPath: bodyPath),
+          let request = task.originalRequest else { return false }
+    // 새 작업은 백그라운드 세션에 만들어 대기열 맨 앞에 둔다. 이어서 처리 중이면 pumpLocked가
+    // 앱 내 세션으로 바꿔 보낸다.
+    let retry = session.uploadTask(with: request, fromFile: URL(fileURLWithPath: bodyPath))
+    retry.taskDescription = id
+    record.live = false
+    record.taskIdentifier = retry.taskIdentifier
+    record.status = "queued"
+    record.retryCount = attempts + 1
+    record.updatedAt = Date().timeIntervalSince1970
+    updateRecord(id: id, record: record)
+    NSLog("[BackgroundUpload] 한 장 재시도 %d회차 (%@)", attempts + 1,
+          nsError?.localizedDescription ?? "HTTP \(code)")
+    limiterQueue.async {
+      // 회선이 버거운 신호다. 남은 사진은 한 장씩 보낸다.
+      self.congested = true
+      self.activeKeys.remove(self.key(task))
+      self.partialProgress.removeValue(forKey: self.key(task))
+      if self.trackedKeys.remove(self.key(task)) != nil { self.trackedKeys.insert(self.key(retry)) }
+      self.heldTasks.insert(retry, at: 0)
+      self.pumpLocked()
+    }
+    return true
+  }
+
+  // MARK: 앱 내 세션 ↔ 백그라운드 세션
+
+  /// 아직 시작 안 한 백그라운드 작업과 같은 요청·본문으로 앱 내 세션 작업을 만든다. limiterQueue 안에서만.
+  private func makeLiveTaskLocked(replacing task: URLSessionTask) -> URLSessionTask? {
+    guard let id = idFromDescription(task.taskDescription),
+          var record = records()[id], record.uploadProtocol != "tus",
+          let bodyPath = record.bodyPath, FileManager.default.fileExists(atPath: bodyPath),
+          let request = task.originalRequest else { return nil }
+    let live = liveSession.uploadTask(with: request, fromFile: URL(fileURLWithPath: bodyPath))
+    live.taskDescription = Self.livePrefix + id
+    record.live = true
+    record.updatedAt = Date().timeIntervalSince1970
+    updateRecord(id: id, record: record)
+    return live
+  }
+
+  /// 앱 내 세션으로 보내던 것을 백그라운드 세션으로 되돌린다(앱이 멈추면 같이 끊기므로).
+  /// 처음부터 다시 보내게 되지만 잃지는 않는다. limiterQueue 안에서 부르고, 완료도 limiterQueue에서 온다.
+  private func handLiveTasksBackToSystem(completion: @escaping () -> Void) {
+    liveSession.getAllTasks { [weak self] tasks in
+      guard let self else { completion(); return }
+      self.limiterQueue.async {
+        for live in tasks where live.state == .running || live.state == .suspended {
+          guard let id = self.idFromDescription(live.taskDescription),
+                var record = self.records()[id],
+                let bodyPath = record.bodyPath, FileManager.default.fileExists(atPath: bodyPath),
+                let request = live.originalRequest else { continue }
+          let background = self.session.uploadTask(with: request, fromFile: URL(fileURLWithPath: bodyPath))
+          background.taskDescription = id
+          record.live = false
+          record.taskIdentifier = background.taskIdentifier
+          record.updatedAt = Date().timeIntervalSince1970
+          self.updateRecord(id: id, record: record)
+          self.activeKeys.remove(self.key(live))
+          self.partialProgress.removeValue(forKey: self.key(live))
+          if self.trackedKeys.remove(self.key(live)) != nil { self.trackedKeys.insert(self.key(background)) }
+          self.activeKeys.insert(self.key(background))
+          background.resume()
+          live.cancel()
+        }
+        completion()
+      }
+    }
+  }
+
+  // MARK: 이어서 처리(iOS 26+)
+
+  /// 앱 위에 앱 밖 시스템 화면(사진 고르기·파일 고르기·공유)이 떠 있는가. 메인 스레드에서만.
+  private static func isPresentingSystemSheet() -> Bool {
+    let windows = UIApplication.shared.connectedScenes
+      .compactMap { $0 as? UIWindowScene }
+      .flatMap { $0.windows }
+    for window in windows {
+      var top = window.rootViewController
+      while let presented = top?.presentedViewController { top = presented }
+      guard let top else { continue }
+      let name = String(describing: type(of: top))
+      if top is UIImagePickerController || top is UIDocumentPickerViewController
+        || top is UIActivityViewController || name.contains("PHPicker") {
+        return true
+      }
+    }
+    return false
+  }
+
+  /// 앱이 화면을 벗어나기 직전(willResignActive, 메인 스레드). 보낼 사진이 남았을 때만 신청한다.
+  /// 홈으로 나간 뒤(didEnterBackground)에는 신청 자체가 안 된다.
+  private func submitContinuedIfNeeded() {
+    guard #available(iOS 26.0, *) else { return }
+    let bundle = Bundle.main.bundleIdentifier ?? "com.codelabtiger.skysnap"
+    let identifier = "\(bundle).upload.\(UUID().uuidString.prefix(8))"
+    let shouldSubmit: Bool = limiterQueue.sync {
+      guard continuedTask == nil, !continuedPending else { return false }
+      heldTasks.removeAll { $0.state == .completed || $0.state == .canceling }
+      guard !heldTasks.isEmpty || !trackedKeys.isEmpty else { return false }
+      continuedPending = true
+      continuedRequestID = identifier
+      continuedFailed = false
+      return true
+    }
+    guard shouldSubmit else { return }
+    // 신청과 시작 사이에 앱이 멈추면 시작 콜백을 못 받는다. 시작하거나 포기할 때까지 시간을 빌린다.
+    var holdId = UIBackgroundTaskIdentifier.invalid
+    holdId = UIApplication.shared.beginBackgroundTask(withName: "skysnap-upload-continued") {
+      UIApplication.shared.endBackgroundTask(holdId)
+      holdId = .invalid
+    }
+    let releaseHold = {
+      DispatchQueue.main.async {
+        if holdId != .invalid {
+          UIApplication.shared.endBackgroundTask(holdId)
+          holdId = .invalid
+        }
+      }
+    }
+    let registered = BGTaskScheduler.shared.register(forTaskWithIdentifier: identifier, using: nil) {
+      [weak self] task in
+      self?.continuedTaskStarted(task, requestID: identifier)
+      releaseHold()
+    }
+    let texts = Self.continuedTexts()
+    let subtitle: String = limiterQueue.sync {
+      progressTotal == 0 ? texts.preparing : String(format: texts.progress, progressDone, progressTotal)
+    }
+    let request = BGContinuedProcessingTaskRequest(identifier: identifier, title: texts.title, subtitle: subtitle)
+    // 지금 바로 못 돌면 실패시킨다. 나중에 돌아 봐야 이미 늦다.
+    request.strategy = .fail
+    do {
+      guard registered else { throw NSError(domain: "BackgroundUpload", code: 20) }
+      try BGTaskScheduler.shared.submit(request)
+      NSLog("[BackgroundUpload] 앱을 벗어나며 이어서 처리 신청: %@", identifier)
+      // 신청은 받아 줬는데 시작되지 않으면 대기 사진이 묶인다. 잠시 뒤에도 시작 전이면 포기한다.
+      limiterQueue.asyncAfter(deadline: .now() + 5) {
+        defer { releaseHold() }
+        guard self.continuedRequestID == identifier, self.continuedPending, self.continuedTask == nil else { return }
+        NSLog("[BackgroundUpload] 이어서 처리가 시작되지 않아 포기")
+        self.continuedPending = false
+        self.continuedRequestID = nil
+        if self.inBackground { self.releaseHeldLocked() }
+      }
+    } catch {
+      NSLog("[BackgroundUpload] 이어서 처리 신청 실패: %@", error.localizedDescription)
+      limiterQueue.async {
+        self.continuedPending = false
+        self.continuedRequestID = nil
+        if self.inBackground { self.releaseHeldLocked() }
+      }
+      releaseHold()
+    }
+  }
+
+  private func continuedTaskStarted(_ task: BGTask, requestID: String) {
+    guard #available(iOS 26.0, *), let continued = task as? BGContinuedProcessingTask else {
+      task.setTaskCompleted(success: false)
+      return
+    }
+    limiterQueue.sync {
+      guard self.continuedRequestID == requestID, self.continuedPending else {
+        continued.setTaskCompleted(success: false)
+        return
+      }
+      self.continuedPending = false
+      self.continuedTask = continued
+      // ⚠️ 만료 콜백은 시간 만료·진행 멈춤("작업 실패")·사용자가 진행 창에서 취소를 누른 경우
+      // 모두에서 온다. 구별할 수 없으므로 업로드를 취소하지 않고 백그라운드 세션으로 넘겨 계속
+      // 보낸다(모모앨범 2026-10-10: 취소로 봤더니 데이터 통신에서 사진이 통째로 사라졌다).
+      continued.expirationHandler = { [weak self] in
+        guard let self else { return }
+        self.limiterQueue.async {
+          guard self.continuedTask === continued else { return }
+          NSLog("[BackgroundUpload] 이어서 처리 만료 — 취소하지 않고 백그라운드 세션으로 넘김")
+          self.resetContinuedLocked()
+          self.handLiveTasksBackToSystem {
+            if self.inBackground { self.releaseHeldLocked() }
+            continued.setTaskCompleted(success: false)
+          }
+        }
+      }
+      self.updateContinuedProgressLocked()
+      // 이미 백그라운드다. 대기 사진을 앱 내 세션으로 이어 보낸다.
+      self.pumpLocked()
+    }
+  }
+
+  /// limiterQueue 안에서만.
+  private func resetContinuedLocked() {
+    continuedTask = nil
+    continuedPending = false
+    continuedRequestID = nil
+    continuedFailed = false
+    progressTotal = 0
+    progressDone = 0
+    partialProgress.removeAll()
+    lastSubtitle = ""
+  }
+
+  /// limiterQueue 안에서만.
+  private func updateContinuedProgressLocked() {
+    guard #available(iOS 26.0, *), let task = continuedTask as? BGContinuedProcessingTask else { return }
+    lastProgressReport = Date()
+    // 사진 한 장 = 1000단위. 전송 중인 사진은 보낸 비율만큼 채운다.
+    let total = max(progressTotal, 1) * 1000
+    let partial = partialProgress.values.reduce(0, +)
+    let completed = progressDone * 1000 + Int64(partial * 1000)
+    task.progress.totalUnitCount = total
+    task.progress.completedUnitCount = min(completed, total)
+    let texts = Self.continuedTexts()
+    let subtitle = progressTotal == 0
+      ? texts.preparing : String(format: texts.progress, progressDone, progressTotal)
+    if subtitle != lastSubtitle {
+      lastSubtitle = subtitle
+      task.updateTitle(texts.title, subtitle: subtitle)
+    }
+  }
+
+  /// 대기·전송 중인 사진이 하나도 없으면 빌린 시간을 돌려준다. limiterQueue 안에서만.
+  private func finishContinuedIfIdleLocked() {
+    guard heldTasks.isEmpty, activeKeys.isEmpty else { return }
+    let done = progressDone, total = progressTotal, failed = continuedFailed
+    // 이어서 처리 없이 끝난 묶음의 개수도 비운다. 안 비우면 다음 진행 막대가 지난 몫을 안고 시작한다.
+    progressTotal = 0
+    progressDone = 0
+    partialProgress.removeAll()
+    trackedKeys.removeAll()
+    lastSubtitle = ""
+    continuedFailed = false
+    guard !continuedPending, let task = continuedTask else { return }
+    continuedTask = nil
+    continuedRequestID = nil
+    if #available(iOS 26.0, *), let continued = task as? BGContinuedProcessingTask {
+      let units = max(total, 1) * 1000
+      continued.progress.totalUnitCount = units
+      continued.progress.completedUnitCount = failed ? min(done * 1000, units) : units
+      let texts = Self.continuedDoneTexts(failed: failed)
+      continued.updateTitle(texts.title, subtitle: texts.subtitle)
+    }
+    limiterQueue.asyncAfter(deadline: .now() + 0.6) {
+      task.setTaskCompleted(success: !failed)
+    }
+  }
+
+  private static func continuedTexts() -> (title: String, preparing: String, progress: String) {
+    let language = Locale.preferredLanguages.first ?? "en"
+    if language.hasPrefix("ko") { return ("사진 올리는 중", "준비하고 있어요", "%lld / %lld장") }
+    if language.hasPrefix("ja") { return ("写真をアップロード中", "準備しています", "%lld / %lld枚") }
+    return ("Uploading photos", "Preparing", "%lld of %lld")
+  }
+
+  private static func continuedDoneTexts(failed: Bool) -> (title: String, subtitle: String) {
+    let language = Locale.preferredLanguages.first ?? "en"
+    if language.hasPrefix("ko") {
+      return failed ? ("일부 사진을 보내지 못했어요", "앱에서 다시 시도해 주세요") : ("사진을 보냈어요", "곧 올라가요")
+    }
+    if language.hasPrefix("ja") {
+      return failed ? ("一部の写真を送信できませんでした", "アプリで再試行してください") : ("写真を送信しました", "まもなく公開されます")
+    }
+    return failed ? ("Some photos weren't sent", "Try again in the app") : ("Photos sent", "Posting shortly")
   }
 }

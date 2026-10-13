@@ -71,8 +71,15 @@ class BackgroundUploadJobService : JobService() {
                     setNotification(
                         params, notificationId, notification(index, ids.size, 0, 0),
                         JOB_END_NOTIFICATION_POLICY_REMOVE)
+                    // SkySnap 전송기는 64KB마다 진행을 알린다. 그대로 알림을 갱신하면 큰 영상에서
+                    // 수백 번 notify가 나가 시스템이 알림을 버리거나 지연시킨다 — 퍼센트가
+                    // 바뀔 때만 갱신한다(모모앨범 BackgroundUploadWorker.updateProgress와 같은 규칙).
+                    var lastPercent = -1
                     val code = try {
                         BackgroundUploadHttp.upload(applicationContext, request) { sent, total ->
+                            val percent = if (total > 0L) ((sent * 100) / total).toInt() else -1
+                            if (percent == lastPercent) return@upload
+                            lastPercent = percent
                             setNotification(
                                 params, notificationId,
                                 notification(index, ids.size, sent, total),
@@ -166,7 +173,7 @@ class BackgroundUploadJobService : JobService() {
     /**
      * UIDT 알림은 사용자가 업로드 상태를 볼 수 있는 **유일한 창구**다.
      * 고정 문구만 띄우면 큰 영상을 올릴 때 멈춘 건지 되는 건지 알 수 없으므로
-     * 몇 번째 파일인지와 현재 파일의 진행률을 함께 보여 준다.
+     * 몇 번째 파일인지와 묶음 전체의 진행률을 함께 보여 준다.
      *
      * @param doneCount 앞서 끝난 파일 수
      * @param totalCount 이 묶음의 전체 파일 수
@@ -194,8 +201,11 @@ class BackgroundUploadJobService : JobService() {
             getString(R.string.background_upload_message)
         }
         builder.setContentText(text)
-        if (total > 0L) {
-            val percent = ((sent.toDouble() / total) * 100).toInt().coerceIn(0, 100)
+        // 진행률은 파일 하나가 아니라 묶음 전체 기준이다(모모앨범 0758d7f). 파일 기준이면
+        // 2번째 사진으로 넘어갈 때마다 막대가 0%로 되돌아가 멈춘 것처럼 보인다.
+        val fileFraction = if (total > 0L) (sent.toDouble() / total).coerceIn(0.0, 1.0) else 0.0
+        if (totalCount > 0 && (total > 0L || doneCount > 0)) {
+            val percent = (((doneCount + fileFraction) / totalCount) * 100).toInt().coerceIn(0, 100)
             builder.setProgress(100, percent, false)
             builder.setSubText("$percent%")
         } else {

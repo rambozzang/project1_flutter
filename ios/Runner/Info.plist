@@ -5,6 +5,8 @@
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+		<!-- 사진 업로드 중 앱을 벗어나면 신청하는 이어서 처리(iOS 26 BGContinuedProcessingTask). BackgroundUpload.swift -->
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER).upload.*</string>
 	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>

@@ -144,6 +144,9 @@ configurations.all {
 }
 
 dependencies {
+    testImplementation("junit:junit:4.13.2")
+    // 로컬 JVM 시험에서 Android JSONObject 대신 실제 JSON 파서를 사용한다.
+    testImplementation("org.json:json:20180813")
     // 영상 피드 전용 네이티브 플레이어(MomoVideo) — 자매 앱(모모앨범)에서 이식.
     //
     // video_player 플러그인이 전이 의존으로 media3 를 가져오지만, 우리 코드가
