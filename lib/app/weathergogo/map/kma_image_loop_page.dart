@@ -72,7 +72,14 @@ class _KmaImageLoopPageState extends State<KmaImageLoopPage> {
       Get.off(widget.fallback, transition: Transition.noTransition);
       return;
     }
-    final recent = all.length > _recent ? all.sublist(all.length - _recent) : all;
+    // 레이더는 5분, 위성은 2분 간격으로 하루치가 온다. 최근 13장만 잘라 돌리면 30분도
+    // 안 돼 움직임이 거의 안 보인다. 10분 간격으로 건너뛰어 약 2시간을 돌린다.
+    final step = widget.radar ? 2 : 5;
+    final picked = <String>[];
+    for (var i = all.length - 1; i >= 0 && picked.length < _recent; i -= step) {
+      picked.insert(0, all[i]);
+    }
+    final recent = picked;
     // 그림을 미리 받아 둬야 재생할 때 깜빡이지 않는다.
     for (final u in recent) {
       unawaited(precacheImage(CachedNetworkImageProvider(u), context).catchError((_) {}));
@@ -94,12 +101,19 @@ class _KmaImageLoopPageState extends State<KmaImageLoopPage> {
     });
   }
 
-  /// 기상청 영상 파일 이름 끝의 yyyyMMddHHmm 을 "15:30" 으로.
+  /// 기상청 영상 파일 이름의 yyyyMMddHHmm 을 한국 시각 "15:30" 으로.
+  ///
+  /// ⚠️ 레이더 파일은 한국 시각, **위성(gk2a) 파일은 세계 표준시**다. 그대로 적으면 위성이
+  /// 9시간 전 그림처럼 보인다(2026-10-13: 20:40 최신 그림이 "11:40" 으로 찍힘).
   String _timeOf(String url) {
     final m = RegExp(r'(\d{12})').allMatches(url).toList();
     if (m.isEmpty) return '';
     final t = m.last.group(1)!;
-    return '${t.substring(8, 10)}:${t.substring(10, 12)}';
+    var d = DateTime(int.parse(t.substring(0, 4)), int.parse(t.substring(4, 6)), int.parse(t.substring(6, 8)),
+        int.parse(t.substring(8, 10)), int.parse(t.substring(10, 12)));
+    if (url.contains('gk2a')) d = d.add(const Duration(hours: 9));
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${two(d.hour)}:${two(d.minute)}';
   }
 
   @override

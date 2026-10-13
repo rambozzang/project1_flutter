@@ -115,8 +115,7 @@ class _NationWeatherMapPageState extends State<NationWeatherMapPage> {
     return Obx(() {
       final l = c.layer.value;
       if (l.group == NationMapGroup.air) return _airLegend(l);
-      // 색 면을 깔지 않는 층(기온·습도·풍속)은 숫자 알약만 보이므로 색 막대가 필요 없다.
-      if (!l.paintsField) return const SizedBox.shrink();
+      // 색 면이 없는 층도 알약 글자를 같은 색 띠로 칠하므로 범례를 보여 준다.
       final ticks = l.ticks;
       final top = ticks.first, bottom = ticks.last;
       return Container(
@@ -499,8 +498,9 @@ class _NationWeatherMapPageState extends State<NationWeatherMapPage> {
         _InfoRow(
           badge: '지진',
           color: const Color(0xFF8D6E63),
-          title: '규모 ${e['mt'] ?? '-'} · ${e['loc'] ?? ''}',
-          sub: '${_fmtTm('${e['tmEqk'] ?? e['tmFc'] ?? ''}')}${e['inT'] != null ? ' · 최대진도 ${e['inT']}' : ''}',
+          // fcTp 2 = 국외 지진(기상청은 국외 규모 5 이상도 통보한다)
+          title: '${'${e['fcTp']}' == '2' ? '[국외] ' : ''}규모 ${e['mt'] ?? '-'} · ${e['loc'] ?? ''}',
+          sub: '${_fmtTm('${e['tmEqk'] ?? e['tmFc'] ?? ''}')}${'${e['inT'] ?? ''}'.trim().isNotEmpty ? ' · 최대진도 ${e['inT']}' : ''}',
         ),
       for (final t in c.typhoons)
         _InfoRow(

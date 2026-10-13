@@ -314,7 +314,7 @@ class NationWeatherMapCntr extends GetxController {
       if (text == null || lat == null || lon == null) continue;
       final air = l.group == NationMapGroup.air;
       final bg = air ? l.colorOf(l.value(p) ?? 0) : Colors.white;
-      final icon = await _pill(text, bg, air ? Colors.white : const Color(0xFF222222), ctx);
+      final icon = await _pill(text, bg, air ? Colors.white : l.textColor(p), ctx);
       if (icon == null) return;
       overlays.add(NMarker(
         id: 'v$i',

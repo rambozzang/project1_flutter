@@ -89,10 +89,12 @@ enum NationMapLayer {
     if (v == null) return null;
     if (sparse && v <= 0) return null;
     switch (this) {
+      // 기온 알약엔 날씨 그림을 앞에 붙인다(네이버 기온 지도처럼). 숫자만 늘어서면 밋밋했다.
       case NationMapLayer.temp:
       case NationMapLayer.feel:
+        return '${_sky(p)}${v.round()}°';
       case NationMapLayer.obsTemp:
-        return '${v.round()}°';
+        return '${_ptyOnly(p)}${v.round()}°';
       case NationMapLayer.humid:
       case NationMapLayer.obsHumid:
         return '${v.round()}%';
@@ -113,6 +115,43 @@ enum NationMapLayer {
         return '${p['sido'] ?? ''} ${v.round()}';
     }
   }
+
+  /// 흰 알약 안 글자색. 값에 따라 색을 입혀 지도를 가리지 않고도 차이가 보이게 한다.
+  /// 색 띠 그대로 쓰면 노랑·연두가 흰 바탕에서 안 읽혀서 진하게 눌러 쓴다.
+  Color textColor(Map<String, dynamic> p) {
+    final v = value(p);
+    if (v == null || group == NationMapGroup.air) return const Color(0xFF222222);
+    final c = colorOf(v);
+    if (c.a == 0) return const Color(0xFF222222);
+    final hsl = HSLColor.fromColor(c.withValues(alpha: 1));
+    return hsl.withLightness((hsl.lightness * 0.62).clamp(0.18, 0.42)).withSaturation((hsl.saturation + 0.15).clamp(0, 1)).toColor();
+  }
+
+  /// 단기예보: 비·눈이 오면 그쪽, 아니면 하늘 상태.
+  static String _sky(Map<String, dynamic> p) {
+    final pty = _n(p['PTY']);
+    if (pty != 0) return _ptyEmoji(pty);
+    switch (_n(p['SKY'])) {
+      case 1:
+        return '☀️';
+      case 3:
+        return '⛅';
+      case 4:
+        return '☁️';
+    }
+    return '';
+  }
+
+  /// 실황에는 하늘 상태가 없어 비·눈이 올 때만.
+  static String _ptyOnly(Map<String, dynamic> p) {
+    final pty = _n(p['PTY']);
+    return pty == 0 ? '' : _ptyEmoji(pty);
+  }
+
+  // 초단기실황 1 비 2 비/눈 3 눈 5 빗방울 6 빗방울눈날림 7 눈날림 / 단기예보 4 소나기
+  static String _ptyEmoji(int pty) => switch (pty) { 2 || 6 => '🌨️', 3 || 7 => '❄️', 4 => '🌦️', _ => '🌧️' };
+
+  static int _n(Object? v) => v is num ? v.round() : (v is String ? (double.tryParse(v)?.round() ?? 0) : 0);
 
   /// 범례 막대에 적을 눈금(위가 큰 값).
   List<double> get ticks {
